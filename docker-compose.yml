@@ -26,23 +26,6 @@ services:
     depends_on:
       - db
 
-  admin:
-    build:
-      context: ./admin
-      dockerfile: Dockerfile
-    ports:
-      - "3001:80"
-    depends_on:
-      - backend
-
-  landing:
-    build:
-      context: ./landing
-      dockerfile: Dockerfile
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
 
 volumes:
   arko_db_data:
