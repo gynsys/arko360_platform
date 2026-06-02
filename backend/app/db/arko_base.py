@@ -11,7 +11,7 @@ from app.core.config import settings
 import os
 ARKO_DATABASE_URL = os.getenv(
     "ARKO_DATABASE_URL", 
-    settings.DATABASE_URL.replace("gynsys", "arko360") if "gynsys" in settings.DATABASE_URL else settings.DATABASE_URL + "_arko360"
+    settings.DATABASE_URL
 )
 
 # Create database engine
