@@ -70,15 +70,15 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: Union[str, List[str]] = [
-        "https://gynsys.net",
-        "https://www.gynsys.net",
-        "https://api.gynsys.net",
+        "https://arko360.net",
+        "https://www.arko360.net",
+        "https://admin.arko360.net",
+        "https://api.arko360.net",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://localhost:5174", 
-        "http://127.0.0.1:5174",
-        "https://gynsys.netlify.app"
+        "http://127.0.0.1:5174"
     ]
 
     @field_validator("CORS_ORIGINS", mode="before")
@@ -95,9 +95,10 @@ class Settings(BaseSettings):
         
         # Enforce Production Domains (Safety Net against outdated .env)
         required_origins = [
-            "https://gynsys.net",
-            "https://www.gynsys.net",
-            "https://api.gynsys.net",
+            "https://arko360.net",
+            "https://www.arko360.net",
+            "https://admin.arko360.net",
+            "https://api.arko360.net",
            
             "http://localhost",
             "capacitor://localhost"

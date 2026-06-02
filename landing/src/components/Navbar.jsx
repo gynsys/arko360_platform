@@ -90,7 +90,7 @@ export default function Navbar() {
               </Link>
 
               <a
-                href="https://gynsys.net/arko-admin/login"
+                href="https://admin.arko360.net/login"
                 target="_blank"
                 rel="noreferrer"
                 className="navbar-admin-icon"
@@ -156,7 +156,7 @@ export default function Navbar() {
             </Link>
 
             <a
-              href="https://gynsys.net/arko-admin/login"
+              href="https://admin.arko360.net/login"
               target="_blank"
               rel="noreferrer"
               className="btn btn-outline btn-lg"
