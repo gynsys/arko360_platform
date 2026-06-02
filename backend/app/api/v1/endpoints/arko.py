@@ -74,7 +74,8 @@ def get_public_posts(
             posts = query.order_by(ArkoPost.published_at.desc()).offset(skip).limit(limit).all()
             return posts
     except Exception as e:
-        from app.core.logging import logger
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Error fetching Arko posts: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -89,7 +90,8 @@ def get_public_post(slug: str):
     except HTTPException:
         raise
     except Exception as e:
-        from app.core.logging import logger
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Error fetching Arko post {slug}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -114,7 +116,8 @@ def login_arko_admin(form_data: OAuth2PasswordRequestForm = Depends()):
     except HTTPException:
         raise
     except Exception as e:
-        from app.core.logging import logger
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Error in Arko login: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -153,7 +156,8 @@ def get_admin_posts(
             posts = db.query(ArkoPost).order_by(ArkoPost.created_at.desc()).offset(skip).limit(limit).all()
             return posts
     except Exception as e:
-        from app.core.logging import logger
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Error fetching admin Arko posts: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -179,7 +183,8 @@ def create_post(
     except HTTPException:
         raise
     except Exception as e:
-        from app.core.logging import logger
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Error creating Arko post: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -210,7 +215,8 @@ def update_post(
     except HTTPException:
         raise
     except Exception as e:
-        from app.core.logging import logger
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Error updating Arko post: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -231,7 +237,8 @@ def delete_post(
     except HTTPException:
         raise
     except Exception as e:
-        from app.core.logging import logger
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Error deleting Arko post: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -247,7 +254,8 @@ def get_site_config():
             
             return admin.site_config if admin and admin.site_config else {}
     except Exception as e:
-        from app.core.logging import logger
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Error fetching Arko config: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -266,7 +274,8 @@ def update_site_config(
             db.commit()
             return {"status": "success", "config": admin.site_config}
     except Exception as e:
-        from app.core.logging import logger
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Error updating Arko config: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -296,6 +305,7 @@ async def upload_arko_image(
         
         return {"message": "Image uploaded successfully", "image_url": url_path}
     except Exception as e:
-        from app.core.logging import logger
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Error uploading Arko image: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error uploading image")

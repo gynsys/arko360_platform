@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.endpoints import arko
 from app.db.arko_base import ArkoBase, arko_engine
 from app.core.config import settings
-from app.core.logging import logger
+import logging
+logger = logging.getLogger(__name__)
 
 # Configurar Base de Datos para Arko
 logger.info("Initializing Arko360 database tables...")
