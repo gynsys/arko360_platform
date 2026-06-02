@@ -29,7 +29,7 @@ export async function submitContactForm(data) {
 }
 
 export async function getSiteConfig() {
-  const response = await fetch(`${API_URL}/api/v1/arko/config`, {
+  const response = await fetch(`${API_URL}/arko/config`, {
     method: 'GET',
     headers: {
       'Accept': 'application/json',
@@ -53,7 +53,7 @@ export async function loginArkoAdmin(email, password) {
   formData.append('username', email);
   formData.append('password', password);
 
-  const response = await fetch(`${API_URL}/api/v1/arko/auth/login`, {
+  const response = await fetch(`${API_URL}/arko/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
