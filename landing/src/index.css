@@ -723,7 +723,6 @@ input, textarea, select {
   overflow: hidden;
   aspect-ratio: 4/3;
   cursor: pointer;
-  group: true;
 }
 
 .portfolio-item img {
