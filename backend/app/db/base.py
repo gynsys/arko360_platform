@@ -1,0 +1,39 @@
+"""
+Database base configuration and session management.
+"""
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from app.core.config import settings
+
+# Create database engine
+engine = create_engine(
+    settings.DATABASE_URL,
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
+    echo=False  # Set to True for SQL query logging
+)
+
+# Create session factory
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Declarative base for models
+Base = declarative_base()
+
+# Import all models so Alembic can detect them
+from app.db.models import doctor, appointment, patient, testimonial, gallery, consultation, consultation_asset, location, service, cycle_user, preconsultation_template, endometriosis_result, oauth_whitelist, push_subscription, patient_activation_token, notification, cycle_predictor, campaign, scheduled_appointment
+from app.db.models.preconsultation import PreconsultationQuestion
+from app.blog import models as blog
+
+
+
+def get_db():
+    """
+    Dependency function to get database session.
+    Yields a database session and ensures it's closed after use.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
