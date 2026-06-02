@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/arko360/',
+  base: '/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
