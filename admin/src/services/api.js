@@ -41,3 +41,31 @@ export async function getSiteConfig() {
   }
   return response.json();
 }
+
+/**
+ * Login admin
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<Object>}
+ */
+export async function loginArkoAdmin(email, password) {
+  const formData = new URLSearchParams();
+  formData.append('username', email);
+  formData.append('password', password);
+
+  const response = await fetch(`${API_URL}/api/v1/arko/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || 'Credenciales incorrectas');
+  }
+
+  return response.json();
+}
