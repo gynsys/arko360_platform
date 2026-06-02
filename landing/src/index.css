@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ============================================================
    ARKO 360 — Design System
    Paleta basada en el logo oficial: Azul #1A6BB5, Gris #3D3D3D
