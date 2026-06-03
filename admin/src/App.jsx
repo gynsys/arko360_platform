@@ -4,6 +4,9 @@ import EngineeringTools from './components/EngineeringTools.jsx';
 import Login from './pages/Login.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AdminLayout from './components/layout/AdminLayout.jsx';
+import BlogManagementPage from './pages/admin/BlogManagementPage.jsx';
+import ProfilePage from './pages/admin/ProfilePage.jsx';
 
 export const SiteConfigContext = React.createContext(null);
 
@@ -25,10 +28,14 @@ function App() {
               path="/admin/*" 
               element={
                 <ProtectedRoute>
-                  <EngineeringTools />
+                  <AdminLayout />
                 </ProtectedRoute>
-              } 
-            />
+              }
+            >
+              <Route index element={<Navigate to="/admin/blog" replace />} />
+              <Route path="blog" element={<BlogManagementPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </SiteConfigContext.Provider>
