@@ -10,11 +10,16 @@ const CalculadoraDrywall = () => {
   const [puertas, setPuertas] = useState({
     incluir: false,
     cantidad: 1,
+    ancho: 0.9,
+    alto: 2.1,
   });
 
   const [ventanas, setVentanas] = useState({
     incluir: false,
     cantidad: 1,
+    ancho: 1.2,
+    alto: 1.2,
+    alturaSuelo: 1.0,
   });
 
   // Manejadores de cambios
@@ -28,7 +33,7 @@ const CalculadoraDrywall = () => {
     const { name, value, type, checked } = e.target;
     setPuertas({
       ...puertas,
-      [name]: type === 'checkbox' ? checked : parseInt(value) || 0,
+      [name]: type === 'checkbox' ? checked : parseFloat(value) || 0,
     });
   };
 
@@ -36,31 +41,39 @@ const CalculadoraDrywall = () => {
     const { name, value, type, checked } = e.target;
     setVentanas({
       ...ventanas,
-      [name]: type === 'checkbox' ? checked : parseInt(value) || 0,
+      [name]: type === 'checkbox' ? checked : parseFloat(value) || 0,
     });
   };
 
-  // 2. LÓGICA DE CÁLCULO DE MATERIALES
+  // 2. LÓGICA DE CÁLCULO DE MATERIALES Y VALIDACIÓN DE ESPACIO
   const resultados = useMemo(() => {
     // Dimensiones estándar asumidas (metros)
     const areaLamina = 1.22 * 2.44; // 2.97 m2
-    const anchoPuerta = 0.9;
-    const altoPuerta = 2.1;
-    const anchoVentana = 1.2;
-    const altoVentana = 1.2;
+
+    // Usar dimensiones personalizadas o valores por defecto
+    const anchoPuerta = puertas.ancho || 0.9;
+    const altoPuerta = puertas.alto || 2.1;
+    const anchoVentana = ventanas.ancho || 1.2;
+    const altoVentana = ventanas.alto || 1.2;
 
     // Cálculos de Área
     const areaTotal = datos.largo * datos.alto;
     const areaPuertas = puertas.incluir ? (puertas.cantidad * anchoPuerta * altoPuerta) : 0;
     const areaVentanas = ventanas.incluir ? (ventanas.cantidad * anchoVentana * altoVentana) : 0;
-    
+
     // Evitar áreas negativas si el usuario pone demasiadas puertas/ventanas
     const areaNeta = Math.max(0, areaTotal - areaPuertas - areaVentanas);
+
+    // Validación de espacio horizontal
+    const espacioTotalAberturas = (puertas.incluir ? puertas.cantidad * anchoPuerta : 0) +
+                                   (ventanas.incluir ? ventanas.cantidad * anchoVentana : 0);
+    const espacioDisponible = datos.largo - espacioTotalAberturas;
+    const espacioSuficiente = espacioDisponible >= 0.2; // Mínimo 20cm entre aberturas y bordes
 
     // Cálculo de Materiales (Asumiendo pared de 1 cara para forrar, multiplica por 2 si son ambas caras)
     const laminas = Math.ceil(areaNeta / areaLamina);
     const canales = Math.ceil((datos.largo * 2) / 3.05); // Superior e inferior (piezas de 3.05m)
-    
+
     // Parales: 1 cada 0.61m + refuerzos para marcos de puertas y ventanas
     let parales = Math.ceil(datos.largo / 0.61) + 1;
     if (puertas.incluir) parales += puertas.cantidad * 2; // 2 parales extra por puerta
@@ -74,6 +87,8 @@ const CalculadoraDrywall = () => {
     return {
       areaTotal: areaTotal.toFixed(2),
       areaNeta: areaNeta.toFixed(2),
+      espacioSuficiente,
+      espacioDisponible: espacioDisponible.toFixed(2),
       materiales: {
         laminas,
         canales,
@@ -86,7 +101,7 @@ const CalculadoraDrywall = () => {
     };
   }, [datos, puertas, ventanas]);
 
-  // 3. LÓGICA DE DIBUJO (SVG)
+  // 3. LÓGICA DE DIBUJO (SVG) CON POSICIONAMIENTO INTELIGENTE
   // Escala dinámica para encajar en el cuadro de 400x300
   const maxAncho = datos.largo > 0 ? datos.largo : 1;
   const maxAlto = datos.alto > 0 ? datos.alto : 1;
@@ -100,6 +115,62 @@ const CalculadoraDrywall = () => {
   const topY = originY - (datos.alto * scale);
   const rectWidth = datos.largo * scale;
   const rectHeight = datos.alto * scale;
+
+  // Lógica inteligente de posicionamiento de aberturas
+  const posicionesAberturas = useMemo(() => {
+    const posiciones = [];
+    const anchoPuerta = puertas.ancho || 0.9;
+    const altoPuerta = puertas.alto || 2.1;
+    const anchoVentana = ventanas.ancho || 1.2;
+    const altoVentana = ventanas.alto || 1.2;
+    const alturaSueloVentana = ventanas.alturaSuelo || 1.0;
+
+    // Calcular espacio total ocupado por aberturas
+    const totalAnchoAberturas = (puertas.incluir ? puertas.cantidad * anchoPuerta : 0) +
+                                 (ventanas.incluir ? ventanas.cantidad * anchoVentana : 0);
+
+    // Espacio disponible para distribución
+    const espacioLibre = datos.largo - totalAnchoAberturas;
+    const margenMinimo = Math.max(0.1, espacioLibre / 2); // Mínimo 10cm de margen
+
+    let xPos = margenMinimo;
+
+    // Posicionar puertas primero (una al lado de la otra)
+    if (puertas.incluir) {
+      for (let i = 0; i < puertas.cantidad; i++) {
+        posiciones.push({
+          tipo: 'puerta',
+          x: xPos,
+          y: originY - (altoPuerta * scale),
+          ancho: anchoPuerta * scale,
+          alto: altoPuerta * scale,
+          altoReal: altoPuerta
+        });
+        xPos += anchoPuerta * scale + 0.05 * scale; // 5cm de separación entre puertas
+      }
+    }
+
+    // Posicionar ventanas después de las puertas
+    if (ventanas.incluir) {
+      for (let i = 0; i < ventanas.cantidad; i++) {
+        // Verificar si hay espacio vertical para la ventana
+        const alturaTotalVentana = alturaSueloVentana + altoVentana;
+        if (alturaTotalVentana <= datos.alto) {
+          posiciones.push({
+            tipo: 'ventana',
+            x: xPos,
+            y: originY - (alturaSueloVentana * scale) - (altoVentana * scale),
+            ancho: anchoVentana * scale,
+            alto: altoVentana * scale,
+            altoReal: altoVentana
+          });
+          xPos += anchoVentana * scale + 0.05 * scale; // 5cm de separación entre ventanas
+        }
+      }
+    }
+
+    return posiciones;
+  }, [datos, puertas, ventanas, scale, originX, originY]);
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', maxWidth: '1000px', margin: '0 auto' }}>
@@ -130,8 +201,18 @@ const CalculadoraDrywall = () => {
             </label>
             {puertas.incluir && (
               <div style={{ marginTop: '5px', paddingLeft: '25px' }}>
-                <label>Cantidad: </label>
-                <input type="number" min="1" name="cantidad" value={puertas.cantidad} onChange={handlePuertasChange} style={{ width: '80px' }} />
+                <div style={{ marginBottom: '5px' }}>
+                  <label>Cantidad: </label>
+                  <input type="number" min="1" name="cantidad" value={puertas.cantidad} onChange={handlePuertasChange} style={{ width: '80px' }} />
+                </div>
+                <div style={{ marginBottom: '5px' }}>
+                  <label>Ancho (m): </label>
+                  <input type="number" step="0.1" min="0.5" name="ancho" value={puertas.ancho} onChange={handlePuertasChange} style={{ width: '80px' }} />
+                </div>
+                <div style={{ marginBottom: '5px' }}>
+                  <label>Alto (m): </label>
+                  <input type="number" step="0.1" min="1.5" name="alto" value={puertas.alto} onChange={handlePuertasChange} style={{ width: '80px' }} />
+                </div>
               </div>
             )}
           </div>
@@ -144,11 +225,34 @@ const CalculadoraDrywall = () => {
             </label>
             {ventanas.incluir && (
               <div style={{ marginTop: '5px', paddingLeft: '25px' }}>
-                <label>Cantidad: </label>
-                <input type="number" min="1" name="cantidad" value={ventanas.cantidad} onChange={handleVentanasChange} style={{ width: '80px' }} />
+                <div style={{ marginBottom: '5px' }}>
+                  <label>Cantidad: </label>
+                  <input type="number" min="1" name="cantidad" value={ventanas.cantidad} onChange={handleVentanasChange} style={{ width: '80px' }} />
+                </div>
+                <div style={{ marginBottom: '5px' }}>
+                  <label>Ancho (m): </label>
+                  <input type="number" step="0.1" min="0.5" name="ancho" value={ventanas.ancho} onChange={handleVentanasChange} style={{ width: '80px' }} />
+                </div>
+                <div style={{ marginBottom: '5px' }}>
+                  <label>Alto (m): </label>
+                  <input type="number" step="0.1" min="0.5" name="alto" value={ventanas.alto} onChange={handleVentanasChange} style={{ width: '80px' }} />
+                </div>
+                <div style={{ marginBottom: '5px' }}>
+                  <label>Altura del suelo (m): </label>
+                  <input type="number" step="0.1" min="0.5" name="alturaSuelo" value={ventanas.alturaSuelo} onChange={handleVentanasChange} style={{ width: '80px' }} />
+                </div>
               </div>
             )}
           </div>
+
+          {/* ADVERTENCIA DE ESPACIO */}
+          {(puertas.incluir || ventanas.incluir) && !resultados.espacioSuficiente && (
+            <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#ffebee', borderRadius: '4px', border: '1px solid #ef9a9a' }}>
+              <p style={{ color: '#c62828', margin: 0, fontSize: '0.9em' }}>
+                ⚠️ <strong>Advertencia:</strong> No hay suficiente espacio horizontal. Espacio disponible: {resultados.espacioDisponible}m
+              </p>
+            </div>
+          )}
         </div>
 
         {/* DIAGRAMA INTERACTIVO */}
@@ -158,35 +262,39 @@ const CalculadoraDrywall = () => {
             
             {/* Pared Principal */}
             <rect x={originX} y={topY} width={rectWidth} height={rectHeight} fill="#e0e0e0" stroke="#9e9e9e" strokeWidth="2" />
-            
-            {/* Dibujar Puertas */}
-            {puertas.incluir && Array.from({ length: puertas.cantidad }).map((_, i) => {
-              const pWidth = 0.9 * scale;
-              const pHeight = 2.1 * scale;
-              const spacing = rectWidth / (puertas.cantidad + 1);
-              const x = originX + spacing * (i + 1) - (pWidth / 2);
-              const y = originY - pHeight;
-              
-              // No dibujar si se sale de la pared
-              if (2.1 > datos.alto) return null; 
 
-              return <rect key={`puerta-${i}`} x={x} y={y} width={pWidth} height={pHeight} fill="#8d6e63" stroke="#5d4037" strokeWidth="2" />;
-            })}
-
-            {/* Dibujar Ventanas */}
-            {ventanas.incluir && Array.from({ length: ventanas.cantidad }).map((_, i) => {
-              const vWidth = 1.2 * scale;
-              const vHeight = 1.2 * scale;
-              const spacing = rectWidth / (ventanas.cantidad + 1);
-              const x = originX + spacing * (i + 1) - (vWidth / 2);
-              // Colocamos las ventanas a 1 metro del suelo
-              const sillHeight = 1.0 * scale; 
-              const y = originY - sillHeight - vHeight;
-
-              // No dibujar si se sale de la pared
-              if ((1.0 + 1.2) > datos.alto) return null;
-
-              return <rect key={`ventana-${i}`} x={x} y={y} width={vWidth} height={vHeight} fill="#bbdefb" stroke="#1976d2" strokeWidth="2" />;
+            {/* Dibujar Aberturas con posicionamiento inteligente */}
+            {posicionesAberturas.map((abertura, i) => {
+              if (abertura.tipo === 'puerta') {
+                // No dibujar si se sale de la pared
+                if (abertura.altoReal > datos.alto) return null;
+                return (
+                  <rect
+                    key={`puerta-${i}`}
+                    x={originX + abertura.x}
+                    y={abertura.y}
+                    width={abertura.ancho}
+                    height={abertura.alto}
+                    fill="#8d6e63"
+                    stroke="#5d4037"
+                    strokeWidth="2"
+                  />
+                );
+              } else if (abertura.tipo === 'ventana') {
+                return (
+                  <rect
+                    key={`ventana-${i}`}
+                    x={originX + abertura.x}
+                    y={abertura.y}
+                    width={abertura.ancho}
+                    height={abertura.alto}
+                    fill="#bbdefb"
+                    stroke="#1976d2"
+                    strokeWidth="2"
+                  />
+                );
+              }
+              return null;
             })}
 
             {/* Nivel del piso */}
