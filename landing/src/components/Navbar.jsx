@@ -21,7 +21,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const siteConfig = useContext(SiteConfigContext);
   
-  const logoUrl = siteConfig?.logoUrl || "/arko360/images/logo_aeko360.png";
+  const logoUrl = siteConfig?.logoUrl || "/images/logo_aeko360.png";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);

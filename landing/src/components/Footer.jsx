@@ -6,7 +6,7 @@ export default function Footer() {
   const config = useContext(SiteConfigContext);
   
   const siteName = config?.siteName || 'Ingeniería Arko 360';
-  const logoUrl = config?.logoUrl || '/arko360/images/logo_aeko360.png';
+  const logoUrl = config?.logoUrl || '/images/logo_aeko360.png';
   const social = config?.social || {};
   const phone = config?.contactPhone || '+58 412 000 0000';
   const email = config?.contactEmail || 'proyectos@arko360.com';
