@@ -308,6 +308,12 @@ export const cmsData = {
         title: 'Diseño de Mezclas de Concreto',
         desc: 'Calculadora de proporciones (cemento, arena, piedra, agua) para alcanzar resistencias específicas (fc).',
         icon: 'Container'
+      },
+      {
+        id: 'drywall',
+        title: 'Calculadora de Drywall',
+        desc: 'Estima materiales para paredes de drywall: láminas, canales, parales, tornillos, pasta y cinta.',
+        icon: 'Calculator'
       }
     ]
   }

@@ -6,6 +6,7 @@ import { cmsData } from '../data/cmsData.js';
 import DropCeilingCalc from './tools/DropCeilingCalc.jsx';
 import MixDesignCalculator from './tools/MixDesignCalculator.jsx';
 import MuroGravedad from './tools/MuroGravedad.jsx';
+import CalculadoraDrywall from './tools/CalculadoraDrywall.jsx';
 import { SiteConfigContext } from '../App.jsx';
 
 const iconMap = {
@@ -30,6 +31,8 @@ export default function EngineeringTools() {
         return <MuroGravedad />;
       case 'diseno-mezclas':
         return <MixDesignCalculator />;
+      case 'drywall':
+        return <CalculadoraDrywall />;
       default:
         return null;
     }
