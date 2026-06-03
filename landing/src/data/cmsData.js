@@ -314,6 +314,12 @@ export const cmsData = {
         title: 'Calculadora de Drywall',
         desc: 'Estima materiales para paredes de drywall: láminas, canales, parales, tornillos, pasta y cinta.',
         icon: 'Calculator'
+      },
+      {
+        id: 'electrica',
+        title: 'Calculadora Eléctrica',
+        desc: 'Cálculo de carga eléctrica residencial basado en NEC 2023: acometida, breaker principal y circuitos derivados.',
+        icon: 'Zap'
       }
     ]
   }

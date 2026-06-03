@@ -1,16 +1,17 @@
 import React, { useState, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Grid, Layers, Container, Calculator, ArrowLeft } from 'lucide-react';
+import { Grid, Layers, Container, Calculator, ArrowLeft, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cmsData } from '../data/cmsData.js';
 import DropCeilingCalc from './tools/DropCeilingCalc.jsx';
 import MixDesignCalculator from './tools/MixDesignCalculator.jsx';
 import MuroGravedad from './tools/MuroGravedad.jsx';
 import CalculadoraDrywall from './tools/CalculadoraDrywall.jsx';
+import CalculadoraElectrica from './tools/CalculadoraElectrica.jsx';
 import { SiteConfigContext } from '../App.jsx';
 
 const iconMap = {
-  Grid, Layers, Container, Calculator
+  Grid, Layers, Container, Calculator, Zap
 };
 
 export default function EngineeringTools() {
@@ -33,6 +34,8 @@ export default function EngineeringTools() {
         return <MixDesignCalculator />;
       case 'drywall':
         return <CalculadoraDrywall />;
+      case 'electrica':
+        return <CalculadoraElectrica />;
       default:
         return null;
     }
