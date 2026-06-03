@@ -15,7 +15,7 @@ export default function ProfilePage() {
 
   const fetchSiteConfig = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/api/v1/arko/config`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/arko/config`);
       if (response.ok) {
         const config = await response.json();
         setSiteConfig(config);
@@ -42,7 +42,7 @@ export default function ProfilePage() {
         }
       };
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/api/v1/arko/admin/config`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/arko/admin/config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

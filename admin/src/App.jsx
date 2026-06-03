@@ -24,7 +24,7 @@ function App() {
 
   const fetchSiteConfig = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/api/v1/arko/config`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/arko/config`);
       if (response.ok) {
         const siteConfig = await response.json();
         setConfig(siteConfig);
