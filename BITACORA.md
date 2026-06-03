@@ -63,10 +63,39 @@ Este documento registra el estado actual del proyecto y los pasos pendientes par
    docker-compose up -d
    ```
 
-4. **Configurar dominios:**
-   - Asegurar que arko360.net apunte a la IP del servidor
-   - Asegurar que admin.arko360.net apunte a la IP del servidor
-   - Configurar DNS en el proveedor de dominios
+4. **Configurar DNS en Namecheap:**
+   - Iniciar sesión en Namecheap
+   - Ir a Domain List > arko360.net > Manage
+   - Ir a la pestaña "Advanced DNS"
+   - Cambiar a "Custom DNS"
+   - Agregar los siguientes registros:
+
+   **Registro A para arko360.net:**
+   - Type: A Record
+   - Host: @
+   - Value: 167.172.115.154
+   - TTL: Automatic
+
+   **Registro A para www.arko360.net:**
+   - Type: A Record
+   - Host: www
+   - Value: 167.172.115.154
+   - TTL: Automatic
+
+   **Registro A para admin.arko360.net:**
+   - Type: A Record
+   - Host: admin
+   - Value: 167.172.115.154
+   - TTL: Automatic
+
+   **Registro A para api.arko360.net (opcional, para el backend):**
+   - Type: A Record
+   - Host: api
+   - Value: 167.172.115.154
+   - TTL: Automatic
+
+   - Guardar cambios
+   - Esperar propagación DNS (puede tomar de 5 minutos a 48 horas)
 
 5. **Configurar SSL (HTTPS):**
    - Instalar certbot en el servidor
