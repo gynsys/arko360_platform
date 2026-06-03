@@ -15,6 +15,13 @@ export default function AdminLayout() {
     navigate('/login')
   }
 
+  // Obtener el color primario de las variables CSS o usar el valor por defecto
+  const getPrimaryColor = () => {
+    return getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#0a4275'
+  }
+
+  const primaryColor = getPrimaryColor()
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar */}
@@ -42,6 +49,10 @@ export default function AdminLayout() {
                     ? 'bg-indigo-100 text-indigo-700'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                     }`}
+                  style={location.pathname === item.href ? {
+                    backgroundColor: `rgba(${parseInt(primaryColor.slice(1, 3), 16)}, ${parseInt(primaryColor.slice(3, 5), 16)}, ${parseInt(primaryColor.slice(5, 7), 16)}, 0.1)`,
+                    color: primaryColor
+                  } : {}}
                   onClick={() => setSidebarOpen(false)}
                 >
                   <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,6 +81,10 @@ export default function AdminLayout() {
                   ? 'bg-indigo-100 text-indigo-700'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
+                style={location.pathname === item.href ? {
+                  backgroundColor: `rgba(${parseInt(primaryColor.slice(1, 3), 16)}, ${parseInt(primaryColor.slice(3, 5), 16)}, ${parseInt(primaryColor.slice(5, 7), 16)}, 0.1)`,
+                  color: primaryColor
+                } : {}}
               >
                 <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />

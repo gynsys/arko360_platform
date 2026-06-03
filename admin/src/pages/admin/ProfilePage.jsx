@@ -1,8 +1,94 @@
-import { useState } from 'react';
-import { FiUpload, FiUser, FiSettings, FiFileText, FiGrid } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiUpload, FiUser, FiSettings, FiFileText, FiGrid, FiSave } from 'react-icons/fi';
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('identidad');
+  const [primaryColor, setPrimaryColor] = useState('#0a4275');
+  const [siteConfig, setSiteConfig] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+
+  // Cargar configuración del sitio al montar
+  useEffect(() => {
+    fetchSiteConfig();
+  }, []);
+
+  const fetchSiteConfig = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/api/v1/arko/config`);
+      if (response.ok) {
+        const config = await response.json();
+        setSiteConfig(config);
+        if (config.branding?.primaryColor) {
+          setPrimaryColor(config.branding.primaryColor);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching site config:', error);
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    setIsSaving(true);
+    setSaveMessage('');
+    
+    try {
+      const token = localStorage.getItem('arko_token');
+      const configData = {
+        ...siteConfig,
+        branding: {
+          ...siteConfig.branding,
+          primaryColor: primaryColor
+        }
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/api/v1/arko/admin/config`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(configData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setSiteConfig(result.config);
+        setSaveMessage('Configuración guardada exitosamente');
+        // Aplicar el color dinámicamente al dashboard
+        applyThemeColor(primaryColor);
+      } else {
+        setSaveMessage('Error al guardar la configuración');
+      }
+    } catch (error) {
+      console.error('Error saving config:', error);
+      setSaveMessage('Error al guardar la configuración');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const applyThemeColor = (color) => {
+    // Aplicar el color a las variables CSS globales
+    document.documentElement.style.setProperty('--primary-color', color);
+    // También puedes guardar en localStorage para persistencia local
+    localStorage.setItem('arko_primary_color', color);
+  };
+
+  const adjustColorBrightness = (hex, percent) => {
+    // Convertir hex a rgb
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+
+    // Ajustar brillo
+    const newR = Math.max(0, Math.min(255, r + (r * percent / 100)));
+    const newG = Math.max(0, Math.min(255, g + (g * percent / 100)));
+    const newB = Math.max(0, Math.min(255, b + (b * percent / 100)));
+
+    // Convertir de vuelta a hex
+    return `#${Math.round(newR).toString(16).padStart(2, '0')}${Math.round(newG).toString(16).padStart(2, '0')}${Math.round(newB).toString(16).padStart(2, '0')}`;
+  };
 
   const tabs = [
     { id: 'identidad', label: 'Identidad', icon: FiUser },
@@ -122,11 +208,44 @@ export default function ProfilePage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Color Primario
               </label>
-              <input
-                type="color"
-                defaultValue="#0a4275"
-                className="w-full h-10 border border-gray-300 rounded-md"
-              />
+              <div className="flex items-center gap-4">
+                <input
+                  type="color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="w-20 h-10 border border-gray-300 rounded-md cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent uppercase"
+                  placeholder="#0a4275"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Este color se aplicará a todos los elementos del dashboard.</p>
+            </div>
+          </div>
+
+          {/* Botón de Guardar */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              {saveMessage && (
+                <span className={`text-sm ${saveMessage.includes('exitosamente') ? 'text-green-600' : 'text-red-600'}`}>
+                  {saveMessage}
+                </span>
+              )}
+              <button
+                onClick={handleSaveConfig}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-6 py-2 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                style={{ backgroundColor: primaryColor }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = adjustColorBrightness(primaryColor, -20)}
+                onMouseLeave={(e) => e.target.style.backgroundColor = primaryColor}
+              >
+                <FiSave className="w-4 h-4" />
+                {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
             </div>
           </div>
         </div>
