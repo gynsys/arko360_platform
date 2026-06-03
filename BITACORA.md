@@ -35,72 +35,43 @@ Este documento registra el estado actual del proyecto y los pasos pendientes par
    - Servir panel admin en admin.arko360.net
    - Proxy de API al backend
 
-### ⏳ Pendiente - Migración a DigitalOcean
+### ✅ Completado - Migración a DigitalOcean
 
-**Estado:** Configuración de Docker completada, pendiente despliegue en DigitalOcean
+**Estado:** Despliegue completado exitosamente en DigitalOcean
 
-**Pasos para desplegar en DigitalOcean:**
+**Pasos completados:**
 
-1. **Preparar el servidor:**
-   ```bash
-   # Conectar al servidor DigitalOcean
-   ssh root@167.172.115.154
+1. ✅ **Preparar el servidor:**
+   - Conectado al servidor DigitalOcean (167.172.115.154)
+   - Clonado el repositorio en /var/www/arko360_platform
 
-   # Clonar el repositorio si no existe
-   cd /var/www
-   git clone https://github.com/gynsys/arko360_platform.git
-   cd arko360_platform
-   ```
+2. ✅ **Configurar variables de entorno:**
+   - Creado `.env` en admin/ con `VITE_API_URL=https://api.arko360.net/api/v1`
+   - Creado `.env` en landing/ con `VITE_API_URL=https://api.arko360.net/api/v1`
 
-2. **Configurar variables de entorno:**
-   - Crear `.env` en admin/ con `VITE_API_URL=https://api.arko360.net/api/v1`
-   - Crear `.env` en landing/ con `VITE_API_URL=https://api.arko360.net/api/v1`
+3. ✅ **Construir y levantar contenedores:**
+   - Construido con `docker compose build`
+   - Levantado con `docker compose up -d`
+   - Contenedores corriendo:
+     - admin-frontend: puerto 3001
+     - landing-frontend: puerto 3000
+     - backend: puerto 8001
+     - nginx: puerto 8080 (no usado, se usa nginx de GynSys)
 
-3. **Construir y levantar contenedores:**
-   ```bash
-   docker-compose down
-   docker-compose build
-   docker-compose up -d
-   ```
+4. ✅ **Configurar DNS en Namecheap:**
+   - Configurados registros A para arko360.net, www.arko360.net, admin.arko360.net apuntando a 167.172.115.154
 
-4. **Configurar DNS en Namecheap:**
-   - Iniciar sesión en Namecheap
-   - Ir a Domain List > arko360.net > Manage
-   - Ir a la pestaña "Advanced DNS"
-   - Cambiar a "Custom DNS"
-   - Agregar los siguientes registros:
+5. ✅ **Configurar nginx de GynSys:**
+   - Agregadas configuraciones para arko360.net, www.arko360.net, admin.arko360.net en /etc/nginx/conf.d/arko360.conf del contenedor appgynsys-nginx-1
+   - Configurado proxy:
+     - arko360.net -> localhost:3000 (landing)
+     - admin.arko360.net -> localhost:3001 (admin)
+     - api.arko360.net -> localhost:8001 (backend)
 
-   **Registro A para arko360.net:**
-   - Type: A Record
-   - Host: @
-   - Value: 167.172.115.154
-   - TTL: Automatic
-
-   **Registro A para www.arko360.net:**
-   - Type: A Record
-   - Host: www
-   - Value: 167.172.115.154
-   - TTL: Automatic
-
-   **Registro A para admin.arko360.net:**
-   - Type: A Record
-   - Host: admin
-   - Value: 167.172.115.154
-   - TTL: Automatic
-
-   **Registro A para api.arko360.net (opcional, para el backend):**
-   - Type: A Record
-   - Host: api
-   - Value: 167.172.115.154
-   - TTL: Automatic
-
-   - Guardar cambios
-   - Esperar propagación DNS (puede tomar de 5 minutos a 48 horas)
-
-5. **Configurar SSL (HTTPS):**
-   - Instalar certbot en el servidor
-   - Obtener certificados SSL para arko360.net y admin.arko360.net
-   - Actualizar nginx.conf para usar HTTPS
+6. ✅ **Configurar SSL (HTTPS):**
+   - Obtenidos certificados SSL con certbot para arko360.net, www.arko360.net, admin.arko360.net
+   - Actualizada configuración de nginx para usar HTTPS con redirección de HTTP a HTTPS
+   - Recargado nginx en contenedor appgynsys-nginx-1
 
 ### 📝 Próximos pasos después del despliegue
 
