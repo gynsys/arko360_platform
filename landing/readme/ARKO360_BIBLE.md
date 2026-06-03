@@ -1,13 +1,18 @@
 # La Biblia de Arko 360 🏗️
 
-Este documento registra la arquitectura, decisiones técnicas y el historial de iteraciones en la construcción del ecosistema **Arko 360** dentro de la infraestructura base de GynSys.
+Este documento registra la arquitectura, decisiones técnicas y el historial de iteraciones en la construcción del ecosistema **Arko 360** como un proyecto totalmente independiente.
 
 ## 1. Concepto y Arquitectura 🏛️
 
-**Objetivo:** Desarrollar una plataforma propia para la empresa de arquitectura e ingeniería (Arko 360) utilizando el mono-repositorio y el servidor VPS de GynSys, pero garantizando **aislamiento lógico total**.
-- **Aislamiento de Datos:** Las tablas de la base de datos de Arko (`arko_posts`, `arko_projects`, `arko_admins`) no interactúan ni se relacionan mediante llaves foráneas con el entorno médico de GynSys (clínicas, doctores, pacientes).
-- **Aislamiento de Autenticación:** GynSys utiliza su propia tabla de `doctors` y `users`. Arko 360 utiliza un JWT propio (`arko_token`) emitido y validado exclusivamente contra la tabla `arko_admins`.
-- **Aislamiento de Frontend:** Las rutas están separadas bajo `/arko-admin/` y los servicios API apuntan a `/api/v1/arko/`.
+**Objetivo:** Desarrollar una plataforma propia para la empresa de arquitectura e ingeniería (Arko 360) como un proyecto totalmente independiente con su propio dominio, repositorio e infraestructura.
+
+**Independencia Total:**
+- **Dominio Propio:** `arko360.net` (landing page) y `admin.arko360.net` (panel admin)
+- **Repositorio Independiente:** `github.com/gynsys/arko360_platform`
+- **Infraestructura Separada:** Backend en Docker en DigitalOcean (puerto 8001), base de datos PostgreSQL separada (puerto 5434)
+- **Aislamiento de Datos:** Las tablas de la base de datos de Arko (`arko_posts`, `arko_projects`, `arko_admins`) son completamente independientes.
+- **Aislamiento de Autenticación:** Arko 360 utiliza un JWT propio (`arko_token`) emitido y validado exclusivamente contra la tabla `arko_admins`.
+- **Despliegue Independiente:** Frontend desplegado en Netlify con Git push automático.
 
 ---
 
@@ -56,12 +61,20 @@ Este documento registra la arquitectura, decisiones técnicas y el historial de 
 
 ## 3. Estado Actual (Dónde Estamos) 📍
 
-1. **Calculadora:** Funcionando y conectada a la Landing Page.
-2. **Backend:** Operativo con endpoints protegidos para Arko.
-3. **Login:** Rutas (`/arko-admin/login` y `/arko-admin/dashboard`) en el router global.
+1. **Independencia Total:** Proyecto totalmente separado de GynSys con dominio propio (arko360.net) y repositorio independiente (github.com/gynsys/arko360_platform).
+2. **Landing Page:** Desplegada en Netlify (arko360.net) con diseño moderno y responsive.
+3. **Panel Admin:** Implementado y desplegado en Netlify (admin.arko360.net) con:
+   - Navegación lateral (Gestión Blog, Mi Perfil)
+   - Página de gestión de blog con lista de artículos
+   - Página de perfil con pestañas (Identidad, Apariencia, Contacto, Contenido, Módulos)
+4. **Backend:** Operativo en Docker en DigitalOcean (puerto 8001) con endpoints protegidos para Arko.
+5. **Base de Datos:** PostgreSQL separada (puerto 5434) con tablas independientes.
+6. **Autenticación:** Sistema JWT propio (`arko_token`) completamente aislado de GynSys.
 
 ## 4. Próximos Pasos (Roadmap) 🚀
 
-- [ ] **Limpieza de ArkoDashboardPage y ArkoPostEditor:** Los componentes actuales del editor de blog fueron clonados del sistema médico de GynSys. Contienen configuraciones muy pesadas relativas a Clínicas (Tenants) y URLs médicas.
+- [ ] **Conexión del Panel Admin al Backend:** Conectar las páginas del panel admin (Gestión Blog, Mi Perfil) con los endpoints del backend de Arko.
+- [ ] **CRUD de Artículos de Blog:** Implementar funcionalidad completa para crear, editar, eliminar y publicar artículos.
+- [ ] **Gestión de Perfil:** Implementar funcionalidad para actualizar la información de la empresa (logo, datos de contacto, etc.).
 - [ ] **Ajuste del Generador de IA:** Adaptar el *prompt* maestro (que originalmente generaba "Casos Clínicos Médicos") para que redacte "Proyectos de Arquitectura", "Diseño Estructural" y "Consejos de Construcción".
-- [ ] **Despliegue del Frontend:** Una vez limpio el Dashboard, realizar el `npm run build` y subir el CMS de Arko 360 al servidor.
+- [ ] **Integración de Herramientas:** Integrar la calculadora de diseño de mezclas y otras herramientas de ingeniería en el panel admin.

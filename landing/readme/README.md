@@ -1,10 +1,26 @@
 # Ingeniería Arko 360 - Landing Page
 
-Esta es la documentación oficial (Biblia de Desarrollo) para la Landing Page de **Ingeniería Arko 360**. El objetivo de este documento es proporcionar todo el contexto técnico, decisiones de arquitectura y guías de estilo para que cualquier desarrollador pueda continuar escalando o modificando el proyecto en el futuro sin romper el diseño ni el sistema de despliegue.
+Esta es la documentación oficial para la Landing Page de **Ingeniería Arko 360**. Este proyecto es parte del ecosistema **arko360_platform**, un proyecto totalmente independiente de GynSys con su propio dominio (arko360.net) y su propia infraestructura.
 
 ---
 
-## 🏗️ 1. Arquitectura y Stack Tecnológico
+## 🏗️ 1. Arquitectura General del Proyecto
+
+**arko360_platform** es un proyecto monorepositorio que contiene:
+
+- **landing/**: Frontend público (React + Vite) - Desplegado en Netlify en `arko360.net`
+- **admin/**: Panel de administración (React + Vite) - Desplegado en Netlify en `admin.arko360.net`
+- **backend/**: API REST (FastAPI) - Desplegado en Docker en DigitalOcean (puerto 8001)
+
+**Aislamiento Total:**
+- Base de datos PostgreSQL separada (puerto 5434)
+- Autenticación JWT independiente (`arko_token`)
+- Dominio propio: `arko360.net` y `admin.arko360.net`
+- Repositorio Git independiente: `github.com/gynsys/arko360_platform`
+
+---
+
+## 🎨 2. Stack Tecnológico de la Landing Page
 
 El proyecto está construido bajo una arquitectura moderna pero deliberadamente simple, enfocada en rendimiento y alto impacto visual:
 
@@ -14,34 +30,53 @@ El proyecto está construido bajo una arquitectura moderna pero deliberadamente 
 - **Animaciones:** Framer Motion (para entradas suaves al hacer scroll y modales)
 - **Iconografía:** Lucide React (ligeros, consistentes y vectoriales)
 - **Formularios:** React Hook Form (para validación eficiente del formulario de contacto sin re-renders innecesarios)
-- **Enrutamiento Base:** `/arko360/` (Configurado en `vite.config.js` para que los assets carguen correctamente desde el subdirectorio).
+- **Enrutamiento Base:** `/` (Configurado en `vite.config.js` - proyecto independiente)
+- **Despliegue:** Netlify (automático via Git push)
 
 ---
 
-## 📂 2. Estructura de Directorios
-
-La carpeta principal del proyecto se ubica dentro del repositorio de GynSys (`appgynsys/arko360`), pero opera de manera totalmente aislada a nivel de código fuente.
+## 📂 3. Estructura de Directorios
 
 ```text
-arko360/
-├── dist/                  # (Generado) Código compilado de producción
-├── public/                # Assets estáticos (Logo, imágenes en el futuro)
-├── src/
-│   ├── components/        # Componentes UI (Navbar, Hero, About, Portfolio, etc.)
-│   ├── hooks/             # Custom Hooks (ej. useContactForm.js para lógica de negocio)
-│   ├── services/          # Conexiones externas (ej. api.js para envíos de correo)
-│   ├── App.jsx            # Contenedor principal que ensambla la Landing
-│   ├── main.jsx           # Punto de entrada de React
-│   └── index.css          # DESIGN SYSTEM: Core de estilos y utilidades
-├── .env.example           # Variables de entorno de ejemplo
-├── package.json           # Dependencias exclusivas de Arko 360
-├── vite.config.js         # Configuración de compilación de Vite
-└── README.md              # Este archivo
+arko360_platform/
+├── landing/                # Frontend público (arko360.net)
+│   ├── dist/              # (Generado) Código compilado de producción
+│   ├── public/            # Assets estáticos (Logo, imágenes)
+│   │   └── images/        # Logo y assets de imagen
+│   ├── src/
+│   │   ├── components/    # Componentes UI (Navbar, Hero, About, Portfolio, etc.)
+│   │   ├── hooks/         # Custom Hooks (ej. useContactForm.js)
+│   │   ├── services/      # Conexiones externas (api.js para envíos de correo)
+│   │   ├── App.jsx        # Contenedor principal que ensambla la Landing
+│   │   ├── main.jsx       # Punto de entrada de React
+│   │   └── index.css      # DESIGN SYSTEM: Core de estilos y utilidades
+│   ├── netlify.toml       # Configuración de despliegue en Netlify
+│   ├── vite.config.js     # Configuración de compilación de Vite
+│   └── package.json       # Dependencias
+│
+├── admin/                  # Panel de administración (admin.arko360.net)
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── layout/    # AdminLayout, AdminHeader
+│   │   ├── pages/
+│   │   │   └── admin/     # BlogManagementPage, ProfilePage
+│   │   └── App.jsx        # Rutas del panel admin
+│   ├── netlify.toml       # Configuración de despliegue en Netlify
+│   └── package.json       # Dependencias
+│
+├── backend/                # API REST (FastAPI)
+│   ├── app/
+│   │   ├── main.py        # Punto de entrada de FastAPI
+│   │   ├── api/           # Rutas de la API
+│   │   └── models/        # Modelos de base de datos
+│   └── docker-compose.yml # Configuración de contenedores
+│
+└── docker-compose.yml      # Orquestación de contenedores (backend + db)
 ```
 
 ---
 
-## 🎨 3. Design System (`index.css`)
+## 🎨 4. Design System (`index.css`)
 
 Todo el aspecto visual se controla desde `src/index.css`. Antes de crear CSS inline o clases nuevas, se deben aprovechar las variables y utilidades ya existentes.
 
@@ -62,70 +97,91 @@ Existen clases predefinidas para agilizar el desarrollo:
 
 ---
 
-## 📱 4. Reglas del Responsive Web Design (RWD)
+## 📱 5. Reglas del Responsive Web Design (RWD)
 
 El proyecto es "Mobile-First" mentalmente, pero adaptado usando Media Queries tradicionales (`@media (max-width: 768px)`).
 Si vas a modificar componentes, ten en cuenta:
 
 1. **Flexbox/Grid:** Los contenedores principales usan `display: grid` o `display: flex; flex-wrap: wrap`.
 2. **Fuentes Fluidas:** Los tamaños de letra principales usan `clamp()` (ej. `font-size: clamp(32px, 5vw, 52px)`), por lo que se achican automáticamente sin necesidad de media queries.
-3. **Navbar:** Tiene un script que detecta si el usuario está arriba (menú transparente con logo blanco) o si ha hecho scroll (menú blanco con logo original). En móviles (`< 768px`), el logo se reduce a `70px` para no deformar la barra superior.
+3. **Navbar:** Tiene un script que detecta si el usuario está arriba (menú transparente con logo blanco) o si ha hecho scroll (menú blanco con logo original). En móviles (`< 768px`), el logo se reduce a `42px` para no deformar la barra superior.
 
 ---
 
-## 🚀 5. Flujo de Desarrollo Local
+## 🚀 6. Flujo de Desarrollo Local
 
 Si necesitas agregar una nueva sección (ej. "Preguntas Frecuentes"):
 
-1. Entra a la carpeta: `cd C:\Users\pablo\Documents\appgynsys\arko360`
+1. Entra a la carpeta: `cd C:\Users\pablo\Documents\arko360_platform\landing`
 2. Inicia el servidor de Vite: `npm run dev`
-3. Abre tu navegador en `http://localhost:5174/arko360/` (Nota: Vite respetará el path base `/arko360/`).
+3. Abre tu navegador en `http://localhost:5174/` (Nota: El path base es `/`).
 4. Crea tu nuevo componente en `src/components/FAQ.jsx`.
 5. Impórtalo en `src/App.jsx`.
 6. Añade los estilos al final de `src/index.css` (o respeta las reglas de componentes existentes).
 
 ---
 
-## 🌐 6. Proceso de Despliegue a Producción (MUY IMPORTANTE)
+## 🌐 7. Proceso de Despliegue a Producción
 
-Debido a que este proyecto reside dentro de un repositorio de React más grande (GynSys) que utiliza Netlify como hosting de *Single Page Application*, **Netlify puede entrar en conflicto** si intenta compilar ambos proyectos simultáneamente usando diferentes gestores de paquetes (NPM vs PNPM).
+**arko360_platform** es un proyecto totalmente independiente con despliegue automático en Netlify via Git push.
 
-Por ello, el despliegue de Arko 360 se realiza con una técnica de **"Build Estático Embebido"**. 
+### Despliegue de la Landing Page (arko360.net)
 
-Para actualizar el sitio en vivo, debes seguir estos pasos exactos desde la terminal de tu PC:
+Para actualizar el sitio en vivo, simplemente:
 
 ```powershell
-# 1. Ve a la carpeta de Arko 360
-cd C:\Users\pablo\Documents\appgynsys\arko360
+# 1. Ve a la carpeta de la landing page
+cd C:\Users\pablo\Documents\arko360_platform\landing
 
 # 2. Compila el código (Minifica React y CSS)
 npm run build
 
-# 3. Elimina los assets viejos que están en la carpeta pública de GynSys
-Remove-Item -Path "..\frontend\public\arko360\assets" -Recurse -Force
-
-# 4. Copia el nuevo resultado de la compilación hacia la carpeta pública de GynSys
-Copy-Item -Path "dist\*" -Destination "..\frontend\public\arko360" -Recurse -Force
-
-# 5. Ve a la raíz del repositorio, commitea y sube los cambios a GitHub
+# 3. Commitea y sube los cambios a GitHub
 cd ..
-git add frontend/public/arko360 arko360/src
-git commit -m "feat(arko360): descripción de lo que cambiaste"
+git add landing/
+git commit -m "feat(landing): descripción de lo que cambiaste"
 git push
 ```
 
-**¿Por qué funciona esto?**
-Cuando subes los archivos a GitHub, Netlify compila GynSys normalmente. Como los archivos compilados de Arko 360 ahora viven en `frontend/public/arko360`, Netlify simplemente los toma y los sube tal cual, ignorando que son una aplicación de React aparte. 
+**¿Cómo funciona?**
+- Netlify detecta automáticamente el push a GitHub
+- Lee la configuración en `landing/netlify.toml`
+- Ejecuta `npm run build` en el servidor de Netlify
+- Despliega el contenido de `landing/dist/` a `arko360.net`
 
-Además, existe una regla en `frontend/public/_redirects` que evita que el React Router de GynSys intercepte la URL `/arko360`:
-```text
-/arko360/*  /arko360/index.html  200
-/arko360    /arko360/index.html  200
+### Despliegue del Panel Admin (admin.arko360.net)
+
+El proceso es idéntico para el panel admin:
+
+```powershell
+# 1. Ve a la carpeta del panel admin
+cd C:\Users\pablo\Documents\arko360_platform\admin
+
+# 2. Compila el código
+npm run build
+
+# 3. Commitea y sube los cambios a GitHub
+cd ..
+git add admin/
+git commit -m "feat(admin): descripción de lo que cambiaste"
+git push
+```
+
+### Despliegue del Backend (DigitalOcean)
+
+El backend se despliega en contenedores Docker en DigitalOcean:
+
+```powershell
+# 1. Usa el script ssh_runner.py desde appgynsys
+cd C:\Users\pablo\Documents\appgynsys
+
+# 2. Ejecuta comandos en el servidor
+python ssh_runner.py "cd /root/arko360_platform && docker-compose pull && docker-compose up -d"
 ```
 
 ---
 
-## 📧 7. Configuración de Formularios
+## 📧 8. Configuración de Formularios
 
 El formulario de contacto (`src/components/Contact.jsx`) usa `src/hooks/useContactForm.js` para enviar datos. 
 Actualmente, las llamadas apuntan a un mock o una ruta API configurada en `api.js`. Si vas a conectarlo a un backend real (ej. SendGrid o un webhook), debes:
@@ -135,4 +191,14 @@ Actualmente, las llamadas apuntan a un mock o una ruta API configurada en `api.j
 3. Asegurarte de que la API retorne una respuesta 200 OK para que el formulario muestre la pantalla verde de "¡Mensaje Enviado!".
 
 ---
-*Documento creado el 31 de Mayo de 2026.*
+
+## 🔗 9. Enlaces Importantes
+
+- **Landing Page:** https://arko360.net
+- **Panel Admin:** https://admin.arko360.net
+- **Backend API:** https://api.arko360.net (puerto 8001)
+- **Repositorio:** https://github.com/gynsys/arko360_platform
+- **Servidor DigitalOcean:** 167.172.115.154
+
+---
+*Documento actualizado el 2 de Junio de 2026 - Proyecto arko360_platform independiente.*
