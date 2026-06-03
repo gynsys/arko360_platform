@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { cmsData } from '../data/cmsData.js';
 import DropCeilingCalc from './tools/DropCeilingCalc.jsx';
 import MixDesignCalculator from './tools/MixDesignCalculator.jsx';
+import MuroGravedad from './tools/MuroGravedad.jsx';
 import { SiteConfigContext } from '../App.jsx';
 
 const iconMap = {
@@ -26,7 +27,7 @@ export default function EngineeringTools() {
       case 'cielo-raso':
         return <DropCeilingCalc />;
       case 'muro-gravedad':
-        return <div className="text-center p-8"><p>Herramienta Muro de Gravedad en desarrollo...</p></div>;
+        return <MuroGravedad />;
       case 'diseno-mezclas':
         return <MixDesignCalculator />;
       default:
