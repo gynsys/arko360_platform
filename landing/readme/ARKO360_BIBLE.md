@@ -25,6 +25,16 @@ Este documento registra la arquitectura, decisiones técnicas y el historial de 
   - Se construyó el componente `MixDesignCalculator.jsx` en React que procesa Volumen, Resistencia ($f'_c$), Asentamiento, y Propiedades Físicas de Agregados para entregar resultados precisos en milisegundos.
   - **Estado:** ✅ Completado, testeado y subido a producción (`30249cdb`).
 
+### Iteración 5: Calculadora de Losas con Visualización SVG
+- **Desafío:** Integrar visualización SVG (retícula de apoyos y sección transversal) en los tres tipos de losas (maciza, aligerada, colaborante) y mejorar el layout para PC.
+- **Solución:**
+  - Se extrajeron las funciones `renderGrid` y `renderSeccion` del código original de `CalculadoraLosas.jsx` y se creó el módulo `visualizacion.jsx` para reutilizar la lógica de dibujo.
+  - Se integraron las funciones de visualización en `LosaColaborante.jsx`, `LosaMaciza.jsx` y `LosaLigera.jsx` con adaptación a la estructura de datos actual de cada componente.
+  - Se corrigieron errores de alcance de variables (`resultados` no definido) agregando `useMemo` para calcular resultados en cada componente.
+  - Se mejoró el layout de `LosaColaborante.jsx` para PC con diseño de dos columnas: datos a la izquierda, diagramación a la derecha.
+  - Se integró catálogo de perfiles AISC (W y C) desde `catalogoPerfiles.js` para cálculos normativos según AISC 360-16 LRFD.
+  - **Estado:** ✅ Completado y desplegado (commits `df7133a`, `71d787f`, `61c1ea1`, `5a45942`, `836d00f`).
+
 ### Iteración 2: El Modelo de Datos y el Laberinto de Alembic
 - **Desafío:** Modelar el backend de Arko (Posts y Proyectos) e inyectarlo en la base de datos PostgreSQL de producción.
 - **Incidencias (Troubleshooting Alembic):**

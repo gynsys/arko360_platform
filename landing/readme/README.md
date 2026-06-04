@@ -45,6 +45,15 @@ arko360_platform/
 │   │   └── images/        # Logo y assets de imagen
 │   ├── src/
 │   │   ├── components/    # Componentes UI (Navbar, Hero, About, Portfolio, etc.)
+│   │   │   ├── tools/     # Herramientas de ingeniería (Calculadora de Losas, etc.)
+│   │   │   │   └── calculadoraLosas/  # Calculadora de losas (maciza, aligerada, colaborante)
+│   │   │   │       ├── CalculadoraLosas.jsx  # Componente principal
+│   │   │   │       ├── LosaMaciza.jsx        # Losa maciza (ACI 318-19)
+│   │   │   │       ├── LosaLigera.jsx        # Losa aligerada (ACI 318-19)
+│   │   │   │       ├── LosaColaborante.jsx   # Losa colaborante (ACI 318-19 + AISC 360-16)
+│   │   │   │       ├── visualizacion.jsx     # Funciones de visualización SVG
+│   │   │   │       ├── catalogoPerfiles.js    # Catálogo de perfiles AISC (W, C)
+│   │   │   │       └── utilidades.js         # Funciones de cálculo compartidas
 │   │   ├── hooks/         # Custom Hooks (ej. useContactForm.js)
 │   │   ├── services/      # Conexiones externas (api.js para envíos de correo)
 │   │   ├── App.jsx        # Contenedor principal que ensambla la Landing
