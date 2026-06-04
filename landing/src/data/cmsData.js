@@ -326,6 +326,12 @@ export const cmsData = {
         title: 'Calculadora de Escaleras',
         desc: 'Diseño estructural de escaleras de concreto armado o metálicas según ACI 318-19: dimensiones, cargas y diagramas.',
         icon: 'Wrench'
+      },
+      {
+        id: 'losas',
+        title: 'Calculadora de Losas',
+        desc: 'Diseño estructural comparativo de losas macizas, aligeradas y colaborantes según ACI 318-19: retícula, momentos y costos.',
+        icon: 'Layers'
       }
     ]
   }

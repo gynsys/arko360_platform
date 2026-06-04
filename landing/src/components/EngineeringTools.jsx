@@ -9,6 +9,7 @@ import MuroGravedad from './tools/MuroGravedad.jsx';
 import CalculadoraDrywall from './tools/CalculadoraDrywall.jsx';
 import CalculadoraElectrica from './tools/CalculadoraElectrica.jsx';
 import CalculadoraEscaleras from './tools/CalculadoraEscaleras.jsx';
+import CalculadoraLosas from './tools/CalculadoraLosas.jsx';
 import { SiteConfigContext } from '../App.jsx';
 
 const iconMap = {
@@ -39,6 +40,8 @@ export default function EngineeringTools() {
         return <CalculadoraElectrica />;
       case 'escaleras':
         return <CalculadoraEscaleras />;
+      case 'losas':
+        return <CalculadoraLosas />;
       default:
         return null;
     }
