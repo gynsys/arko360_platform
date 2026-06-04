@@ -9,7 +9,7 @@ import MuroGravedad from './tools/MuroGravedad.jsx';
 import CalculadoraDrywall from './tools/CalculadoraDrywall.jsx';
 import CalculadoraElectrica from './tools/CalculadoraElectrica.jsx';
 import CalculadoraEscaleras from './tools/CalculadoraEscaleras.jsx';
-import CalculadoraLosas from './tools/CalculadoraLosas.jsx';
+import CalculadoraLosas from './tools/calculadoraLosas/CalculadoraLosas.jsx';
 import { SiteConfigContext } from '../App.jsx';
 
 const iconMap = {
