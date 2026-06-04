@@ -230,10 +230,10 @@ export default function LosaLigera({ aligeradaConfig, onConfigChange }) {
       </div>
 
       {/* SVG RETÍCULA */}
-      {renderGrid(grid, resultados, 'aligerada', null, aligeradaConfig)}
+      {grid && resultados && renderGrid(grid, { ...resultados, wu: parseFloat(resultados.wu), ratio: grid.luzX / grid.luzY, esDosDirecciones: Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY) <= 2, aligeradaData: resultados }, 'aligerada', null, aligeradaConfig)}
 
       {/* SVG SECCIÓN TRANSVERSAL */}
-      {renderSeccion(resultados, 'aligerada', null, aligeradaConfig)}
+      {resultados && renderSeccion(resultados, 'aligerada', null, aligeradaConfig)}
     </div>
   );
 }

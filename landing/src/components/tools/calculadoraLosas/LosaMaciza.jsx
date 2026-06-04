@@ -228,10 +228,10 @@ export default function LosaMaciza({ grid, datos, macizaConfig, costos, onConfig
       </div>
 
       {/* SVG RETÍCULA */}
-      {renderGrid(grid, resultados, 'maciza', null, null)}
+      {grid && resultados && renderGrid(grid, { ...resultados, wu: parseFloat(resultados.wu), ratio: grid.luzX / grid.luzY, esDosDirecciones: Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY) <= 2 }, 'maciza', null, null)}
 
       {/* SVG SECCIÓN TRANSVERSAL */}
-      {renderSeccion(resultados, 'maciza', null, null)}
+      {resultados && renderSeccion(resultados, 'maciza', null, null)}
     </div>
   );
 }
