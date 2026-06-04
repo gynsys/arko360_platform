@@ -320,6 +320,12 @@ export const cmsData = {
         title: 'Calculadora Eléctrica',
         desc: 'Cálculo de carga eléctrica residencial basado en NEC 2023: acometida, breaker principal y circuitos derivados.',
         icon: 'Zap'
+      },
+      {
+        id: 'escaleras',
+        title: 'Calculadora de Escaleras',
+        desc: 'Diseño estructural de escaleras de concreto armado o metálicas según ACI 318-19: dimensiones, cargas y diagramas.',
+        icon: 'Stairs'
       }
     ]
   }
