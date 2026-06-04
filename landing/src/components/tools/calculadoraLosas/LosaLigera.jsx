@@ -1,5 +1,6 @@
 import React from 'react';
 import { calcBarraYSep, calcFlexion, calcCortante } from './utilidades';
+import { renderGrid, renderSeccion } from './visualizacion';
 
 export function calcularLosaLigera(grid, datos, aligeradaConfig, costos) {
   const { filas, cols, luzX, luzY } = grid;
@@ -227,6 +228,12 @@ export default function LosaLigera({ aligeradaConfig, onConfigChange }) {
           </select>
         </div>
       </div>
+
+      {/* SVG RETÍCULA */}
+      {renderGrid(grid, resultados, 'aligerada', null, aligeradaConfig)}
+
+      {/* SVG SECCIÓN TRANSVERSAL */}
+      {renderSeccion(resultados, 'aligerada', null, aligeradaConfig)}
     </div>
   );
 }

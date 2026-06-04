@@ -1,5 +1,6 @@
 import React from 'react';
 import { AREAS_BARRA, calcBarraYSep, calcFlexion, calcCortante, calcDeflexion } from './utilidades';
+import { renderGrid, renderSeccion } from './visualizacion';
 
 export function calcularLosaMaciza(grid, datos, macizaConfig, costos) {
   const { filas, cols, luzX, luzY } = grid;
@@ -225,6 +226,12 @@ export default function LosaMaciza({ grid, datos, macizaConfig, costos, onConfig
           </select>
         </div>
       </div>
+
+      {/* SVG RETÍCULA */}
+      {renderGrid(grid, resultados, 'maciza', null, null)}
+
+      {/* SVG SECCIÓN TRANSVERSAL */}
+      {renderSeccion(resultados, 'maciza', null, null)}
     </div>
   );
 }
