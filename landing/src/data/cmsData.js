@@ -325,7 +325,7 @@ export const cmsData = {
         id: 'escaleras',
         title: 'Calculadora de Escaleras',
         desc: 'Diseño estructural de escaleras de concreto armado o metálicas según ACI 318-19: dimensiones, cargas y diagramas.',
-        icon: 'Stairs'
+        icon: 'Wrench'
       }
     ]
   }

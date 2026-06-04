@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Grid, Layers, Container, Calculator, ArrowLeft, Zap, Stairs } from 'lucide-react';
+import { Grid, Layers, Container, Calculator, ArrowLeft, Zap, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cmsData } from '../data/cmsData.js';
 import DropCeilingCalc from './tools/DropCeilingCalc.jsx';
@@ -12,7 +12,7 @@ import CalculadoraEscaleras from './tools/CalculadoraEscaleras.jsx';
 import { SiteConfigContext } from '../App.jsx';
 
 const iconMap = {
-  Grid, Layers, Container, Calculator, Zap, Stairs
+  Grid, Layers, Container, Calculator, Zap, Wrench
 };
 
 export default function EngineeringTools() {
