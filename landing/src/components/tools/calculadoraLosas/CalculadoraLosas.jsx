@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { calcularLosaMaciza } from './LosaMaciza';
 import { calcularLosaLigera } from './LosaLigera';
-import { calcularLosaColaborante } from './LosaColaborante';
+import { calcularLosaColaboranteNormativo } from './LosaColaborante';
 import LosaMaciza from './LosaMaciza';
 import LosaLigera from './LosaLigera';
 import LosaColaborante from './LosaColaborante';
@@ -119,7 +119,7 @@ const CalculadoraLosas = () => {
     } else if (losaActiva === 'aligerada') {
       resultado = { ...resultado, ...calcularLosaLigera(grid, datos, aligeradaConfig, costos) };
     } else {
-      resultado = { ...resultado, ...calcularLosaColaborante(grid, datos, steelDeckConfig, costos) };
+      resultado = { ...resultado, ...calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, costos) };
     }
 
     return resultado;
