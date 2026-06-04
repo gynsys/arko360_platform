@@ -423,7 +423,7 @@ const CalculadoraEscaleras = () => {
             padding-bottom: 15px;
             border-bottom: 2px solid #3498db;
           }
-          .logo-svg { width: 180px; height: 60px; }
+          .logo-img { width: 180px; height: auto; }
           .status-ok { color: #27ae60; font-weight: bold; }
           .status-fail { color: #e74c3c; font-weight: bold; }
           .total {
@@ -471,20 +471,7 @@ const CalculadoraEscaleras = () => {
         <div class="content">
           <div class="header">
             <div>
-              <svg class="logo-svg" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style="stop-color:#27ae60"/>
-                    <stop offset="100%" style="stop-color:#2ecc71"/>
-                  </linearGradient>
-                </defs>
-                <polygon points="15,25 50,8 85,25 50,42" fill="url(#logoGrad)"/>
-                <polygon points="15,25 50,42 50,78 15,61" fill="#1e8449"/>
-                <polygon points="50,42 85,25 85,61 50,78" fill="#2ecc71" opacity="0.7"/>
-                <text x="100" y="45" font-family="Arial Black, sans-serif" font-size="32" font-weight="900" fill="#2c3e50" letter-spacing="2">ARKO</text>
-                <text x="230" y="45" font-family="Arial Black, sans-serif" font-size="32" font-weight="900" fill="#27ae60" letter-spacing="2">360</text>
-                <text x="100" y="68" font-family="Arial, sans-serif" font-size="11" fill="#7f8c8d" letter-spacing="4">RECORRIDOS VIRTUALES</text>
-              </svg>
+              <img class="logo-img" src="/images/logo_aeko360.png" alt="Arko 360" />
             </div>
             <div style="text-align:right;">
               <div style="font-size:18px;font-weight:bold;color:#2c3e50;">Memoria de Cálculo</div>
