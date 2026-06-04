@@ -1227,7 +1227,7 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
       )}
 
       {/* SVG RETÍCULA */}
-      {grid && resultados && renderGrid(grid, { ...resultados, wu: parseFloat(resultados.wu), ratio: grid.luzX / grid.luzY, esDosDirecciones: Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY) <= 2 }, 'colaborante', steelDeckConfig, null)}
+      {grid && resultados && steelDeckConfig && renderGrid(grid, { ...resultados, wu: parseFloat(resultados.wu), ratio: grid.luzX / grid.luzY, esDosDirecciones: Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY) <= 2 }, 'colaborante', steelDeckConfig, null)}
 
       {/* SVG SECCIÓN TRANSVERSAL */}
       {resultados && renderSeccion(resultados, 'colaborante', steelDeckConfig, null)}
