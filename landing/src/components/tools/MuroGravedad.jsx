@@ -389,22 +389,16 @@ const MuroGravedad = () => {
             <g transform={`translate(0, ${oy + 110})`}>
               <text x={toeX} y={-15} fill="#555" fontSize="12" fontWeight="bold">Presiones en la base (kg/m²):</text>
 
-              {/* Escala de presiones */}
-              const qMaxVal = Math.max(0, calc.esfuerzoMax);
-              const qMinVal = Math.max(0, calc.esfuerzoMin);
-              const maxQ = Math.max(qMaxVal, qMinVal, 1);
-              const qScale = 40 / maxQ;
-
               <line x1={toeX} y1={0} x2={heelX} y2={0} stroke="#555" strokeWidth="1" />
-              <line x1={toeX} y1={0} x2={toeX} y2={-qMinVal * qScale} stroke="#e74c3c" strokeWidth="2" />
-              <line x1={heelX} y1={0} x2={heelX} y2={-qMaxVal * qScale} stroke="#e74c3c" strokeWidth="2" />
-              <line x1={toeX} y1={-qMinVal * qScale} x2={heelX} y2={-qMaxVal * qScale} stroke="#e74c3c" strokeWidth="2" />
+              <line x1={toeX} y1={0} x2={toeX} y2={-Math.max(0, calc.esfuerzoMin) * (40 / Math.max(Math.max(0, calc.esfuerzoMax), Math.max(0, calc.esfuerzoMin), 1))} stroke="#e74c3c" strokeWidth="2" />
+              <line x1={heelX} y1={0} x2={heelX} y2={-Math.max(0, calc.esfuerzoMax) * (40 / Math.max(Math.max(0, calc.esfuerzoMax), Math.max(0, calc.esfuerzoMin), 1))} stroke="#e74c3c" strokeWidth="2" />
+              <line x1={toeX} y1={-Math.max(0, calc.esfuerzoMin) * (40 / Math.max(Math.max(0, calc.esfuerzoMax), Math.max(0, calc.esfuerzoMin), 1))} x2={heelX} y2={-Math.max(0, calc.esfuerzoMax) * (40 / Math.max(Math.max(0, calc.esfuerzoMax), Math.max(0, calc.esfuerzoMin), 1))} stroke="#e74c3c" strokeWidth="2" />
               <polygon
-                points={`${toeX},0 ${toeX},${-qMinVal * qScale} ${heelX},${-qMaxVal * qScale} ${heelX},0`}
+                points={`${toeX},0 ${toeX},${-Math.max(0, calc.esfuerzoMin) * (40 / Math.max(Math.max(0, calc.esfuerzoMax), Math.max(0, calc.esfuerzoMin), 1))} ${heelX},${-Math.max(0, calc.esfuerzoMax) * (40 / Math.max(Math.max(0, calc.esfuerzoMax), Math.max(0, calc.esfuerzoMin), 1))} ${heelX},0`}
                 fill="rgba(231, 76, 60, 0.12)"
               />
-              <text x={toeX - 5} y={-qMinVal * qScale - 6} fill="#e74c3c" fontSize="10" textAnchor="end">{fmt(calc.esfuerzoMin)}</text>
-              <text x={heelX + 5} y={-qMaxVal * qScale - 6} fill="#e74c3c" fontSize="10">{fmt(calc.esfuerzoMax)}</text>
+              <text x={toeX - 5} y={-Math.max(0, calc.esfuerzoMin) * (40 / Math.max(Math.max(0, calc.esfuerzoMax), Math.max(0, calc.esfuerzoMin), 1)) - 6} fill="#e74c3c" fontSize="10" textAnchor="end">{fmt(calc.esfuerzoMin)}</text>
+              <text x={heelX + 5} y={-Math.max(0, calc.esfuerzoMax) * (40 / Math.max(Math.max(0, calc.esfuerzoMax), Math.max(0, calc.esfuerzoMin), 1)) - 6} fill="#e74c3c" fontSize="10">{fmt(calc.esfuerzoMax)}</text>
             </g>
 
             {/* ==================== LEYENDA (esquina superior derecha) ==================== */}
