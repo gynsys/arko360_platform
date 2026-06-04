@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { CATALOGO_PERFILES } from './catalogoPerfiles';
+import { renderGrid, renderSeccion } from './visualizacion';
 
 // =============================================================================
 // CATÁLOGO AISC 360-16 – Importado desde catalogoPerfiles.js
@@ -1224,6 +1225,12 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
           )}
         </div>
       )}
+
+      {/* SVG RETÍCULA */}
+      {renderGrid(grid, resultados, 'colaborante', steelDeckConfig, null)}
+
+      {/* SVG SECCIÓN TRANSVERSAL */}
+      {renderSeccion(resultados, 'colaborante', steelDeckConfig, null)}
 
       {/* ADVERTENCIA */}
       <div style={styles.alert}>
