@@ -322,10 +322,10 @@ const CalculadoraLosas = () => {
       <div style={styles.panel}>
         <h3 style={styles.sectionTitle('#9b59b6')}>3. Configuración {losaActiva === 'maciza' ? 'Losa Maciza' : losaActiva === 'aligerada' ? 'Losa Aligerada' : 'Losa Colaborante'}</h3>
         {losaActiva === 'maciza' && (
-          <LosaMaciza macizaConfig={macizaConfig} onConfigChange={handleMaciza} />
+          <LosaMaciza grid={grid} datos={datos} macizaConfig={macizaConfig} costos={costos} onConfigChange={handleMaciza} />
         )}
         {losaActiva === 'aligerada' && (
-          <LosaLigera aligeradaConfig={aligeradaConfig} onConfigChange={handleAligerada} />
+          <LosaLigera grid={grid} datos={datos} aligeradaConfig={aligeradaConfig} costos={costos} onConfigChange={handleAligerada} />
         )}
         {losaActiva === 'colaborante' && (
           <LosaColaborante steelDeckConfig={steelDeckConfig} onConfigChange={handleSteelDeck} />

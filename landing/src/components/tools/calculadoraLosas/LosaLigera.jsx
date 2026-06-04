@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { calcBarraYSep, calcFlexion, calcCortante } from './utilidades';
 import { renderGrid, renderSeccion } from './visualizacion';
 
@@ -147,7 +147,12 @@ export function calcularLosaLigera(grid, datos, aligeradaConfig, costos) {
   };
 }
 
-export default function LosaLigera({ aligeradaConfig, onConfigChange }) {
+export default function LosaLigera({ grid, datos, aligeradaConfig, costos, onConfigChange }) {
+  const resultados = useMemo(() => {
+    if (!grid || !datos || !costos) return null;
+    return calcularLosaLigera(grid, datos, aligeradaConfig, costos);
+  }, [grid, datos, aligeradaConfig, costos]);
+
   return (
     <div>
       <h4 style={{ marginBottom: '12px', color: '#2c3e50' }}>Configuración Losa Aligerada</h4>

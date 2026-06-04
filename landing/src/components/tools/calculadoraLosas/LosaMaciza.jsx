@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AREAS_BARRA, calcBarraYSep, calcFlexion, calcCortante, calcDeflexion } from './utilidades';
 import { renderGrid, renderSeccion } from './visualizacion';
 
@@ -153,6 +153,11 @@ export function calcularLosaMaciza(grid, datos, macizaConfig, costos) {
 }
 
 export default function LosaMaciza({ grid, datos, macizaConfig, costos, onConfigChange }) {
+  const resultados = useMemo(() => {
+    if (!grid || !datos || !costos) return null;
+    return calcularLosaMaciza(grid, datos, macizaConfig, costos);
+  }, [grid, datos, macizaConfig, costos]);
+
   return (
     <div>
       <h4 style={{ marginBottom: '12px', color: '#2c3e50' }}>Configuración Losa Maciza</h4>
