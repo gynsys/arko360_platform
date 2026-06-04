@@ -688,7 +688,8 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
   };
 
   const styles = {
-    container: { fontFamily: '"Inter", system-ui, sans-serif', maxWidth: '1100px', margin: '0 auto', padding: '24px', background: theme.bg, minHeight: '100vh' },
+    container: { fontFamily: '"Inter", system-ui, sans-serif', maxWidth: '1400px', margin: '0 auto', padding: '24px', background: theme.bg, minHeight: '100vh' },
+    mainLayout: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' },
     header: { marginBottom: '24px' },
     title: { fontSize: '22px', fontWeight: 700, color: theme.text, margin: '0 0 4px 0' },
     subtitle: { fontSize: '13px', color: theme.textMuted, margin: 0 },
@@ -782,8 +783,11 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
         <p style={styles.subtitle}>Pre-dimensionamiento normativo ACI 318-19 · AISC 360-16 LRFD · Fatiga · Optimización</p>
       </div>
 
-      {/* CONFIGURACIÓN */}
-      <div style={styles.card}>
+      <div style={styles.mainLayout}>
+        {/* PANEL IZQUIERDO: CONFIGURACIÓN Y RESULTADOS */}
+        <div>
+          {/* CONFIGURACIÓN */}
+          <div style={styles.card}>
         <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 700, color: theme.text }}>⚙️ Configuración</h3>
         <div style={styles.grid4}>
           {[
@@ -1225,16 +1229,21 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
           )}
         </div>
       )}
+        </div>
 
-      {/* SVG RETÍCULA */}
-      {grid && resultados && steelDeckConfig && renderGrid(grid, { ...resultados, wu: parseFloat(resultados.wu), ratio: grid.luzX / grid.luzY, esDosDirecciones: Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY) <= 2 }, 'colaborante', steelDeckConfig, null)}
+        {/* PANEL DERECHO: VISUALIZACIÓN */}
+        <div>
+          {/* SVG RETÍCULA */}
+          {grid && resultados && steelDeckConfig && renderGrid(grid, { ...resultados, wu: parseFloat(resultados.wu), ratio: grid.luzX / grid.luzY, esDosDirecciones: Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY) <= 2 }, 'colaborante', steelDeckConfig, null)}
 
-      {/* SVG SECCIÓN TRANSVERSAL */}
-      {resultados && renderSeccion(resultados, 'colaborante', steelDeckConfig, null)}
+          {/* SVG SECCIÓN TRANSVERSAL */}
+          {resultados && renderSeccion(resultados, 'colaborante', steelDeckConfig, null)}
 
-      {/* ADVERTENCIA */}
-      <div style={styles.alert}>
-        <strong>⚠️ Advertencia Normativa:</strong> Esta herramienta realiza verificaciones de pre-dimensionamiento basadas en ACI 318-19 y AISC 360-16 (LRFD). Incluye: método de la transformada para sección compuesta, factor de reducción R de conectores (AISC I3.2d), pandeo lateral-torsional con arriostramiento (AISC Cap. F / App. 6), cortante del concreto y punzonamiento (ACI 318), deflexiones en servicio, vibración y fatiga de conectores (AISC App. 3). <strong>No sustituye el diseño estructural detallado</strong> ni la supervisión de un ingeniero estructural calificado.
+          {/* ADVERTENCIA */}
+          <div style={styles.alert}>
+            <strong>⚠️ Advertencia Normativa:</strong> Esta herramienta realiza verificaciones de pre-dimensionamiento basadas en ACI 318-19 y AISC 360-16 (LRFD). Incluye: método de la transformada para sección compuesta, factor de reducción R de conectores (AISC I3.2d), pandeo lateral-torsional con arriostramiento (AISC Cap. F / App. 6), cortante del concreto y punzonamiento (ACI 318), deflexiones en servicio, vibración y fatiga de conectores (AISC App. 3). <strong>No sustituye el diseño estructural detallado</strong> ni la supervisión de un ingeniero estructural calificado.
+          </div>
+        </div>
       </div>
     </div>
   );
