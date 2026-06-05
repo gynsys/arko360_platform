@@ -299,7 +299,7 @@ const CalculadoraLosas = () => {
 
           {/* Columna derecha: Visualización SVG */}
           <div>
-            {grid && renderGrid(grid, { ...calc, wu: calc.wu, ratio: calc.ratio, esDosDirecciones: calc.esDosDirecciones }, 'general', null, null)}
+            {grid && renderGrid(grid, { ...calc, wu: calc.wu, ratio: calc.ratio, esDosDirecciones: calc.esDosDirecciones }, losaActiva, losaActiva === 'colaborante' ? steelDeckConfig : null, losaActiva === 'aligerada' ? aligeradaConfig : null)}
           </div>
         </div>
       </div>

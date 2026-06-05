@@ -41,35 +41,43 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
     const sepPx = sepCorreas * scale;
 
     // Correas en dirección X (entre apoyos en X)
+    // Solo añadir correas si la luz es mayor que 2 veces la separación
     for (let r = 0; r < filas; r++) {
-      const numCorreas = Math.max(Math.ceil((luzY * nTramosY) / sepCorreas) - 1, 0);
-      for (let k = 1; k <= numCorreas; k++) {
-        const y = oy + k * sepPx;
-        if (y < oy + nTramosY * luzY * scale) {
-          correasElements.push(
-            <line key={`cx-${r}-${k}`}
-              x1={ox + r * luzY * scale * 0} y1={y}
-              x2={ox + nTramosX * luzX * scale} y2={y}
-              stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
-            />
-          );
+      const luzTramoY = luzY * nTramosY;
+      if (luzTramoY > 2 * sepCorreas) {
+        const numCorreas = Math.max(Math.ceil(luzTramoY / sepCorreas) - 1, 0);
+        for (let k = 1; k <= numCorreas; k++) {
+          const y = oy + k * sepPx;
+          if (y < oy + nTramosY * luzY * scale) {
+            correasElements.push(
+              <line key={`cx-${r}-${k}`}
+                x1={ox} y1={y}
+                x2={ox + nTramosX * luzX * scale} y2={y}
+                stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
+              />
+            );
+          }
         }
       }
     }
 
     // Correas en dirección Y
+    // Solo añadir correas si la luz es mayor que 2 veces la separación
     for (let c = 0; c < cols; c++) {
-      const numCorreas = Math.max(Math.ceil((luzX * nTramosX) / sepCorreas) - 1, 0);
-      for (let k = 1; k <= numCorreas; k++) {
-        const x = ox + k * sepPx;
-        if (x < ox + nTramosX * luzX * scale) {
-          correasElements.push(
-            <line key={`cy-${c}-${k}`}
-              x1={x} y1={oy}
-              x2={x} y2={oy + nTramosY * luzY * scale}
-              stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
-            />
-          );
+      const luzTramoX = luzX * nTramosX;
+      if (luzTramoX > 2 * sepCorreas) {
+        const numCorreas = Math.max(Math.ceil(luzTramoX / sepCorreas) - 1, 0);
+        for (let k = 1; k <= numCorreas; k++) {
+          const x = ox + k * sepPx;
+          if (x < ox + nTramosX * luzX * scale) {
+            correasElements.push(
+              <line key={`cy-${c}-${k}`}
+                x1={x} y1={oy}
+                x2={x} y2={oy + nTramosY * luzY * scale}
+                stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
+              />
+            );
+          }
         }
       }
     }

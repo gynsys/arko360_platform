@@ -1233,9 +1233,6 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
 
         {/* PANEL DERECHO: VISUALIZACIÓN */}
         <div>
-          {/* SVG RETÍCULA */}
-          {grid && resultados && steelDeckConfig && renderGrid(grid, { ...resultados, wu: parseFloat(resultados.wu), ratio: grid.luzX / grid.luzY, esDosDirecciones: Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY) <= 2 }, 'colaborante', steelDeckConfig, null)}
-
           {/* SVG SECCIÓN TRANSVERSAL */}
           {resultados && renderSeccion(resultados, 'colaborante', steelDeckConfig, null)}
 
