@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AdminLayout from './components/layout/AdminLayout.jsx';
 import BlogManagementPage from './pages/admin/BlogManagementPage.jsx';
 import ProfilePage from './pages/admin/ProfilePage.jsx';
+import { API_URL } from './services/api';
 
 export const SiteConfigContext = React.createContext(null);
 
@@ -24,7 +25,7 @@ function App() {
 
   const fetchSiteConfig = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1'}/arko/config`);
+      const response = await fetch(`${API_URL}/arko/config`);
       if (response.ok) {
         const siteConfig = await response.json();
         setConfig(siteConfig);

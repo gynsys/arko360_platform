@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_URL } from '../../services/api';
 import { 
   FiUpload, FiUser, FiSettings, FiFileText, FiGrid, FiSave, 
   FiPlus, FiTrash2, FiEdit, FiCheck, FiX, FiChevronDown, FiChevronUp, 
@@ -25,7 +26,7 @@ export default function ProfilePage() {
 
   const fetchSiteConfig = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1'}/arko/config`);
+      const response = await fetch(`${API_URL}/arko/config`);
       if (response.ok) {
         const config = await response.json();
         setSiteConfig(config);
@@ -40,8 +41,8 @@ export default function ProfilePage() {
     setSaveMessage('');
     
     try {
-      const token = localStorage.getItem('arko_token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1'}/arko/admin/config`, {
+      const token = localStorage.getItem('arko_admin_token');
+      const response = await fetch(`${API_URL}/arko/admin/config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -100,8 +101,8 @@ export default function ProfilePage() {
     formData.append('file', file);
     
     try {
-      const token = localStorage.getItem('arko_token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1'}/arko/admin/upload`, {
+      const token = localStorage.getItem('arko_admin_token');
+      const response = await fetch(`${API_URL}/arko/admin/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -1033,8 +1034,8 @@ export default function ProfilePage() {
                             const formData = new FormData();
                             formData.append('file', file);
                             try {
-                              const token = localStorage.getItem('arko_token');
-                              const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1'}/arko/admin/upload`, {
+                              const token = localStorage.getItem('arko_admin_token');
+                              const response = await fetch(`${API_URL}/arko/admin/upload`, {
                                 method: 'POST',
                                 headers: { 'Authorization': `Bearer ${token}` },
                                 body: formData
