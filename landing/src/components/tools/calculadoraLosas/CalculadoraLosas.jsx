@@ -328,7 +328,7 @@ const CalculadoraLosas = () => {
           <LosaLigera grid={grid} datos={datos} aligeradaConfig={aligeradaConfig} costos={costos} onConfigChange={handleAligerada} />
         )}
         {losaActiva === 'colaborante' && (
-          <LosaColaborante steelDeckConfig={steelDeckConfig} onConfigChange={handleSteelDeck} />
+          <LosaColaborante grid={grid} datos={datos} steelDeckConfig={steelDeckConfig} costos={costos} onConfigChange={handleSteelDeck} />
         )}
       </div>
 
