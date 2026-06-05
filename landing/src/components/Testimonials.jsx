@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { MessageSquareQuote, Star } from 'lucide-react';
 import { cmsData } from '../data/cmsData.js';
 import { SiteConfigContext } from '../App.jsx';
-import { renderTitle } from '../lib/utils.js';
+import { renderTitle } from '../lib/utils';
 
 export default function Testimonials() {
   const config = useContext(SiteConfigContext);

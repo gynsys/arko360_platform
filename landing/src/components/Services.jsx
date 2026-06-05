@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Settings, Building2, Hammer, Ruler, HardHat, Wrench, PenTool } from 'lucide-react';
 import { cmsData } from '../data/cmsData.js';
 import { SiteConfigContext } from '../App.jsx';
-import { renderTitle } from '../lib/utils.js';
+import { renderTitle } from '../lib/utils';
 
 const iconMap = {
   Building2, Hammer, Ruler, HardHat, Wrench, PenTool, Settings

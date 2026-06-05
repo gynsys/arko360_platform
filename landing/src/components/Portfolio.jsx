@@ -4,7 +4,7 @@ import { ZoomIn, FolderOpen } from 'lucide-react';
 import ProjectModal from './ProjectModal.jsx';
 import { cmsData } from '../data/cmsData.js';
 import { SiteConfigContext } from '../App.jsx';
-import { renderTitle } from '../lib/utils.js';
+import { renderTitle } from '../lib/utils';
 
 export default function Portfolio() {
   const config = useContext(SiteConfigContext);
