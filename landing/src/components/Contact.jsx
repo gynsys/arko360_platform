@@ -8,9 +8,9 @@ const DEFAULT_WHATSAPP = import.meta.env.VITE_WHATSAPP_NUMBER || '+58XXXXXXXXXX'
 
 export default function Contact() {
   const config = useContext(SiteConfigContext);
-  const WHATSAPP = config?.contactPhone || DEFAULT_WHATSAPP;
-  const email = config?.contactEmail || 'proyectos@arko360.com';
-  const address = config?.address || 'Caracas, Venezuela';
+  const WHATSAPP = config?.global?.whatsapp || config?.global?.phone || DEFAULT_WHATSAPP;
+  const email = config?.global?.email || 'proyectos@arko360.com';
+  const address = config?.global?.location || 'Caracas, Venezuela';
 
   const { register, handleSubmit, errors, status, errorMessage, resetForm, isLoading, isSuccess, isError } = useContactForm();
 

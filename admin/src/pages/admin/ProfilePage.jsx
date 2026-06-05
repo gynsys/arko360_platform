@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
-import { FiUpload, FiUser, FiSettings, FiFileText, FiGrid, FiSave } from 'react-icons/fi';
+import { 
+  FiUpload, FiUser, FiSettings, FiFileText, FiGrid, FiSave, 
+  FiPlus, FiTrash2, FiEdit, FiCheck, FiX, FiChevronDown, FiChevronUp, 
+  FiLink, FiPhone, FiMail, FiMapPin, FiMessageSquare, FiStar 
+} from 'react-icons/fi';
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('identidad');
-  const [primaryColor, setPrimaryColor] = useState('#0a4275');
-  const [siteConfig, setSiteConfig] = useState({});
+  const [activeContentSection, setActiveContentSection] = useState('hero');
+  const [siteConfig, setSiteConfig] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  
+  // Estados para CRUD de sub-elementos
+  const [showCrudModal, setShowCrudModal] = useState(false);
+  const [crudType, setCrudType] = useState(''); // 'service' | 'step' | 'testimonial'
+  const [crudIndex, setCrudIndex] = useState(-1); // -1 para nuevo
+  const [crudData, setCrudData] = useState({});
 
   // Cargar configuración del sitio al montar
   useEffect(() => {
@@ -15,13 +25,10 @@ export default function ProfilePage() {
 
   const fetchSiteConfig = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/arko/config`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1'}/arko/config`);
       if (response.ok) {
         const config = await response.json();
         setSiteConfig(config);
-        if (config.branding?.primaryColor) {
-          setPrimaryColor(config.branding.primaryColor);
-        }
       }
     } catch (error) {
       console.error('Error fetching site config:', error);
@@ -34,29 +41,25 @@ export default function ProfilePage() {
     
     try {
       const token = localStorage.getItem('arko_token');
-      const configData = {
-        ...siteConfig,
-        branding: {
-          ...siteConfig.branding,
-          primaryColor: primaryColor
-        }
-      };
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/arko/admin/config`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1'}/arko/admin/config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(configData)
+        body: JSON.stringify(siteConfig)
       });
 
       if (response.ok) {
         const result = await response.json();
-        setSiteConfig(result.config);
+        setSiteConfig(result.config || siteConfig);
         setSaveMessage('Configuración guardada exitosamente');
-        // Aplicar el color dinámicamente al dashboard
-        applyThemeColor(primaryColor);
+        
+        // Aplicar el color dinámicamente si cambió
+        if (siteConfig.branding?.primaryColor) {
+          document.documentElement.style.setProperty('--primary-color', siteConfig.branding.primaryColor);
+          localStorage.setItem('arko_primary_color', siteConfig.branding.primaryColor);
+        }
       } else {
         setSaveMessage('Error al guardar la configuración');
       }
@@ -65,59 +68,185 @@ export default function ProfilePage() {
       setSaveMessage('Error al guardar la configuración');
     } finally {
       setIsSaving(false);
+      setTimeout(() => setSaveMessage(''), 4000);
     }
   };
 
-  const applyThemeColor = (color) => {
-    // Aplicar el color a las variables CSS globales
-    document.documentElement.style.setProperty('--primary-color', color);
-    // También puedes guardar en localStorage para persistencia local
-    localStorage.setItem('arko_primary_color', color);
+  // Helper para actualizar valores anidados en el estado
+  const updateConfigValue = (path, value) => {
+    setSiteConfig(prev => {
+      if (!prev) return prev;
+      const copy = { ...prev };
+      const parts = path.split('.');
+      let current = copy;
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (!current[parts[i]]) {
+          current[parts[i]] = {};
+        }
+        current[parts[i]] = { ...current[parts[i]] };
+        current = current[parts[i]];
+      }
+      current[parts[parts.length - 1]] = value;
+      return copy;
+    });
   };
 
-  const adjustColorBrightness = (hex, percent) => {
-    // Convertir hex a rgb
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-
-    // Ajustar brillo
-    const newR = Math.max(0, Math.min(255, r + (r * percent / 100)));
-    const newG = Math.max(0, Math.min(255, g + (g * percent / 100)));
-    const newB = Math.max(0, Math.min(255, b + (b * percent / 100)));
-
-    // Convertir de vuelta a hex
-    return `#${Math.round(newR).toString(16).padStart(2, '0')}${Math.round(newG).toString(16).padStart(2, '0')}${Math.round(newB).toString(16).padStart(2, '0')}`;
+  // Manejar subida de archivos/imágenes
+  const handleImageUpload = async (e, path) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const token = localStorage.getItem('arko_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1'}/arko/admin/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        updateConfigValue(path, data.image_url);
+      } else {
+        alert('Error al subir la imagen');
+      }
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      alert('Error al subir la imagen');
+    }
   };
+
+  // Abrir Modal CRUD
+  const openCrudModal = (type, index = -1) => {
+    setCrudType(type);
+    setCrudIndex(index);
+    setShowCrudModal(true);
+    
+    if (type === 'service') {
+      const currentList = siteConfig.services?.list || [];
+      setCrudData(index >= 0 ? { ...currentList[index] } : { id: `srv-${Date.now()}`, icon: 'Building2', title: '', desc: '' });
+    } else if (type === 'step') {
+      const currentList = siteConfig.process?.steps || [];
+      setCrudData(index >= 0 ? { ...currentList[index] } : { id: `prc-${Date.now()}`, icon: 'Settings', title: '', desc: '' });
+    } else if (type === 'testimonial') {
+      const currentList = siteConfig.testimonials?.list || [];
+      setCrudData(index >= 0 ? { ...currentList[index] } : { id: `tst-${Date.now()}`, text: '', name: '', role: '', avatar: '', stars: 5 });
+    }
+  };
+
+  // Guardar elemento del CRUD (Servicio, Testimonio o Paso de Proceso)
+  const saveCrudItem = () => {
+    if (crudType === 'service') {
+      const currentList = [...(siteConfig.services?.list || [])];
+      if (crudIndex >= 0) {
+        currentList[crudIndex] = crudData;
+      } else {
+        currentList.push(crudData);
+      }
+      updateConfigValue('services.list', currentList);
+    } else if (crudType === 'step') {
+      const currentList = [...(siteConfig.process?.steps || [])];
+      if (crudIndex >= 0) {
+        currentList[crudIndex] = crudData;
+      } else {
+        currentList.push(crudData);
+      }
+      updateConfigValue('process.steps', currentList);
+    } else if (crudType === 'testimonial') {
+      const currentList = [...(siteConfig.testimonials?.list || [])];
+      if (crudIndex >= 0) {
+        currentList[crudIndex] = crudData;
+      } else {
+        currentList.push(crudData);
+      }
+      updateConfigValue('testimonials.list', currentList);
+    }
+    setShowCrudModal(false);
+  };
+
+  // Eliminar elemento de una lista
+  const deleteCrudItem = (type, index) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este elemento?')) return;
+
+    if (type === 'service') {
+      const currentList = [...(siteConfig.services?.list || [])];
+      currentList.splice(index, 1);
+      updateConfigValue('services.list', currentList);
+    } else if (type === 'step') {
+      const currentList = [...(siteConfig.process?.steps || [])];
+      currentList.splice(index, 1);
+      updateConfigValue('process.steps', currentList);
+    } else if (type === 'testimonial') {
+      const currentList = [...(siteConfig.testimonials?.list || [])];
+      currentList.splice(index, 1);
+      updateConfigValue('testimonials.list', currentList);
+    }
+  };
+
+  if (!siteConfig) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+        <span className="ml-3 text-gray-600">Cargando configuración...</span>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: 'identidad', label: 'Identidad', icon: FiUser },
     { id: 'apariencia', label: 'Apariencia', icon: FiSettings },
     { id: 'contacto', label: 'Contacto', icon: FiFileText },
-    { id: 'contenido', label: 'Contenido', icon: FiGrid },
-    { id: 'modulos', label: 'Módulos', icon: FiGrid },
+    { id: 'contenido', label: 'Contenido Landing', icon: FiGrid },
+    { id: 'modulos', label: 'Módulos Visibles', icon: FiGrid },
   ];
 
+  const primaryColor = siteConfig.branding?.primaryColor || '#0a4275';
+
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Mi Perfil</h1>
-        <p className="text-gray-600 mt-1">Configura la información de Arko 360</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Configuración de la Landing Page</h1>
+          <p className="text-gray-600 mt-1">Personaliza los textos, imágenes y visibilidad de las secciones de Arko 360.</p>
+        </div>
+        
+        {/* Guardar cambios flotante/fijo en el header */}
+        <div className="flex items-center gap-3">
+          {saveMessage && (
+            <span className={`text-sm py-1 px-3 rounded-full ${saveMessage.includes('exitosamente') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              {saveMessage}
+            </span>
+          )}
+          <button
+            onClick={handleSaveConfig}
+            disabled={isSaving}
+            className="flex items-center gap-2 px-5 py-2.5 text-white font-semibold rounded-lg shadow transition-all hover:opacity-90 disabled:opacity-50"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <FiSave className="w-5 h-5" />
+            {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
-        <nav className="flex space-x-8">
+        <nav className="flex flex-wrap gap-2 md:space-x-8">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`flex items-center gap-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === tab.id
-                    ? 'border-indigo-500 text-indigo-600'
+                    ? 'border-indigo-600 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -130,145 +259,820 @@ export default function ProfilePage() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'identidad' && (
-        <div className="space-y-6">
-          {/* Logo Profesional */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Logo Profesional</h3>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-500 transition-colors cursor-pointer">
-              <div className="flex flex-col items-center">
-                <div className="w-24 h-24 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                  <span className="text-3xl font-bold text-indigo-600">A360</span>
+      <div className="space-y-6">
+        {/* IDENTIDAD */}
+        {activeTab === 'identidad' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-bold text-gray-950 mb-4">Branding e Identidad del Sitio</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Sitio</label>
+                  <input
+                    type="text"
+                    value={siteConfig.siteName || ''}
+                    onChange={(e) => updateConfigValue('siteName', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    placeholder="Ej. Ingeniería Arko 360"
+                  />
                 </div>
-                <FiUpload className="w-8 h-8 text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 mb-1">Arrastra y suelta tu logo aquí</p>
-                <p className="text-xs text-gray-500 mb-4">o</p>
-                <button className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm">
-                  Seleccionar desde dispositivo
-                </button>
-                <p className="text-xs text-gray-500 mt-4">JPEG, PNG, WebP (Máximo 5MB)</p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Logo URL Actual</label>
+                  <input
+                    type="text"
+                    value={siteConfig.logoUrl || ''}
+                    onChange={(e) => updateConfigValue('logoUrl', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-gray-50 text-gray-500"
+                    disabled
+                  />
+                </div>
+              </div>
+
+              {/* Subidor de Logo */}
+              <div className="mt-6 border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-indigo-500 transition-colors">
+                <div className="flex flex-col items-center">
+                  {siteConfig.logoUrl ? (
+                    <img src={siteConfig.logoUrl} alt="Logo" className="h-16 object-contain mb-4 bg-gray-50 p-2 rounded border" />
+                  ) : (
+                    <div className="w-16 h-16 bg-indigo-50 rounded-lg flex items-center justify-center mb-4">
+                      <span className="text-xl font-bold text-indigo-600">A360</span>
+                    </div>
+                  )}
+                  <p className="text-sm text-gray-600 mb-2">Sube un nuevo logo para el encabezado</p>
+                  <label className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium cursor-pointer">
+                    <FiUpload className="inline mr-2" /> Seleccionar Imagen
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, 'logoUrl')}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-xs text-gray-400 mt-2">Formatos recomendados: PNG o SVG con fondo transparente</p>
+                </div>
               </div>
             </div>
           </div>
+        )}
 
-          {/* Foto de Perfil */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Foto de Perfil</h3>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-500 transition-colors cursor-pointer">
-              <div className="flex flex-col items-center">
-                <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                  <FiUser className="w-12 h-12 text-gray-400" />
+        {/* APARIENCIA */}
+        {activeTab === 'apariencia' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-lg font-bold text-gray-950 mb-4">Colores de Marca</h3>
+            <p className="text-sm text-gray-600 mb-6">Define los colores globales para botones, acentos y textos resaltados de tu Landing Page.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-4 border border-gray-100 rounded-xl bg-gray-50">
+                <label className="block text-sm font-bold text-gray-800 mb-2">Color Primario</label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="color"
+                    value={siteConfig.branding?.primaryColor || '#0a4275'}
+                    onChange={(e) => {
+                      updateConfigValue('branding.primaryColor', e.target.value);
+                      updateConfigValue('primaryColor', e.target.value);
+                    }}
+                    className="w-14 h-14 border border-gray-200 rounded-lg cursor-pointer bg-white p-1"
+                  />
+                  <input
+                    type="text"
+                    value={siteConfig.branding?.primaryColor || '#0a4275'}
+                    onChange={(e) => {
+                      updateConfigValue('branding.primaryColor', e.target.value);
+                      updateConfigValue('primaryColor', e.target.value);
+                    }}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 uppercase outline-none"
+                    placeholder="#0a4275"
+                  />
                 </div>
-                <FiUpload className="w-8 h-8 text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 mb-1">Arrastra y suelta tu foto aquí</p>
-                <p className="text-xs text-gray-500 mb-4">o</p>
-                <button className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm">
-                  Seleccionar desde dispositivo
-                </button>
-                <p className="text-xs text-gray-500 mt-4">JPEG, PNG, WebP (Máximo 5MB)</p>
+                <p className="text-xs text-gray-500 mt-2">Se utiliza principalmente para botones destacados, banners y secciones principales.</p>
+              </div>
+
+              <div className="p-4 border border-gray-100 rounded-xl bg-gray-50">
+                <label className="block text-sm font-bold text-gray-800 mb-2">Color Secundario / Acento</label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="color"
+                    value={siteConfig.branding?.secondaryColor || '#27ae60'}
+                    onChange={(e) => {
+                      updateConfigValue('branding.secondaryColor', e.target.value);
+                      updateConfigValue('secondaryColor', e.target.value);
+                    }}
+                    className="w-14 h-14 border border-gray-200 rounded-lg cursor-pointer bg-white p-1"
+                  />
+                  <input
+                    type="text"
+                    value={siteConfig.branding?.secondaryColor || '#27ae60'}
+                    onChange={(e) => {
+                      updateConfigValue('branding.secondaryColor', e.target.value);
+                      updateConfigValue('secondaryColor', e.target.value);
+                    }}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 uppercase outline-none"
+                    placeholder="#27ae60"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Se utiliza para insignias (badges), textos destacados y efectos dinámicos.</p>
               </div>
             </div>
           </div>
+        )}
 
-          {/* Campos de Texto */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Información Básica</h3>
-            <div className="space-y-4">
+        {/* CONTACTO */}
+        {activeTab === 'contacto' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+            <h3 className="text-lg font-bold text-gray-950 mb-4">Información de Contacto y Enlaces</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre Completo
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <FiPhone /> Teléfono Público
                 </label>
                 <input
                   type="text"
-                  defaultValue="Ingeniería Arko 360"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  value={siteConfig.global?.phone || ''}
+                  onChange={(e) => updateConfigValue('global.phone', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Ej. +58 412 000 0000"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Especialidad
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <FiMail /> Correo Electrónico
+                </label>
+                <input
+                  type="email"
+                  value={siteConfig.global?.email || ''}
+                  onChange={(e) => updateConfigValue('global.email', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="proyectos@arko360.com"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <FiMapPin /> Ubicación
                 </label>
                 <input
                   type="text"
-                  defaultValue="Ingeniería y Construcción"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  value={siteConfig.global?.location || ''}
+                  onChange={(e) => updateConfigValue('global.location', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Ej. Caracas, Venezuela"
                 />
               </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {activeTab === 'apariencia' && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Configuración de Apariencia</h3>
-          <p className="text-gray-600">Configura los colores y diseño del panel.</p>
-          <div className="mt-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Color Primario
-              </label>
-              <div className="flex items-center gap-4">
-                <input
-                  type="color"
-                  value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="w-20 h-10 border border-gray-300 rounded-md cursor-pointer"
-                />
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <FiMessageSquare /> WhatsApp Link / Número
+                </label>
                 <input
                   type="text"
-                  value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent uppercase"
-                  placeholder="#0a4275"
+                  value={siteConfig.global?.whatsapp || ''}
+                  onChange={(e) => updateConfigValue('global.whatsapp', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Ej. +584120000000"
                 />
+                <span className="text-xs text-gray-400 mt-1">Escribe el número completo en formato internacional sin el signo "+"</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Este color se aplicará a todos los elementos del dashboard.</p>
+            </div>
+
+            <div className="border-t border-gray-100 pt-6">
+              <h4 className="font-bold text-gray-800 mb-4">Redes Sociales</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {['instagram', 'facebook', 'linkedin', 'twitter'].map((network) => (
+                  <div key={network}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">{network}</label>
+                    <input
+                      type="text"
+                      value={siteConfig.global?.social?.[network] || ''}
+                      onChange={(e) => updateConfigValue(`global.social.${network}`, e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="#"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+        )}
 
-          {/* Botón de Guardar */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              {saveMessage && (
-                <span className={`text-sm ${saveMessage.includes('exitosamente') ? 'text-green-600' : 'text-red-600'}`}>
-                  {saveMessage}
-                </span>
+        {/* CONTENIDO LANDING */}
+        {activeTab === 'contenido' && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Sub-Navegación Lateral */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col gap-2">
+              <span className="text-xs font-bold text-gray-400 uppercase px-3 mb-2">Secciones</span>
+              {[
+                { id: 'hero', label: '1. Inicio / Hero' },
+                { id: 'aboutUs', label: '2. Nosotros' },
+                { id: 'services', label: '3. Servicios' },
+                { id: 'process', label: '4. Metodología' },
+                { id: 'testimonials', label: '5. Testimonios' }
+              ].map((sec) => (
+                <button
+                  key={sec.id}
+                  onClick={() => setActiveContentSection(sec.id)}
+                  className={`w-full text-left py-2.5 px-3 rounded-lg text-sm font-medium transition-colors ${
+                    activeContentSection === sec.id
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {sec.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Configuración de la sección seleccionada */}
+            <div className="md:col-span-3 bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+              
+              {/* HERO */}
+              {activeContentSection === 'hero' && (
+                <div className="space-y-4">
+                  <h4 className="font-bold text-gray-900 border-b pb-2 mb-4">Sección Inicio (Hero)</h4>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Insignia (Badge)</label>
+                    <input
+                      type="text"
+                      value={siteConfig.hero?.badge || ''}
+                      onChange={(e) => updateConfigValue('hero.badge', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Título línea 1</label>
+                      <input
+                        type="text"
+                        value={siteConfig.hero?.titleLine1 || ''}
+                        onChange={(e) => updateConfigValue('hero.titleLine1', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Texto Destacado (Verde)</label>
+                      <input
+                        type="text"
+                        value={siteConfig.hero?.titleAccent || ''}
+                        onChange={(e) => updateConfigValue('hero.titleAccent', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Título línea 2</label>
+                      <input
+                        type="text"
+                        value={siteConfig.hero?.titleLine2 || ''}
+                        onChange={(e) => updateConfigValue('hero.titleLine2', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo / Introducción</label>
+                    <textarea
+                      rows={3}
+                      value={siteConfig.hero?.subtitle || ''}
+                      onChange={(e) => updateConfigValue('hero.subtitle', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Botón Principal</label>
+                      <input
+                        type="text"
+                        value={siteConfig.hero?.ctaPrimary || ''}
+                        onChange={(e) => updateConfigValue('hero.ctaPrimary', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Botón Secundario</label>
+                      <input
+                        type="text"
+                        value={siteConfig.hero?.ctaSecondary || ''}
+                        onChange={(e) => updateConfigValue('hero.ctaSecondary', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
               )}
+
+              {/* ABOUT US */}
+              {activeContentSection === 'aboutUs' && (
+                <div className="space-y-4">
+                  <h4 className="font-bold text-gray-900 border-b pb-2 mb-4">Sección Nosotros</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tag Superior</label>
+                      <input
+                        type="text"
+                        value={siteConfig.aboutUs?.tag || ''}
+                        onChange={(e) => updateConfigValue('aboutUs.tag', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Título de la Sección</label>
+                      <input
+                        type="text"
+                        value={siteConfig.aboutUs?.title || ''}
+                        onChange={(e) => updateConfigValue('aboutUs.title', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Primer Párrafo</label>
+                    <textarea
+                      rows={3}
+                      value={siteConfig.aboutUs?.p1 || ''}
+                      onChange={(e) => updateConfigValue('aboutUs.p1', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Segundo Párrafo</label>
+                    <textarea
+                      rows={3}
+                      value={siteConfig.aboutUs?.p2 || ''}
+                      onChange={(e) => updateConfigValue('aboutUs.p2', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  
+                  {/* Carga de Imagen Nosotros */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Imagen de la Sección</label>
+                    <div className="flex flex-col md:flex-row gap-4 items-center">
+                      <img src={siteConfig.aboutUs?.imageUrl || ''} alt="Nosotros" className="w-32 h-20 object-cover rounded border" />
+                      <label className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium cursor-pointer">
+                        <FiUpload className="inline mr-2" /> Subir Imagen
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, 'aboutUs.imageUrl')}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SERVICES */}
+              {activeContentSection === 'services' && (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-gray-900 border-b pb-2 mb-4">Sección Servicios</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tag Superior</label>
+                        <input
+                          type="text"
+                          value={siteConfig.services?.tag || ''}
+                          onChange={(e) => updateConfigValue('services.tag', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Título de la Sección</label>
+                        <input
+                          type="text"
+                          value={siteConfig.services?.title || ''}
+                          onChange={(e) => updateConfigValue('services.title', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo descriptivo</label>
+                      <input
+                        type="text"
+                        value={siteConfig.services?.subtitle || ''}
+                        onChange={(e) => updateConfigValue('services.subtitle', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Listado de Servicios */}
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold text-gray-800">Servicios Ofrecidos ({siteConfig.services?.list?.length || 0})</h5>
+                      <button
+                        onClick={() => openCrudModal('service')}
+                        className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 py-1.5 px-3 rounded-lg font-bold hover:bg-indigo-100 transition-colors"
+                      >
+                        <FiPlus /> Añadir Servicio
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      {(siteConfig.services?.list || []).map((srv, index) => (
+                        <div key={srv.id || index} className="flex items-center justify-between p-3 border border-gray-150 rounded-xl hover:bg-gray-50 transition-colors">
+                          <div>
+                            <div className="font-bold text-gray-800 text-sm">{srv.title}</div>
+                            <div className="text-xs text-gray-500 mt-0.5 line-clamp-1">{srv.desc}</div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openCrudModal('service', index)}
+                              className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded"
+                              title="Editar"
+                            >
+                              <FiEdit size={16} />
+                            </button>
+                            <button
+                              onClick={() => deleteCrudItem('service', index)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                              title="Eliminar"
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PROCESS (METODOLOGÍA) */}
+              {activeContentSection === 'process' && (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-gray-900 border-b pb-2 mb-4">Sección Metodología / Proceso</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tag Superior</label>
+                        <input
+                          type="text"
+                          value={siteConfig.process?.tag || ''}
+                          onChange={(e) => updateConfigValue('process.tag', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Título de la Sección</label>
+                        <input
+                          type="text"
+                          value={siteConfig.process?.title || ''}
+                          onChange={(e) => updateConfigValue('process.title', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo</label>
+                      <input
+                        type="text"
+                        value={siteConfig.process?.subtitle || ''}
+                        onChange={(e) => updateConfigValue('process.subtitle', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Listado de Pasos */}
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold text-gray-800">Pasos de Trabajo ({siteConfig.process?.steps?.length || 0})</h5>
+                      <button
+                        onClick={() => openCrudModal('step')}
+                        className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 py-1.5 px-3 rounded-lg font-bold hover:bg-indigo-100 transition-colors"
+                      >
+                        <FiPlus /> Añadir Paso
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      {(siteConfig.process?.steps || []).map((step, index) => (
+                        <div key={step.id || index} className="flex items-center justify-between p-3 border border-gray-150 rounded-xl hover:bg-gray-50 transition-colors">
+                          <div>
+                            <div className="font-bold text-gray-800 text-sm">{step.title}</div>
+                            <div className="text-xs text-gray-500 mt-0.5 line-clamp-1">{step.desc}</div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openCrudModal('step', index)}
+                              className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded"
+                              title="Editar"
+                            >
+                              <FiEdit size={16} />
+                            </button>
+                            <button
+                              onClick={() => deleteCrudItem('step', index)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                              title="Eliminar"
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TESTIMONIALS */}
+              {activeContentSection === 'testimonials' && (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-gray-900 border-b pb-2 mb-4">Sección Testimonios</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tag Superior</label>
+                        <input
+                          type="text"
+                          value={siteConfig.testimonials?.tag || ''}
+                          onChange={(e) => updateConfigValue('testimonials.tag', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Título de la Sección</label>
+                        <input
+                          type="text"
+                          value={siteConfig.testimonials?.title || ''}
+                          onChange={(e) => updateConfigValue('testimonials.title', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo descriptivo</label>
+                      <input
+                        type="text"
+                        value={siteConfig.testimonials?.subtitle || ''}
+                        onChange={(e) => updateConfigValue('testimonials.subtitle', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Listado de Testimonios */}
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold text-gray-800">Testimonios Activos ({siteConfig.testimonials?.list?.length || 0})</h5>
+                      <button
+                        onClick={() => openCrudModal('testimonial')}
+                        className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 py-1.5 px-3 rounded-lg font-bold hover:bg-indigo-100 transition-colors"
+                      >
+                        <FiPlus /> Añadir Testimonio
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      {(siteConfig.testimonials?.list || []).map((tst, index) => (
+                        <div key={tst.id || index} className="flex items-center justify-between p-3 border border-gray-150 rounded-xl hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <img src={tst.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100'} alt="Avatar" className="w-10 h-10 object-cover rounded-full border" />
+                            <div>
+                              <div className="font-bold text-gray-800 text-sm">{tst.name}</div>
+                              <div className="text-xs text-gray-500 line-clamp-1">{tst.role}</div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openCrudModal('testimonial', index)}
+                              className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded"
+                              title="Editar"
+                            >
+                              <FiEdit size={16} />
+                            </button>
+                            <button
+                              onClick={() => deleteCrudItem('testimonial', index)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                              title="Eliminar"
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        )}
+
+        {/* MÓDULOS VISIBLES */}
+        {activeTab === 'modulos' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+            <h3 className="text-lg font-bold text-gray-950 mb-2">Visibilidad de Secciones</h3>
+            <p className="text-sm text-gray-600 mb-6">Elige qué secciones de la Landing Page deseas mostrar u ocultar en producción.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { key: 'showAbout', label: 'Sobre Nosotros (Historia, Equipo, Estadísticas)' },
+                { key: 'showServices', label: 'Servicios (Tarjetas de Servicios Ofrecidos)' },
+                { key: 'showPortfolio', label: 'Portafolio (Galería de Proyectos Ejecutados)' },
+                { key: 'showProcess', label: 'Metodología (Pasos del Flujo de Trabajo)' },
+                { key: 'showTestimonials', label: 'Testimonios (Reseñas de Clientes Satisfechos)' },
+                { key: 'showBiblio', label: 'Biblioteca BiblioARKO (Artículos y Novedades)' },
+                { key: 'showTools', label: 'Calculadoras de Ingeniería (Herramientas Técnicas)' }
+              ].map((sec) => (
+                <div key={sec.key} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                  <span className="text-sm font-semibold text-gray-800">{sec.label}</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={siteConfig.sections?.[sec.key] !== false}
+                      onChange={(e) => updateConfigValue(`sections.${sec.key}`, e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* MODAL PARA CRUD (SERVICIOS, METODOLOGÍA, TESTIMONIOS) */}
+      {showCrudModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 py-4 border-b">
+              <h3 className="font-bold text-gray-900">
+                {crudIndex >= 0 ? 'Editar Elemento' : 'Añadir Nuevo Elemento'} — {crudType === 'service' ? 'Servicio' : crudType === 'step' ? 'Paso de Proceso' : 'Testimonio'}
+              </h3>
+              <button onClick={() => setShowCrudModal(false)} className="text-gray-500 hover:text-gray-700">
+                <FiX size={20} />
+              </button>
+            </div>
+
+            {/* Formulario */}
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Para Servicios y Procesos */}
+              {(crudType === 'service' || crudType === 'step') && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                    <input
+                      type="text"
+                      value={crudData.title || ''}
+                      onChange={(e) => setCrudData({ ...crudData, title: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Ej. Construcción de Vivienda"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                    <textarea
+                      rows={3}
+                      value={crudData.desc || ''}
+                      onChange={(e) => setCrudData({ ...crudData, desc: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Detalles sobre el servicio..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Icono (Nombre de Lucide Icon)</label>
+                    <select
+                      value={crudData.icon || 'Building2'}
+                      onChange={(e) => setCrudData({ ...crudData, icon: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="Building2">Edificios (Building2)</option>
+                      <option value="Hammer">Martillo (Hammer)</option>
+                      <option value="Ruler">Regla (Ruler)</option>
+                      <option value="HardHat">Casco (HardHat)</option>
+                      <option value="Wrench">Llave Inglesa (Wrench)</option>
+                      <option value="PenTool">Pluma Dibujo (PenTool)</option>
+                      <option value="Settings">Engranaje (Settings)</option>
+                      <option value="PencilRuler">Lápiz y Regla (PencilRuler)</option>
+                      <option value="FileSignature">Firma (FileSignature)</option>
+                      <option value="Key">Llave (Key)</option>
+                      <option value="Zap">Rayo / Electricidad (Zap)</option>
+                      <option value="Layers">Capas / Muros (Layers)</option>
+                      <option value="Container">Contenedor / Mezcladora (Container)</option>
+                      <option value="Calculator">Calculadora (Calculator)</option>
+                      <option value="Grid">Cuadrícula (Grid)</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {/* Para Testimonios */}
+              {crudType === 'testimonial' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                      <input
+                        type="text"
+                        value={crudData.name || ''}
+                        onChange={(e) => setCrudData({ ...crudData, name: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg outline-none"
+                        placeholder="Carlos Mendoza"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Cargo / Residencia</label>
+                      <input
+                        type="text"
+                        value={crudData.role || ''}
+                        onChange={(e) => setCrudData({ ...crudData, role: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg outline-none"
+                        placeholder="Propietario"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Estrellas de Calificación (1-5)</label>
+                    <div className="flex gap-2 text-yellow-500 mt-1">
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => setCrudData({ ...crudData, stars: num })}
+                          className="focus:outline-none"
+                        >
+                          <FiStar className={`w-6 h-6 ${num <= (crudData.stars || 5) ? 'fill-yellow-500' : 'text-gray-300'}`} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Testimonio (Texto)</label>
+                    <textarea
+                      rows={3}
+                      value={crudData.text || ''}
+                      onChange={(e) => setCrudData({ ...crudData, text: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg outline-none"
+                      placeholder="Superó todas mis expectativas..."
+                    />
+                  </div>
+
+                  {/* Foto de Cliente */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Foto / Avatar URL</label>
+                    <div className="flex gap-4 items-center">
+                      <img src={crudData.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100'} alt="Cliente" className="w-14 h-14 object-cover rounded-full border" />
+                      <label className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-250 transition-colors text-xs font-bold cursor-pointer border">
+                        Subir Foto
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            try {
+                              const token = localStorage.getItem('arko_token');
+                              const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1'}/arko/admin/upload`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}` },
+                                body: formData
+                              });
+                              if (response.ok) {
+                                const res = await response.json();
+                                setCrudData({ ...crudData, avatar: res.image_url });
+                              }
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
               <button
-                onClick={handleSaveConfig}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-6 py-2 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
-                style={{ backgroundColor: primaryColor }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = adjustColorBrightness(primaryColor, -20)}
-                onMouseLeave={(e) => e.target.style.backgroundColor = primaryColor}
+                onClick={() => setShowCrudModal(false)}
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
               >
-                <FiSave className="w-4 h-4" />
-                {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                Cancelar
+              </button>
+              <button
+                onClick={saveCrudItem}
+                className="px-5 py-2 text-white rounded-lg text-sm font-semibold hover:opacity-90 shadow transition-all"
+                style={{ backgroundColor: primaryColor }}
+              >
+                Aceptar
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {activeTab === 'contacto' && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Información de Contacto</h3>
-          <p className="text-gray-600">Configura los datos de contacto de Arko 360.</p>
-        </div>
-      )}
-
-      {activeTab === 'contenido' && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Gestión de Contenido</h3>
-          <p className="text-gray-600">Administra el contenido del sitio.</p>
-        </div>
-      )}
-
-      {activeTab === 'modulos' && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Módulos Activos</h3>
-          <p className="text-gray-600">Configura los módulos disponibles en el panel.</p>
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Users, CheckCircle, Award, ShieldCheck } from 'lucide-react';
 import { cmsData } from '../data/cmsData.js';
 import { SiteConfigContext } from '../App.jsx';
+import { renderTitle } from '../lib/utils.js';
 
 const iconMap = {
   CheckCircle, Award, Users, ShieldCheck
@@ -97,7 +98,7 @@ export default function About() {
               {about.tag}
             </div>
             <h2 className="section-title" style={{ marginBottom: 20 }}>
-              {title}
+              {renderTitle(title)}
             </h2>
             <p className="section-subtitle" style={{ marginBottom: 16 }}>
               {p1}

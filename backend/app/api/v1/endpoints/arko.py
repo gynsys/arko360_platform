@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Generator
 from pydantic import BaseModel
 from datetime import datetime
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from pathlib import Path
 import shutil
+import logging
 
+from app.core.logging import logger
 from app.db.arko_base import ArkoSessionLocal
 from contextlib import contextmanager
 from app.db.models.arko import ArkoPost, ArkoProject, ArkoAdmin
@@ -15,7 +17,7 @@ from app.core.security import create_access_token
 from app.core.config import settings
 
 @contextmanager
-def get_db_session():
+def get_db_session() -> Generator[Session, None, None]:
     db = ArkoSessionLocal()
     try:
         yield db
@@ -242,40 +244,219 @@ def delete_post(
         logger.error(f"Error deleting Arko post: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
+# --- Site Configuration Defaults & Helpers ---
+
+DEFAULT_SITE_CONFIG = {
+    "siteName": "Ingeniería Arko 360",
+    "logoUrl": "/images/logo_aeko360.png",
+    "primaryColor": "#0a4275",
+    "secondaryColor": "#27ae60",
+    "branding": {
+        "primaryColor": "#0a4275",
+        "secondaryColor": "#27ae60"
+    },
+    "global": {
+        "phone": "+58 412 000 0000",
+        "email": "proyectos@arko360.com",
+        "location": "Caracas, Venezuela",
+        "whatsapp": "+58XXXXXXXXXX",
+        "logo": "/images/logo_aeko360.png",
+        "social": {
+            "instagram": "#",
+            "facebook": "#",
+            "linkedin": "#",
+            "twitter": "#"
+        }
+    },
+    "sections": {
+        "showAbout": True,
+        "showServices": True,
+        "showPortfolio": True,
+        "showProcess": True,
+        "showTestimonials": True,
+        "showBiblio": True,
+        "showTools": True
+    },
+    "hero": {
+        "badge": "Ingeniería & Arquitectura",
+        "titleLine1": "Construimos el",
+        "titleAccent": "Futuro",
+        "titleLine2": "con precisión.",
+        "subtitle": "Expertos en proyectos residenciales, comerciales y cálculos estructurales. Llevamos tu visión de los planos a la realidad con estándares internacionales de calidad.",
+        "ctaPrimary": "Cotizar Proyecto",
+        "ctaSecondary": "Ver Portafolio"
+    },
+    "aboutUs": {
+        "tag": "Sobre Nosotros",
+        "title": "Construyendo sueños desde hace 15 años",
+        "p1": "Ingeniería Arko 360 nació con una visión clara: ofrecer soluciones constructivas de la más alta calidad, combinando innovación tecnológica con la experiencia artesanal de nuestros técnicos.",
+        "p2": "Hemos ejecutado más de 200 proyectos en todo el país, desde viviendas unifamiliares hasta complejos comerciales, siempre manteniendo nuestro compromiso con la excelencia y la satisfacción del cliente.",
+        "imageUrl": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80"
+    },
+    "services": {
+        "tag": "Nuestros Servicios",
+        "title": "Soluciones integrales para cada desafío",
+        "subtitle": "Cubrimos todo el ciclo de vida del proyecto, desde la conceptualización hasta la entrega llave en mano.",
+        "list": [
+            {
+                "id": "srv-1",
+                "icon": "Building2",
+                "title": "Construcción Residencial",
+                "desc": "Desarrollo de viviendas unifamiliares, conjuntos cerrados y torres de apartamentos con los más altos estándares."
+            },
+            {
+                "id": "srv-2",
+                "icon": "Hammer",
+                "title": "Remodelaciones",
+                "desc": "Renovación integral de espacios comerciales y residenciales. Modernización de oficinas y locales."
+            },
+            {
+                "id": "srv-3",
+                "icon": "Ruler",
+                "title": "Diseño Arquitectónico",
+                "desc": "Creación de planos, renders 3D y diseño de interiores adaptados a las necesidades y presupuesto del cliente."
+            },
+            {
+                "id": "srv-4",
+                "icon": "HardHat",
+                "title": "Gestión de Proyectos",
+                "desc": "Supervisión de obra, control de calidad, manejo de presupuesto y coordinación de contratistas."
+            },
+            {
+                "id": "srv-5",
+                "icon": "Wrench",
+                "title": "Mantenimiento Industrial",
+                "desc": "Servicios preventivos y correctivos para instalaciones industriales, fábricas y galpones."
+            },
+            {
+                "id": "srv-6",
+                "icon": "PenTool",
+                "title": "Cálculo Estructural",
+                "desc": "Análisis sísmico, diseño de fundaciones y estructuras de concreto armado y metálicas."
+            }
+        ]
+    },
+    "portfolio": {
+        "tag": "Portafolio",
+        "title": "Proyectos que hablan por sí solos",
+        "subtitle": "Cada obra es un compromiso con la excelencia. Descubre algunos de nuestros proyectos más destacados a lo largo de Venezuela."
+    },
+    "process": {
+        "tag": "Metodología de Trabajo",
+        "title": "Nuestro proceso paso a paso",
+        "subtitle": "Hemos perfeccionado nuestro método de trabajo para garantizar resultados predecibles, entregas a tiempo y sin sorpresas en el presupuesto.",
+        "steps": [
+            {
+                "id": "prc-1",
+                "icon": "Settings",
+                "title": "1. Consulta Inicial",
+                "desc": "Nos reunimos para entender tu visión, necesidades y presupuesto. Evaluamos el espacio y discutimos las posibilidades."
+            },
+            {
+                "id": "prc-2",
+                "icon": "PencilRuler",
+                "title": "2. Diseño y Planificación",
+                "desc": "Nuestros arquitectos crean propuestas de diseño, planos y renders 3D para que visualices el resultado final."
+            },
+            {
+                "id": "prc-3",
+                "icon": "FileSignature",
+                "title": "3. Presupuesto y Contrato",
+                "desc": "Presentamos un presupuesto detallado y transparente. Una vez aprobado, firmamos el contrato y establecemos el cronograma."
+            },
+            {
+                "id": "prc-4",
+                "icon": "HardHat",
+                "title": "4. Ejecución de Obra",
+                "desc": "Nuestro equipo comienza la construcción o remodelación, con supervisión constante y reportes de avance regulares."
+            },
+            {
+                "id": "prc-5",
+                "icon": "Key",
+                "title": "5. Entrega Final",
+                "desc": "Realizamos una inspección detallada contigo, entregamos garantías y te damos las llaves de tu nuevo espacio."
+            }
+        ]
+    },
+    "testimonials": {
+        "tag": "Testimonios",
+        "title": "Lo que dicen nuestros clientes",
+        "subtitle": "La satisfacción de nuestros clientes es el mejor indicador de nuestro trabajo.",
+        "list": [
+            {
+                "id": "tst-1",
+                "text": "Arko 360 superó todas mis expectativas. Construyeron mi casa en el tiempo acordado y con una calidad impresionante. El equipo es profesional, ordenado y siempre dispuesto a resolver cualquier inquietud.",
+                "name": "Carlos Mendoza",
+                "role": "Propietario — Residencia Las Acacias",
+                "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+                "stars": 5
+            },
+            {
+                "id": "tst-2",
+                "text": "La remodelación de nuestras oficinas fue un proceso sorprendentemente fluido. Cumplieron con el presupuesto, el tiempo y lo más importante: el resultado es extraordinario. Nuestros empleados y clientes quedaron encantados.",
+                "name": "María González",
+                "role": "Directora General — Grupo Comercial MG",
+                "avatar": "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&q=80",
+                "stars": 5
+            },
+            {
+                "id": "tst-3",
+                "text": "Llevamos 3 proyectos con Arko 360 y no pensamos cambiar de empresa constructora. Su transparencia, comunicación constante y nivel de acabados los hacen únicos en el mercado venezolano.",
+                "name": "Roberto Herrera",
+                "role": "Desarrollador Inmobiliario",
+                "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80",
+                "stars": 5
+            }
+        ]
+    }
+}
+
+def deep_merge(dict1: dict, dict2: dict) -> dict:
+    """Recursively merge dict2 into dict1."""
+    result = dict1.copy()
+    for key, value in dict2.items():
+        if key in result:
+            if isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = deep_merge(result[key], value)
+            else:
+                result[key] = value
+        else:
+            result[key] = value
+    return result
+
 # --- Site Configuration Endpoints ---
 
-@router.get("/config")
-def get_site_config():
+@router.get("/config", response_model=dict)
+def get_site_config() -> dict:
     try:
         with get_db_session() as db:
-            admin = db.query(ArkoAdmin).filter(ArkoAdmin.email == "admin@arko360.com").first()
+            admin = db.query(ArkoAdmin).filter(ArkoAdmin.email == "admin@arko360.net").first()
             if not admin:
                 admin = db.query(ArkoAdmin).first()
             
-            return admin.site_config if admin and admin.site_config else {}
+            saved_config = admin.site_config if admin and admin.site_config else {}
+            # Mezclar recursivamente con los valores predeterminados
+            return deep_merge(DEFAULT_SITE_CONFIG, saved_config)
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Error fetching Arko config: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.put("/admin/config")
+@router.put("/admin/config", response_model=dict)
 def update_site_config(
     config_data: dict,
-    current_admin = Depends(get_current_arko_admin)
-):
+    current_admin: ArkoAdmin = Depends(get_current_arko_admin)
+) -> dict:
     try:
         with get_db_session() as db:
             admin = db.query(ArkoAdmin).filter(ArkoAdmin.id == current_admin.id).first()
             if not admin:
                 raise HTTPException(status_code=404, detail="Admin not found")
             
+            # Guardamos la nueva configuración en la base de datos
             admin.site_config = config_data
             db.commit()
             return {"status": "success", "config": admin.site_config}
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Error updating Arko config: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 

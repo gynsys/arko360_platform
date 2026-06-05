@@ -4,6 +4,7 @@ import { ZoomIn, FolderOpen } from 'lucide-react';
 import ProjectModal from './ProjectModal.jsx';
 import { cmsData } from '../data/cmsData.js';
 import { SiteConfigContext } from '../App.jsx';
+import { renderTitle } from '../lib/utils.js';
 
 export default function Portfolio() {
   const config = useContext(SiteConfigContext);
@@ -11,7 +12,11 @@ export default function Portfolio() {
   const [filter, setFilter] = useState('Todos');
   const [selectedProject, setSelectedProject] = useState(null);
 
-  const dynamicProjects = config?.portfolio?.length > 0 ? config.portfolio : portfolio.projects;
+  const tag = config?.portfolio?.tag || portfolio.tag;
+  const title = config?.portfolio?.title || `${portfolio.title.line1} ${portfolio.title.accent}`;
+  const subtitle = config?.portfolio?.subtitle || portfolio.subtitle;
+
+  const dynamicProjects = config?.portfolioProjects?.length > 0 ? config.portfolioProjects : portfolio.projects;
 
   const filteredProjects = filter === 'Todos'
     ? dynamicProjects
@@ -23,14 +28,13 @@ export default function Portfolio() {
         <div className="text-center" style={{ marginBottom: 48 }}>
           <div className="section-tag">
             <FolderOpen size={12} />
-            {portfolio.tag}
+            {tag}
           </div>
           <h2 className="section-title" style={{ marginBottom: 16 }}>
-            {portfolio.title.line1} <br />
-            <span>{portfolio.title.accent}</span>
+            {renderTitle(title)}
           </h2>
           <p className="section-subtitle" style={{ margin: '0 auto' }}>
-            {portfolio.subtitle}
+            {subtitle}
           </p>
 
           <div className="portfolio-filters" style={{ justifyContent: 'center' }}>

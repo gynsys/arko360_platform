@@ -3,12 +3,16 @@ import { motion } from 'framer-motion';
 import { MessageSquareQuote, Star } from 'lucide-react';
 import { cmsData } from '../data/cmsData.js';
 import { SiteConfigContext } from '../App.jsx';
+import { renderTitle } from '../lib/utils.js';
 
 export default function Testimonials() {
   const config = useContext(SiteConfigContext);
   const { testimonials } = cmsData;
 
-  const dynamicTestimonials = config?.testimonials?.length > 0 ? config.testimonials : testimonials.list;
+  const tag = config?.testimonials?.tag || testimonials.tag;
+  const title = config?.testimonials?.title || `${testimonials.title.line1} ${testimonials.title.accent}`;
+  const subtitle = config?.testimonials?.subtitle || testimonials.subtitle;
+  const list = config?.testimonials?.list || testimonials.list;
 
   return (
     <section className="section bg-white">
@@ -16,19 +20,18 @@ export default function Testimonials() {
         <div className="text-center" style={{ marginBottom: 64 }}>
           <div className="section-tag">
             <MessageSquareQuote size={12} />
-            {testimonials.tag}
+            {tag}
           </div>
           <h2 className="section-title" style={{ marginBottom: 16 }}>
-            {testimonials.title.line1} <br />
-            <span>{testimonials.title.accent}</span>
+            {renderTitle(title)}
           </h2>
           <p className="section-subtitle">
-            {testimonials.subtitle}
+            {subtitle}
           </p>
         </div>
 
         <div className="testimonials-grid">
-          {dynamicTestimonials.map((item, i) => (
+          {list.map((item, i) => (
             <motion.div
               key={item.id || i}
               className="testimonial-card"

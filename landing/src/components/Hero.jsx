@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { cmsData } from '../data/cmsData.js';
+import { SiteConfigContext } from '../App.jsx';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -13,7 +14,16 @@ const fadeUp = {
 };
 
 export default function Hero() {
+  const config = useContext(SiteConfigContext);
   const { hero } = cmsData;
+
+  const badge = config?.hero?.badge || hero.badge;
+  const titleLine1 = config?.hero?.titleLine1 || hero.title.line1;
+  const titleAccent = config?.hero?.titleAccent || hero.title.accent;
+  const titleLine2 = config?.hero?.titleLine2 || hero.title.line2;
+  const subtitle = config?.hero?.subtitle || hero.subtitle;
+  const ctaPrimary = config?.hero?.ctaPrimary || hero.ctaPrimary;
+  const ctaSecondary = config?.hero?.ctaSecondary || hero.ctaSecondary;
 
   const handleScroll = (e, href) => {
     e.preventDefault();
@@ -34,17 +44,17 @@ export default function Hero() {
         >
           <motion.div className="hero-badge" variants={fadeUp} custom={0}>
             <span className="hero-badge-dot" />
-            {hero.badge}
+            {badge}
           </motion.div>
 
           <motion.h1 className="hero-title" variants={fadeUp} custom={0.15}>
-            {hero.title.line1}<br />
-            <span className="hero-title-accent">{hero.title.accent}</span><br />
-            {hero.title.line2}
+            {titleLine1}<br />
+            <span className="hero-title-accent">{titleAccent}</span><br />
+            {titleLine2}
           </motion.h1>
 
           <motion.p className="hero-subtitle" variants={fadeUp} custom={0.3}>
-            {hero.subtitle}
+            {subtitle}
           </motion.p>
 
           <motion.div className="hero-actions" variants={fadeUp} custom={0.45}>
@@ -53,7 +63,7 @@ export default function Hero() {
               className="btn btn-primary btn-lg"
               onClick={(e) => handleScroll(e, 'contacto')}
             >
-              {hero.ctaPrimary}
+              {ctaPrimary}
               <ArrowRight size={18} />
             </a>
             <a
@@ -62,7 +72,7 @@ export default function Hero() {
               style={{ color: 'white', borderColor: 'white' }}
               onClick={(e) => handleScroll(e, 'proyectos')}
             >
-              {hero.ctaSecondary}
+              {ctaSecondary}
             </a>
           </motion.div>
         </motion.div>

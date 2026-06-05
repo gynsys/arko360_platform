@@ -1,14 +1,22 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, PencilRuler, FileSignature, HardHat, Key } from 'lucide-react';
 import { cmsData } from '../data/cmsData.js';
+import { SiteConfigContext } from '../App.jsx';
+import { renderTitle } from '../lib/utils.js';
 
 const iconMap = {
   Settings, PencilRuler, FileSignature, HardHat, Key
 };
 
 export default function Process() {
+  const config = useContext(SiteConfigContext);
   const { process } = cmsData;
+
+  const tag = config?.process?.tag || process.tag;
+  const title = config?.process?.title || `${process.title.line1} ${process.title.accent}`;
+  const subtitle = config?.process?.subtitle || process.subtitle;
+  const steps = config?.process?.steps || process.steps;
 
   return (
     <section className="section bg-alt process">
@@ -16,23 +24,22 @@ export default function Process() {
         <div className="text-center" style={{ marginBottom: 64 }}>
           <div className="section-tag">
             <Settings size={12} />
-            {process.tag}
+            {tag}
           </div>
           <h2 className="section-title" style={{ marginBottom: 16 }}>
-            {process.title.line1} <br />
-            <span>{process.title.accent}</span>
+            {renderTitle(title)}
           </h2>
           <p className="section-subtitle">
-            {process.subtitle}
+            {subtitle}
           </p>
         </div>
 
         <div className="process-steps">
-          {process.steps.map((step, i) => {
+          {steps.map((step, i) => {
             const Icon = iconMap[step.icon];
             return (
               <motion.div
-                key={step.title}
+                key={step.id || step.title}
                 className="process-step"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -44,7 +51,7 @@ export default function Process() {
                 </div>
                 <h4 className="process-step-title">{step.title}</h4>
                 <p className="process-step-desc">{step.desc}</p>
-                {i < process.steps.length - 1 && <div className="process-step-line" />}
+                {i < steps.length - 1 && <div className="process-step-line" />}
               </motion.div>
             );
           })}

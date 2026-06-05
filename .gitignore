@@ -1,6 +1,21 @@
-
 node_modules/
 dist/
 __pycache__/
 .venv/
 .env
+
+# PDF y Excel
+*.pdf
+*.xlsx
+
+# Archivos JSX temporales de cálculo
+CalculadoraEscaleras (1).jsx
+temp_original_losas.jsx
+
+# Script SSH de ejecución
+ssh_runner.py
+
+# Archivos de configuración de Nginx locales/temporales
+arko360.conf
+arko360.net.conf
+admin.arko360.net.conf

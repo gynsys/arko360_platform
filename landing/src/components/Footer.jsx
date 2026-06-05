@@ -7,10 +7,10 @@ export default function Footer() {
   
   const siteName = config?.siteName || 'Ingeniería Arko 360';
   const logoUrl = config?.logoUrl || '/images/logo_aeko360.png';
-  const social = config?.social || {};
-  const phone = config?.contactPhone || '+58 412 000 0000';
-  const email = config?.contactEmail || 'proyectos@arko360.com';
-  const address = config?.address || 'Caracas, Venezuela';
+  const social = config?.global?.social || {};
+  const phone = config?.global?.phone || '+58 412 000 0000';
+  const email = config?.global?.email || 'proyectos@arko360.com';
+  const address = config?.global?.location || 'Caracas, Venezuela';
 
   const handleScroll = (e, href) => {
     e.preventDefault();
