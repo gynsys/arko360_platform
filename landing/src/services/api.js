@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.arko360.net';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.arko360.net/api/v1';
 const CONTACT_ENDPOINT = import.meta.env.VITE_CONTACT_ENDPOINT || '/arko360/contact';
 
 /**
@@ -29,7 +29,7 @@ export async function submitContactForm(data) {
 }
 
 export async function getSiteConfig() {
-  const response = await fetch(`${API_URL}/api/v1/arko/config`, {
+  const response = await fetch(`${API_URL}/arko/config`, {
     method: 'GET',
     headers: {
       'Accept': 'application/json',
