@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { calcularLosaMaciza } from './LosaMaciza';
 import { calcularLosaLigera } from './LosaLigera';
 import { calcularLosaColaboranteNormativo } from './LosaColaborante';
+import { renderGrid } from './visualizacion';
 import LosaMaciza from './LosaMaciza';
 import LosaLigera from './LosaLigera';
 import LosaColaborante from './LosaColaborante';
@@ -269,27 +270,37 @@ const CalculadoraLosas = () => {
 
       <div style={styles.panel}>
         <h3 style={styles.sectionTitle('#3498db')}>1. Retícula de Apoyos</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-          <div style={styles.field}>
-            <label style={styles.label}>Filas de apoyos</label>
-            <input type="number" name="filas" value={grid.filas} onChange={handleGrid} min="1" style={styles.input} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+          {/* Columna izquierda: Datos de entrada */}
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+              <div style={styles.field}>
+                <label style={styles.label}>Filas de apoyos</label>
+                <input type="number" name="filas" value={grid.filas} onChange={handleGrid} min="1" style={styles.input} />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>Columnas de apoyos</label>
+                <input type="number" name="cols" value={grid.cols} onChange={handleGrid} min="1" style={styles.input} />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>Luz X (m)</label>
+                <input type="number" name="luzX" value={grid.luzX} onChange={handleGrid} step="0.1" min="1" style={styles.input} />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>Luz Y (m)</label>
+                <input type="number" name="luzY" value={grid.luzY} onChange={handleGrid} step="0.1" min="1" style={styles.input} />
+              </div>
+            </div>
+            <div style={styles.highlightBox}>
+              <p><strong>Área total:</strong> {calc.areaTotal.toFixed(2)} m²</p>
+              <p><strong>Ratio luces:</strong> {calc.ratio.toFixed(2)} {calc.esDosDirecciones ? '(Dos direcciones)' : '(Una dirección)'}</p>
+            </div>
           </div>
-          <div style={styles.field}>
-            <label style={styles.label}>Columnas de apoyos</label>
-            <input type="number" name="cols" value={grid.cols} onChange={handleGrid} min="1" style={styles.input} />
+
+          {/* Columna derecha: Visualización SVG */}
+          <div>
+            {grid && renderGrid(grid, { ...calc, wu: calc.wu, ratio: calc.ratio, esDosDirecciones: calc.esDosDirecciones }, 'general', null, null)}
           </div>
-          <div style={styles.field}>
-            <label style={styles.label}>Luz X (m)</label>
-            <input type="number" name="luzX" value={grid.luzX} onChange={handleGrid} step="0.1" min="1" style={styles.input} />
-          </div>
-          <div style={styles.field}>
-            <label style={styles.label}>Luz Y (m)</label>
-            <input type="number" name="luzY" value={grid.luzY} onChange={handleGrid} step="0.1" min="1" style={styles.input} />
-          </div>
-        </div>
-        <div style={styles.highlightBox}>
-          <p><strong>Área total:</strong> {calc.areaTotal.toFixed(2)} m²</p>
-          <p><strong>Ratio luces:</strong> {calc.ratio.toFixed(2)} {calc.esDosDirecciones ? '(Dos direcciones)' : '(Una dirección)'}</p>
         </div>
       </div>
 
