@@ -1234,10 +1234,16 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
         {/* PANEL DERECHO: VISUALIZACIÓN */}
         <div>
           {/* SVG RETÍCULA */}
-          {grid && resultados && steelDeckConfig && renderGrid(grid, { ...resultados, wu: parseFloat(resultados.wu), ratio: grid.luzX / grid.luzY, esDosDirecciones: Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY) <= 2 }, 'colaborante', steelDeckConfig, null)}
+          {grid && resultados && steelDeckConfig && (() => {
+            console.log('LosaColaborante: renderGrid called', { grid, steelDeckConfig, resultados });
+            return renderGrid(grid, { ...resultados, wu: parseFloat(resultados.wu), ratio: grid.luzX / grid.luzY, esDosDirecciones: Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY) <= 2 }, 'colaborante', steelDeckConfig, null);
+          })()}
 
           {/* SVG SECCIÓN TRANSVERSAL */}
-          {resultados && renderSeccion(resultados, 'colaborante', steelDeckConfig, null)}
+          {resultados && (() => {
+            console.log('LosaColaborante: renderSeccion called', { resultados, steelDeckConfig });
+            return renderSeccion(resultados, 'colaborante', steelDeckConfig, null);
+          })()}
 
           {/* ADVERTENCIA */}
           <div style={styles.alert}>
