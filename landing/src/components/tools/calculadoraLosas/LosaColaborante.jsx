@@ -1233,6 +1233,8 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
 
         {/* PANEL DERECHO: VISUALIZACIÓN */}
         <div>
+          {/* Debug logs */}
+          {console.log('LosaColaborante debug:', { grid, resultados, steelDeckConfig })}
           {/* SVG RETÍCULA */}
           {grid && resultados && steelDeckConfig && (() => {
             console.log('LosaColaborante: renderGrid called', { grid, steelDeckConfig, resultados });
