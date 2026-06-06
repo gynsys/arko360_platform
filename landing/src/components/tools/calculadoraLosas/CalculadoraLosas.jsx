@@ -271,12 +271,14 @@ const CalculadoraLosas = () => {
         >
           Losa Maciza
         </button>
+        {/*
         <button
           style={styles.tab(losaActiva === 'aligerada')}
           onClick={() => setLosaActiva('aligerada')}
         >
           Losa Aligerada
         </button>
+        */}
         <button
           style={styles.tab(losaActiva === 'colaborante')}
           onClick={() => setLosaActiva('colaborante')}
@@ -367,9 +369,11 @@ const CalculadoraLosas = () => {
         {losaActiva === 'maciza' && (
           <LosaMaciza grid={grid} datos={datos} macizaConfig={macizaConfig} costos={costos} onConfigChange={handleMaciza} />
         )}
+        {/*
         {losaActiva === 'aligerada' && (
           <LosaLigera grid={grid} datos={datos} aligeradaConfig={aligeradaConfig} costos={costos} onConfigChange={handleAligerada} />
         )}
+        */}
         {losaActiva === 'colaborante' && (
           <LosaColaborante grid={grid} datos={datos} steelDeckConfig={steelDeckConfig} costos={costos} onConfigChange={handleSteelDeck} />
         )}
@@ -386,6 +390,7 @@ const CalculadoraLosas = () => {
             <label style={styles.label}>Acero refuerzo ($/kg)</label>
             <input type="number" name="aceroKg" value={costos.aceroKg} onChange={handleCostos} style={styles.input} />
           </div>
+          {/*
           {losaActiva === 'aligerada' && (
             <>
               <div style={styles.field}>
@@ -398,6 +403,7 @@ const CalculadoraLosas = () => {
               </div>
             </>
           )}
+          */}
           {losaActiva === 'colaborante' && (
             <>
               <div style={styles.field}>
@@ -468,12 +474,14 @@ const CalculadoraLosas = () => {
               {calc.cumpleEspesor ? '✅ CUMPLE' : '❌ NO CUMPLE'}
             </div>
           </div>
+          {/*
           {losaActiva === 'aligerada' && (
             <div style={styles.resultBox}>
               <div style={styles.resultLabel}>Número de bloques</div>
               <div style={styles.resultValue}>{calc.numBloques}</div>
             </div>
           )}
+          */}
           {losaActiva === 'colaborante' && (
             <div style={styles.resultBox}>
               <div style={styles.resultLabel}>Total studs</div>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { RefreshCw, Save, FileDown, CheckCircle, XCircle, AlertTriangle, Info, Plus, Trash2, ArrowRight } from "lucide-react";
 import { calcularLosaColaboranteNormativo } from "../../../steelDeck/calcularLosaColaboranteNormativo";
+import { PERFILES_I_H_TUBO } from "../../../steelDeck/catalogos";
 
 export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid, datos, costos }) {
   const [tabActivo, setTabActivo] = useState('general');
