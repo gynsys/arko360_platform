@@ -82,12 +82,12 @@ def create_landing_site(
         )
 
     # Note: password hashing should use pwd_context.hash
-    # but for simplicity we rely on Arko's get_password_hash
-    from app.core.security import get_password_hash
+    # but for simplicity we rely on Arko's hash_password
+    from app.core.security import hash_password
     
     db_site = LandingSite(
         email=site_in.email,
-        password_hash=get_password_hash(site_in.password),
+        password_hash=hash_password(site_in.password),
         nombre_cliente=site_in.nombre_cliente,
         telefono=site_in.telefono,
         especialidad=site_in.especialidad,
