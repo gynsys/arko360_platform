@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { calcularLosaMaciza } from './LosaMaciza';
 import { calcularLosaLigera } from './LosaLigera';
-import { calcularLosaColaboranteNormativo } from './LosaColaborante';
+import { calcularLosaColaboranteNormativo } from '../../../steelDeck/calcularLosaColaboranteNormativo';
 import { renderGrid } from './visualizacion';
 import LosaMaciza from './LosaMaciza';
 import LosaLigera from './LosaLigera';
