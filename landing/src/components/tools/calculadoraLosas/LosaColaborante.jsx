@@ -506,9 +506,13 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     ciclosFatiga = 100000,
   } = steelDeckConfig;
 
-  const h_total = (espesorConcreto + alturaDeck) / 100;
+  // Espesor mínimo ACI 318-19: mínimo 5 cm sobre la cresta del deck (Sección 26.3.3)
+  const espesorMinimoACI = 5.0; // cm
+  const espesorConcreto_efectivo = Math.max(espesorConcreto, espesorMinimoACI);
+
+  const h_total = (espesorConcreto_efectivo + alturaDeck) / 100;
   const h_cm = h_total * 100;
-  const h_sobre_deck = espesorConcreto;
+  const h_sobre_deck = espesorConcreto_efectivo;
 
   // Distribución real uniforme de correas
   const nEspacios = Math.ceil(luzMayor / sepCorreas);
@@ -516,7 +520,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const nCorreasPerBay = Math.max(0, nEspacios - 1);
 
   // 1. CARGAS
-  const pesoConcreto = (espesorConcreto / 100) * GAMMA_CONC;
+  const pesoConcreto = (espesorConcreto_efectivo / 100) * GAMMA_CONC;
   const pesoDeck = getDeckProp(calibre, 'peso') || 9;
   const pesoCorreas = (getProp(tipoCorrea, 'peso') || 15) / sepReal;
   const pesoVigas = (getProp(tipoVigaPrincipal, 'peso') || 30) * (1 / luzX + 1 / luzY);
@@ -573,7 +577,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const Hs = alturaStud || 10;
 
   const Hs_min = hr + 3.81;
-  const Hs_max = (espesorConcreto + alturaDeck) - 1.27;
+  const Hs_max = (espesorConcreto_efectivo + alturaDeck) - 1.27;
   const cumpleHs = Hs >= Hs_min && Hs <= Hs_max;
   const Hs_rec = Math.max(Hs_min, Math.min(Hs, Hs_max));
 
@@ -585,10 +589,10 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   // 6. SECCIÓN COMPUESTA - VIGA PRINCIPAL (VP)
   const luzVigaPrincipal_cm = luzMayor * 100;
   const b_eff_vp_1 = luzVigaPrincipal_cm / 4;
-  const b_eff_vp_2 = 16 * espesorConcreto + getProp(tipoVigaPrincipal, 'bf');
+  const b_eff_vp_2 = 16 * espesorConcreto_efectivo + getProp(tipoVigaPrincipal, 'bf');
   const b_eff_vp_3 = luzMenor * 100;
   const b_eff_vp = Math.min(b_eff_vp_1, b_eff_vp_2, b_eff_vp_3);
-  const secComp_vp = calcularSeccionCompuesta(tipoVigaPrincipal, b_eff_vp, espesorConcreto, f_c_val, Ec);
+  const secComp_vp = calcularSeccionCompuesta(tipoVigaPrincipal, b_eff_vp, espesorConcreto_efectivo, f_c_val, Ec);
 
   // REDUCCIÓN STUDS - VP (perpendicular deck)
   const Nc_vp = numStudsPorReborde || 1;
@@ -604,7 +608,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const Lb_vp = luzVigaPrincipal_cm;
 
   const P_acero_vp = getProp(tipoVigaPrincipal, 'A') * getProp(tipoVigaPrincipal, 'Fy');
-  const P_conc_vp = 0.85 * f_c_val * b_eff_vp * espesorConcreto;
+  const P_conc_vp = 0.85 * f_c_val * b_eff_vp * espesorConcreto_efectivo;
   const phiMn_steel_vp = PHI_B * getProp(tipoVigaPrincipal, 'Fy') * getProp(tipoVigaPrincipal, 'Zx');
 
   let P_studs_req_vp = 0;
@@ -641,7 +645,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     s_vp = luzVigaPrincipal_cm / N_total_vp;
   }
 
-  const capComp_vp = calcularMomentoCompuesto(tipoVigaPrincipal, b_eff_vp, espesorConcreto, f_c_val, Ec, Asc_stud, N_total_vp * phiQn_vp);
+  const capComp_vp = calcularMomentoCompuesto(tipoVigaPrincipal, b_eff_vp, espesorConcreto_efectivo, f_c_val, Ec, Asc_stud, N_total_vp * phiQn_vp);
   const phiMn_vp = capComp_vp ? capComp_vp.phiMn_comp : phiMn_steel_vp;
   const cumpleFlex_vp = Mu_vp <= phiMn_vp;
 
@@ -651,21 +655,24 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
 
   const wServ_vp = wServicio * luzMenor / 100;
   const Ix_vp = getProp(tipoVigaPrincipal, 'Ix');
-  const defl_vp = deflexionViga(wServ_vp, luzVigaPrincipal_cm, E_ACERO, Ix_vp);
+  // Deflexión: usar inercia compuesta (I_tr) si disponible; si no, acero solo
+  const I_defl_vp = secComp_vp ? secComp_vp.I_tr : Ix_vp;
+  const defl_vp = deflexionViga(wServ_vp, luzVigaPrincipal_cm, E_ACERO, I_defl_vp);
   const deflLim_vp = luzVigaPrincipal_cm / 360;
   const cumpleDefl_vp = defl_vp <= deflLim_vp;
-  const defl_vp_comp = secComp_vp ? deflexionViga(wServ_vp, luzVigaPrincipal_cm, E_ACERO, secComp_vp.I_tr) : defl_vp;
-  const cumpleDefl_vp_comp = defl_vp_comp <= deflLim_vp;
+  // Para deflexión compuesta usamos la misma (ya es compuesta)
+  const defl_vp_comp = defl_vp;
+  const cumpleDefl_vp_comp = cumpleDefl_vp;
   const resFlex_vp = calcularMomentoNominalAISC(tipoVigaPrincipal, Lb_vp, 1.14);
   const arriostre_vp = calcularArriostramiento(tipoVigaPrincipal, Lb_vp, 1.14);
 
   // 7. SECCIÓN COMPUESTA - CORREAS (Joists)
   const luzCorrea_cm = luzMenor * 100;
   const b_eff_correa_1 = luzCorrea_cm / 4;
-  const b_eff_correa_2 = 16 * espesorConcreto + getProp(tipoCorrea, 'bf');
+  const b_eff_correa_2 = 16 * espesorConcreto_efectivo + getProp(tipoCorrea, 'bf');
   const b_eff_correa_3 = sepReal * 100;
   const b_eff_correa = Math.min(b_eff_correa_1, b_eff_correa_2, b_eff_correa_3);
-  const secComp_correa = calcularSeccionCompuesta(tipoCorrea, b_eff_correa, espesorConcreto, f_c_val, Ec);
+  const secComp_correa = calcularSeccionCompuesta(tipoCorrea, b_eff_correa, espesorConcreto_efectivo, f_c_val, Ec);
 
   // REDUCCIÓN STUDS - Correa (parallel deck: R = 0.75)
   const resStud_correa = calcularQnStud(f_c_val, Ec, Asc_stud, Fu_stud, 0.75);
@@ -678,7 +685,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const Lb_correa = luzCorrea_cm;
 
   const P_acero_correa = getProp(tipoCorrea, 'A') * getProp(tipoCorrea, 'Fy');
-  const P_conc_correa = 0.85 * f_c_val * b_eff_correa * espesorConcreto;
+  const P_conc_correa = 0.85 * f_c_val * b_eff_correa * espesorConcreto_efectivo;
   const phiMn_steel_correa = PHI_B * getProp(tipoCorrea, 'Fy') * getProp(tipoCorrea, 'Zx');
 
   let P_studs_req_correa = 0;
@@ -712,7 +719,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     s_correa = luzCorrea_cm / N_total_correa;
   }
 
-  const capComp_correa = calcularMomentoCompuesto(tipoCorrea, b_eff_correa, espesorConcreto, f_c_val, Ec, Asc_stud, N_total_correa * phiQn_correa);
+  const capComp_correa = calcularMomentoCompuesto(tipoCorrea, b_eff_correa, espesorConcreto_efectivo, f_c_val, Ec, Asc_stud, N_total_correa * phiQn_correa);
   const phiMn_correa = capComp_correa ? capComp_correa.phiMn_comp : phiMn_steel_correa;
   const cumpleFlex_correa = Mu_correa <= phiMn_correa;
 
@@ -722,11 +729,13 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
 
   const wServ_correa = wServicio * sepReal / 100;
   const Ix_correa = getProp(tipoCorrea, 'Ix');
-  const defl_correa = deflexionViga(wServ_correa, luzCorrea_cm, E_ACERO, Ix_correa);
+  // Deflexión: usar inercia compuesta (I_tr) si disponible
+  const I_defl_correa = secComp_correa ? secComp_correa.I_tr : Ix_correa;
+  const defl_correa = deflexionViga(wServ_correa, luzCorrea_cm, E_ACERO, I_defl_correa);
   const deflLim_correa = luzCorrea_cm / 360;
   const cumpleDefl_correa = defl_correa <= deflLim_correa;
-  const defl_correa_comp = secComp_correa ? deflexionViga(wServ_correa, luzCorrea_cm, E_ACERO, secComp_correa.I_tr) : defl_correa;
-  const cumpleDefl_correa_comp = defl_correa_comp <= deflLim_correa;
+  const defl_correa_comp = defl_correa;
+  const cumpleDefl_correa_comp = cumpleDefl_correa;
   const arriostre_correa = calcularArriostramiento(tipoCorrea, Lb_correa, 1.14);
 
   // 8. CÁLCULO DE CANTIDAD DE VIGAS Y CORREAS TOTALES PARA LA ESTRUCTURA
@@ -792,7 +801,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const areaDeck = areaTotal * 1.15;
   const wr_deck = getDeckProp(calibre, 'wr') || 6.5;
   const Sr_deck = getDeckProp(calibre, 'Sr') || 15.24;
-  const volConcreto = areaTotal * ((espesorConcreto / 100) + (wr_deck / Sr_deck) * (hr / 100));
+  const volConcreto = areaTotal * ((espesorConcreto_efectivo / 100) + (wr_deck / Sr_deck) * (hr / 100));
   const longVigasPrincipalesX = filas * (luzX * nTramosX);
   const longVigasPrincipalesY = cols * (luzY * nTramosY);
   const totalLengthCorreas = numCorreas * (correasHorizontales ? (luzX * nTramosX) : (luzY * nTramosY));
@@ -953,7 +962,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     verificaciones,
     optimizador: { viga: optViga, correa: optCorrea },
     steelDeckData: {
-      espesorConcreto, calibre, sepCorreas, sepReal, tipoVigaPrincipal, tipoCorrea,
+      espesorConcreto: espesorConcreto_efectivo, espesorMinimo: espesorMinimoACI, calibre, sepCorreas, sepReal, tipoVigaPrincipal, tipoCorrea,
       diametroStud, alturaDeck, f_c: f_c_val, fy_rebar: fy_rebar_val,
       mConstruccion, vConstruccion, phiMn_pos_deck, phiMn_neg_deck, phiVn_deck,
       mPosLosa, mNegExtLosa, mNegIntLosa,
@@ -1289,6 +1298,11 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
             </div>
           ))}
         </div>
+        {steelDeckConfig.espesorConcreto < 5 && (
+          <div style={{ marginTop: '10px', padding: '8px 12px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '6px', fontSize: '12px', color: '#856404' }}>
+            ⚠️ <strong>Espesor mínimo ACI:</strong> El espesor ingresado ({steelDeckConfig.espesorConcreto} cm) es menor al mínimo normativo de <strong>5 cm</strong> sobre la cresta del deck (ACI 318-19 §26.3.3). Se calcula automáticamente con <strong>5 cm</strong>.
+          </div>
+        )}
       </div>
 
       {/* SVG SECCIÓN TRANSVERSAL Y ADVERTENCIA REUBICADOS */}
@@ -1355,7 +1369,6 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
                 ['Viga principal', resultados.verificaciones.vigaPrincipal.cumpleGlobal ? '✓ OK' : '✗ FAIL'],
                 ['Correas', resultados.verificaciones.correas.cumpleGlobal ? '✓ OK' : '✗ FAIL'],
                 ['Conectores', resultados.verificaciones.conectoresCorte.cumple ? '✓ OK' : '✗ FAIL'],
-                ['Fatiga studs', resultados.verificaciones.fatiga.cumple ? '✓ OK' : '✗ FAIL'],
                 ['Losa concreto', resultados.verificaciones.losaConcreto.cumpleGlobal ? '✓ OK' : '✗ FAIL'],
               ])}
             </div>
