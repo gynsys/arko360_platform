@@ -136,10 +136,10 @@ const PERFILES_I_H_TUBO = [
 // PROPIEDADES STEEL DECK
 // =============================================================================
 const DECK_PROPS = {
-  22: { peso: 7.3,  I_s: 15,   S_pos: 5.2,  S_neg: 4.8,  Vn: 2200, Mn_pos: 450,  Mn_neg: 380,  t: 0.76, hr: 3.8 },
-  20: { peso: 9.1,  I_s: 22,   S_pos: 7.1,  S_neg: 6.5,  Vn: 2800, Mn_pos: 620,  Mn_neg: 520,  t: 0.91, hr: 3.8 },
-  18: { peso: 11.4, I_s: 32,   S_pos: 9.8,  S_neg: 9.0,  Vn: 3500, Mn_pos: 850,  Mn_neg: 710,  t: 1.21, hr: 3.8 },
-  16: { peso: 14.6, I_s: 48,   S_pos: 13.2, S_neg: 12.1, Vn: 4500, Mn_pos: 1150, Mn_neg: 960,  t: 1.52, hr: 3.8 },
+  22: { peso: 7.3,  I_s: 15,   S_pos: 5.2,  S_neg: 4.8,  Vn: 2200, Mn_pos: 450,  Mn_neg: 380,  t: 0.76, hr: 3.8, Sr: 15.24, wr: 6.5 },
+  20: { peso: 9.1,  I_s: 22,   S_pos: 7.1,  S_neg: 6.5,  Vn: 2800, Mn_pos: 620,  Mn_neg: 520,  t: 0.91, hr: 3.8, Sr: 15.24, wr: 6.5 },
+  18: { peso: 11.4, I_s: 32,   S_pos: 9.8,  S_neg: 9.0,  Vn: 3500, Mn_pos: 850,  Mn_neg: 710,  t: 1.21, hr: 3.8, Sr: 15.24, wr: 6.5 },
+  16: { peso: 14.6, I_s: 48,   S_pos: 13.2, S_neg: 12.1, Vn: 4500, Mn_pos: 1150, Mn_neg: 960,  t: 1.52, hr: 3.8, Sr: 15.24, wr: 6.5 },
 };
 
 // =============================================================================
@@ -314,20 +314,7 @@ function calcularAsMinLosa(h_total_cm, b_ancho_cm = 100, fy_rebar = 4200) {
   let rho_min = fy_rebar >= 4200 ? 0.0018 : (fy_rebar >= 2800 ? 0.0020 : 0.0014);
   return rho_min * b_ancho_cm * h_total_cm;
 }
-function coeficientesLosaDosDirecciones(luzMayor, luzMenor, continua = true) {
-  const m = luzMenor / luzMayor;
-  let Ca_neg_ext, Ca_neg_int, Ca_pos;
-  if (continua) {
-    Ca_neg_ext = 0.045 + 0.025 * (1 - m);
-    Ca_neg_int = 0.050 + 0.030 * (1 - m);
-    Ca_pos = 0.035 + 0.020 * (1 - m);
-  } else {
-    Ca_neg_ext = 0.060 + 0.035 * (1 - m);
-    Ca_neg_int = 0.065 + 0.040 * (1 - m);
-    Ca_pos = 0.045 + 0.025 * (1 - m);
-  }
-  return { Ca_neg_ext, Ca_neg_int, Ca_pos, m };
-}
+
 
 // Deflexiones
 function deflexionViga(w_kgcm, L_cm, E, I_cm4) {
@@ -402,29 +389,48 @@ function calcularMomentoCompuesto(perfil, b_eff_cm, h_conc_cm, f_c, Ec, Asc_stud
 // =============================================================================
 // OPTIMIZADOR AUTOMÁTICO DE PERFILES
 // =============================================================================
-function optimizarPerfil(listaPerfiles, Mu, Vu, Lb, wServ_kgcm, deflLim_cm, costoPorKg, tipo = 'viga') {
+function optimizarPerfil(listaPerfiles, Mu, Vu, Lb, wServ_kgcm, deflLim_cm, costoPorKg, tipo = 'viga', compData = null) {
   const candidatos = [];
   for (const perfil of listaPerfiles) {
     const resFlex = calcularMomentoNominalAISC(perfil, Lb, 1.14);
-    const phiMn = resFlex.phiMn;
+    let phiMn = resFlex.phiMn;
+    
+    let defl_comp_opt = null;
+    if (compData) {
+      const { b_eff, espesorConcreto, f_c_val, Ec } = compData;
+      const P_acero = getProp(perfil, 'A') * getProp(perfil, 'Fy');
+      const P_conc = 0.85 * f_c_val * b_eff * espesorConcreto;
+      const P_studs = Math.min(P_acero, P_conc); // Full composite action assumed for optimization
+      const capComp = calcularMomentoCompuesto(perfil, b_eff, espesorConcreto, f_c_val, Ec, 1.0, P_studs);
+      if (capComp && capComp.phiMn_comp > phiMn) {
+        phiMn = capComp.phiMn_comp;
+      }
+      const secComp = calcularSeccionCompuesta(perfil, b_eff, espesorConcreto, f_c_val, Ec);
+      if (secComp) {
+        defl_comp_opt = deflexionViga(wServ_kgcm, Lb, E_ACERO, secComp.I_tr);
+      }
+    }
+
     const resCort = calcularCortanteNominalAISC(perfil);
     const phiVn = resCort.phiVn;
     const Ix = getProp(perfil, 'Ix');
     const defl = deflexionViga(wServ_kgcm, Lb, E_ACERO, Ix);
+    const deflFinal = defl_comp_opt !== null ? defl_comp_opt : defl;
+    
     const peso = getProp(perfil, 'peso');
     const costo = peso * Lb / 100 * costoPorKg / 1000; // $ aproximado
 
     const cumpleFlex = Mu <= phiMn;
     const cumpleCort = Vu <= phiVn;
-    const cumpleDefl = defl <= deflLim_cm;
+    const cumpleDefl = deflFinal <= deflLim_cm;
     const cumple = cumpleFlex && cumpleCort && cumpleDefl;
 
     candidatos.push({
-      perfil, phiMn, phiVn, defl, peso, costo,
+      perfil, phiMn, phiVn, defl: deflFinal, peso, costo,
       cumpleFlex, cumpleCort, cumpleDefl, cumple,
       ratioFlex: (Mu / phiMn).toFixed(2),
       ratioCort: (Vu / phiVn).toFixed(2),
-      ratioDefl: (defl / deflLim_cm).toFixed(2),
+      ratioDefl: (deflFinal / deflLim_cm).toFixed(2),
     });
   }
 
@@ -512,12 +518,12 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
 
   // 4. LOSA COMPUESTA
   const wuLosa = wu;
-  const luzLosa = luzMenor;
+  const luzLosa = sepReal; // Steel deck spans 1-way between correas
   const luzLosa_cm = luzLosa * 100;
-  const coefs = coeficientesLosaDosDirecciones(luzMayor, luzMenor, true);
-  const mPosLosa = coefs.Ca_pos * wuLosa * luzLosa * luzLosa;
-  const mNegExtLosa = coefs.Ca_neg_ext * wuLosa * luzLosa * luzLosa;
-  const mNegIntLosa = coefs.Ca_neg_int * wuLosa * luzLosa * luzLosa;
+  // Aproximación de losa continua en una dirección (ACI 318)
+  const mPosLosa = (wuLosa * luzLosa * luzLosa) / 14;
+  const mNegExtLosa = (wuLosa * luzLosa * luzLosa) / 10;
+  const mNegIntLosa = (wuLosa * luzLosa * luzLosa) / 10;
 
   // 5. CONECTORES - SIZING GEOMÉTRICO
   const d_stud_in = parseFloat(diametroStud) || 0.75;
@@ -730,12 +736,24 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   // 13. OPTIMIZADOR
   const costoVigaKg = costos.vigaPrincipalKg || 2.5;
   const costoCorreaKg = costos.correaKg || 2.0;
-  const optViga = optimizarPerfil(PERFILES_I_H_TUBO, Mu_vp, Vu_vp, luzVigaPrincipal_cm, wServ_vp, deflLim_vp, costoVigaKg, 'viga');
-  const optCorrea = optimizarPerfil(PERFILES_I_H_TUBO, Mu_correa, Vu_correa, luzCorrea_cm, wServ_correa, deflLim_correa, costoCorreaKg, 'correa');
+  
+  const compDataVP = { b_eff: b_eff_vp, espesorConcreto, f_c_val, Ec };
+  const optViga = optimizarPerfil(PERFILES_I_H_TUBO, Mu_vp, Vu_vp, luzVigaPrincipal_cm, wServ_vp, deflLim_vp, costoVigaKg, 'viga', compDataVP);
+  
+  const compDataCorrea = { b_eff: b_eff_correa, espesorConcreto, f_c_val, Ec };
+  const optCorrea = optimizarPerfil(PERFILES_I_H_TUBO, Mu_correa, Vu_correa, luzCorrea_cm, wServ_correa, deflLim_correa, costoCorreaKg, 'correa', compDataCorrea);
+  
+  const wuCorreaBorde = wu * sepReal / 2;
+  const Mu_correa_borde = (wuCorreaBorde * Math.pow(luzCorrea_cm / 100, 2)) / 8 * 100;
+  const Vu_correa_borde = (wuCorreaBorde * luzCorrea_cm / 100) / 2;
+  const wServ_correa_borde = wServ_correa / 2;
+  const optCorreaBorde = optimizarPerfil(PERFILES_I_H_TUBO, Mu_correa_borde, Vu_correa_borde, luzCorrea_cm, wServ_correa_borde, deflLim_correa, costoCorreaKg, 'correa', compDataCorrea);
 
   // 14. MATERIALES Y COSTOS
   const areaDeck = areaTotal * 1.15;
-  const volConcreto = areaTotal * (espesorConcreto / 100);
+  const wr_deck = getDeckProp(calibre, 'wr') || 6.5;
+  const Sr_deck = getDeckProp(calibre, 'Sr') || 15.24;
+  const volConcreto = areaTotal * ((espesorConcreto / 100) + (wr_deck / Sr_deck) * (hr / 100));
   const longVigasPrincipalesX = filas * (luzX * nTramosX);
   const longVigasPrincipalesY = cols * (luzY * nTramosY);
   const totalLengthCorreas = numCorreas * (correasHorizontales ? (luzX * nTramosX) : (luzY * nTramosY));
@@ -853,10 +871,10 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
       ratio: (fatigaStuds.esfuerzo / fatigaStuds.FTH).toFixed(2),
     },
     losaConcreto: {
-      descripcion: 'Losa de concreto (ACI 318 Cap 7/9/14/22)',
-      momentoPos: { demanda: mPosLosa.toFixed(2) + ' kg·m/m', coef: coefs.Ca_pos.toFixed(4) },
-      momentoNegExt: { demanda: mNegExtLosa.toFixed(2) + ' kg·m/m', coef: coefs.Ca_neg_ext.toFixed(4) },
-      momentoNegInt: { demanda: mNegIntLosa.toFixed(2) + ' kg·m/m', coef: coefs.Ca_neg_int.toFixed(4) },
+      descripcion: 'Losa de concreto (ACI 318 - Losa en 1 dirección)',
+      momentoPos: { demanda: mPosLosa.toFixed(2) + ' kg·m/m', coef: '1/14' },
+      momentoNegExt: { demanda: mNegExtLosa.toFixed(2) + ' kg·m/m', coef: '1/10' },
+      momentoNegInt: { demanda: mNegIntLosa.toFixed(2) + ' kg·m/m', coef: '1/10' },
       cortante: { demanda: Vu_losa_cm.toFixed(2) + ' kg/cm', capacidad: phiVc.toFixed(2) + ' kg/cm', cumple: cumpleVcLosa, ratio: (Vu_losa_cm / phiVc).toFixed(2) },
       punzonamiento: { demanda: Vu_punz.toFixed(0) + ' kg', capacidad: phiVcPunz.toFixed(0) + ' kg', cumple: cumpleVcPunz, ratio: (Vu_punz / phiVcPunz).toFixed(2) },
       asMinimo: { requerido: As_min.toFixed(3) + ' cm²/m', provisto: As_prov.toFixed(3) + ' cm²/m', cumple: cumpleAsMin },
@@ -864,6 +882,12 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
       deflexionViva: { demanda: (deflLosaViva * 100).toFixed(2) + ' cm', limite: (deflLimLosaViva * 100).toFixed(2) + ' cm', cumple: cumpleDeflLosaViva, ratio: (deflLosaViva / deflLimLosaViva).toFixed(2) },
       vibracion: { frecuencia: f_natural.toFixed(2) + ' Hz', limite: '3.0 Hz', cumple: cumpleVibracion },
       cumpleGlobal: cumpleVcLosa && cumpleVcPunz && cumpleAsMin && cumpleDeflLosa && cumpleDeflLosaViva && cumpleVibracion,
+    },
+    correaBorde: {
+      descripcion: `Correa de Borde (AISC 360) - Mitad de carga tributaria`,
+      momento: { demanda: (Mu_correa_borde / 100000).toFixed(2) + ' t·m' },
+      optimo: optCorreaBorde.optimo.perfil,
+      cumpleGlobal: optCorreaBorde.optimo.cumple,
     },
   };
 
@@ -942,7 +966,7 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
 
   const styles = {
     container: { fontFamily: '"Inter", system-ui, sans-serif', maxWidth: '1400px', margin: '0 auto', padding: '24px', background: theme.bg, minHeight: '100vh' },
-    mainLayout: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' },
+    mainLayout: { display: 'grid', gridTemplateColumns: '1fr', gap: '24px', alignItems: 'start' },
     header: { marginBottom: '24px' },
     title: { fontSize: '22px', fontWeight: 700, color: theme.text, margin: '0 0 4px 0' },
     subtitle: { fontSize: '13px', color: theme.textMuted, margin: 0 },
@@ -1029,11 +1053,125 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
     { id: 'costos', label: 'Costos' },
   ];
 
+  const exportarPDF = () => {
+    if (!resultados) return;
+    const w = window.open('', '_blank');
+    w.document.write(`
+      <html>
+        <head>
+          <title>Memoria de Cálculo - Losa Colaborante</title>
+          <style>
+            body { font-family: 'Arial', sans-serif; padding: 40px; color: #333; }
+            h1, h2 { color: #1a252f; border-bottom: 2px solid #34495e; padding-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f4f6f7; }
+            .badge-ok { color: #27ae60; font-weight: bold; }
+            .badge-fail { color: #c0392b; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <h1>Memoria de Cálculo: Losa Colaborante Steel Deck</h1>
+          
+          <h2>1. Datos de Entrada</h2>
+          <table>
+            <tr><th>Paño a evaluar (Luz X / Luz Y)</th><td>${grid.luzX} m x ${grid.luzY} m</td></tr>
+            <tr><th>Carga Viva</th><td>${datos.cv} kg/m²</td></tr>
+            <tr><th>Carga Muerta Extra</th><td>${datos.cmExtra} kg/m²</td></tr>
+            <tr><th>f'c Concreto</th><td>${normParams.f_c || 210} kg/cm²</td></tr>
+            <tr><th>Calibre Deck</th><td>${steelDeckConfig.calibre}</td></tr>
+            <tr><th>Espesor Losa (sobre deck)</th><td>${steelDeckConfig.espesorConcreto} cm</td></tr>
+          </table>
+
+          <h2>2. Resultados Generales y Volúmenes</h2>
+          <table>
+            <tr><th>Espesor Total de Losa (h)</th><td>${resultados.h} cm</td></tr>
+            <tr><th>Volumen Concreto Estimado</th><td>${resultados.volConcreto} m³</td></tr>
+            <tr><th>Peso Acero (Vigas+Correas+Malla)</th><td>${resultados.kgAcero} kg</td></tr>
+            <tr><th>Studs Requeridos</th><td>${resultados.numBloques} unidades</td></tr>
+            <tr><th>Costo Total Estimado</th><td>$${resultados.costoTotal} ($${resultados.costoM2}/m²)</td></tr>
+          </table>
+
+          <h2>3. Verificaciones Estructurales (AISC 360-16 / ACI 318-19)</h2>
+          <table>
+            <tr>
+              <th>Elemento / Revisión</th>
+              <th>Demanda</th>
+              <th>Capacidad / Límite</th>
+              <th>Estado</th>
+            </tr>
+            <tr>
+              <td>Viga Principal - ${resultados.optimizador?.viga?.optimo?.perfil || steelDeckConfig.tipoVigaPrincipal}</td>
+              <td>${resultados.verificaciones.vigaPrincipal.momento.demanda}</td>
+              <td>${resultados.verificaciones.vigaPrincipal.momento.capacidad}</td>
+              <td class="${resultados.verificaciones.vigaPrincipal.cumpleGlobal ? 'badge-ok' : 'badge-fail'}">
+                ${resultados.verificaciones.vigaPrincipal.cumpleGlobal ? 'CUMPLE' : 'NO CUMPLE'}
+              </td>
+            </tr>
+            <tr>
+              <td>Correa Típica - ${resultados.optimizador?.correa?.optimo?.perfil || steelDeckConfig.tipoCorrea}</td>
+              <td>${resultados.verificaciones.correas.momento.demanda}</td>
+              <td>${resultados.verificaciones.correas.momento.capacidad}</td>
+              <td class="${resultados.verificaciones.correas.cumpleGlobal ? 'badge-ok' : 'badge-fail'}">
+                ${resultados.verificaciones.correas.cumpleGlobal ? 'CUMPLE' : 'NO CUMPLE'}
+              </td>
+            </tr>
+            <tr>
+              <td>Correa de Borde (Mitad de área) - ${resultados.verificaciones.correaBorde?.optimo || 'N/A'}</td>
+              <td>${resultados.verificaciones.correaBorde?.momento?.demanda || 'N/A'}</td>
+              <td>-</td>
+              <td class="${resultados.verificaciones.correaBorde?.cumpleGlobal ? 'badge-ok' : 'badge-fail'}">
+                ${resultados.verificaciones.correaBorde?.cumpleGlobal ? 'CUMPLE' : 'NO CUMPLE'}
+              </td>
+            </tr>
+            <tr>
+              <td>Conectores de Corte (Studs)</td>
+              <td>${resultados.verificaciones.conectoresCorte.requeridos} req.</td>
+              <td>${resultados.numBloques} provistos</td>
+              <td class="${resultados.verificaciones.conectoresCorte.cumple ? 'badge-ok' : 'badge-fail'}">
+                ${resultados.verificaciones.conectoresCorte.cumple ? 'CUMPLE' : 'NO CUMPLE'}
+              </td>
+            </tr>
+            <tr>
+              <td>Losa Concreto (Flexión Positiva)</td>
+              <td>${resultados.verificaciones.losaConcreto.momentoPos.demanda}</td>
+              <td>-</td>
+              <td class="badge-ok">OK</td>
+            </tr>
+            <tr>
+              <td>Fatiga de Conectores (AISC App 3)</td>
+              <td>${resultados.verificaciones.fatiga.esfuerzo}</td>
+              <td>Límite: ${resultados.verificaciones.fatiga.FTH}</td>
+              <td class="${resultados.verificaciones.fatiga.cumple ? 'badge-ok' : 'badge-fail'}">
+                ${resultados.verificaciones.fatiga.cumple ? 'CUMPLE' : 'NO CUMPLE'}
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin-top: 40px; font-size: 11px; color: #7f8c8d; text-align: center;">
+            Documento generado por Calculadora Arko360. Este pre-dimensionamiento normativo (ACI/AISC) no sustituye el diseño detallado ni la firma de un ingeniero estructural calificado.
+          </p>
+        </body>
+      </html>
+    `);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); }, 500);
+  };
+
   return (
     <div style={styles.container}>
-      <div style={styles.header}>
-        <h2 style={styles.title}>Losa Colaborante Steel Deck</h2>
-        <p style={styles.subtitle}>Pre-dimensionamiento normativo ACI 318-19 · AISC 360-16 LRFD · Fatiga · Optimización</p>
+      <div style={{...styles.header, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+        <div>
+          <h2 style={styles.title}>Losa Colaborante Steel Deck</h2>
+          <p style={styles.subtitle}>Pre-dimensionamiento normativo ACI 318-19 · AISC 360-16 LRFD · Fatiga · Optimización</p>
+        </div>
+        <button 
+          onClick={exportarPDF}
+          style={{ padding: '10px 20px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 2px 4px rgba(37,99,235,0.2)' }}
+        >
+          📄 Exportar Memoria
+        </button>
       </div>
 
       <div style={styles.mainLayout}>
@@ -1095,6 +1233,16 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
         </div>
       </div>
 
+      {/* SVG SECCIÓN TRANSVERSAL Y ADVERTENCIA REUBICADOS */}
+      {resultados && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+          {renderSeccion(resultados, 'colaborante', steelDeckConfig, null)}
+          <div style={styles.alert}>
+            <strong>⚠️ Advertencia Normativa:</strong> Esta herramienta realiza verificaciones de pre-dimensionamiento basadas en ACI 318-19 y AISC 360-16 (LRFD). Incluye: método de la transformada para sección compuesta, factor de reducción R de conectores (AISC I3.2d), pandeo lateral-torsional con arriostramiento (AISC Cap. F / App. 6), cortante del concreto y punzonamiento (ACI 318), deflexiones en servicio, vibración y fatiga de conectores (AISC App. 3). <strong>No sustituye el diseño estructural detallado</strong> ni la supervisión de un ingeniero estructural calificado.
+          </div>
+        </div>
+      )}
+
       {/* RESULTADOS */}
       {resultados && (
         <div style={styles.card}>
@@ -1142,7 +1290,6 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
                 ['Luz mayor', Math.max(grid.luzX, grid.luzY).toFixed(2) + ' m'],
                 ['Luz menor', Math.min(grid.luzX, grid.luzY).toFixed(2) + ' m'],
                 ['Ratio luz', (Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY)).toFixed(2)],
-                ['Dos direcciones', (Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY) <= 2) ? 'Sí' : 'No'],
                 ['Área total', (grid.luzX * Math.max(grid.cols - 1, 1) * grid.luzY * Math.max(grid.filas - 1, 1)).toFixed(2) + ' m²'],
               ])}
               {infoCard('Estado por elemento', [
@@ -1521,17 +1668,6 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
           )}
         </div>
       )}
-        </div>
-
-        {/* PANEL DERECHO: VISUALIZACIÓN */}
-        <div>
-          {/* SVG SECCIÓN TRANSVERSAL */}
-          {resultados && renderSeccion(resultados, 'colaborante', steelDeckConfig, null)}
-
-          {/* ADVERTENCIA */}
-          <div style={styles.alert}>
-            <strong>⚠️ Advertencia Normativa:</strong> Esta herramienta realiza verificaciones de pre-dimensionamiento basadas en ACI 318-19 y AISC 360-16 (LRFD). Incluye: método de la transformada para sección compuesta, factor de reducción R de conectores (AISC I3.2d), pandeo lateral-torsional con arriostramiento (AISC Cap. F / App. 6), cortante del concreto y punzonamiento (ACI 318), deflexiones en servicio, vibración y fatiga de conectores (AISC App. 3). <strong>No sustituye el diseño estructural detallado</strong> ni la supervisión de un ingeniero estructural calificado.
-          </div>
         </div>
       </div>
     </div>

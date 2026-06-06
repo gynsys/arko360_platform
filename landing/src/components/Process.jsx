@@ -27,7 +27,9 @@ export default function Process() {
             {tag}
           </div>
           <h2 className="section-title" style={{ marginBottom: 16 }}>
-            {renderTitle(title)}
+            {config?.process?.title ? renderTitle(config.process.title) : (
+              <>{process.title.line1} <span>{process.title.accent}</span></>
+            )}
           </h2>
           <p className="section-subtitle">
             {subtitle}
@@ -46,6 +48,7 @@ export default function Process() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.15 }}
               >
+                <div className="process-step-number">{i + 1}</div>
                 <div className="process-step-icon">
                   {Icon && <Icon size={28} strokeWidth={1.5} />}
                 </div>

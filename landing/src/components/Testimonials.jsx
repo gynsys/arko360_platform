@@ -30,7 +30,7 @@ export default function Testimonials() {
           </p>
         </div>
 
-        <div className="testimonials-grid">
+        <div className="testimonials-track">
           {list.map((item, i) => (
             <motion.div
               key={item.id || i}

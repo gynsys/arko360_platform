@@ -545,28 +545,31 @@ export const renderSeccion = (calc, losaActiva, steelDeckConfig, aligeradaConfig
             <line x1={ox + 10} y1={oy - (espesorConcreto - 2) * scale}
               x2={ox + 330} y2={oy - (espesorConcreto - 2) * scale}
               stroke="#c0392b" strokeWidth="1" strokeDasharray="3,3" />
-            <text x={ox + 335} y={oy - (espesorConcreto - 2) * scale + 4} fill="#c0392b" fontSize="10">Malla 6x6-10/10</text>
+            <text x={ox + 335} y={oy - (espesorConcreto - 2) * scale + 4} fill="#a93226" fontSize="11" fontWeight="bold">Malla</text>
 
             {/* Conector de corte (stud) */}
-            <rect x={ox + 80} y={oy - (espesorConcreto + 1) * scale} width="6" height={espesorConcreto * scale + 8} fill="#e67e22" stroke="#d35400" strokeWidth="1" rx="2" />
-            <circle cx={ox + 83} cy={oy - (espesorConcreto + 1) * scale} r="5" fill="#e67e22" stroke="#d35400" strokeWidth="1" />
-            <text x={ox + 95} y={oy - (espesorConcreto + 2) * scale} fill="#e67e22" fontSize="10">Stud Ø3/4"</text>
+            <rect x={ox + 80} y={oy - (steelDeckConfig?.alturaStud || 10) * scale} width="6" height={(steelDeckConfig?.alturaStud || 10) * scale} fill="#e67e22" stroke="#d35400" strokeWidth="1" rx="2" />
+            <circle cx={ox + 83} cy={oy - (steelDeckConfig?.alturaStud || 10) * scale} r="5" fill="#e67e22" stroke="#d35400" strokeWidth="1" />
+            <text x={ox + 92} y={oy - ((steelDeckConfig?.alturaStud || 10) * scale) + 12} fill="#d35400" fontSize="11" fontWeight="bold">Stud {steelDeckConfig?.diametroStud ? `Ø${steelDeckConfig.diametroStud}"` : 'Ø3/4"'}</text>
 
             {/* Cota h total */}
             <line x1={ox - 20} y1={oy} x2={ox - 20} y2={oy - h * scale} stroke="#333" strokeWidth="1" />
-            <text x={ox - 55} y={oy - (h * scale) / 2 + 4} fill="#333" fontSize="12">h = {h} cm</text>
+            <text x={ox - 65} y={oy - (h * scale) / 2 + 4} fill="#111" fontSize="12" fontWeight="bold">h = {h} cm</text>
 
             {/* Cota concreto */}
             <line x1={ox + 360} y1={oy - 3 * scale} x2={ox + 360} y2={oy - h * scale} stroke="#666" strokeWidth="1" strokeDasharray="3,2" />
-            <text x={ox + 365} y={oy - (h * scale + 3 * scale) / 2 + 4} fill="#666" fontSize="11">t = {espesorConcreto} cm</text>
+            <text x={ox + 365} y={oy - (h * scale + 3 * scale) / 2 + 4} fill="#111" fontSize="12" fontWeight="bold">t = {espesorConcreto} cm</text>
 
-            {/* Viga principal debajo */}
-            {tipoVigaPrincipal.startsWith('Tubo') || tipoVigaPrincipal.includes('TUBO')
+            {/* Apoyo Izquierdo (Correa) */}
+            {tipoCorrea.startsWith('Tubo') || tipoCorrea.includes('TUBO')
               ? drawTuboRect(ox + 80, oy + 15, 36, 30, 2.5, "#2c3e50", "#1a252f")
-              : drawIBeam(ox + 80, oy + 20, 36, 40, 4, 4, "#2c3e50", "#1a252f")
+              : (tipoCorrea.startsWith('C') || tipoCorrea.includes('C ')
+                  ? drawCChannel(ox + 80, oy + 15, 26, 30, 3.5, 3.5, "#2c3e50", "#1a252f")
+                  : drawIBeam(ox + 80, oy + 20, 36, 40, 4, 4, "#2c3e50", "#1a252f")
+                )
             }
-            <text x={ox + 80} y={oy + 45} fill="#2c3e50" fontSize="9" fontWeight="bold" textAnchor="middle">{tipoVigaPrincipal}</text>
-            <text x={ox + 80} y={oy + 58} fill="#7f8c8d" fontSize="9" textAnchor="middle">Viga Principal</text>
+            <text x={ox + 80} y={oy + 48} fill="#1a252f" fontSize="10" fontWeight="bold" textAnchor="middle">{tipoCorrea}</text>
+            <text x={ox + 80} y={oy + 60} fill="#333" fontSize="10" fontWeight="bold" textAnchor="middle">Correa</text>
 
             {/* Correa intermedia */}
             {tipoCorrea.startsWith('Tubo') || tipoCorrea.includes('TUBO')
@@ -576,8 +579,8 @@ export const renderSeccion = (calc, losaActiva, steelDeckConfig, aligeradaConfig
                   : drawIBeam(ox + 215, oy + 15, 26, 30, 3.5, 3.5, "#8e44ad", "#6c3483")
                 )
             }
-            <text x={ox + 215} y={oy + 38} fill="#8e44ad" fontSize="9" fontWeight="bold" textAnchor="middle">{tipoCorrea}</text>
-            <text x={ox + 215} y={oy + 50} fill="#7f8c8d" fontSize="9" textAnchor="middle">Correa</text>
+            <text x={ox + 215} y={oy + 48} fill="#6c3483" fontSize="10" fontWeight="bold" textAnchor="middle">{tipoCorrea}</text>
+            <text x={ox + 215} y={oy + 60} fill="#333" fontSize="10" fontWeight="bold" textAnchor="middle">Correa</text>
           </g>
         )}
 
