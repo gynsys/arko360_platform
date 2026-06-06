@@ -1257,7 +1257,7 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
           {[
             ['espesorConcreto', 'Espesor concreto (cm)', 'number', 0.5, 4, 25],
             ['calibre', 'Calibre deck', 'select-deck', null, null, null],
-            ['sepCorreas', 'Sep. correas (m)', 'number', 0.1, 0.9, 3.0],
+            ['sepCorreas', 'Separación real correas (m)', 'number', 0.1, 0.9, 3.0],
             ['alturaDeck', 'Altura deck (cm)', 'number', 0.5, 5, 15],
             ['tipoVigaPrincipal', 'Viga principal', 'select-w', null, null, null],
             ['tipoCorrea', 'Correa', 'select-c', null, null, null],
@@ -1525,6 +1525,8 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>📊 Resumen de Distribución total</h4>
                   {infoCard('', [
                     ['Total studs requeridos', resultados.verificaciones.conectoresCorte.totalStuds.toLocaleString() + ' und'],
+                    ['Separación en Viga Principal', resultados.verificaciones.conectoresCorte.s_vp],
+                    ['Separación en Correas', resultados.verificaciones.conectoresCorte.s_correa],
                     ['Capacidad total ΣφQn', resultados.verificaciones.conectoresCorte.capacidadTotal],
                     ['Costo total conectores', `$${(resultados.verificaciones.conectoresCorte.totalStuds * (costos.studUnd || 0)).toFixed(2)}`],
                     ['Estado conectores', resultados.verificaciones.conectoresCorte.cumple ? '✓ OK' : '✗ REVISAR LÍMITES'],
