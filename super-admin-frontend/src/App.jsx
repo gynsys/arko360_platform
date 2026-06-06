@@ -6,6 +6,8 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AdminLayout from './components/layout/AdminLayout.jsx';
 import TenantsList from './pages/superadmin/TenantsList.jsx';
+import TemplatesList from './pages/superadmin/TemplatesList.jsx';
+import LandingSitesList from './pages/superadmin/LandingSitesList.jsx';
 import { API_URL } from './services/api';
 
 export const SiteConfigContext = React.createContext(null);
@@ -71,6 +73,8 @@ function App() {
             >
               <Route index element={<Navigate to="/admin/tenants" replace />} />
               <Route path="tenants" element={<TenantsList />} />
+              <Route path="templates" element={<TemplatesList />} />
+              <Route path="landing-sites" element={<LandingSitesList />} />
             </Route>
           </Routes>
         </BrowserRouter>
