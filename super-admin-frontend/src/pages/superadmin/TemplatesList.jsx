@@ -6,7 +6,7 @@ const templates = [
     id: 'construccion',
     name: 'Arko360 - Construcción',
     description: 'Plantilla ideal para empresas de construcción, contratistas y arquitectos. Diseño robusto y profesional.',
-    image: 'https://images.unsplash.com/photo-1541888081622-6323c28b70b5?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+    image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800&q=80',
     features: ['Galería de Proyectos', 'Formulario de Cotización', 'Servicios Destacados', 'Diseño Responsivo'],
     demoUrl: 'https://arko360.net'
   },
@@ -14,7 +14,7 @@ const templates = [
     id: 'medico',
     name: 'Arko360 - Médico',
     description: 'Perfecta para doctores, clínicas y profesionales de la salud. Incluye reserva de citas y sección de servicios médicos.',
-    image: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+    image: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&q=80',
     features: ['Reserva de Citas', 'Perfil Profesional', 'Testimonios', 'Integración WhatsApp'],
     demoUrl: '#'
   }
@@ -48,7 +48,7 @@ export default function TemplatesList() {
                 alt={template.name} 
                 className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
               />
-              <div className="absolute top-0 right-0 m-4 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+              <div className="absolute top-4 right-4 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md z-10">
                 NUEVO
               </div>
             </div>
