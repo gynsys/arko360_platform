@@ -351,11 +351,16 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const h_cm = h_total * 100;
   const h_sobre_deck = espesorConcreto;
 
+  // Distribución real uniforme de correas
+  const nEspacios = Math.ceil(luzMayor / sepCorreas);
+  const sepReal = nEspacios > 0 ? luzMayor / nEspacios : sepCorreas;
+  const nCorreasPerBay = Math.max(0, nEspacios - 1);
+
   // 1. CARGAS
   const pesoConcreto = (espesorConcreto / 100) * GAMMA_CONC;
   const pesoDeck = getDeckProp(calibre, 'peso') || 9;
-  const pesoCorreas = (getProp(tipoCorrea, 'peso') || 15) / sepCorreas;
-  const pesoVigas = (getProp(tipoVigaPrincipal, 'peso') || 30) / (esDosDirecciones ? Math.min(luzX, luzY) : Math.max(luzX, luzY));
+  const pesoCorreas = (getProp(tipoCorrea, 'peso') || 15) / sepReal;
+  const pesoVigas = (getProp(tipoVigaPrincipal, 'peso') || 30) * (1 / luzX + 1 / luzY);
   const pesoPropio = pesoConcreto + pesoDeck + pesoCorreas + pesoVigas + 15;
 
   const wD = pesoPropio + (datos.cmExtra || 0);
@@ -372,7 +377,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
 
   // 3. DECK CONSTRUCCIÓN
   const wConstruccion = pesoConcreto + 100;
-  const luzDeck = sepCorreas;
+  const luzDeck = sepReal;
   const luzDeck_cm = luzDeck * 100;
   const mConstruccion = (wConstruccion * luzDeck * luzDeck) / 8;
   const vConstruccion = (wConstruccion * luzDeck) / 2;
@@ -429,7 +434,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const luzVigaPrincipal_cm = luzMayor * 100;
   const luzCorrea_cm = luzMenor * 100;
 
-  const wuVigaPrincipal = wu * (esDosDirecciones ? luzMenor : luzMayor);
+  const wuVigaPrincipal = wu * luzMenor;
   const Mu_vp = (wuVigaPrincipal * Math.pow(luzVigaPrincipal_cm / 100, 2)) / 8 * 100;
   const Vu_vp = (wuVigaPrincipal * luzVigaPrincipal_cm / 100) / 2;
 
@@ -441,7 +446,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const phiVn_vp = resCort_vp.phiVn;
   const cumpleCort_vp = Vu_vp <= phiVn_vp;
 
-  const wServ_vp = wServicio * (esDosDirecciones ? luzMenor : luzMayor) / 100;
+  const wServ_vp = wServicio * luzMenor / 100;
   const Ix_vp = getProp(tipoVigaPrincipal, 'Ix');
   const defl_vp = deflexionViga(wServ_vp, luzVigaPrincipal_cm, E_ACERO, Ix_vp);
   const deflLim_vp = luzVigaPrincipal_cm / 360;
@@ -454,7 +459,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const arriostre_vp = calcularArriostramiento(tipoVigaPrincipal, Lb_vp, 1.14);
 
   // CORREAS
-  const wuCorrea = wu * sepCorreas;
+  const wuCorrea = wu * sepReal;
   const Mu_correa = (wuCorrea * Math.pow(luzCorrea_cm / 100, 2)) / 8 * 100;
   const Vu_correa = (wuCorrea * luzCorrea_cm / 100) / 2;
   const Lb_correa = luzCorrea_cm;
@@ -464,7 +469,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const resCort_correa = calcularCortanteNominalAISC(tipoCorrea);
   const phiVn_correa = resCort_correa.phiVn;
   const cumpleCort_correa = Vu_correa <= phiVn_correa;
-  const wServ_correa = wServicio * sepCorreas / 100;
+  const wServ_correa = wServicio * sepReal / 100;
   const Ix_correa = getProp(tipoCorrea, 'Ix');
   const defl_correa = deflexionViga(wServ_correa, luzCorrea_cm, E_ACERO, Ix_correa);
   const deflLim_correa = luzCorrea_cm / 360;
@@ -512,9 +517,10 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   // 14. MATERIALES Y COSTOS
   const areaDeck = areaTotal * 1.15;
   const volConcreto = areaTotal * (espesorConcreto / 100);
-  const numCorreasX = Math.ceil((luzX * nTramosX) / sepCorreas) * (luzY * nTramosY);
-  const numCorreasY = Math.ceil((luzY * nTramosY) / sepCorreas) * (luzX * nTramosX);
-  const kgCorreas = (getProp(tipoCorrea, 'peso') || 15) * (numCorreasX + numCorreasY);
+  const totalLengthCorreas = nCorreasPerBay * luzMenor * nTramosX * nTramosY;
+  const numCorreasX = luzX < luzY ? 0 : totalLengthCorreas;
+  const numCorreasY = luzX < luzY ? totalLengthCorreas : 0;
+  const kgCorreas = (getProp(tipoCorrea, 'peso') || 15) * totalLengthCorreas;
   const kgVigas = (getProp(tipoVigaPrincipal, 'peso') || 30) * (longVigasPrincipalesX + longVigasPrincipalesY);
   const kgMalla = (0.142 / 10000) * areaTotal * 7850 * 1.1;
 
@@ -638,7 +644,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     verificaciones,
     optimizador: { viga: optViga, correa: optCorrea },
     steelDeckData: {
-      espesorConcreto, calibre, sepCorreas, tipoVigaPrincipal, tipoCorrea,
+      espesorConcreto, calibre, sepCorreas, sepReal, tipoVigaPrincipal, tipoCorrea,
       densidadStuds, alturaDeck, f_c: f_c_val, fy_rebar: fy_rebar_val,
       mConstruccion, vConstruccion, phiMn_pos_deck, phiMn_neg_deck, phiVn_deck,
       mPosLosa, mNegExtLosa, mNegIntLosa,

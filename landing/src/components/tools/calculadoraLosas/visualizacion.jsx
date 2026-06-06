@@ -37,81 +37,155 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
   const studsElements = [];
 
   if (losaActiva === 'colaborante') {
-    const { sepCorreas } = steelDeckConfig;
-    const sepPx = sepCorreas * scale;
+    const sepReal = calc.steelDeckData?.sepReal || steelDeckConfig.sepCorreas;
+    const sepPx = sepReal * scale;
 
-    // Correas en dirección X (entre apoyos en X)
-    // Solo añadir correas si la luz es mayor que 2 veces la separación
-    for (let r = 0; r < filas; r++) {
-      const luzTramoY = luzY * nTramosY;
-      if (luzTramoY > 2 * sepCorreas) {
-        const numCorreas = Math.max(Math.ceil(luzTramoY / sepCorreas) - 1, 0);
+    const correasHorizontales = luzX < luzY;
+
+    if (correasHorizontales) {
+      // 1. DIBUJAR CORREAS HORIZONTALES (una sola vez, sin bucles redundantes)
+      for (let j = 0; j < nTramosY; j++) {
+        const yStart = oy + j * luzY * scale;
+        const nEspacios = Math.ceil(luzY / (calc.steelDeckData?.sepCorreas || steelDeckConfig.sepCorreas));
+        const numCorreas = Math.max(0, nEspacios - 1);
         for (let k = 1; k <= numCorreas; k++) {
-          const y = oy + k * sepPx;
-          if (y < oy + nTramosY * luzY * scale) {
-            correasElements.push(
-              <line key={`cx-${r}-${k}`}
-                x1={ox} y1={y}
-                x2={ox + nTramosX * luzX * scale} y2={y}
-                stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
-              />
-            );
-          }
+          const y = yStart + k * sepPx;
+          correasElements.push(
+            <line key={`cx-${j}-${k}`}
+              x1={ox} y1={y}
+              x2={ox + nTramosX * luzX * scale} y2={y}
+              stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
+            />
+          );
         }
       }
-    }
 
-    // Correas en dirección Y
-    // Solo añadir correas si la luz es mayor que 2 veces la separación
-    for (let c = 0; c < cols; c++) {
-      const luzTramoX = luzX * nTramosX;
-      if (luzTramoX > 2 * sepCorreas) {
-        const numCorreas = Math.max(Math.ceil(luzTramoX / sepCorreas) - 1, 0);
-        for (let k = 1; k <= numCorreas; k++) {
-          const x = ox + k * sepPx;
-          if (x < ox + nTramosX * luzX * scale) {
-            correasElements.push(
-              <line key={`cy-${c}-${k}`}
-                x1={x} y1={oy}
-                x2={x} y2={oy + nTramosY * luzY * scale}
-                stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
-              />
-            );
-          }
-        }
-      }
-    }
-
-    // Vigas principales (en perimetros y en líneas de columnas)
-    for (let r = 0; r < filas; r++) {
-      vigasElements.push(
-        <line key={`vpx-${r}`}
-          x1={ox} y1={oy + r * luzY * scale}
-          x2={ox + nTramosX * luzX * scale} y2={oy + r * luzY * scale}
-          stroke="#2c3e50" strokeWidth="6" opacity="0.9"
-        />
-      );
-    }
-    for (let c = 0; c < cols; c++) {
-      vigasElements.push(
-        <line key={`vpy-${c}`}
-          x1={ox + c * luzX * scale} y1={oy}
-          x2={ox + c * luzX * scale} y2={oy + nTramosY * luzY * scale}
-          stroke="#2c3e50" strokeWidth="6" opacity="0.9"
-        />
-      );
-    }
-
-    // Conectores de corte (studs) en vigas principales
-    for (let r = 0; r < filas; r++) {
+      // 2. DIBUJAR VIGAS PRINCIPALES Y SECUNDARIAS
+      // Vigas Principales en Y (verticales)
       for (let c = 0; c < cols; c++) {
-        studsElements.push(
-          <circle key={`stud-${r}-${c}`}
-            cx={ox + c * luzX * scale + 10}
-            cy={oy + r * luzY * scale + 10}
-            r="4" fill="#e67e22" stroke="#d35400" strokeWidth="1"
+        vigasElements.push(
+          <line key={`vpx-main-${c}`}
+            x1={ox + c * luzX * scale} y1={oy}
+            x2={ox + c * luzX * scale} y2={oy + nTramosY * luzY * scale}
+            stroke="#2c3e50" strokeWidth="6" opacity="0.95"
           />
         );
+      }
+      // Vigas Secundarias en X (horizontales)
+      for (let r = 0; r < filas; r++) {
+        vigasElements.push(
+          <line key={`vpx-sec-${r}`}
+            x1={ox} y1={oy + r * luzY * scale}
+            x2={ox + nTramosX * luzX * scale} y2={oy + r * luzY * scale}
+            stroke="#7f8c8d" strokeWidth="4" opacity="0.85"
+          />
+        );
+      }
+    } else {
+      // 1. DIBUJAR CORREAS VERTICALES
+      for (let i = 0; i < nTramosX; i++) {
+        const xStart = ox + i * luzX * scale;
+        const nEspacios = Math.ceil(luzX / (calc.steelDeckData?.sepCorreas || steelDeckConfig.sepCorreas));
+        const numCorreas = Math.max(0, nEspacios - 1);
+        for (let k = 1; k <= numCorreas; k++) {
+          const x = xStart + k * sepPx;
+          correasElements.push(
+            <line key={`cy-${i}-${k}`}
+              x1={x} y1={oy}
+              x2={x} y2={oy + nTramosY * luzY * scale}
+              stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
+            />
+          );
+        }
+      }
+
+      // 2. DIBUJAR VIGAS PRINCIPALES Y SECUNDARIAS
+      // Vigas Principales en X (horizontales)
+      for (let r = 0; r < filas; r++) {
+        vigasElements.push(
+          <line key={`vpy-main-${r}`}
+            x1={ox} y1={oy + r * luzY * scale}
+            x2={ox + nTramosX * luzX * scale} y2={oy + r * luzY * scale}
+            stroke="#2c3e50" strokeWidth="6" opacity="0.95"
+          />
+        );
+      }
+      // Vigas Secundarias en Y (verticales)
+      for (let c = 0; c < cols; c++) {
+        vigasElements.push(
+          <line key={`vpy-sec-${c}`}
+            x1={ox + c * luzX * scale} y1={oy}
+            x2={ox + c * luzX * scale} y2={oy + nTramosY * luzY * scale}
+            stroke="#7f8c8d" strokeWidth="4" opacity="0.85"
+          />
+        );
+      }
+    }
+
+    // 3. DIBUJAR FLECHAS DE SENTIDO DE ARMADO
+    for (let i = 0; i < nTramosX; i++) {
+      for (let j = 0; j < nTramosY; j++) {
+        const cx = ox + (i + 0.5) * luzX * scale;
+        const cy = oy + (j + 0.5) * luzY * scale;
+
+        if (correasHorizontales) {
+          studsElements.push(
+            <g key={`arrow-${i}-${j}`} stroke="#3498db" strokeWidth="2.5" fill="none" opacity="0.85">
+              <line x1={cx} y1={cy - 22} x2={cx} y2={cy + 22} />
+              <polyline points={`${cx - 6},${cy - 16} ${cx},${cy - 22} ${cx + 6},${cy - 16}`} />
+              <polyline points={`${cx - 6},${cy + 16} ${cx},${cy + 22} ${cx + 6},${cy + 16}`} />
+              <circle cx={cx} cy={cy} r="3" fill="#3498db" />
+              <text x={cx} y={cy + 34} stroke="none" fill="#2980b9" fontSize="9" fontWeight="bold" textAnchor="middle">
+                ARMADO LOSA
+              </text>
+            </g>
+          );
+        } else {
+          studsElements.push(
+            <g key={`arrow-${i}-${j}`} stroke="#3498db" strokeWidth="2.5" fill="none" opacity="0.85">
+              <line x1={cx - 22} y1={cy} x2={cx + 22} y2={cy} />
+              <polyline points={`${cx - 16},${cy - 6} ${cx - 22},${cy} ${cx - 16},${cy + 6}`} />
+              <polyline points={`${cx + 16},${cy - 6} ${cx + 22},${cy} ${cx + 16},${cy + 6}`} />
+              <circle cx={cx} cy={cy} r="3" fill="#3498db" />
+              <text x={cx} y={cy - 12} stroke="none" fill="#2980b9" fontSize="9" fontWeight="bold" textAnchor="middle">
+                ARMADO LOSA
+              </text>
+            </g>
+          );
+        }
+      }
+    }
+
+    // 4. CONECTORES DE CORTE (studs) en las vigas principales únicamente
+    if (correasHorizontales) {
+      for (let c = 0; c < cols; c++) {
+        const x = ox + c * luzX * scale;
+        const totalHeight = nTramosY * luzY * scale;
+        const nStuds = Math.max(5, Math.ceil(totalHeight / 30));
+        for (let k = 0; k <= nStuds; k++) {
+          const y = oy + (k / nStuds) * totalHeight;
+          studsElements.push(
+            <circle key={`stud-v-${c}-${k}`}
+              cx={x} cy={y}
+              r="4.5" fill="#e67e22" stroke="#d35400" strokeWidth="1.5"
+            />
+          );
+        }
+      }
+    } else {
+      for (let r = 0; r < filas; r++) {
+        const y = oy + r * luzY * scale;
+        const totalWidth = nTramosX * luzX * scale;
+        const nStuds = Math.max(5, Math.ceil(totalWidth / 30));
+        for (let k = 0; k <= nStuds; k++) {
+          const x = ox + (k / nStuds) * totalWidth;
+          studsElements.push(
+            <circle key={`stud-h-${r}-${k}`}
+              cx={x} cy={y}
+              r="4.5" fill="#e67e22" stroke="#d35400" strokeWidth="1.5"
+            />
+          );
+        }
       }
     }
   }
@@ -349,7 +423,7 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
 
         {/* Leyenda */}
         <g transform={`translate(${svgW - 180}, ${mT})`}>
-          <rect x="0" y="0" width="170" height="110" fill="white" stroke="#ddd" strokeWidth="1" rx="6" opacity="0.95" />
+          <rect x="0" y="0" width="170" height={losaActiva === 'colaborante' ? 145 : 110} fill="white" stroke="#ddd" strokeWidth="1" rx="6" opacity="0.95" />
           <circle cx="15" cy="18" r="6" fill="#2c3e50" />
           <text x="28" y="22" fill="#333" fontSize="11">Columna / Apoyo</text>
           <line x1="10" y1="38" x2="30" y2="38" stroke="#0d6efd" strokeWidth="2" />
@@ -360,10 +434,16 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
             <>
               <line x1="10" y1="72" x2="30" y2="72" stroke="#2c3e50" strokeWidth="4" />
               <text x="38" y="76" fill="#333" fontSize="11">Viga Principal</text>
-              <line x1="10" y1="88" x2="30" y2="88" stroke="#8e44ad" strokeWidth="2" strokeDasharray="4,2" />
-              <text x="38" y="92" fill="#333" fontSize="11">Correa (Joist)</text>
-              <circle cx="20" cy="102" r="4" fill="#e67e22" />
-              <text x="38" y="106" fill="#333" fontSize="11">Stud (corte)</text>
+              <line x1="10" y1="86" x2="30" y2="86" stroke="#7f8c8d" strokeWidth="3" />
+              <text x="38" y="90" fill="#333" fontSize="11">Viga Secundaria</text>
+              <line x1="10" y1="100" x2="30" y2="100" stroke="#8e44ad" strokeWidth="2" strokeDasharray="4,2" />
+              <text x="38" y="104" fill="#333" fontSize="11">Correa (Joist)</text>
+              <circle cx="20" cy="115" r="4.5" fill="#e67e22" stroke="#d35400" strokeWidth="1" />
+              <text x="38" y="119" fill="#333" fontSize="11">Stud (corte)</text>
+              <line x1="10" y1="130" x2="30" y2="130" stroke="#3498db" strokeWidth="2" />
+              <polyline points="12,127 10,130 12,133" stroke="#3498db" strokeWidth="2" fill="none" />
+              <polyline points="28,127 30,130 28,133" stroke="#3498db" strokeWidth="2" fill="none" />
+              <text x="38" y="134" fill="#333" fontSize="11">Dir. Armado</text>
             </>
           )}
           {losaActiva === 'aligerada' && (
@@ -418,6 +498,43 @@ export const renderSeccion = (calc, losaActiva, steelDeckConfig, aligeradaConfig
       borderRadius: '10px',
       border: '1px solid #e0e0e0',
     },
+  };
+
+  const tipoVigaPrincipal = steelDeckConfig.tipoVigaPrincipal || 'W12x26';
+  const tipoCorrea = steelDeckConfig.tipoCorrea || 'Tubo 100x50x3';
+
+  // Helpers de dibujo de perfiles
+  const drawIBeam = (cx, cy, w, h, tf = 3.5, tw = 3.5, color = "#2c3e50", strokeColor = "#1a252f") => {
+    const x1 = cx - w/2;
+    const x2 = cx + w/2;
+    const y1 = cy - h/2;
+    const y2 = cy + h/2;
+    return (
+      <path d={`M ${x1} ${y1} H ${x2} V ${y1 + tf} H ${cx + tw/2} V ${y2 - tf} H ${x2} V ${y2} H ${x1} V ${y2 - tf} H ${cx - tw/2} V ${y1 + tf} H ${x1} Z`}
+            fill={color} stroke={strokeColor} strokeWidth="1.5" />
+    );
+  };
+
+  const drawTuboRect = (cx, cy, w, h, t = 2.5, color = "#7f8c8d", strokeColor = "#34495e") => {
+    const x1 = cx - w/2;
+    const y1 = cy - h/2;
+    return (
+      <g>
+        <rect x={x1} y={y1} width={w} height={h} fill={color} stroke={strokeColor} strokeWidth="1.5" rx="1.5" />
+        <rect x={x1 + t} y={y1 + t} width={w - 2*t} height={h - 2*t} fill="#fafbfc" stroke="none" />
+      </g>
+    );
+  };
+
+  const drawCChannel = (cx, cy, w, h, tf = 3.5, tw = 3.5, color = "#8e44ad", strokeColor = "#6c3483") => {
+    const x1 = cx - w/2;
+    const x2 = cx + w/2;
+    const y1 = cy - h/2;
+    const y2 = cy + h/2;
+    return (
+      <path d={`M ${x2} ${y1} H ${x1} V ${y2} H ${x2} V ${y2 - tf} H ${x1 + tw} V ${y1 + tf} H ${x2} Z`}
+            fill={color} stroke={strokeColor} strokeWidth="1.5" />
+    );
   };
 
   return (
@@ -475,14 +592,23 @@ export const renderSeccion = (calc, losaActiva, steelDeckConfig, aligeradaConfig
             <text x={ox + 365} y={oy - (h * scale + 3 * scale) / 2 + 4} fill="#666" fontSize="11">t = {steelDeckConfig.espesorConcreto} cm</text>
 
             {/* Viga principal debajo */}
-            <rect x={ox + 60} y={oy} width="40" height="30" fill="#2c3e50" stroke="#1a252f" strokeWidth="2" rx="2" />
-            <text x={ox + 80} y={oy + 20} fill="#fff" fontSize="9" textAnchor="middle">W</text>
-            <text x={ox + 80} y={oy + 45} fill="#2c3e50" fontSize="10" textAnchor="middle">Viga Principal</text>
+            {tipoVigaPrincipal.startsWith('Tubo') || tipoVigaPrincipal.includes('TUBO')
+              ? drawTuboRect(ox + 80, oy + 15, 36, 30, 2.5, "#2c3e50", "#1a252f")
+              : drawIBeam(ox + 80, oy + 20, 36, 40, 4, 4, "#2c3e50", "#1a252f")
+            }
+            <text x={ox + 80} y={oy + 45} fill="#2c3e50" fontSize="9" fontWeight="bold" textAnchor="middle">{tipoVigaPrincipal}</text>
+            <text x={ox + 80} y={oy + 58} fill="#7f8c8d" fontSize="9" textAnchor="middle">Viga Principal</text>
 
             {/* Correa intermedia */}
-            <rect x={ox + 200} y={oy} width="30" height="20" fill="#8e44ad" stroke="#6c3483" strokeWidth="2" rx="2" />
-            <text x={ox + 215} y={oy + 14} fill="#fff" fontSize="8" textAnchor="middle">C</text>
-            <text x={ox + 215} y={oy + 35} fill="#8e44ad" fontSize="10" textAnchor="middle">Correa</text>
+            {tipoCorrea.startsWith('Tubo') || tipoCorrea.includes('TUBO')
+              ? drawTuboRect(ox + 215, oy + 12.5, 30, 25, 2.5, "#8e44ad", "#6c3483")
+              : (tipoCorrea.startsWith('C') || tipoCorrea.includes('C ')
+                  ? drawCChannel(ox + 215, oy + 15, 26, 30, 3.5, 3.5, "#8e44ad", "#6c3483")
+                  : drawIBeam(ox + 215, oy + 15, 26, 30, 3.5, 3.5, "#8e44ad", "#6c3483")
+                )
+            }
+            <text x={ox + 215} y={oy + 38} fill="#8e44ad" fontSize="9" fontWeight="bold" textAnchor="middle">{tipoCorrea}</text>
+            <text x={ox + 215} y={oy + 50} fill="#7f8c8d" fontSize="9" textAnchor="middle">Correa</text>
           </g>
         )}
 
