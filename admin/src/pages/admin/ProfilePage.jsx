@@ -4,7 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { 
   FiUpload, FiUser, FiSettings, FiFileText, FiGrid, FiSave, 
   FiPlus, FiTrash2, FiEdit, FiCheck, FiX, FiChevronDown, FiChevronUp, 
-  FiLink, FiPhone, FiMail, FiMapPin, FiMessageSquare, FiStar 
+  FiLink, FiPhone, FiMail, FiMapPin, FiMessageSquare, FiStar, FiSliders 
 } from 'react-icons/fi';
 
 export default function ProfilePage() {
@@ -216,6 +216,7 @@ export default function ProfilePage() {
     { id: 'contacto', label: 'Contacto', icon: FiFileText },
     { id: 'contenido', label: 'Contenido Landing', icon: FiGrid },
     { id: 'modulos', label: 'Módulos Visibles', icon: FiGrid },
+    { id: 'herramientas', label: 'Herramientas', icon: FiSliders },
   ];
 
   const primaryColor = siteConfig.branding?.primaryColor || '#0a4275';
@@ -890,7 +891,7 @@ export default function ProfilePage() {
                 { key: 'showPortfolio', label: 'Portafolio (Galería de Proyectos Ejecutados)' },
                 { key: 'showProcess', label: 'Metodología (Pasos del Flujo de Trabajo)' },
                 { key: 'showTestimonials', label: 'Testimonios (Reseñas de Clientes Satisfechos)' },
-                { key: 'showBiblio', label: 'Biblioteca BiblioARKO (Artículos y Novedades)' },
+                { key: 'showBiblio', label: 'Biblioteca Biblioteca BiblioARKO' },
                 { key: 'showTools', label: 'Calculadoras de Ingeniería (Herramientas Técnicas)' }
               ].map((sec) => (
                 <div key={sec.key} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
@@ -900,6 +901,39 @@ export default function ProfilePage() {
                       type="checkbox"
                       checked={siteConfig.sections?.[sec.key] !== false}
                       onChange={(e) => updateConfigValue(`sections.${sec.key}`, e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* HERRAMIENTAS */}
+        {activeTab === 'herramientas' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+            <h3 className="text-lg font-bold text-gray-950 mb-2">Visibilidad de Calculadoras de Ingeniería</h3>
+            <p className="text-sm text-gray-600 mb-6">Elige cuáles calculadoras específicas deseas mostrar u ocultar en la sección de herramientas de la Landing Page.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { key: 'showCieloRaso', label: 'Cálculo de Cielo Raso' },
+                { key: 'showMuroGravedad', label: 'Diseño de Muro de Gravedad' },
+                { key: 'showDisenoMezclas', label: 'Diseño de Mezclas de Concreto' },
+                { key: 'showDrywall', label: 'Calculadora de Drywall' },
+                { key: 'showElectrica', label: 'Calculadora Eléctrica' },
+                { key: 'showEscaleras', label: 'Calculadora de Escaleras' },
+                { key: 'showLosas', label: 'Calculadora de Losas' }
+              ].map((calc) => (
+                <div key={calc.key} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                  <span className="text-sm font-semibold text-gray-800">{calc.label}</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={siteConfig.tools?.[calc.key] !== false}
+                      onChange={(e) => updateConfigValue(`tools.${calc.key}`, e.target.checked)}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>

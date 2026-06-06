@@ -277,6 +277,15 @@ DEFAULT_SITE_CONFIG = {
         "showBiblio": True,
         "showTools": True
     },
+    "tools": {
+        "showCieloRaso": True,
+        "showMuroGravedad": True,
+        "showDisenoMezclas": True,
+        "showDrywall": True,
+        "showElectrica": True,
+        "showEscaleras": True,
+        "showLosas": True
+    },
     "hero": {
         "badge": "Ingeniería & Arquitectura",
         "titleLine1": "Construimos el",

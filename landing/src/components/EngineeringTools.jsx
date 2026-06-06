@@ -60,9 +60,13 @@ export default function EngineeringTools() {
           >
             {tools.list.filter(tool => {
               if (!siteConfig || !siteConfig.tools) return true; // Default show all
-              if (tool.id === 'diseno-mezclas') return siteConfig.tools.mixDesign;
-              if (tool.id === 'muro-gravedad') return siteConfig.tools.wallCalculator;
-              if (tool.id === 'cielo-raso') return siteConfig.tools.budgetEstimator; // repurposing budgetEstimator for cielo-raso toggle to match
+              if (tool.id === 'cielo-raso') return siteConfig.tools.showCieloRaso !== false;
+              if (tool.id === 'muro-gravedad') return siteConfig.tools.showMuroGravedad !== false;
+              if (tool.id === 'diseno-mezclas') return siteConfig.tools.showDisenoMezclas !== false;
+              if (tool.id === 'drywall') return siteConfig.tools.showDrywall !== false;
+              if (tool.id === 'electrica') return siteConfig.tools.showElectrica !== false;
+              if (tool.id === 'escaleras') return siteConfig.tools.showEscaleras !== false;
+              if (tool.id === 'losas') return siteConfig.tools.showLosas !== false;
               return true;
             }).map((tool, i) => {
               const Icon = iconMap[tool.icon] || Calculator;
