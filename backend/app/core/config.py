@@ -73,6 +73,7 @@ class Settings(BaseSettings):
         "https://arko360.net",
         "https://www.arko360.net",
         "https://admin.arko360.net",
+        "https://superadmin.arko360.net",
         "https://api.arko360.net",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -98,6 +99,7 @@ class Settings(BaseSettings):
             "https://arko360.net",
             "https://www.arko360.net",
             "https://admin.arko360.net",
+            "https://superadmin.arko360.net",
             "https://api.arko360.net",
            
             "http://localhost",
