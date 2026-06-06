@@ -424,9 +424,11 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
 
         {/* Título de relación */}
         <text x={svgW / 2} y={25} fill="#2c3e50" fontSize="14" fontWeight="bold" textAnchor="middle">
-          {calc.esDosDirecciones
-            ? `LOSA EN DOS DIRECCIONES (ratio ${calc.ratio.toFixed(2)} ≤ 2)` 
-            : `LOSA EN UNA DIRECCIÓN (ratio ${calc.ratio.toFixed(2)} > 2)`}
+          {calc && typeof calc.ratio !== 'undefined' && (
+            calc.esDosDirecciones 
+            ? `LOSA EN DOS DIRECCIONES (ratio ${Number(calc.ratio).toFixed(2)} ≤ 2)` 
+            : `LOSA EN UNA DIRECCIÓN (ratio ${Number(calc.ratio).toFixed(2)} > 2)`
+          )}
         </text>
       </svg>
     </div>
