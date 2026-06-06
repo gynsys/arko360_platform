@@ -97,6 +97,44 @@ CATALOGO_PERFILES.HEA.forEach(p => {
   };
 });
 
+// Suplementar IPN con sus dimensiones estándar en cm
+const IPN_DIMS = {
+  80: { d: 8.0, bf: 4.2, tf: 0.59, tw: 0.39 },
+  100: { d: 10.0, bf: 5.0, tf: 0.68, tw: 0.45 },
+  120: { d: 12.0, bf: 5.8, tf: 0.77, tw: 0.51 },
+  140: { d: 14.0, bf: 6.6, tf: 0.86, tw: 0.57 },
+  160: { d: 16.0, bf: 7.4, tf: 0.95, tw: 0.63 },
+  180: { d: 18.0, bf: 8.2, tf: 1.04, tw: 0.69 },
+  200: { d: 20.0, bf: 9.0, tf: 1.13, tw: 0.75 },
+  220: { d: 22.0, bf: 9.8, tf: 1.22, tw: 0.81 },
+  240: { d: 24.0, bf: 10.6, tf: 1.31, tw: 0.87 },
+  260: { d: 26.0, bf: 11.3, tf: 1.41, tw: 0.94 },
+  280: { d: 28.0, bf: 11.9, tf: 1.52, tw: 1.01 },
+  300: { d: 30.0, bf: 12.5, tf: 1.62, tw: 1.08 },
+  320: { d: 32.0, bf: 13.1, tf: 1.73, tw: 1.15 },
+  340: { d: 34.0, bf: 13.7, tf: 1.83, tw: 1.22 },
+  360: { d: 36.0, bf: 14.3, tf: 1.95, tw: 1.30 },
+  400: { d: 40.0, bf: 15.5, tf: 2.16, tw: 1.44 },
+};
+
+CATALOGO_PERFILES.IPN.forEach(p => {
+  const num = parseInt(p.nombre.replace('IPN', '').trim());
+  const dims = IPN_DIMS[num] || { d: 20.0, bf: 10.0, tf: 0.85, tw: 0.56 };
+  CATALOGO_AISC[p.nombre] = {
+    ...p,
+    ...dims,
+    Fy: 2500,
+    Fu: 4000,
+    A: p.area,
+    Sx: p.Ix / (dims.d / 2),
+    ry: 0.22 * dims.bf,
+    J: 2 * p.Ix * 0.05,
+    Cw: 0,
+    rts: 0.25 * dims.bf,
+    tipo: 'IPN'
+  };
+});
+
 // Suplementar TUBO_RECT (Conduven) parseando el nombre (ej. Tubo 100x50x3)
 CATALOGO_PERFILES.TUBO_RECT.forEach(p => {
   const match = p.nombre.match(/Tubo\s+(\d+)x(\d+)x(\d+)/i);
@@ -129,6 +167,7 @@ const PERFILES_I_H_TUBO = [
   ...CATALOGO_PERFILES.W.map(p => p.nombre),
   ...CATALOGO_PERFILES.IPE.map(p => p.nombre),
   ...CATALOGO_PERFILES.HEA.map(p => p.nombre),
+  ...CATALOGO_PERFILES.IPN.map(p => p.nombre),
   ...CATALOGO_PERFILES.TUBO_RECT.map(p => p.nombre)
 ];
 

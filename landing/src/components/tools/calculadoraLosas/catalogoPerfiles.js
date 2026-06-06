@@ -24,6 +24,26 @@ export const CATALOGO_PERFILES = {
     { nombre: 'IPE 600', Ix: 70880, Zx: 2364, peso: 122.4, area: 155.9 },
   ],
 
+  // Perfiles IPN (European Standard Beams)
+  IPN: [
+    { nombre: 'IPN 80', Ix: 77.8, Zx: 19.5, peso: 5.94, area: 7.57 },
+    { nombre: 'IPN 100', Ix: 171, Zx: 34.2, peso: 8.34, area: 10.6 },
+    { nombre: 'IPN 120', Ix: 328, Zx: 54.7, peso: 11.1, area: 14.2 },
+    { nombre: 'IPN 140', Ix: 573, Zx: 81.9, peso: 14.3, area: 18.2 },
+    { nombre: 'IPN 160', Ix: 935, Zx: 117, peso: 17.9, area: 22.8 },
+    { nombre: 'IPN 180', Ix: 1450, Zx: 161, peso: 21.9, area: 27.9 },
+    { nombre: 'IPN 200', Ix: 2140, Zx: 214, peso: 26.2, area: 33.4 },
+    { nombre: 'IPN 220', Ix: 3060, Zx: 278, peso: 31.1, area: 39.5 },
+    { nombre: 'IPN 240', Ix: 4250, Zx: 354, peso: 36.2, area: 46.1 },
+    { nombre: 'IPN 260', Ix: 5740, Zx: 442, peso: 41.9, area: 53.3 },
+    { nombre: 'IPN 280', Ix: 7590, Zx: 542, peso: 47.9, area: 61.0 },
+    { nombre: 'IPN 300', Ix: 9800, Zx: 653, peso: 54.2, area: 69.0 },
+    { nombre: 'IPN 320', Ix: 12510, Zx: 782, peso: 61.0, area: 77.7 },
+    { nombre: 'IPN 340', Ix: 15700, Zx: 923, peso: 68.0, area: 86.7 },
+    { nombre: 'IPN 360', Ix: 19610, Zx: 1090, peso: 76.1, area: 97.0 },
+    { nombre: 'IPN 400', Ix: 29210, Zx: 1460, peso: 92.4, area: 118.0 },
+  ],
+
   // Perfiles HEA (European Wide Flange Beams)
   HEA: [
     { nombre: 'HEA 100', Ix: 349, Zx: 70, peso: 16.7, area: 21.2 },
@@ -85,29 +105,29 @@ export const CATALOGO_PERFILES = {
     { nombre: 'Tubo 150x150x8', Ix: 1450, Zx: 193, peso: 33.0, area: 42.0 },
   ],
 
-  // Perfiles AISC W (Wide Flange Beams) - Propiedades completas para cálculo normativo
+  // Perfiles AISC W (Wide Flange Beams) - Propiedades reales en métrico
   W: [
-    { nombre: 'W6x15', d: 15.24, bf: 10.16, tf: 0.72, tw: 0.46, Ix: 574, Sx: 75.5, Zx: 85.3, rx: 6.38, ry: 1.73, J: 1.80, Cw: 3.50e4, Fy: 345, Fu: 450, peso: 22.3, A: 28.4, rts: 1.95 },
-    { nombre: 'W8x18', d: 20.57, bf: 13.31, tf: 0.79, tw: 0.51, Ix: 1430, Sx: 139, Zx: 157, rx: 8.55, ry: 2.10, J: 3.80, Cw: 1.40e5, Fy: 345, Fu: 450, peso: 26.8, A: 34.1, rts: 2.37 },
-    { nombre: 'W10x22', d: 25.78, bf: 14.81, tf: 0.89, tw: 0.56, Ix: 3050, Sx: 236, Zx: 266, rx: 10.80, ry: 2.46, J: 7.20, Cw: 4.20e5, Fy: 345, Fu: 450, peso: 32.9, A: 41.9, rts: 2.78 },
-    { nombre: 'W12x26', d: 31.00, bf: 16.51, tf: 1.02, tw: 0.64, Ix: 5530, Sx: 357, Zx: 402, rx: 12.90, ry: 2.69, J: 12.6, Cw: 1.08e6, Fy: 345, Fu: 450, peso: 38.7, A: 49.4, rts: 3.05 },
-    { nombre: 'W14x30', d: 35.56, bf: 17.15, tf: 1.07, tw: 0.69, Ix: 8080, Sx: 454, Zx: 513, rx: 14.5, ry: 2.83, J: 18.2, Cw: 1.52e6, Fy: 345, Fu: 450, peso: 44.6, A: 56.8, rts: 3.21 },
-    { nombre: 'W16x31', d: 40.64, bf: 17.78, tf: 1.02, tw: 0.69, Ix: 11800, Sx: 581, Zx: 656, rx: 16.5, ry: 2.97, J: 20.5, Cw: 2.10e6, Fy: 345, Fu: 450, peso: 46.1, A: 58.7, rts: 3.37 },
-    { nombre: 'W18x35', d: 45.72, bf: 17.91, tf: 1.07, tw: 0.71, Ix: 16600, Sx: 726, Zx: 819, rx: 18.5, ry: 3.00, J: 24.5, Cw: 2.80e6, Fy: 345, Fu: 450, peso: 52.1, A: 66.4, rts: 3.40 },
-    { nombre: 'W21x44', d: 53.34, bf: 20.70, tf: 1.22, tw: 0.79, Ix: 26800, Sx: 1005, Zx: 1135, rx: 21.0, ry: 3.40, J: 35.0, Cw: 4.50e6, Fy: 345, Fu: 450, peso: 65.4, A: 83.3, rts: 3.85 },
-    { nombre: 'W24x55', d: 60.96, bf: 22.61, tf: 1.35, tw: 0.89, Ix: 39100, Sx: 1283, Zx: 1450, rx: 23.5, ry: 3.75, J: 48.0, Cw: 6.20e6, Fy: 345, Fu: 450, peso: 81.8, A: 104.2, rts: 4.25 },
-    { nombre: 'W27x84', d: 68.58, bf: 25.40, tf: 1.63, tw: 1.02, Ix: 66500, Sx: 1938, Zx: 2190, rx: 26.5, ry: 4.20, J: 75.0, Cw: 1.05e7, Fy: 345, Fu: 450, peso: 125.0, A: 159.4, rts: 4.75 },
+    { nombre: 'W6x15', d: 15.24, bf: 10.16, tf: 0.72, tw: 0.46, Ix: 1211, Sx: 159, Zx: 177, rx: 6.38, ry: 1.73, J: 1.80, Cw: 3.50e4, Fy: 3450, Fu: 4500, peso: 22.3, A: 28.6, rts: 1.95 },
+    { nombre: 'W8x18', d: 20.57, bf: 13.31, tf: 0.79, tw: 0.51, Ix: 2576, Sx: 249, Zx: 279, rx: 8.55, ry: 2.10, J: 3.80, Cw: 1.40e5, Fy: 3450, Fu: 4500, peso: 26.8, A: 33.9, rts: 2.37 },
+    { nombre: 'W10x22', d: 25.78, bf: 14.81, tf: 0.89, tw: 0.56, Ix: 4911, Sx: 380, Zx: 426, rx: 10.80, ry: 2.46, J: 7.20, Cw: 4.20e5, Fy: 3450, Fu: 4500, peso: 32.7, A: 41.9, rts: 2.78 },
+    { nombre: 'W12x26', d: 31.00, bf: 16.51, tf: 1.02, tw: 0.64, Ix: 8491, Sx: 547, Zx: 609, rx: 12.90, ry: 2.69, J: 12.6, Cw: 1.08e6, Fy: 3450, Fu: 4500, peso: 38.7, A: 49.3, rts: 3.05 },
+    { nombre: 'W14x30', d: 35.56, bf: 17.15, tf: 1.07, tw: 0.69, Ix: 12112, Sx: 688, Zx: 775, rx: 14.5, ry: 2.83, J: 18.2, Cw: 1.52e6, Fy: 3450, Fu: 4500, peso: 44.6, A: 57.1, rts: 3.21 },
+    { nombre: 'W16x31', d: 40.64, bf: 17.78, tf: 1.02, tw: 0.69, Ix: 15608, Sx: 773, Zx: 885, rx: 16.5, ry: 2.97, J: 20.5, Cw: 2.10e6, Fy: 3450, Fu: 4500, peso: 46.1, A: 58.8, rts: 3.37 },
+    { nombre: 'W18x35', d: 45.72, bf: 17.91, tf: 1.07, tw: 0.71, Ix: 21227, Sx: 944, Zx: 1090, rx: 18.5, ry: 3.00, J: 24.5, Cw: 2.80e6, Fy: 3450, Fu: 4500, peso: 52.1, A: 66.5, rts: 3.40 },
+    { nombre: 'W21x44', d: 53.34, bf: 20.70, tf: 1.22, tw: 0.79, Ix: 35088, Sx: 1337, Zx: 1563, rx: 21.0, ry: 3.40, J: 35.0, Cw: 4.50e6, Fy: 3450, Fu: 4500, peso: 65.5, A: 83.9, rts: 3.85 },
+    { nombre: 'W24x55', d: 60.96, bf: 22.61, tf: 1.35, tw: 0.89, Ix: 56191, Sx: 1868, Zx: 2196, rx: 23.5, ry: 3.75, J: 48.0, Cw: 6.20e6, Fy: 3450, Fu: 4500, peso: 81.8, A: 104.5, rts: 4.25 },
+    { nombre: 'W27x84', d: 68.58, bf: 25.40, tf: 1.63, tw: 1.02, Ix: 118625, Sx: 3490, Zx: 3998, rx: 26.5, ry: 4.20, J: 75.0, Cw: 1.05e7, Fy: 3450, Fu: 4500, peso: 125.0, A: 160.0, rts: 4.75 },
   ],
 
-  // Perfiles AISC C (American Standard Channels) - Propiedades completas para cálculo normativo
+  // Perfiles AISC C (American Standard Channels) - Propiedades reales en métrico
   C: [
-    { nombre: 'C4x7.25', d: 10.16, bf: 3.30, tf: 0.69, tw: 0.41, Ix: 96, Sx: 18.8, Zx: 22.6, rx: 4.14, ry: 0.89, J: 0.50, Cw: 1.20e3, Fy: 345, Fu: 450, peso: 10.8, A: 13.8, rts: 1.08 },
-    { nombre: 'C5x9', d: 12.70, bf: 3.81, tf: 0.74, tw: 0.44, Ix: 174, Sx: 27.4, Zx: 32.8, rx: 5.08, ry: 1.02, J: 0.80, Cw: 2.80e3, Fy: 345, Fu: 450, peso: 13.4, A: 17.1, rts: 1.24 },
-    { nombre: 'C6x10.5', d: 15.24, bf: 4.29, tf: 0.79, tw: 0.48, Ix: 303, Sx: 39.8, Zx: 47.5, rx: 5.97, ry: 1.13, J: 1.20, Cw: 5.80e3, Fy: 345, Fu: 450, peso: 15.6, A: 19.9, rts: 1.38 },
-    { nombre: 'C8x11.5', d: 20.32, bf: 5.08, tf: 0.89, tw: 0.56, Ix: 530, Sx: 52.1, Zx: 62.2, rx: 7.62, ry: 1.40, J: 2.40, Cw: 1.80e4, Fy: 345, Fu: 450, peso: 17.1, A: 21.8, rts: 1.71 },
-    { nombre: 'C10x15.3', d: 25.40, bf: 5.94, tf: 0.97, tw: 0.61, Ix: 820, Sx: 64.5, Zx: 77.0, rx: 9.20, ry: 1.65, J: 3.80, Cw: 3.50e4, Fy: 345, Fu: 450, peso: 22.8, A: 29.0, rts: 2.00 },
-    { nombre: 'C12x20.7', d: 30.48, bf: 6.80, tf: 1.07, tw: 0.66, Ix: 1200, Sx: 78.7, Zx: 94.0, rx: 10.8, ry: 1.90, J: 5.50, Cw: 5.80e4, Fy: 345, Fu: 450, peso: 30.8, A: 39.2, rts: 2.30 },
-    { nombre: 'C15x33.9', d: 38.10, bf: 8.51, tf: 1.27, tw: 0.79, Ix: 2200, Sx: 115.5, Zx: 138.0, rx: 13.5, ry: 2.40, J: 10.0, Cw: 1.20e5, Fy: 345, Fu: 450, peso: 50.5, A: 64.3, rts: 2.85 },
+    { nombre: 'C4x7.25', d: 10.16, bf: 3.30, tf: 0.69, tw: 0.41, Ix: 191, Sx: 37.5, Zx: 45.2, rx: 4.14, ry: 0.89, J: 0.50, Cw: 1.20e3, Fy: 3450, Fu: 4500, peso: 10.8, A: 13.7, rts: 1.08 },
+    { nombre: 'C5x9', d: 12.70, bf: 3.81, tf: 0.74, tw: 0.44, Ix: 370, Sx: 58.3, Zx: 70.4, rx: 5.08, ry: 1.02, J: 0.80, Cw: 2.80e3, Fy: 3450, Fu: 4500, peso: 13.4, A: 17.0, rts: 1.24 },
+    { nombre: 'C6x10.5', d: 15.24, bf: 4.29, tf: 0.79, tw: 0.48, Ix: 632, Sx: 82.9, Zx: 99.4, rx: 5.97, ry: 1.13, J: 1.20, Cw: 5.80e3, Fy: 3450, Fu: 4500, peso: 15.6, A: 19.9, rts: 1.38 },
+    { nombre: 'C8x11.5', d: 20.32, bf: 5.08, tf: 0.89, tw: 0.56, Ix: 1356, Sx: 133, Zx: 161, rx: 7.62, ry: 1.40, J: 2.40, Cw: 1.80e4, Fy: 3450, Fu: 4500, peso: 17.1, A: 21.8, rts: 1.71 },
+    { nombre: 'C10x15.3', d: 25.40, bf: 5.94, tf: 0.97, tw: 0.61, Ix: 2805, Sx: 221, Zx: 265, rx: 9.20, ry: 1.65, J: 3.80, Cw: 3.50e4, Fy: 3450, Fu: 4500, peso: 22.8, A: 28.9, rts: 2.00 },
+    { nombre: 'C12x20.7', d: 30.48, bf: 6.80, tf: 1.07, tw: 0.66, Ix: 5369, Sx: 352, Zx: 422, rx: 10.8, ry: 1.90, J: 5.50, Cw: 5.80e4, Fy: 3450, Fu: 4500, peso: 30.8, A: 39.2, rts: 2.30 },
+    { nombre: 'C15x33.9', d: 38.10, bf: 8.51, tf: 1.27, tw: 0.79, Ix: 13111, Sx: 688, Zx: 844, rx: 13.5, ry: 2.40, J: 10.0, Cw: 1.20e5, Fy: 3450, Fu: 4500, peso: 50.4, A: 64.5, rts: 2.85 },
   ],
 };
 
