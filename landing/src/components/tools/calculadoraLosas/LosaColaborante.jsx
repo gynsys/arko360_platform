@@ -360,6 +360,27 @@ function deflexionLosaDosDirecciones(w_kgm2, luz_m, E_kgcm2, h_m, nu = 0.2) {
   const D = (E * Math.pow(h_m, 3)) / (12 * (1 - nu * nu));
   return 0.00416 * w_kgm2 * Math.pow(luz_m, 4) / D;
 }
+
+// =============================================================================
+// VERIFICACIÓN DE COMPATIBILIDAD STUD-PERFIL (AISC 360-16 I8.2)
+// ds ≤ 2.5 × tf (espesor del ala del perfil de acero)
+// =============================================================================
+function verificarCompatibilidadStud(perfil, d_stud_cm) {
+  const tf = getProp(perfil, 'tf');
+  // Si no hay tf definido en el catálogo, no se puede verificar → incompatible por seguridad
+  if (!tf || tf <= 0) {
+    return { compatible: false, tf: 0, limite: 0, ratio: Infinity, razon: 'Perfil sin datos de tf' };
+  }
+  const limite = 2.5 * tf;
+  return {
+    compatible: d_stud_cm <= limite,
+    tf,
+    limite,
+    ratio: d_stud_cm / limite,
+    razon: d_stud_cm <= limite ? 'Compatible' : `ds=${d_stud_cm.toFixed(2)}cm > 2.5×tf=${limite.toFixed(2)}cm`
+  };
+}
+
 function frecuenciaNaturalLosa(w_kgm2, luz_m, E_kgcm2, h_m) {
   const E = E_kgcm2 * 10000;
   const D = (E * Math.pow(h_m, 3)) / (12 * (1 - 0.04));
@@ -443,7 +464,7 @@ function calcularMomentoCompuesto(perfil, b_eff_cm, h_conc_cm, f_c, Ec, Asc_stud
 // =============================================================================
 // OPTIMIZADOR AUTOMÁTICO DE PERFILES
 // =============================================================================
-function optimizarPerfil(listaPerfiles, Mu, Vu, Lb, wServ_kgcm, deflLim_cm, costoPorKg, tipo = 'viga', compData = null) {
+function optimizarPerfil(listaPerfiles, Mu, Vu, Lb, wServ_kgcm, deflLim_cm, costoPorKg, tipo = 'viga', compData = null, d_stud_cm = null) {
   const candidatos = [];
   for (const perfil of listaPerfiles) {
     const resFlex = calcularMomentoNominalAISC(perfil, Lb, 1.14);
@@ -477,14 +498,26 @@ function optimizarPerfil(listaPerfiles, Mu, Vu, Lb, wServ_kgcm, deflLim_cm, cost
     const cumpleFlex = Mu <= phiMn;
     const cumpleCort = Vu <= phiVn;
     const cumpleDefl = deflFinal <= deflLim_cm;
-    const cumple = cumpleFlex && cumpleCort && cumpleDefl;
+
+    // Verificación de compatibilidad stud-perfil (AISC 360 I8.2)
+    let cumpleStud = true;
+    let studInfo = null;
+    if (d_stud_cm !== null && d_stud_cm > 0) {
+      studInfo = verificarCompatibilidadStud(perfil, d_stud_cm);
+      cumpleStud = studInfo.compatible;
+    }
+
+    const cumple = cumpleFlex && cumpleCort && cumpleDefl && cumpleStud;
 
     candidatos.push({
       perfil, phiMn, phiVn, defl: deflFinal, peso, costo,
-      cumpleFlex, cumpleCort, cumpleDefl, cumple,
+      cumpleFlex, cumpleCort, cumpleDefl, cumpleStud, cumple,
       ratioFlex: (Mu / phiMn).toFixed(2),
       ratioCort: (Vu / phiVn).toFixed(2),
       ratioDefl: (deflFinal / deflLim_cm).toFixed(2),
+      ratioStud: studInfo ? studInfo.ratio.toFixed(2) : 'N/A',
+      tf: studInfo ? studInfo.tf : null,
+      studInfo,
     });
   }
 
@@ -496,7 +529,25 @@ function optimizarPerfil(listaPerfiles, Mu, Vu, Lb, wServ_kgcm, deflLim_cm, cost
   });
 
   const optimo = candidatos.find(c => c.cumple) || candidatos[0];
-  return { optimo, candidatos };
+
+  // Si el óptimo no cumple por stud, generar sugerencias de diámetros menores
+  let sugerenciasStud = [];
+  if (optimo && !optimo.cumpleStud && optimo.tf && optimo.tf > 0) {
+    const diametros = [
+      { pulg: 0.5, mm: 12.7 },
+      { pulg: 0.625, mm: 15.9 },
+      { pulg: 0.75, mm: 19.1 },
+      { pulg: 0.875, mm: 22.2 }
+    ];
+    sugerenciasStud = diametros
+      .filter(d => d.mm / 10 <= 2.5 * optimo.tf)
+      .map(d => `${d.pulg}" (${d.mm} mm)`);
+    if (sugerenciasStud.length === 0) {
+      sugerenciasStud.push('Ningún diámetro estándar es compatible con este perfil');
+    }
+  }
+
+  return { optimo, candidatos, sugerenciasStud };
 }
 
 // =============================================================================
@@ -598,10 +649,10 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const cumpleHs = Hs >= Hs_min && Hs <= Hs_max;
   const Hs_rec = Math.max(Hs_min, Math.min(Hs, Hs_max));
 
-  const tf_vp = getProp(tipoVigaPrincipal, 'tf') || 1.0;
-  const tf_correa = getProp(tipoCorrea, 'tf') || 0.8;
-  const cumpleTf_vp = d_stud_cm <= 2.5 * tf_vp;
-  const cumpleTf_correa = d_stud_cm <= 2.5 * tf_correa;
+  const tf_vp = getProp(tipoVigaPrincipal, 'tf');
+  const tf_correa = getProp(tipoCorrea, 'tf');
+  const cumpleTf_vp = tf_vp > 0 && d_stud_cm <= 2.5 * tf_vp;
+  const cumpleTf_correa = tf_correa > 0 && d_stud_cm <= 2.5 * tf_correa;
 
   // 6. SECCIÓN COMPUESTA - VIGA PRINCIPAL (VP)
   const luzVigaPrincipal_cm = luzMayor * 100;
@@ -805,16 +856,16 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const costoCorreaKg = costos.correaKg || 2.0;
 
   const compDataVP = { b_eff: b_eff_vp, espesorConcreto: espesorConcreto_efectivo, f_c_val, Ec };
-  const optViga = optimizarPerfil(PERFILES_I_H_TUBO, Mu_vp, Vu_vp, luzVigaPrincipal_cm, wServ_vp, deflLim_vp, costoVigaKg, 'viga', compDataVP);
+  const optViga = optimizarPerfil(PERFILES_I_H_TUBO, Mu_vp, Vu_vp, luzVigaPrincipal_cm, wServ_vp, deflLim_vp, costoVigaKg, 'viga', compDataVP, d_stud_cm);
 
   const compDataCorrea = { b_eff: b_eff_correa, espesorConcreto: espesorConcreto_efectivo, f_c_val, Ec };
-  const optCorrea = optimizarPerfil(PERFILES_I_H_TUBO, Mu_correa, Vu_correa, luzCorrea_cm, wServ_correa, deflLim_correa, costoCorreaKg, 'correa', compDataCorrea);
+  const optCorrea = optimizarPerfil(PERFILES_I_H_TUBO, Mu_correa, Vu_correa, luzCorrea_cm, wServ_correa, deflLim_correa, costoCorreaKg, 'correa', compDataCorrea, d_stud_cm);
 
   const wuCorreaBorde = wu * sepReal / 2;
   const Mu_correa_borde = (wuCorreaBorde * Math.pow(luzCorrea_cm / 100, 2)) / 8 * 100;
   const Vu_correa_borde = (wuCorreaBorde * luzCorrea_cm / 100) / 2;
   const wServ_correa_borde = wServ_correa / 2;
-  const optCorreaBorde = optimizarPerfil(PERFILES_I_H_TUBO, Mu_correa_borde, Vu_correa_borde, luzCorrea_cm, wServ_correa_borde, deflLim_correa, costoCorreaKg, 'correa', compDataCorrea);
+  const optCorreaBorde = optimizarPerfil(PERFILES_I_H_TUBO, Mu_correa_borde, Vu_correa_borde, luzCorrea_cm, wServ_correa_borde, deflLim_correa, costoCorreaKg, 'correa', compDataCorrea, d_stud_cm);
 
   // 13. MATERIALES Y COSTOS
   const areaDeck = areaTotal * 1.15;
@@ -1671,13 +1722,43 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
                           ['Ratio momento', resultados.optimizador.viga.optimo.ratioFlex],
                           ['Ratio cortante', resultados.optimizador.viga.optimo.ratioCort],
                           ['Ratio deflexión', resultados.optimizador.viga.optimo.ratioDefl],
+                          ['tf ala', resultados.optimizador.viga.optimo.tf ? resultados.optimizador.viga.optimo.tf.toFixed(2) + ' cm' : 'N/A'],
+                          ['Ratio stud/tf', resultados.optimizador.viga.optimo.ratioStud],
                         ])}
                       </div>
 
+
+                      {resultados.optimizador.viga.sugerenciasStud && resultados.optimizador.viga.sugerenciasStud.length > 0 && (
+                        <div style={{ marginTop: '12px', padding: '12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px' }}>
+                          <h6 style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 700, color: '#991b1b' }}>⚠️ Incompatibilidad Stud-Perfil</h6>
+                          <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#7f1d1d' }}>
+                            El perfil óptimo <strong>{resultados.optimizador.viga.optimo.perfil}</strong> tiene tf = {resultados.optimizador.viga.optimo.tf?.toFixed(2)} cm, 
+                            pero el stud de {steelDeckConfig.diametroStud}" ({(parseFloat(steelDeckConfig.diametroStud || 0.75) * 2.54 * 10).toFixed(1)} mm) 
+                            requiere tf ≥ {(parseFloat(steelDeckConfig.diametroStud || 0.75) * 2.54 / 2.5).toFixed(2)} cm.
+                          </p>
+                          <p style={{ margin: 0, fontSize: '11px', color: '#7f1d1d' }}>
+                            <strong>Sugerencias de stud compatibles:</strong> {resultados.optimizador.viga.sugerenciasStud.join(', ')}
+                          </p>
+                        </div>
+                      )}
+
+                      {resultados.optimizador.correa.sugerenciasStud && resultados.optimizador.correa.sugerenciasStud.length > 0 && (
+                        <div style={{ marginTop: '12px', padding: '12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px' }}>
+                          <h6 style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 700, color: '#991b1b' }}>⚠️ Incompatibilidad Stud-Perfil</h6>
+                          <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#7f1d1d' }}>
+                            El perfil óptimo <strong>{resultados.optimizador.correa.optimo.perfil}</strong> tiene tf = {resultados.optimizador.correa.optimo.tf?.toFixed(2)} cm, 
+                            pero el stud de {steelDeckConfig.diametroStud}" ({(parseFloat(steelDeckConfig.diametroStud || 0.75) * 2.54 * 10).toFixed(1)} mm) 
+                            requiere tf ≥ {(parseFloat(steelDeckConfig.diametroStud || 0.75) * 2.54 / 2.5).toFixed(2)} cm.
+                          </p>
+                          <p style={{ margin: 0, fontSize: '11px', color: '#7f1d1d' }}>
+                            <strong>Sugerencias de stud compatibles:</strong> {resultados.optimizador.correa.sugerenciasStud.join(', ')}
+                          </p>
+                        </div>
+                      )}
                       <h6 style={{ margin: '16px 0 8px 0', fontSize: '12px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase' }}>Todos los candidatos</h6>
                       <table style={styles.table}>
                         <thead>
-                          <tr><th style={styles.th}>Perfil</th><th style={styles.th}>φMn (t·m)</th><th style={styles.th}>φVn (t)</th><th style={styles.th}>Defl (cm)</th><th style={styles.th}>Cumple</th><th style={styles.th}>Costo ($)</th></tr>
+                          <tr><th style={styles.th}>Perfil</th><th style={styles.th}>φMn (t·m)</th><th style={styles.th}>φVn (t)</th><th style={styles.th}>Defl (cm)</th><th style={styles.th}>tf (cm)</th><th style={styles.th}>Stud</th><th style={styles.th}>Cumple</th><th style={styles.th}>Costo ($)</th></tr>
                         </thead>
                         <tbody>
                           {resultados.optimizador.viga.candidatos.map((c, i) => (
@@ -1686,6 +1767,8 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
                               <td style={styles.td}>{(c.phiMn / 100000).toFixed(2)}</td>
                               <td style={styles.td}>{(c.phiVn / 1000).toFixed(2)}</td>
                               <td style={styles.td}>{c.defl.toFixed(2)}</td>
+                              <td style={styles.td}>{c.tf ? c.tf.toFixed(2) : 'N/A'}</td>
+                              <td style={styles.td}><span style={styles.badge(c.cumpleStud !== false)}>{c.cumpleStud !== false ? '✓' : '✗'}</span></td>
                               <td style={styles.td}><span style={styles.badge(c.cumple)}>{c.cumple ? 'Sí' : 'No'}</span></td>
                               <td style={styles.td}>{c.costo.toFixed(2)}</td>
                             </tr>
@@ -1713,13 +1796,15 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
                           ['Ratio momento', resultados.optimizador.correa.optimo.ratioFlex],
                           ['Ratio cortante', resultados.optimizador.correa.optimo.ratioCort],
                           ['Ratio deflexión', resultados.optimizador.correa.optimo.ratioDefl],
+                          ['tf ala', resultados.optimizador.correa.optimo.tf ? resultados.optimizador.correa.optimo.tf.toFixed(2) + ' cm' : 'N/A'],
+                          ['Ratio stud/tf', resultados.optimizador.correa.optimo.ratioStud],
                         ])}
                       </div>
 
                       <h6 style={{ margin: '16px 0 8px 0', fontSize: '12px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase' }}>Todos los candidatos</h6>
                       <table style={styles.table}>
                         <thead>
-                          <tr><th style={styles.th}>Perfil</th><th style={styles.th}>φMn (t·m)</th><th style={styles.th}>φVn (t)</th><th style={styles.th}>Defl (cm)</th><th style={styles.th}>Cumple</th><th style={styles.th}>Costo ($)</th></tr>
+                          <tr><th style={styles.th}>Perfil</th><th style={styles.th}>φMn (t·m)</th><th style={styles.th}>φVn (t)</th><th style={styles.th}>Defl (cm)</th><th style={styles.th}>tf (cm)</th><th style={styles.th}>Stud</th><th style={styles.th}>Cumple</th><th style={styles.th}>Costo ($)</th></tr>
                         </thead>
                         <tbody>
                           {resultados.optimizador.correa.candidatos.map((c, i) => (
@@ -1728,6 +1813,8 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
                               <td style={styles.td}>{(c.phiMn / 100000).toFixed(2)}</td>
                               <td style={styles.td}>{(c.phiVn / 1000).toFixed(2)}</td>
                               <td style={styles.td}>{c.defl.toFixed(2)}</td>
+                              <td style={styles.td}>{c.tf ? c.tf.toFixed(2) : 'N/A'}</td>
+                              <td style={styles.td}><span style={styles.badge(c.cumpleStud !== false)}>{c.cumpleStud !== false ? '✓' : '✗'}</span></td>
                               <td style={styles.td}><span style={styles.badge(c.cumple)}>{c.cumple ? 'Sí' : 'No'}</span></td>
                               <td style={styles.td}>{c.costo.toFixed(2)}</td>
                             </tr>
