@@ -37,7 +37,7 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
   const studsElements = [];
 
   if (losaActiva === 'colaborante') {
-    const sepReal = calc.steelDeckData?.sepReal || steelDeckConfig.sepCorreas;
+    const sepReal = calc.steelDeckData?.sepReal || steelDeckConfig?.sepCorreas || 1.5;
     const sepPx = sepReal * scale;
 
     const correasHorizontales = luzX < luzY;
@@ -46,7 +46,7 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
       // 1. DIBUJAR CORREAS HORIZONTALES (una sola vez, sin bucles redundantes)
       for (let j = 0; j < nTramosY; j++) {
         const yStart = oy + j * luzY * scale;
-        const nEspacios = Math.ceil(luzY / (calc.steelDeckData?.sepCorreas || steelDeckConfig.sepCorreas));
+        const nEspacios = Math.ceil(luzY / (calc.steelDeckData?.sepCorreas || steelDeckConfig?.sepCorreas || 1.5));
         const numCorreas = Math.max(0, nEspacios - 1);
         for (let k = 1; k <= numCorreas; k++) {
           const y = yStart + k * sepPx;
@@ -85,7 +85,7 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
       // 1. DIBUJAR CORREAS VERTICALES
       for (let i = 0; i < nTramosX; i++) {
         const xStart = ox + i * luzX * scale;
-        const nEspacios = Math.ceil(luzX / (calc.steelDeckData?.sepCorreas || steelDeckConfig.sepCorreas));
+        const nEspacios = Math.ceil(luzX / (calc.steelDeckData?.sepCorreas || steelDeckConfig?.sepCorreas || 1.5));
         const numCorreas = Math.max(0, nEspacios - 1);
         for (let k = 1; k <= numCorreas; k++) {
           const x = xStart + k * sepPx;
@@ -500,8 +500,9 @@ export const renderSeccion = (calc, losaActiva, steelDeckConfig, aligeradaConfig
     },
   };
 
-  const tipoVigaPrincipal = steelDeckConfig.tipoVigaPrincipal || 'W12x26';
-  const tipoCorrea = steelDeckConfig.tipoCorrea || 'Tubo 100x50x3';
+  const espesorConcreto = steelDeckConfig?.espesorConcreto || 6;
+  const tipoVigaPrincipal = steelDeckConfig?.tipoVigaPrincipal || 'W12x26';
+  const tipoCorrea = steelDeckConfig?.tipoCorrea || 'Tubo 100x50x3';
 
   // Helpers de dibujo de perfiles
   const drawIBeam = (cx, cy, w, h, tf = 3.5, tw = 3.5, color = "#2c3e50", strokeColor = "#1a252f") => {
@@ -557,10 +558,10 @@ export const renderSeccion = (calc, losaActiva, steelDeckConfig, aligeradaConfig
         {losaActiva === 'colaborante' && (
           <g>
             {/* Concreto sobre deck */}
-            <rect x={ox} y={oy - steelDeckConfig.espesorConcreto * scale} width={340}
-              height={steelDeckConfig.espesorConcreto * scale} fill="#bdc3c7" stroke="#2c3e50" strokeWidth="2" />
-            <rect x={ox} y={oy - steelDeckConfig.espesorConcreto * scale} width={340}
-              height={steelDeckConfig.espesorConcreto * scale} fill="url(#hatchConcreto)" opacity="0.4" />
+            <rect x={ox} y={oy - espesorConcreto * scale} width={340}
+              height={espesorConcreto * scale} fill="#bdc3c7" stroke="#2c3e50" strokeWidth="2" />
+            <rect x={ox} y={oy - espesorConcreto * scale} width={340}
+              height={espesorConcreto * scale} fill="url(#hatchConcreto)" opacity="0.4" />
 
             {/* Steel Deck (perfil acanalado) */}
             <path d={`M ${ox} ${oy} 
@@ -573,15 +574,15 @@ export const renderSeccion = (calc, losaActiva, steelDeckConfig, aligeradaConfig
               fill="none" stroke="#2980b9" strokeWidth="3" />
 
             {/* Malla de temperatura */}
-            <line x1={ox + 10} y1={oy - (steelDeckConfig.espesorConcreto - 2) * scale}
-              x2={ox + 330} y2={oy - (steelDeckConfig.espesorConcreto - 2) * scale}
+            <line x1={ox + 10} y1={oy - (espesorConcreto - 2) * scale}
+              x2={ox + 330} y2={oy - (espesorConcreto - 2) * scale}
               stroke="#c0392b" strokeWidth="1" strokeDasharray="3,3" />
-            <text x={ox + 335} y={oy - (steelDeckConfig.espesorConcreto - 2) * scale + 4} fill="#c0392b" fontSize="10">Malla 6x6-10/10</text>
+            <text x={ox + 335} y={oy - (espesorConcreto - 2) * scale + 4} fill="#c0392b" fontSize="10">Malla 6x6-10/10</text>
 
             {/* Conector de corte (stud) */}
-            <rect x={ox + 80} y={oy - (steelDeckConfig.espesorConcreto + 1) * scale} width="6" height={steelDeckConfig.espesorConcreto * scale + 8} fill="#e67e22" stroke="#d35400" strokeWidth="1" rx="2" />
-            <circle cx={ox + 83} cy={oy - (steelDeckConfig.espesorConcreto + 1) * scale} r="5" fill="#e67e22" stroke="#d35400" strokeWidth="1" />
-            <text x={ox + 95} y={oy - (steelDeckConfig.espesorConcreto + 2) * scale} fill="#e67e22" fontSize="10">Stud Ø3/4"</text>
+            <rect x={ox + 80} y={oy - (espesorConcreto + 1) * scale} width="6" height={espesorConcreto * scale + 8} fill="#e67e22" stroke="#d35400" strokeWidth="1" rx="2" />
+            <circle cx={ox + 83} cy={oy - (espesorConcreto + 1) * scale} r="5" fill="#e67e22" stroke="#d35400" strokeWidth="1" />
+            <text x={ox + 95} y={oy - (espesorConcreto + 2) * scale} fill="#e67e22" fontSize="10">Stud Ø3/4"</text>
 
             {/* Cota h total */}
             <line x1={ox - 20} y1={oy} x2={ox - 20} y2={oy - h * scale} stroke="#333" strokeWidth="1" />
@@ -589,7 +590,7 @@ export const renderSeccion = (calc, losaActiva, steelDeckConfig, aligeradaConfig
 
             {/* Cota concreto */}
             <line x1={ox + 360} y1={oy - 3 * scale} x2={ox + 360} y2={oy - h * scale} stroke="#666" strokeWidth="1" strokeDasharray="3,2" />
-            <text x={ox + 365} y={oy - (h * scale + 3 * scale) / 2 + 4} fill="#666" fontSize="11">t = {steelDeckConfig.espesorConcreto} cm</text>
+            <text x={ox + 365} y={oy - (h * scale + 3 * scale) / 2 + 4} fill="#666" fontSize="11">t = {espesorConcreto} cm</text>
 
             {/* Viga principal debajo */}
             {tipoVigaPrincipal.startsWith('Tubo') || tipoVigaPrincipal.includes('TUBO')
