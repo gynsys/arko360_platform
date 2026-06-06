@@ -21,6 +21,7 @@ const CalculadoraLosas = () => {
     fc: 210,
     fy: 4200,
     recubrimiento: 2.0,
+    usoEdificacion: 'oficinas',
   });
 
   const [costos, setCostos] = useState({
@@ -50,7 +51,7 @@ const CalculadoraLosas = () => {
     calibre: 22,
     sepCorreas: 1.5,
     tipoVigaPrincipal: 'W12x26',
-    tipoCorrea: 'C6x10.5',
+    tipoCorrea: 'Tubo 100x50x3',
     diametroStud: 0.75,
     alturaDeck: 7.5,
   });
@@ -72,8 +73,24 @@ const CalculadoraLosas = () => {
   };
 
   const handleDatos = (e) => {
-    const val = parseFloat(e.target.value);
-    setDatos({ ...datos, [e.target.name]: isNaN(val) ? 0 : val });
+    const { name, value } = e.target;
+    if (name === 'usoEdificacion') {
+      let cvValue = datos.cv;
+      switch (value) {
+        case 'vivienda': cvValue = 200; break;
+        case 'oficinas': cvValue = 250; break;
+        case 'comercio': cvValue = 400; break;
+        case 'bodegas': cvValue = 500; break;
+        case 'garajes': cvValue = 300; break;
+        case 'aulas': cvValue = 300; break;
+        case 'pasillos': cvValue = 500; break;
+        default: break;
+      }
+      setDatos(prev => ({ ...prev, usoEdificacion: value, cv: cvValue }));
+    } else {
+      const val = parseFloat(value);
+      setDatos(prev => ({ ...prev, [name]: name === 'recubrimiento' || name === 'fc' || name === 'fy' || name === 'cv' || name === 'cmExtra' ? (isNaN(val) ? 0 : val) : value }));
+    }
   };
 
   const handleCostos = (e) => {
@@ -308,8 +325,21 @@ const CalculadoraLosas = () => {
         <h3 style={styles.sectionTitle('#e67e22')}>2. Cargas y Materiales</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
           <div style={styles.field}>
+            <label style={styles.label}>Uso de la edificación (Carga Viva normada)</label>
+            <select name="usoEdificacion" value={datos.usoEdificacion || 'oficinas'} onChange={handleDatos} style={styles.input}>
+              <option value="vivienda">Residencial / Vivienda (200 kg/m²)</option>
+              <option value="oficinas">Oficinas (250 kg/m²)</option>
+              <option value="aulas">Aulas / Escuelas (300 kg/m²)</option>
+              <option value="garajes">Garajes / Estacionamientos (300 kg/m²)</option>
+              <option value="comercio">Comercio / Tiendas (400 kg/m²)</option>
+              <option value="pasillos">Pasillos y Escaleras públicas (500 kg/m²)</option>
+              <option value="bodegas">Bodegas / Industrial liviano (500 kg/m²)</option>
+              <option value="otro">Personalizado (Ingresar manual)</option>
+            </select>
+          </div>
+          <div style={styles.field}>
             <label style={styles.label}>Carga viva (kg/m²)</label>
-            <input type="number" name="cv" value={datos.cv} onChange={handleDatos} style={styles.input} />
+            <input type="number" name="cv" value={datos.cv} onChange={handleDatos} disabled={datos.usoEdificacion !== 'otro'} style={{ ...styles.input, backgroundColor: datos.usoEdificacion !== 'otro' ? '#f1f5f9' : '#fff' }} />
           </div>
           <div style={styles.field}>
             <label style={styles.label}>Carga muerta extra (kg/m²)</label>
@@ -323,10 +353,12 @@ const CalculadoraLosas = () => {
             <label style={styles.label}>fy acero (kg/cm²)</label>
             <input type="number" name="fy" value={datos.fy} onChange={handleDatos} style={styles.input} />
           </div>
-          <div style={styles.field}>
-            <label style={styles.label}>Recubrimiento (cm)</label>
-            <input type="number" name="recubrimiento" value={datos.recubrimiento} onChange={handleDatos} step="0.5" style={styles.input} />
-          </div>
+          {losaActiva !== 'colaborante' && (
+            <div style={styles.field}>
+              <label style={styles.label}>Recubrimiento (cm)</label>
+              <input type="number" name="recubrimiento" value={datos.recubrimiento} onChange={handleDatos} step="0.5" style={styles.input} />
+            </div>
+          )}
         </div>
       </div>
 
