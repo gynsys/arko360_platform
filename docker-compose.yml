@@ -46,6 +46,16 @@ services:
     environment:
       - VITE_API_URL=http://backend:8001/api/v1
 
+  super-admin-frontend:
+    build:
+      context: ./super-admin-frontend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3002:80"
+    environment:
+      - VITE_API_URL=http://backend:8001/api/v1
+
   nginx:
     image: nginx:alpine
     restart: always
@@ -57,6 +67,7 @@ services:
     depends_on:
       - admin-frontend
       - landing-frontend
+      - super-admin-frontend
       - backend
 
 volumes:

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.endpoints import arko
+from app.api.v1.api import api_router
 from app.db.arko_base import ArkoBase, arko_engine
 from app.core.config import settings
 import logging
@@ -32,7 +32,7 @@ if settings.CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-app.include_router(arko.router, prefix="/api/v1/arko", tags=["arko"])
+app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/api/v1/arko/health")
 def health_check():
