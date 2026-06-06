@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.api import api_router
 from app.db.arko_base import ArkoBase, arko_engine
+from app.db.base import Base, engine
 from app.core.config import settings
 import logging
 logger = logging.getLogger(__name__)
@@ -10,7 +11,8 @@ logger = logging.getLogger(__name__)
 logger.info("Initializing Arko360 database tables...")
 try:
     ArkoBase.metadata.create_all(bind=arko_engine)
-    logger.info("Arko360 database tables verified/created successfully.")
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables verified/created successfully.")
 except Exception as e:
     logger.error(f"Error creating Arko360 database tables: {e}", exc_info=True)
 

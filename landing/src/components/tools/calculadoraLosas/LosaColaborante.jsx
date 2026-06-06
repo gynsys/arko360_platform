@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CATALOGO_PERFILES } from './catalogoPerfiles';
 import { renderGrid, renderSeccion } from './visualizacion';
 
@@ -18,12 +18,12 @@ CATALOGO_PERFILES.C.forEach(p => {
 
 // Suplementar IPE con sus dimensiones estándar en cm y fy
 const IPE_DIMS = {
-  80: { d: 8.0, bf: 4.6, tf: 0.52, tw: 0.38 },
-  100: { d: 10.0, bf: 5.5, tf: 0.57, tw: 0.41 },
-  120: { d: 12.0, bf: 6.4, tf: 0.63, tw: 0.44 },
-  140: { d: 14.0, bf: 7.3, tf: 0.69, tw: 0.47 },
-  160: { d: 16.0, bf: 8.2, tf: 0.74, tw: 0.50 },
-  180: { d: 18.0, bf: 9.1, tf: 0.80, tw: 0.53 },
+  80:  { d: 8.0,  bf: 4.6,  tf: 0.52, tw: 0.38 },
+  100: { d: 10.0, bf: 5.5,  tf: 0.57, tw: 0.41 },
+  120: { d: 12.0, bf: 6.4,  tf: 0.63, tw: 0.44 },
+  140: { d: 14.0, bf: 7.3,  tf: 0.69, tw: 0.47 },
+  160: { d: 16.0, bf: 8.2,  tf: 0.74, tw: 0.50 },
+  180: { d: 18.0, bf: 9.1,  tf: 0.80, tw: 0.53 },
   200: { d: 20.0, bf: 10.0, tf: 0.85, tw: 0.56 },
   220: { d: 22.0, bf: 11.0, tf: 0.92, tw: 0.59 },
   240: { d: 24.0, bf: 12.0, tf: 0.98, tw: 0.62 },
@@ -58,7 +58,7 @@ CATALOGO_PERFILES.IPE.forEach(p => {
 
 // Suplementar HEA con sus dimensiones estándar en cm
 const HEA_DIMS = {
-  100: { d: 9.6, bf: 10.0, tf: 0.80, tw: 0.50 },
+  100: { d: 9.6,  bf: 10.0, tf: 0.80, tw: 0.50 },
   120: { d: 11.4, bf: 12.0, tf: 0.80, tw: 0.50 },
   140: { d: 13.3, bf: 14.0, tf: 0.85, tw: 0.55 },
   160: { d: 15.2, bf: 16.0, tf: 0.90, tw: 0.60 },
@@ -99,14 +99,14 @@ CATALOGO_PERFILES.HEA.forEach(p => {
 
 // Suplementar IPN con sus dimensiones estándar en cm
 const IPN_DIMS = {
-  80: { d: 8.0, bf: 4.2, tf: 0.59, tw: 0.39 },
-  100: { d: 10.0, bf: 5.0, tf: 0.68, tw: 0.45 },
-  120: { d: 12.0, bf: 5.8, tf: 0.77, tw: 0.51 },
-  140: { d: 14.0, bf: 6.6, tf: 0.86, tw: 0.57 },
-  160: { d: 16.0, bf: 7.4, tf: 0.95, tw: 0.63 },
-  180: { d: 18.0, bf: 8.2, tf: 1.04, tw: 0.69 },
-  200: { d: 20.0, bf: 9.0, tf: 1.13, tw: 0.75 },
-  220: { d: 22.0, bf: 9.8, tf: 1.22, tw: 0.81 },
+  80:  { d: 8.0,  bf: 4.2,  tf: 0.59, tw: 0.39 },
+  100: { d: 10.0, bf: 5.0,  tf: 0.68, tw: 0.45 },
+  120: { d: 12.0, bf: 5.8,  tf: 0.77, tw: 0.51 },
+  140: { d: 14.0, bf: 6.6,  tf: 0.86, tw: 0.57 },
+  160: { d: 16.0, bf: 7.4,  tf: 0.95, tw: 0.63 },
+  180: { d: 18.0, bf: 8.2,  tf: 1.04, tw: 0.69 },
+  200: { d: 20.0, bf: 9.0,  tf: 1.13, tw: 0.75 },
+  220: { d: 22.0, bf: 9.8,  tf: 1.22, tw: 0.81 },
   240: { d: 24.0, bf: 10.6, tf: 1.31, tw: 0.87 },
   260: { d: 26.0, bf: 11.3, tf: 1.41, tw: 0.94 },
   280: { d: 28.0, bf: 11.9, tf: 1.52, tw: 1.01 },
@@ -300,11 +300,19 @@ function calcularArriostramiento(perfil, Lb_actual, Cb = 1.0) {
   };
 }
 
-// AISC 360-16 I3.2d: Factor R
-function calcularFactorR(hr, Hs, Nc, wr) {
+// =============================================================================
+// AISC 360-16 I3.2d: Factor R — CORREGIDO
+// Hs_total = altura total del stud desde la parte superior de la viga
+// Hs_norma = altura del stud POR ENCIMA de la parte superior del deck (hr)
+// =============================================================================
+function calcularFactorR(hr, Hs_total, Nc, wr) {
+  const Hs = Math.max(Hs_total - hr, 0);
+  if (Hs <= 0) return 0; // Stud no protruye del deck: sin enganche efectivo
+
   const hr_in = hr / 2.54;
   const Hs_in = Hs / 2.54;
   const wr_in = wr / 2.54;
+
   let R;
   if (Nc === 1) {
     R = 0.85 * (wr_in / hr_in) * ((Hs_in / hr_in) - 1.0);
@@ -325,21 +333,6 @@ function calcularQnStud(f_c, Ec, Asc, Fu_stud, R = 1.0) {
   return { Qn, Qn_bruto, Qn1, Qn2, phiQn: PHI_C * Qn, R };
 }
 
-// AISC 360-16 App. 3: Fatiga de conectores
-function verificarFatigaStuds(ciclos, Qn, Asc_stud, Fu_stud) {
-  // AISC 360-16 App. 3.1: Solo aplica a estructuras con cargas cíclicas (puentes, grúst, etc.)
-  // Para entrepisos estáticos esta verificación es INFORMATIVA, no normativa.
-  // FTH = 7 ksi ≈ 492 kg/cm² es un límite de RANGO de esfuerzo cíclico, no el esfuerzo estático del stud.
-  const FTH = 492; // kg/cm²
-  const esfuerzo = Qn / Asc_stud; // Esfuerzo estático del conector (referencial)
-  // Para edificios de uso normal, el check de fatiga no gobierna.
-  // Se asume que el límite de ciclos de 2 millones no se alcanza en entrepisos típicos.
-  const cumple = ciclos <= 20000; // Sólo es crítico para estructuras con más de 20,000 ciclos de carga
-  const N = 2_000_000 * Math.pow(FTH / Math.max(esfuerzo, 1), 3);
-  const vidaAnios = N / Math.max(ciclos, 1) / 365;
-  return { esfuerzo, FTH, cumple, N: Math.floor(N), vidaAnios: vidaAnios.toFixed(1), esInformativa: true };
-}
-
 // ACI 318-19
 function EcConcreto(f_c) { return 15000 * Math.sqrt(f_c); }
 function calcularVcLosa(f_c, b_w, d_eff) {
@@ -357,7 +350,6 @@ function calcularAsMinLosa(h_sobre_deck_cm, b_ancho_cm = 100, fy_rebar = 4200) {
   let rho_min = fy_rebar >= 4200 ? 0.0018 : (fy_rebar >= 2800 ? 0.0020 : 0.0014);
   return rho_min * b_ancho_cm * h_sobre_deck_cm;
 }
-
 
 // Deflexiones
 function deflexionViga(w_kgcm, L_cm, E, I_cm4) {
@@ -397,6 +389,9 @@ function calcularSeccionCompuesta(perfil, b_eff_cm, h_conc_cm, f_c, Ec) {
   return { n, b_transf, A_conc, A_acero, y_bar, I_tr, S_sup, S_inf, d_acero, h_conc_cm, b_eff_cm };
 }
 
+// =============================================================================
+// Momento compuesto — CORREGIDO según AISC 360-16 I3.2b
+// =============================================================================
 function calcularMomentoCompuesto(perfil, b_eff_cm, h_conc_cm, f_c, Ec, Asc_stud, Qn_total) {
   const prop = CATALOGO_AISC[perfil];
   if (!prop) return null;
@@ -404,29 +399,45 @@ function calcularMomentoCompuesto(perfil, b_eff_cm, h_conc_cm, f_c, Ec, Asc_stud
   const Zx = prop.Zx;
   const A = prop.A;
   const d = prop.d;
+  const tw = prop.tw || 0.5;
   const P_acero = A * Fy;
   const P_conc = 0.85 * f_c * b_eff_cm * h_conc_cm;
   const P_studs = Qn_total;
+
   let PNA_tipo, a, Y2, Mn_comp, phiMn_comp;
+
   if (P_studs >= P_conc && P_conc >= P_acero) {
+    // PNA en la losa, acero totalmente en tracción
     PNA_tipo = 'En losa (acero totalmente en tracción)';
     a = P_acero / (0.85 * f_c * b_eff_cm);
     Y2 = h_conc_cm - a / 2;
-    Mn_comp = P_acero * Y2 + P_acero * (d / 2);
+    Mn_comp = P_acero * (Y2 + d / 2);
+
   } else if (P_studs >= P_conc && P_conc < P_acero) {
+    // PNA en el alma, compresión total en losa
     PNA_tipo = 'En el alma del acero';
     const P_tension = (P_acero - P_conc) / 2;
-    const y_pna = P_tension / (prop.tw * Fy);
+    const y_pna = P_tension / (tw * Fy);
     Mn_comp = P_conc * (d / 2 + h_conc_cm - y_pna / 2) + P_tension * (d / 2 - y_pna / 2) * 2;
+
   } else {
+    // Parcialmente compuesta — PNA en el alma del acero (limitado por conectores)
     PNA_tipo = 'Limitado por conectores (parcialmente compuesta)';
     const P_comp = P_studs;
     a = P_comp / (0.85 * f_c * b_eff_cm);
     Y2 = h_conc_cm - a / 2;
-    Mn_comp = P_comp * Y2 + P_acero * (d / 2);
+
+    const P_tension = (P_acero - P_studs) / 2;
+    const y_pna = P_tension / (tw * Fy);
+    Mn_comp = P_studs * (d / 2 + Y2 - y_pna / 2) + P_tension * (d / 2 - y_pna / 2) * 2;
   }
+
   phiMn_comp = PHI_B * Mn_comp;
-  return { P_acero, P_conc, P_studs, PNA_tipo, a, Y2, Mn_comp, phiMn_comp, completa: P_studs >= Math.min(P_acero, P_conc) };
+  return {
+    P_acero, P_conc, P_studs, PNA_tipo, a, Y2,
+    Mn_comp, phiMn_comp,
+    completa: P_studs >= Math.min(P_acero, P_conc)
+  };
 }
 
 // =============================================================================
@@ -437,7 +448,7 @@ function optimizarPerfil(listaPerfiles, Mu, Vu, Lb, wServ_kgcm, deflLim_cm, cost
   for (const perfil of listaPerfiles) {
     const resFlex = calcularMomentoNominalAISC(perfil, Lb, 1.14);
     let phiMn = resFlex.phiMn;
-    
+
     let defl_comp_opt = null;
     if (compData) {
       const { b_eff, espesorConcreto, f_c_val, Ec } = compData;
@@ -459,7 +470,7 @@ function optimizarPerfil(listaPerfiles, Mu, Vu, Lb, wServ_kgcm, deflLim_cm, cost
     const Ix = getProp(perfil, 'Ix');
     const defl = deflexionViga(wServ_kgcm, Lb, E_ACERO, Ix);
     const deflFinal = defl_comp_opt !== null ? defl_comp_opt : defl;
-    
+
     const peso = getProp(perfil, 'peso');
     const costo = peso * Lb / 100 * costoPorKg / 1000; // $ aproximado
 
@@ -507,7 +518,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     tipoVigaPrincipal, tipoCorrea,
     diametroStud = 0.75, alturaDeck, f_c, fy_rebar,
     alturaStud, numStudsPorReborde, anchoReborde,
-    ciclosFatiga = 100000,
+    mallaTruskon,
   } = steelDeckConfig;
 
   // Espesor mínimo ACI 318-19: mínimo 5 cm sobre la cresta del deck (Sección 26.3.3)
@@ -580,7 +591,9 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const hr = getDeckProp(calibre, 'hr') || 3.8;
   const Hs = alturaStud || 10;
 
+  // AISC 360-16 I8.2: Hs mínimo = hr + 1.5" (3.81 cm)
   const Hs_min = hr + 3.81;
+  // ACI 318-19 §20.5.1: recubrimiento mínimo sobre stud = 0.5" (1.27 cm)
   const Hs_max = (espesorConcreto_efectivo + alturaDeck) - 1.27;
   const cumpleHs = Hs >= Hs_min && Hs <= Hs_max;
   const Hs_rec = Math.max(Hs_min, Math.min(Hs, Hs_max));
@@ -624,7 +637,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     P_studs_req_vp = high;
     for (let iter = 0; iter < 15; iter++) {
       const mid = (low + high) / 2;
-      const res = calcularMomentoCompuesto(tipoVigaPrincipal, b_eff_vp, espesorConcreto, f_c_val, Ec, Asc_stud, mid);
+      const res = calcularMomentoCompuesto(tipoVigaPrincipal, b_eff_vp, espesorConcreto_efectivo, f_c_val, Ec, Asc_stud, mid);
       if (res && res.phiMn_comp >= Mu_vp) {
         P_studs_req_vp = mid;
         high = mid;
@@ -639,9 +652,11 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   if (N_total_vp % 2 !== 0) N_total_vp += 1;
   if (N_total_vp < 4) N_total_vp = 4;
 
-  let s_vp = luzVigaPrincipal_cm / N_total_vp;
-  const s_max = Math.min(8 * (espesorConcreto + alturaDeck), 90);
+  // Separación máxima: usar espesor efectivo (CORREGIDO)
+  const s_max = Math.min(8 * (espesorConcreto_efectivo + alturaDeck), 90);
   const s_min = 6 * d_stud_cm;
+
+  let s_vp = luzVigaPrincipal_cm / N_total_vp;
 
   if (s_vp > s_max) {
     N_total_vp = Math.ceil(luzVigaPrincipal_cm / s_max);
@@ -678,8 +693,10 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const b_eff_correa = Math.min(b_eff_correa_1, b_eff_correa_2, b_eff_correa_3);
   const secComp_correa = calcularSeccionCompuesta(tipoCorrea, b_eff_correa, espesorConcreto_efectivo, f_c_val, Ec);
 
-  // REDUCCIÓN STUDS - Correa (parallel deck: R = 0.75)
-  const resStud_correa = calcularQnStud(f_c_val, Ec, Asc_stud, Fu_stud, 0.75);
+  // REDUCCIÓN STUDS - Correa: calcular R dinámicamente (CORREGIDO)
+  // Para correas secundarias se asume 1 stud por reborde como default
+  const R_correa = calcularFactorR(hr, Hs, 1, wr_vp);
+  const resStud_correa = calcularQnStud(f_c_val, Ec, Asc_stud, Fu_stud, R_correa);
   const phiQn_correa = resStud_correa.phiQn;
 
   // CORREA - DEMANDA Y CAPACIDAD
@@ -701,7 +718,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     P_studs_req_correa = high;
     for (let iter = 0; iter < 15; iter++) {
       const mid = (low + high) / 2;
-      const res = calcularMomentoCompuesto(tipoCorrea, b_eff_correa, espesorConcreto, f_c_val, Ec, Asc_stud, mid);
+      const res = calcularMomentoCompuesto(tipoCorrea, b_eff_correa, espesorConcreto_efectivo, f_c_val, Ec, Asc_stud, mid);
       if (res && res.phiMn_comp >= Mu_correa) {
         P_studs_req_correa = mid;
         high = mid;
@@ -769,8 +786,8 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
 
   // 10. ACERO MÍNIMO - Solo sobre la cresta del deck (el deck mismo es la armadura de tracción)
   const As_min = calcularAsMinLosa(espesorConcreto_efectivo, 100, fy_rebar_val);
-  const mallaTruskon = steelDeckConfig.mallaTruskon || 1.88; // cm²/m Truskon T-188
-  const As_prov = mallaTruskon;
+  const mallaTruskon_val = mallaTruskon || 1.88; // cm²/m Truskon T-188
+  const As_prov = mallaTruskon_val;
   const cumpleAsMin = As_prov >= As_min;
 
   // 11. DEFLEXIONES Y VIBRACIÓN
@@ -783,26 +800,23 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const f_natural = frecuenciaNaturalLosa(wServicio, luzLosa, Ec, h_total);
   const cumpleVibracion = f_natural >= 3.0;
 
-  // 12. FATIGA DE CONECTORES
-  const fatigaStuds = verificarFatigaStuds(ciclosFatiga, resStud_vp.Qn, Asc_stud, Fu_stud);
-
-  // 13. OPTIMIZADOR
+  // 12. OPTIMIZADOR
   const costoVigaKg = costos.vigaPrincipalKg || 2.5;
   const costoCorreaKg = costos.correaKg || 2.0;
-  
-  const compDataVP = { b_eff: b_eff_vp, espesorConcreto, f_c_val, Ec };
+
+  const compDataVP = { b_eff: b_eff_vp, espesorConcreto: espesorConcreto_efectivo, f_c_val, Ec };
   const optViga = optimizarPerfil(PERFILES_I_H_TUBO, Mu_vp, Vu_vp, luzVigaPrincipal_cm, wServ_vp, deflLim_vp, costoVigaKg, 'viga', compDataVP);
-  
-  const compDataCorrea = { b_eff: b_eff_correa, espesorConcreto, f_c_val, Ec };
+
+  const compDataCorrea = { b_eff: b_eff_correa, espesorConcreto: espesorConcreto_efectivo, f_c_val, Ec };
   const optCorrea = optimizarPerfil(PERFILES_I_H_TUBO, Mu_correa, Vu_correa, luzCorrea_cm, wServ_correa, deflLim_correa, costoCorreaKg, 'correa', compDataCorrea);
-  
+
   const wuCorreaBorde = wu * sepReal / 2;
   const Mu_correa_borde = (wuCorreaBorde * Math.pow(luzCorrea_cm / 100, 2)) / 8 * 100;
   const Vu_correa_borde = (wuCorreaBorde * luzCorrea_cm / 100) / 2;
   const wServ_correa_borde = wServ_correa / 2;
   const optCorreaBorde = optimizarPerfil(PERFILES_I_H_TUBO, Mu_correa_borde, Vu_correa_borde, luzCorrea_cm, wServ_correa_borde, deflLim_correa, costoCorreaKg, 'correa', compDataCorrea);
 
-  // 14. MATERIALES Y COSTOS
+  // 13. MATERIALES Y COSTOS
   const areaDeck = areaTotal * 1.15;
   const wr_deck = getDeckProp(calibre, 'wr') || 6.5;
   const Sr_deck = getDeckProp(calibre, 'Sr') || 15.24;
@@ -822,7 +836,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     (kgVigas * (costos.vigaPrincipalKg || 0)) +
     (totalStuds * (costos.studUnd || 0));
 
-  // 15. RESUMEN
+  // 14. RESUMEN
   const verificaciones = {
     deckConstruccion: {
       descripcion: 'Deck en fase de construcción (AISC 360 I3)',
@@ -913,16 +927,6 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
       capacidadTotal: capacidadTotalStuds.toFixed(0) + ' kg',
       cumple: cumpleHs && cumpleTf_vp && cumpleTf_correa && (s_vp >= s_min && s_vp <= s_max) && (s_correa >= s_min && s_correa <= s_max),
     },
-    fatiga: {
-      descripcion: 'Fatiga de conectores (AISC 360 App. 3)',
-      ciclos: ciclosFatiga.toLocaleString(),
-      esfuerzo: fatigaStuds.esfuerzo.toFixed(1) + ' kg/cm²',
-      FTH: fatigaStuds.FTH + ' kg/cm²',
-      cumple: fatigaStuds.cumple,
-      vidaCiclos: fatigaStuds.N.toLocaleString(),
-      vidaAnios: fatigaStuds.vidaAnios + ' años',
-      ratio: (fatigaStuds.esfuerzo / fatigaStuds.FTH).toFixed(2),
-    },
     losaConcreto: {
       descripcion: 'Losa de concreto (ACI 318 - Losa en 1 dirección)',
       momentoPos: { demanda: mPosLosa.toFixed(2) + ' kg·m/m', coef: '1/14' },
@@ -967,18 +971,57 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     verificaciones,
     optimizador: { viga: optViga, correa: optCorrea },
     steelDeckData: {
-      espesorConcreto: espesorConcreto_efectivo, espesorMinimo: espesorMinimoACI, calibre, sepCorreas, sepReal, tipoVigaPrincipal, tipoCorrea,
-      diametroStud, alturaDeck, f_c: f_c_val, fy_rebar: fy_rebar_val,
-      mConstruccion, vConstruccion, phiMn_pos_deck, phiMn_neg_deck, phiVn_deck,
-      mPosLosa, mNegExtLosa, mNegIntLosa,
-      totalStuds, phiQn: phiQn_vp, capacidadTotalStuds, R: R_vp,
-      kgCorreas, kgVigas, kgMalla, areaDeck,
-      longVigasPrincipalesX, longVigasPrincipalesY,
-      Mu_vp, phiMn_vp, Vu_vp, phiVn_vp, defl_vp, deflLim_vp,
-      Mu_correa, phiMn_correa, Vu_correa, phiVn_correa, defl_correa, deflLim_correa,
-      As_min, As_prov, phiVc, Vu_losa_cm, cumpleVcLosa,
-      secComp: secComp_vp, resComp: capComp_vp, f_natural, fatigaStuds,
-      arriostre_vp, arriostre_correa,
+      espesorConcreto: espesorConcreto_efectivo,
+      espesorMinimo: espesorMinimoACI,
+      calibre,
+      sepCorreas,
+      sepReal,
+      tipoVigaPrincipal,
+      tipoCorrea,
+      diametroStud,
+      alturaDeck,
+      f_c: f_c_val,
+      fy_rebar: fy_rebar_val,
+      mConstruccion,
+      vConstruccion,
+      phiMn_pos_deck,
+      phiMn_neg_deck,
+      phiVn_deck,
+      mPosLosa,
+      mNegExtLosa,
+      mNegIntLosa,
+      totalStuds,
+      phiQn: phiQn_vp,
+      capacidadTotalStuds,
+      R: R_vp,
+      kgCorreas,
+      kgVigas,
+      kgMalla,
+      areaDeck,
+      longVigasPrincipalesX,
+      longVigasPrincipalesY,
+      Mu_vp,
+      phiMn_vp,
+      Vu_vp,
+      phiVn_vp,
+      defl_vp,
+      deflLim_vp,
+      Mu_correa,
+      phiMn_correa,
+      Vu_correa,
+      phiVn_correa,
+      defl_correa,
+      deflLim_correa,
+      As_min,
+      As_prov,
+      phiVc,
+      Vu_losa_cm,
+      cumpleVcLosa,
+      secComp: secComp_vp,
+      resComp: capComp_vp,
+      f_natural,
+      arriostre_vp,
+      arriostre_correa,
     },
   };
 }
@@ -989,8 +1032,11 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
 export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid, datos, costos }) {
   const [tabActivo, setTabActivo] = useState('general');
   const [normParams, setNormParams] = useState({
-    f_c: 210, fy_rebar: 4200, alturaStud: 15,
-    numStudsPorReborde: 1, anchoReborde: 15, ciclosFatiga: 100000,
+    f_c: 210,
+    fy_rebar: 4200,
+    alturaStud: 15,
+    numStudsPorReborde: 1,
+    anchoReborde: 15,
     mallaTruskon: 1.88, // cm²/m - Malla Truskon T-188 por defecto
   });
 
@@ -1041,7 +1087,6 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
     }),
     progressBar: (ratio) => {
       const pct = Math.min(parseFloat(ratio) * 100, 100);
-      const color = pct < 60 ? theme.success : pct < 90 ? theme.warning : theme.danger;
       return { height: '6px', width: '100%', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' };
     },
     progressFill: (ratio) => {
@@ -1100,7 +1145,6 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
     { id: 'compuesta', label: 'Compuesta' },
     { id: 'vigas', label: 'Vigas' },
     { id: 'conectores', label: 'Studs' },
-    { id: 'fatiga', label: 'Fatiga' },
     { id: 'losa', label: 'Losa' },
     { id: 'optimizador', label: 'Optimizador' },
     { id: 'costos', label: 'Costos' },
@@ -1211,14 +1255,6 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
               <td>-</td>
               <td class="badge-ok">OK</td>
             </tr>
-            <tr>
-              <td>Fatiga de Conectores (AISC App 3)</td>
-              <td>${resultados.verificaciones.fatiga.esfuerzo}</td>
-              <td>Límite: ${resultados.verificaciones.fatiga.FTH}</td>
-              <td class="${resultados.verificaciones.fatiga.cumple ? 'badge-ok' : 'badge-fail'}">
-                ${resultados.verificaciones.fatiga.cumple ? 'CUMPLE' : 'NO CUMPLE'}
-              </td>
-            </tr>
           </table>
 
           <p style="margin-top: 40px; font-size: 11px; color: #7f8c8d; text-align: center;">
@@ -1237,7 +1273,7 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
       <div style={{...styles.header, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
         <div>
           <h2 style={styles.title}>Losa Colaborante Steel Deck</h2>
-          <p style={styles.subtitle}>Pre-dimensionamiento normativo ACI 318-19 · AISC 360-16 LRFD · Fatiga · Optimización</p>
+          <p style={styles.subtitle}>Pre-dimensionamiento normativo ACI 318-19 · AISC 360-16 LRFD · Optimización</p>
         </div>
         <button 
           onClick={exportarPDF}
@@ -1252,512 +1288,480 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
         <div>
           {/* CONFIGURACIÓN */}
           <div style={styles.card}>
-        <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 700, color: theme.text }}>⚙️ Configuración</h3>
-        <div style={styles.grid4}>
-          {[
-            ['espesorConcreto', 'Espesor concreto (cm)', 'number', 0.5, 4, 25],
-            ['calibre', 'Calibre deck', 'select-deck', null, null, null],
-            ['sepCorreas', 'Separación real correas (m)', 'number', 0.1, 0.9, 3.0],
-            ['alturaDeck', 'Altura deck (cm)', 'number', 0.5, 5, 15],
-            ['tipoVigaPrincipal', 'Viga principal', 'select-w', null, null, null],
-            ['tipoCorrea', 'Correa', 'select-c', null, null, null],
-            ['diametroStud', 'Diámetro stud', 'select-ds', null, null, null],
-            ['mallaTruskon', 'Malla Truskon', 'select-malla', null, null, null],
-            ['f_c', "f'c (kg/cm²)", 'number', 10, 140, 420],
-            ['fy_rebar', 'fy rebar (kg/cm²)', 'number', 100, 2800, 6000],
-            ['alturaStud', 'Altura stud (cm)', 'number', 1, 10, 25],
-            ['numStudsPorReborde', 'Studs/reborde', 'select-nc', null, null, null],
-            ['anchoReborde', 'Ancho reborde (cm)', 'number', 1, 10, 25],
-            ['ciclosFatiga', 'Ciclos fatiga', 'number', 1000, 1000, 10000000],
-          ].map(([name, label, type, step, min, max]) => (
-            <div key={name}>
-              <label style={styles.label}>{label}</label>
-              {type === 'select-deck' ? (
-                <select name="calibre" value={steelDeckConfig.calibre} onChange={onConfigChange} style={styles.input}>
-                  <option value="22">22 (7.3 kg/m²)</option>
-                  <option value="20">20 (9.1 kg/m²)</option>
-                  <option value="18">18 (11.4 kg/m²)</option>
-                  <option value="16">16 (14.6 kg/m²)</option>
-                </select>
-              ) : type === 'select-w' ? (
-                <select name="tipoVigaPrincipal" value={steelDeckConfig.tipoVigaPrincipal} onChange={onConfigChange} style={styles.input}>
-                  {PERFILES_I_H_TUBO.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              ) : type === 'select-c' ? (
-                <select name="tipoCorrea" value={steelDeckConfig.tipoCorrea} onChange={onConfigChange} style={styles.input}>
-                  {PERFILES_I_H_TUBO.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              ) : type === 'select-ds' ? (
-                <select name="diametroStud" value={steelDeckConfig.diametroStud || 0.75} onChange={onConfigChange} style={styles.input}>
-                  <option value="0.5">1/2" (12.7 mm)</option>
-                  <option value="0.625">5/8" (15.9 mm)</option>
-                  <option value="0.75">3/4" (19.1 mm)</option>
-                  <option value="0.875">7/8" (22.2 mm)</option>
-                </select>
-              ) : type === 'select-nc' ? (
-                <select name="numStudsPorReborde" value={normParams.numStudsPorReborde} onChange={handleNormChange} style={styles.input}>
-                  <option value={1}>1 stud/reborde</option>
-                  <option value={2}>2 studs/reborde</option>
-                </select>
-              ) : type === 'select-malla' ? (
-                <select name="mallaTruskon" value={normParams.mallaTruskon} onChange={handleNormChange} style={styles.input}>
-                  <option value="0.97">Truskon T-97 (0.97 cm²/m)</option>
-                  <option value="1.42">Truskon T-142 (1.42 cm²/m)</option>
-                  <option value="1.59">Truskon T-159 (1.59 cm²/m)</option>
-                  <option value="1.88">Truskon T-188 (1.88 cm²/m)</option>
-                  <option value="2.57">Truskon T-257 (2.57 cm²/m)</option>
-                  <option value="3.55">Truskon T-355 (3.55 cm²/m)</option>
-                  <option value="5.11">Truskon T-511 (5.11 cm²/m)</option>
-                </select>
-              ) : (
-                <input type="number" name={name} value={type === 'number' && name in steelDeckConfig ? steelDeckConfig[name] : normParams[name]} onChange={name in steelDeckConfig ? onConfigChange : handleNormChange} step={step} min={min} max={max} style={styles.input} />
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 700, color: theme.text }}>⚙️ Configuración</h3>
+            <div style={styles.grid4}>
+              {[
+                ['espesorConcreto', 'Espesor concreto (cm)', 'number', 0.5, 4, 25],
+                ['calibre', 'Calibre deck', 'select-deck', null, null, null],
+                ['sepCorreas', 'Separación real correas (m)', 'number', 0.1, 0.9, 3.0],
+                ['alturaDeck', 'Altura deck (cm)', 'number', 0.5, 5, 15],
+                ['tipoVigaPrincipal', 'Viga principal', 'select-w', null, null, null],
+                ['tipoCorrea', 'Correa', 'select-c', null, null, null],
+                ['diametroStud', 'Diámetro stud', 'select-ds', null, null, null],
+                ['mallaTruskon', 'Malla Truskon', 'select-malla', null, null, null],
+                ['f_c', "f'c (kg/cm²)", 'number', 10, 140, 420],
+                ['fy_rebar', 'fy rebar (kg/cm²)', 'number', 100, 2800, 6000],
+                ['alturaStud', 'Altura stud (cm)', 'number', 1, 10, 25],
+                ['numStudsPorReborde', 'Studs/reborde', 'select-nc', null, null, null],
+                ['anchoReborde', 'Ancho reborde (cm)', 'number', 1, 10, 25],
+              ].map(([name, label, type, step, min, max]) => (
+                <div key={name}>
+                  <label style={styles.label}>{label}</label>
+                  {type === 'select-deck' ? (
+                    <select name="calibre" value={steelDeckConfig.calibre} onChange={onConfigChange} style={styles.input}>
+                      <option value="22">22 (7.3 kg/m²)</option>
+                      <option value="20">20 (9.1 kg/m²)</option>
+                      <option value="18">18 (11.4 kg/m²)</option>
+                      <option value="16">16 (14.6 kg/m²)</option>
+                    </select>
+                  ) : type === 'select-w' ? (
+                    <select name="tipoVigaPrincipal" value={steelDeckConfig.tipoVigaPrincipal} onChange={onConfigChange} style={styles.input}>
+                      {PERFILES_I_H_TUBO.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  ) : type === 'select-c' ? (
+                    <select name="tipoCorrea" value={steelDeckConfig.tipoCorrea} onChange={onConfigChange} style={styles.input}>
+                      {PERFILES_I_H_TUBO.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  ) : type === 'select-ds' ? (
+                    <select name="diametroStud" value={steelDeckConfig.diametroStud || 0.75} onChange={onConfigChange} style={styles.input}>
+                      <option value="0.5">1/2" (12.7 mm)</option>
+                      <option value="0.625">5/8" (15.9 mm)</option>
+                      <option value="0.75">3/4" (19.1 mm)</option>
+                      <option value="0.875">7/8" (22.2 mm)</option>
+                    </select>
+                  ) : type === 'select-nc' ? (
+                    <select name="numStudsPorReborde" value={normParams.numStudsPorReborde} onChange={handleNormChange} style={styles.input}>
+                      <option value={1}>1 stud/reborde</option>
+                      <option value={2}>2 studs/reborde</option>
+                    </select>
+                  ) : type === 'select-malla' ? (
+                    <select name="mallaTruskon" value={normParams.mallaTruskon} onChange={handleNormChange} style={styles.input}>
+                      <option value="0.97">Truskon T-97 (0.97 cm²/m)</option>
+                      <option value="1.42">Truskon T-142 (1.42 cm²/m)</option>
+                      <option value="1.59">Truskon T-159 (1.59 cm²/m)</option>
+                      <option value="1.88">Truskon T-188 (1.88 cm²/m)</option>
+                      <option value="2.57">Truskon T-257 (2.57 cm²/m)</option>
+                      <option value="3.55">Truskon T-355 (3.55 cm²/m)</option>
+                      <option value="5.11">Truskon T-511 (5.11 cm²/m)</option>
+                    </select>
+                  ) : (
+                    <input type="number" name={name} value={type === 'number' && name in steelDeckConfig ? steelDeckConfig[name] : normParams[name]} onChange={name in steelDeckConfig ? onConfigChange : handleNormChange} step={step} min={min} max={max} style={styles.input} />
+                  )}
+                </div>
+              ))}
+            </div>
+            {steelDeckConfig.espesorConcreto < 5 && (
+              <div style={{ marginTop: '10px', padding: '8px 12px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '6px', fontSize: '12px', color: '#856404' }}>
+                ⚠️ <strong>Espesor mínimo ACI:</strong> El espesor ingresado ({steelDeckConfig.espesorConcreto} cm) es menor al mínimo normativo de <strong>5 cm</strong> sobre la cresta del deck (ACI 318-19 §26.3.3). Se calcula automáticamente con <strong>5 cm</strong>.
+              </div>
+            )}
+          </div>
+
+          {/* SVG SECCIÓN TRANSVERSAL Y ADVERTENCIA REUBICADOS */}
+          {resultados && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+              {renderSeccion(resultados, 'colaborante', steelDeckConfig, null)}
+              <div style={styles.alert}>
+                <strong>⚠️ Advertencia Normativa:</strong> Esta herramienta realiza verificaciones de pre-dimensionamiento basadas en ACI 318-19 y AISC 360-16 (LRFD). Incluye: método de la transformada para sección compuesta, factor de reducción R de conectores (AISC I3.2d), pandeo lateral-torsional con arriostramiento (AISC Cap. F / App. 6), cortante del concreto y punzonamiento (ACI 318), deflexiones en servicio y vibración. <strong>No sustituye el diseño estructural detallado</strong> ni la supervisión de un ingeniero estructural calificado.
+              </div>
+            </div>
+          )}
+
+          {/* RESULTADOS */}
+          {resultados && (
+            <div style={styles.card}>
+              {/* HEADER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: `2px solid ${theme.border}` }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: theme.text }}>📋 Resumen Normativo</h3>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: theme.textMuted }}>
+                    φb=0.90 · φv=0.90 · φc=0.75 · φconc=0.90 · φVc=0.75
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '12px', color: theme.textMuted }}>Estado global:</span>
+                  <span style={{
+                    padding: '8px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 700,
+                    background: resultados.cumpleGlobal ? '#dcfce7' : '#fee2e2',
+                    color: resultados.cumpleGlobal ? theme.success : theme.danger,
+                    border: `1px solid ${resultados.cumpleGlobal ? '#bbf7d0' : '#fecaca'}`,
+                  }}>
+                    {resultados.cumpleGlobal ? '✓ CUMPLE TODAS' : '✗ NO CUMPLE'}
+                  </span>
+                </div>
+              </div>
+
+              {/* TABS */}
+              <div style={styles.tabs}>
+                {tabs.map(t => (
+                  <button key={t.id} onClick={() => setTabActivo(t.id)} style={styles.tab(tabActivo === t.id)}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* TAB: GENERAL */}
+              {tabActivo === 'general' && (
+                <div style={styles.grid3}>
+                  {infoCard('Cargas', [
+                    ['Peso propio', resultados.pesoPropio + ' kg/m²'],
+                    ['wD permanente', resultados.wu + ' kg/m²'],
+                    ['wL viva', (datos.cv || 0).toFixed(2) + ' kg/m²'],
+                    ['wu última', resultados.wu + ' kg/m²'],
+                    ['w servicio', resultados.wServicio + ' kg/m²'],
+                  ])}
+                  {infoCard('Geometría', [
+                    ['Luz mayor', Math.max(grid.luzX, grid.luzY).toFixed(2) + ' m'],
+                    ['Luz menor', Math.min(grid.luzX, grid.luzY).toFixed(2) + ' m'],
+                    ['Ratio luz', (Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY)).toFixed(2)],
+                    ['Área total', (grid.luzX * Math.max(grid.cols - 1, 1) * grid.luzY * Math.max(grid.filas - 1, 1)).toFixed(2) + ' m²'],
+                  ])}
+                  {infoCard('Estado por elemento', [
+                    ['Deck construcción', resultados.verificaciones.deckConstruccion.cumpleGlobal ? '✓ OK' : '✗ FAIL'],
+                    ['Viga principal', resultados.verificaciones.vigaPrincipal.cumpleGlobal ? '✓ OK' : '✗ FAIL'],
+                    ['Correas', resultados.verificaciones.correas.cumpleGlobal ? '✓ OK' : '✗ FAIL'],
+                    ['Conectores', resultados.verificaciones.conectoresCorte.cumple ? '✓ OK' : '✗ FAIL'],
+                    ['Losa concreto', resultados.verificaciones.losaConcreto.cumpleGlobal ? '✓ OK' : '✗ FAIL'],
+                  ])}
+                </div>
+              )}
+
+              {/* TAB: DECK */}
+              {tabActivo === 'deck' && (
+                <div>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase' }}>{resultados.verificaciones.deckConstruccion.descripcion}</span>
+                  </div>
+                  {verifRow('Momento (+)', resultados.verificaciones.deckConstruccion.momentoPos.demanda, resultados.verificaciones.deckConstruccion.momentoPos.capacidad, resultados.verificaciones.deckConstruccion.momentoPos.cumple, resultados.verificaciones.deckConstruccion.momentoPos.ratio)}
+                  {verifRow('Momento (-)', resultados.verificaciones.deckConstruccion.momentoNeg.demanda, resultados.verificaciones.deckConstruccion.momentoNeg.capacidad, resultados.verificaciones.deckConstruccion.momentoNeg.cumple, resultados.verificaciones.deckConstruccion.momentoNeg.ratio)}
+                  {verifRow('Cortante', resultados.verificaciones.deckConstruccion.cortante.demanda, resultados.verificaciones.deckConstruccion.cortante.capacidad, resultados.verificaciones.deckConstruccion.cortante.cumple, resultados.verificaciones.deckConstruccion.cortante.ratio)}
+                  {verifRow('Deflexión', resultados.verificaciones.deckConstruccion.deflexion.demanda, resultados.verificaciones.deckConstruccion.deflexion.limite, resultados.verificaciones.deckConstruccion.deflexion.cumple, resultados.verificaciones.deckConstruccion.deflexion.ratio)}
+                  <div style={{ marginTop: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px', color: theme.textMuted, lineHeight: 1.5 }}>
+                    <strong style={{ color: theme.text }}>Nota técnica:</strong> Verificación en fase de construcción según AISC 360 Cap. I3. El deck actúa como encofrado permanente. Carga de construcción = peso del concreto húmedo + 100 kg/m² de sobrecarga de trabajo.
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: COMPUESTA */}
+              {tabActivo === 'compuesta' && (
+                <div style={styles.grid2}>
+                  <div>
+                    <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Sección transformada</h4>
+                    {infoCard('', [
+                      ['Ancho efectivo (beff)', resultados.verificaciones.seccionCompuesta.anchoEfectivo],
+                      ['Módulo modular (n)', resultados.verificaciones.seccionCompuesta.n],
+                      ['Ancho transformado', resultados.verificaciones.seccionCompuesta.bTransformado],
+                      ['Inercia transformada (Itr)', resultados.verificaciones.seccionCompuesta.inerciaTransformada],
+                      ['Centroide (ȳ)', resultados.verificaciones.seccionCompuesta.yBar],
+                      ['Módulo sección sup. (S+)', resultados.verificaciones.seccionCompuesta.S_sup],
+                      ['Módulo sección inf. (S−)', resultados.verificaciones.seccionCompuesta.S_inf],
+                    ])}
+                  </div>
+                  <div>
+                    <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Momento resistente compuesto</h4>
+                    {infoCard('', [
+                      ['Fuerza plástica acero (Py)', resultados.verificaciones.momentoCompuesto.P_acero],
+                      ['Fuerza plástica concreto (Cc)', resultados.verificaciones.momentoCompuesto.P_conc],
+                      ['Fuerza transferible studs (ΣQn)', resultados.verificaciones.momentoCompuesto.P_studs],
+                      ['PNA', resultados.verificaciones.momentoCompuesto.PNA],
+                      ['Bloque compresión (a)', resultados.verificaciones.momentoCompuesto.a],
+                      ['Distancia PNA (Y2)', resultados.verificaciones.momentoCompuesto.Y2],
+                      ['Mn compuesta', resultados.verificaciones.momentoCompuesto.Mn_comp],
+                      ['φMn compuesta', resultados.verificaciones.momentoCompuesto.phiMn_comp],
+                    ])}
+                    <div style={{ marginTop: '10px', padding: '10px', background: '#eff6ff', borderRadius: '8px', fontSize: '12px', color: '#1e40af' }}>
+                      <strong>Tipo de compuesta:</strong> {resultados.verificaciones.momentoCompuesto.completa ? 'Sección completamente compuesta' : 'Sección parcialmente compuesta (limitada por studs)'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: VIGAS */}
+              {tabActivo === 'vigas' && (
+                <div>
+                  {/* VIGA PRINCIPAL */}
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: theme.text }}>
+                    {resultados.verificaciones.vigaPrincipal.descripcion}
+                  </h4>
+                  {verifRow('Momento', resultados.verificaciones.vigaPrincipal.momento.demanda, resultados.verificaciones.vigaPrincipal.momento.capacidad, resultados.verificaciones.vigaPrincipal.momento.cumple, resultados.verificaciones.vigaPrincipal.momento.ratio)}
+                  <div style={{ padding: '0 0 10px 20px' }}>{progressBar(resultados.verificaciones.vigaPrincipal.momento.ratio)}</div>
+                  {verifRow('Cortante', resultados.verificaciones.vigaPrincipal.cortante.demanda, resultados.verificaciones.vigaPrincipal.cortante.capacidad, resultados.verificaciones.vigaPrincipal.cortante.cumple, resultados.verificaciones.vigaPrincipal.cortante.ratio)}
+                  {verifRow('Deflexión acero', resultados.verificaciones.vigaPrincipal.deflexion.demanda, resultados.verificaciones.vigaPrincipal.deflexion.limite, resultados.verificaciones.vigaPrincipal.deflexion.cumple, resultados.verificaciones.vigaPrincipal.deflexion.ratio)}
+                  {verifRow('Deflexión compuesta', resultados.verificaciones.vigaPrincipal.deflexionCompuesta.demanda, resultados.verificaciones.vigaPrincipal.deflexionCompuesta.limite, resultados.verificaciones.vigaPrincipal.deflexionCompuesta.cumple, resultados.verificaciones.vigaPrincipal.deflexionCompuesta.ratio)}
+
+                  {/* ARRIOSTRAMIENTO VIGA PRINCIPAL */}
+                  <div style={{ marginTop: '16px', padding: '14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                    <h5 style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 700, color: '#14532d' }}>🔧 Arriostramiento lateral (AISC 360 App. 6)</h5>
+                    <div style={styles.grid3}>
+                      {infoCard('Parámetros', [
+                        ['Lb actual', resultados.verificaciones.vigaPrincipal.arriostramiento.Lb_m + ' m'],
+                        ['Lp (límite plástico)', resultados.verificaciones.vigaPrincipal.arriostramiento.Lp_m + ' m'],
+                        ['Lr (límite inelástico)', resultados.verificaciones.vigaPrincipal.arriostramiento.Lr_m + ' m'],
+                        ['Zona de pandeo', resultados.verificaciones.vigaPrincipal.pandeo.zona],
+                      ])}
+                      {infoCard('Recomendación', [
+                        ['Estado', resultados.verificaciones.vigaPrincipal.arriostramiento.cumpleSinArriostre ? 'No requiere arriostramiento' : 'Requiere arriostramiento'],
+                        ['Máx. sin arriostre', resultados.verificaciones.vigaPrincipal.arriostramiento.Lb_max_m + ' m'],
+                        ['Fuerza bracing (Pbr)', resultados.verificaciones.vigaPrincipal.arriostramiento.Pbr_kg + ' kg'],
+                      ])}
+                    </div>
+                    <p style={{ margin: '10px 0 0 0', fontSize: '11px', color: '#14532d' }}>
+                      <strong>Nota:</strong> {resultados.verificaciones.vigaPrincipal.arriostramiento.recomendacion}. La fuerza de arriostramiento se calcula según AISC 360 App. 6.3 como Pbr = 0.02·Mf/h0.
+                    </p>
+                  </div>
+
+                  {/* CORREAS */}
+                  <h4 style={{ margin: '24px 0 12px 0', fontSize: '14px', fontWeight: 700, color: theme.text }}>
+                    {resultados.verificaciones.correas.descripcion}
+                  </h4>
+                  {verifRow('Momento', resultados.verificaciones.correas.momento.demanda, resultados.verificaciones.correas.momento.capacidad, resultados.verificaciones.correas.momento.cumple, resultados.verificaciones.correas.momento.ratio)}
+                  <div style={{ padding: '0 0 10px 20px' }}>{progressBar(resultados.verificaciones.correas.momento.ratio)}</div>
+                  {verifRow('Cortante', resultados.verificaciones.correas.cortante.demanda, resultados.verificaciones.correas.cortante.capacidad, resultados.verificaciones.correas.cortante.cumple, resultados.verificaciones.correas.cortante.ratio)}
+                  {verifRow('Deflexión', resultados.verificaciones.correas.deflexion.demanda, resultados.verificaciones.correas.deflexion.limite, resultados.verificaciones.correas.deflexion.cumple, resultados.verificaciones.correas.deflexion.ratio)}
+
+                  <div style={{ marginTop: '12px', padding: '14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                    <h5 style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 700, color: '#14532d' }}>🔧 Arriostramiento lateral de correas</h5>
+                    <div style={styles.grid3}>
+                      {infoCard('Parámetros', [
+                        ['Lb actual', resultados.verificaciones.correas.arriostramiento.Lb_m + ' m'],
+                        ['Lp', resultados.verificaciones.correas.arriostramiento.Lp_m + ' m'],
+                        ['Lr', resultados.verificaciones.correas.arriostramiento.Lr_m + ' m'],
+                        ['Zona', resultados.verificaciones.correas.arriostramiento.zona === 1 ? 'Zona 1' : (resultados.verificaciones.correas.arriostramiento.zona === 2 ? 'Zona 2' : 'Zona 3')],
+                      ])}
+                      {infoCard('Recomendación', [
+                        ['Estado', resultados.verificaciones.correas.arriostramiento.cumpleSinArriostre ? 'No requiere arriostre' : 'Requiere arriostre'],
+                        ['Máx. sin arriostre', resultados.verificaciones.correas.arriostramiento.Lb_max_m + ' m'],
+                        ['Fuerza bracing (Pbr)', resultados.verificaciones.correas.arriostramiento.Pbr_kg + ' kg'],
+                      ])}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: CONECTORES */}
+              {tabActivo === 'conectores' && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                    <div>
+                      <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>📐 Geometría y Límites del Stud</h4>
+                      {infoCard('', [
+                        ['Diámetro seleccionado (ds)', resultados.verificaciones.conectoresCorte.diametroStud],
+                        ['Espesor ala VP (tf)', resultados.verificaciones.conectoresCorte.tf_vp],
+                        ['Límite ala VP (ds ≤ 2.5·tf)', resultados.verificaciones.conectoresCorte.cumpleTf_vp ? '✓ CUMPLE' : '✗ EXCEDE'],
+                        ['Espesor ala Correa (tf)', resultados.verificaciones.conectoresCorte.tf_correa],
+                        ['Límite ala Correa (ds ≤ 2.5·tf)', resultados.verificaciones.conectoresCorte.cumpleTf_correa ? '✓ CUMPLE' : '✗ EXCEDE'],
+                        ['Altura del stud (Hs)', resultados.verificaciones.conectoresCorte.alturaStud],
+                        ['Rango Hs admisible', `${resultados.verificaciones.conectoresCorte.Hs_min} a ${resultados.verificaciones.conectoresCorte.Hs_max}`],
+                        ['Verificación altura', resultados.verificaciones.conectoresCorte.cumpleHs ? '✓ CUMPLE' : '✗ FUERA DE RANGO'],
+                      ])}
+                    </div>
+
+                    <div>
+                      <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>📊 Resumen de Distribución total</h4>
+                      {infoCard('', [
+                        ['Total studs requeridos', resultados.verificaciones.conectoresCorte.totalStuds.toLocaleString() + ' und'],
+                        ['Separación en Viga Principal', resultados.verificaciones.conectoresCorte.s_vp],
+                        ['Separación en Correas', resultados.verificaciones.conectoresCorte.s_correa],
+                        ['Capacidad total ΣφQn', resultados.verificaciones.conectoresCorte.capacidadTotal],
+                        ['Costo total conectores', `$${(resultados.verificaciones.conectoresCorte.totalStuds * (costos.studUnd || 0)).toFixed(2)}`],
+                        ['Estado conectores', resultados.verificaciones.conectoresCorte.cumple ? '✓ OK' : '✗ REVISAR LÍMITES'],
+                      ])}
+                      <div style={{ marginTop: '14px', padding: '12px', background: '#f8fafc', borderRadius: '8px', fontSize: '11px', color: theme.textMuted, lineHeight: 1.5 }}>
+                        <strong style={{ color: theme.text }}>Normas AISC/ACI:</strong> La altura mínima de los studs sobre el tope del deck es de 1.5" (38 mm) y el recubrimiento de concreto superior mínimo es de 0.5" (13 mm). El diámetro del stud no debe exceder 2.5 veces el espesor de la ala de apoyo.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div>
+                      <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>🌉 Vigas Principales (Pórticos)</h4>
+                      {infoCard('', [
+                        ['Capacidad φQn (perpendicular)', resultados.verificaciones.conectoresCorte.phiQn_vp],
+                        ['Fuerza plástica Py', resultados.verificaciones.conectoresCorte.P_acero_vp],
+                        ['Fuerza plástica Cc', resultados.verificaciones.conectoresCorte.P_conc_vp],
+                        ['Studs requeridos / tramo', resultados.verificaciones.conectoresCorte.N_total_vp + ' und'],
+                        ['Separación teórica (s)', resultados.verificaciones.conectoresCorte.s_vp],
+                        ['Rango s (mín / máx)', `${resultados.verificaciones.conectoresCorte.s_min_vp} / ${resultados.verificaciones.conectoresCorte.s_max_vp}`],
+                        ['Verificación s', resultados.verificaciones.conectoresCorte.cumpleS_vp ? '✓ CUMPLE' : '✗ REVISAR LÍMITES'],
+                        ['Acción compuesta', `${(parseFloat(resultados.verificaciones.conectoresCorte.ratio_vp) * 100).toFixed(0)}%`],
+                      ])}
+                    </div>
+
+                    <div>
+                      <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>📐 Correas (Viguetas secundarias)</h4>
+                      {infoCard('', [
+                        ['Capacidad φQn (paralela)', resultados.verificaciones.conectoresCorte.phiQn_correa],
+                        ['Fuerza plástica Py', resultados.verificaciones.conectoresCorte.P_acero_correa],
+                        ['Fuerza plástica Cc', resultados.verificaciones.conectoresCorte.P_conc_correa],
+                        ['Studs requeridos / correa', resultados.verificaciones.conectoresCorte.N_total_correa + ' und'],
+                        ['Separación teórica (s)', resultados.verificaciones.conectoresCorte.s_correa],
+                        ['Rango s (mín / máx)', `${resultados.verificaciones.conectoresCorte.s_min_correa} / ${resultados.verificaciones.conectoresCorte.s_max_correa}`],
+                        ['Verificación s', resultados.verificaciones.conectoresCorte.cumpleS_correa ? '✓ CUMPLE' : '✗ REVISAR LÍMITES'],
+                        ['Acción compuesta', `${(parseFloat(resultados.verificaciones.conectoresCorte.ratio_correa) * 100).toFixed(0)}%`],
+                      ])}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: LOSA */}
+              {tabActivo === 'losa' && (
+                <div>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Momentos de losa (ACI 318 Tabla 6.5.2.2)</h4>
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                    {infoCard('Momento positivo', [
+                      ['Demanda', resultados.verificaciones.losaConcreto.momentoPos.demanda],
+                      ['Coef. Ca', resultados.verificaciones.losaConcreto.momentoPos.coef],
+                    ])}
+                    {infoCard('Momento neg. exterior', [
+                      ['Demanda', resultados.verificaciones.losaConcreto.momentoNegExt.demanda],
+                      ['Coef. Ca', resultados.verificaciones.losaConcreto.momentoNegExt.coef],
+                    ])}
+                    {infoCard('Momento neg. interior', [
+                      ['Demanda', resultados.verificaciones.losaConcreto.momentoNegInt.demanda],
+                      ['Coef. Ca', resultados.verificaciones.losaConcreto.momentoNegInt.coef],
+                    ])}
+                  </div>
+
+                  {verifRow('Cortante losa', resultados.verificaciones.losaConcreto.cortante.demanda, resultados.verificaciones.losaConcreto.cortante.capacidad, resultados.verificaciones.losaConcreto.cortante.cumple, resultados.verificaciones.losaConcreto.cortante.ratio)}
+                  {verifRow('Punzonamiento', resultados.verificaciones.losaConcreto.punzonamiento.demanda, resultados.verificaciones.losaConcreto.punzonamiento.capacidad, resultados.verificaciones.losaConcreto.punzonamiento.cumple, resultados.verificaciones.losaConcreto.punzonamiento.ratio)}
+                  {verifRow('Deflexión total', resultados.verificaciones.losaConcreto.deflexion.demanda, resultados.verificaciones.losaConcreto.deflexion.limite, resultados.verificaciones.losaConcreto.deflexion.cumple, resultados.verificaciones.losaConcreto.deflexion.ratio)}
+                  {verifRow('Deflexión viva', resultados.verificaciones.losaConcreto.deflexionViva.demanda, resultados.verificaciones.losaConcreto.deflexionViva.limite, resultados.verificaciones.losaConcreto.deflexionViva.cumple, resultados.verificaciones.losaConcreto.deflexionViva.ratio)}
+
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${theme.border}`, fontSize: '13px' }}>
+                    <span style={styles.verifLabel}>Vibración (frecuencia natural)</span>
+                    <span style={styles.verifValue}>{resultados.verificaciones.losaConcreto.vibracion.frecuencia}</span>
+                    <span style={styles.verifValue}>{resultados.verificaciones.losaConcreto.vibracion.limite}</span>
+                    <span style={styles.verifValue}>—</span>
+                    <span style={styles.verifStatus}><span style={styles.badge(resultados.verificaciones.losaConcreto.vibracion.cumple)}>{resultados.verificaciones.losaConcreto.vibracion.cumple ? '✓ OK' : '✗ FAIL'}</span></span>
+                  </div>
+
+                  <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '13px', color: theme.text }}>As mínimo: Req <strong>{resultados.verificaciones.losaConcreto.asMinimo.requerido}</strong> | Prov <strong>{resultados.verificaciones.losaConcreto.asMinimo.provisto}</strong></span>
+                    <span style={styles.badge(resultados.verificaciones.losaConcreto.asMinimo.cumple)}>{resultados.verificaciones.losaConcreto.asMinimo.cumple ? '✓ OK' : '✗ FAIL'}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: OPTIMIZADOR */}
+              {tabActivo === 'optimizador' && (
+                <div>
+                  <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 700, color: theme.text }}>🔍 Optimizador automático de perfiles</h4>
+                  <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: theme.textMuted }}>
+                    El optimizador itera todos los perfiles disponibles y selecciona el más económico que cumpla momento, cortante y deflexión. Los ratios indican el grado de utilización.
+                  </p>
+
+                  <div style={styles.grid2}>
+                    {/* VIGA PRINCIPAL OPTIMIZADA */}
+                    <div>
+                      <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Viga principal optimizada</h5>
+                      <div style={{ ...styles.infoCard, background: resultados.optimizador.viga.optimo.cumple ? '#f0fdf4' : '#fef2f2', borderColor: resultados.optimizador.viga.optimo.cumple ? '#bbf7d0' : '#fecaca' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '18px', fontWeight: 700, color: theme.text }}>{resultados.optimizador.viga.optimo.perfil}</span>
+                          <span style={styles.badge(resultados.optimizador.viga.optimo.cumple)}>
+                            {resultados.optimizador.viga.optimo.cumple ? 'ÓPTIMO' : 'MEJOR OPCIÓN'}
+                          </span>
+                        </div>
+                        {infoCard('', [
+                          ['φMn', (resultados.optimizador.viga.optimo.phiMn / 100000).toFixed(2) + ' t·m'],
+                          ['φVn', (resultados.optimizador.viga.optimo.phiVn / 1000).toFixed(2) + ' t'],
+                          ['Deflexión', resultados.optimizador.viga.optimo.defl.toFixed(2) + ' cm'],
+                          ['Peso', resultados.optimizador.viga.optimo.peso + ' kg/m'],
+                          ['Costo aprox.', '$' + resultados.optimizador.viga.optimo.costo.toFixed(2)],
+                          ['Ratio momento', resultados.optimizador.viga.optimo.ratioFlex],
+                          ['Ratio cortante', resultados.optimizador.viga.optimo.ratioCort],
+                          ['Ratio deflexión', resultados.optimizador.viga.optimo.ratioDefl],
+                        ])}
+                      </div>
+
+                      <h6 style={{ margin: '16px 0 8px 0', fontSize: '12px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase' }}>Todos los candidatos</h6>
+                      <table style={styles.table}>
+                        <thead>
+                          <tr><th style={styles.th}>Perfil</th><th style={styles.th}>φMn (t·m)</th><th style={styles.th}>φVn (t)</th><th style={styles.th}>Defl (cm)</th><th style={styles.th}>Cumple</th><th style={styles.th}>Costo ($)</th></tr>
+                        </thead>
+                        <tbody>
+                          {resultados.optimizador.viga.candidatos.map((c, i) => (
+                            <tr key={i} style={{ background: c.perfil === resultados.optimizador.viga.optimo.perfil ? '#eff6ff' : 'transparent' }}>
+                              <td style={styles.td}><strong>{c.perfil}</strong></td>
+                              <td style={styles.td}>{(c.phiMn / 100000).toFixed(2)}</td>
+                              <td style={styles.td}>{(c.phiVn / 1000).toFixed(2)}</td>
+                              <td style={styles.td}>{c.defl.toFixed(2)}</td>
+                              <td style={styles.td}><span style={styles.badge(c.cumple)}>{c.cumple ? 'Sí' : 'No'}</span></td>
+                              <td style={styles.td}>{c.costo.toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* CORREA OPTIMIZADA */}
+                    <div>
+                      <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Correa optimizada</h5>
+                      <div style={{ ...styles.infoCard, background: resultados.optimizador.correa.optimo.cumple ? '#f0fdf4' : '#fef2f2', borderColor: resultados.optimizador.correa.optimo.cumple ? '#bbf7d0' : '#fecaca' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '18px', fontWeight: 700, color: theme.text }}>{resultados.optimizador.correa.optimo.perfil}</span>
+                          <span style={styles.badge(resultados.optimizador.correa.optimo.cumple)}>
+                            {resultados.optimizador.correa.optimo.cumple ? 'ÓPTIMO' : 'MEJOR OPCIÓN'}
+                          </span>
+                        </div>
+                        {infoCard('', [
+                          ['φMn', (resultados.optimizador.correa.optimo.phiMn / 100000).toFixed(2) + ' t·m'],
+                          ['φVn', (resultados.optimizador.correa.optimo.phiVn / 1000).toFixed(2) + ' t'],
+                          ['Deflexión', resultados.optimizador.correa.optimo.defl.toFixed(2) + ' cm'],
+                          ['Peso', resultados.optimizador.correa.optimo.peso + ' kg/m'],
+                          ['Costo aprox.', '$' + resultados.optimizador.correa.optimo.costo.toFixed(2)],
+                          ['Ratio momento', resultados.optimizador.correa.optimo.ratioFlex],
+                          ['Ratio cortante', resultados.optimizador.correa.optimo.ratioCort],
+                          ['Ratio deflexión', resultados.optimizador.correa.optimo.ratioDefl],
+                        ])}
+                      </div>
+
+                      <h6 style={{ margin: '16px 0 8px 0', fontSize: '12px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase' }}>Todos los candidatos</h6>
+                      <table style={styles.table}>
+                        <thead>
+                          <tr><th style={styles.th}>Perfil</th><th style={styles.th}>φMn (t·m)</th><th style={styles.th}>φVn (t)</th><th style={styles.th}>Defl (cm)</th><th style={styles.th}>Cumple</th><th style={styles.th}>Costo ($)</th></tr>
+                        </thead>
+                        <tbody>
+                          {resultados.optimizador.correa.candidatos.map((c, i) => (
+                            <tr key={i} style={{ background: c.perfil === resultados.optimizador.correa.optimo.perfil ? '#eff6ff' : 'transparent' }}>
+                              <td style={styles.td}><strong>{c.perfil}</strong></td>
+                              <td style={styles.td}>{(c.phiMn / 100000).toFixed(2)}</td>
+                              <td style={styles.td}>{(c.phiVn / 1000).toFixed(2)}</td>
+                              <td style={styles.td}>{c.defl.toFixed(2)}</td>
+                              <td style={styles.td}><span style={styles.badge(c.cumple)}>{c.cumple ? 'Sí' : 'No'}</span></td>
+                              <td style={styles.td}>{c.costo.toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: COSTOS */}
+              {tabActivo === 'costos' && (
+                <div style={styles.grid3}>
+                  {infoCard('Materiales', [
+                    ['Vol. concreto', resultados.volConcreto + ' m³'],
+                    ['Acero total', resultados.kgAcero + ' kg'],
+                    ['Studs', resultados.numBloques.toLocaleString() + ' und'],
+                    ['Deck', ((grid.luzX * Math.max(grid.cols - 1, 1) * grid.luzY * Math.max(grid.filas - 1, 1)) * 1.15).toFixed(2) + ' m²'],
+                  ])}
+                  {infoCard('Costos', [
+                    ['Costo total', '$' + resultados.costoTotal],
+                    ['Costo/m²', '$' + resultados.costoM2],
+                    ['Peso propio', resultados.pesoPropio + ' kg/m²'],
+                  ])}
+                  {infoCard('Eficiencia', [
+                    ['Ratio viga principal', resultados.verificaciones.vigaPrincipal.momento.ratio],
+                    ['Ratio correas', resultados.verificaciones.correas.momento.ratio],
+                    ['Ratio conectores', resultados.verificaciones.conectoresCorte.ratio_vp],
+                  ])}
+                </div>
               )}
             </div>
-          ))}
-        </div>
-        {steelDeckConfig.espesorConcreto < 5 && (
-          <div style={{ marginTop: '10px', padding: '8px 12px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '6px', fontSize: '12px', color: '#856404' }}>
-            ⚠️ <strong>Espesor mínimo ACI:</strong> El espesor ingresado ({steelDeckConfig.espesorConcreto} cm) es menor al mínimo normativo de <strong>5 cm</strong> sobre la cresta del deck (ACI 318-19 §26.3.3). Se calcula automáticamente con <strong>5 cm</strong>.
-          </div>
-        )}
-      </div>
-
-      {/* SVG SECCIÓN TRANSVERSAL Y ADVERTENCIA REUBICADOS */}
-      {resultados && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
-          {renderSeccion(resultados, 'colaborante', steelDeckConfig, null)}
-          <div style={styles.alert}>
-            <strong>⚠️ Advertencia Normativa:</strong> Esta herramienta realiza verificaciones de pre-dimensionamiento basadas en ACI 318-19 y AISC 360-16 (LRFD). Incluye: método de la transformada para sección compuesta, factor de reducción R de conectores (AISC I3.2d), pandeo lateral-torsional con arriostramiento (AISC Cap. F / App. 6), cortante del concreto y punzonamiento (ACI 318), deflexiones en servicio, vibración y fatiga de conectores (AISC App. 3). <strong>No sustituye el diseño estructural detallado</strong> ni la supervisión de un ingeniero estructural calificado.
-          </div>
-        </div>
-      )}
-
-      {/* RESULTADOS */}
-      {resultados && (
-        <div style={styles.card}>
-          {/* HEADER */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: `2px solid ${theme.border}` }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: theme.text }}>📋 Resumen Normativo</h3>
-              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: theme.textMuted }}>
-                φb=0.90 · φv=0.90 · φc=0.75 · φconc=0.90 · φVc=0.75
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '12px', color: theme.textMuted }}>Estado global:</span>
-              <span style={{
-                padding: '8px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 700,
-                background: resultados.cumpleGlobal ? '#dcfce7' : '#fee2e2',
-                color: resultados.cumpleGlobal ? theme.success : theme.danger,
-                border: `1px solid ${resultados.cumpleGlobal ? '#bbf7d0' : '#fecaca'}`,
-              }}>
-                {resultados.cumpleGlobal ? '✓ CUMPLE TODAS' : '✗ NO CUMPLE'}
-              </span>
-            </div>
-          </div>
-
-          {/* TABS */}
-          <div style={styles.tabs}>
-            {tabs.map(t => (
-              <button key={t.id} onClick={() => setTabActivo(t.id)} style={styles.tab(tabActivo === t.id)}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          {/* TAB: GENERAL */}
-          {tabActivo === 'general' && (
-            <div style={styles.grid3}>
-              {infoCard('Cargas', [
-                ['Peso propio', resultados.pesoPropio + ' kg/m²'],
-                ['wD permanente', resultados.wu + ' kg/m²'],
-                ['wL viva', (datos.cv || 0).toFixed(2) + ' kg/m²'],
-                ['wu última', resultados.wu + ' kg/m²'],
-                ['w servicio', resultados.wServicio + ' kg/m²'],
-              ])}
-              {infoCard('Geometría', [
-                ['Luz mayor', Math.max(grid.luzX, grid.luzY).toFixed(2) + ' m'],
-                ['Luz menor', Math.min(grid.luzX, grid.luzY).toFixed(2) + ' m'],
-                ['Ratio luz', (Math.max(grid.luzX, grid.luzY) / Math.min(grid.luzX, grid.luzY)).toFixed(2)],
-                ['Área total', (grid.luzX * Math.max(grid.cols - 1, 1) * grid.luzY * Math.max(grid.filas - 1, 1)).toFixed(2) + ' m²'],
-              ])}
-              {infoCard('Estado por elemento', [
-                ['Deck construcción', resultados.verificaciones.deckConstruccion.cumpleGlobal ? '✓ OK' : '✗ FAIL'],
-                ['Viga principal', resultados.verificaciones.vigaPrincipal.cumpleGlobal ? '✓ OK' : '✗ FAIL'],
-                ['Correas', resultados.verificaciones.correas.cumpleGlobal ? '✓ OK' : '✗ FAIL'],
-                ['Conectores', resultados.verificaciones.conectoresCorte.cumple ? '✓ OK' : '✗ FAIL'],
-                ['Losa concreto', resultados.verificaciones.losaConcreto.cumpleGlobal ? '✓ OK' : '✗ FAIL'],
-              ])}
-            </div>
           )}
-
-          {/* TAB: DECK */}
-          {tabActivo === 'deck' && (
-            <div>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase' }}>{resultados.verificaciones.deckConstruccion.descripcion}</span>
-              </div>
-              {verifRow('Momento (+)', resultados.verificaciones.deckConstruccion.momentoPos.demanda, resultados.verificaciones.deckConstruccion.momentoPos.capacidad, resultados.verificaciones.deckConstruccion.momentoPos.cumple, resultados.verificaciones.deckConstruccion.momentoPos.ratio)}
-              {verifRow('Momento (-)', resultados.verificaciones.deckConstruccion.momentoNeg.demanda, resultados.verificaciones.deckConstruccion.momentoNeg.capacidad, resultados.verificaciones.deckConstruccion.momentoNeg.cumple, resultados.verificaciones.deckConstruccion.momentoNeg.ratio)}
-              {verifRow('Cortante', resultados.verificaciones.deckConstruccion.cortante.demanda, resultados.verificaciones.deckConstruccion.cortante.capacidad, resultados.verificaciones.deckConstruccion.cortante.cumple, resultados.verificaciones.deckConstruccion.cortante.ratio)}
-              {verifRow('Deflexión', resultados.verificaciones.deckConstruccion.deflexion.demanda, resultados.verificaciones.deckConstruccion.deflexion.limite, resultados.verificaciones.deckConstruccion.deflexion.cumple, resultados.verificaciones.deckConstruccion.deflexion.ratio)}
-              <div style={{ marginTop: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px', color: theme.textMuted, lineHeight: 1.5 }}>
-                <strong style={{ color: theme.text }}>Nota técnica:</strong> Verificación en fase de construcción según AISC 360 Cap. I3. El deck actúa como encofrado permanente. Carga de construcción = peso del concreto húmedo + 100 kg/m² de sobrecarga de trabajo.
-              </div>
-            </div>
-          )}
-
-          {/* TAB: COMPUESTA */}
-          {tabActivo === 'compuesta' && (
-            <div style={styles.grid2}>
-              <div>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Sección transformada</h4>
-                {infoCard('', [
-                  ['Ancho efectivo (beff)', resultados.verificaciones.seccionCompuesta.anchoEfectivo],
-                  ['Módulo modular (n)', resultados.verificaciones.seccionCompuesta.n],
-                  ['Ancho transformado', resultados.verificaciones.seccionCompuesta.bTransformado],
-                  ['Inercia transformada (Itr)', resultados.verificaciones.seccionCompuesta.inerciaTransformada],
-                  ['Centroide (ȳ)', resultados.verificaciones.seccionCompuesta.yBar],
-                  ['Módulo sección sup. (S+)', resultados.verificaciones.seccionCompuesta.S_sup],
-                  ['Módulo sección inf. (S−)', resultados.verificaciones.seccionCompuesta.S_inf],
-                ])}
-              </div>
-              <div>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Momento resistente compuesto</h4>
-                {infoCard('', [
-                  ['Fuerza plástica acero (Py)', resultados.verificaciones.momentoCompuesto.P_acero],
-                  ['Fuerza plástica concreto (Cc)', resultados.verificaciones.momentoCompuesto.P_conc],
-                  ['Fuerza transferible studs (ΣQn)', resultados.verificaciones.momentoCompuesto.P_studs],
-                  ['PNA', resultados.verificaciones.momentoCompuesto.PNA],
-                  ['Bloque compresión (a)', resultados.verificaciones.momentoCompuesto.a],
-                  ['Distancia PNA (Y2)', resultados.verificaciones.momentoCompuesto.Y2],
-                  ['Mn compuesta', resultados.verificaciones.momentoCompuesto.Mn_comp],
-                  ['φMn compuesta', resultados.verificaciones.momentoCompuesto.phiMn_comp],
-                ])}
-                <div style={{ marginTop: '10px', padding: '10px', background: '#eff6ff', borderRadius: '8px', fontSize: '12px', color: '#1e40af' }}>
-                  <strong>Tipo de compuesta:</strong> {resultados.verificaciones.momentoCompuesto.completa ? 'Sección completamente compuesta' : 'Sección parcialmente compuesta (limitada por studs)'}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: VIGAS */}
-          {tabActivo === 'vigas' && (
-            <div>
-              {/* VIGA PRINCIPAL */}
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: theme.text }}>
-                {resultados.verificaciones.vigaPrincipal.descripcion}
-              </h4>
-              {verifRow('Momento', resultados.verificaciones.vigaPrincipal.momento.demanda, resultados.verificaciones.vigaPrincipal.momento.capacidad, resultados.verificaciones.vigaPrincipal.momento.cumple, resultados.verificaciones.vigaPrincipal.momento.ratio)}
-              <div style={{ padding: '0 0 10px 20px' }}>{progressBar(resultados.verificaciones.vigaPrincipal.momento.ratio)}</div>
-              {verifRow('Cortante', resultados.verificaciones.vigaPrincipal.cortante.demanda, resultados.verificaciones.vigaPrincipal.cortante.capacidad, resultados.verificaciones.vigaPrincipal.cortante.cumple, resultados.verificaciones.vigaPrincipal.cortante.ratio)}
-              {verifRow('Deflexión acero', resultados.verificaciones.vigaPrincipal.deflexion.demanda, resultados.verificaciones.vigaPrincipal.deflexion.limite, resultados.verificaciones.vigaPrincipal.deflexion.cumple, resultados.verificaciones.vigaPrincipal.deflexion.ratio)}
-              {verifRow('Deflexión compuesta', resultados.verificaciones.vigaPrincipal.deflexionCompuesta.demanda, resultados.verificaciones.vigaPrincipal.deflexionCompuesta.limite, resultados.verificaciones.vigaPrincipal.deflexionCompuesta.cumple, resultados.verificaciones.vigaPrincipal.deflexionCompuesta.ratio)}
-
-              {/* ARRIOSTRAMIENTO VIGA PRINCIPAL */}
-              <div style={{ marginTop: '16px', padding: '14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                <h5 style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 700, color: '#14532d' }}>🔧 Arriostramiento lateral (AISC 360 App. 6)</h5>
-                <div style={styles.grid3}>
-                  {infoCard('Parámetros', [
-                    ['Lb actual', resultados.verificaciones.vigaPrincipal.arriostramiento.Lb_m + ' m'],
-                    ['Lp (límite plástico)', resultados.verificaciones.vigaPrincipal.arriostramiento.Lp_m + ' m'],
-                    ['Lr (límite inelástico)', resultados.verificaciones.vigaPrincipal.arriostramiento.Lr_m + ' m'],
-                    ['Zona de pandeo', resultados.verificaciones.vigaPrincipal.pandeo.zona],
-                  ])}
-                  {infoCard('Recomendación', [
-                    ['Estado', resultados.verificaciones.vigaPrincipal.arriostramiento.cumpleSinArriostre ? 'No requiere arriostramiento' : 'Requiere arriostramiento'],
-                    ['Máx. sin arriostre', resultados.verificaciones.vigaPrincipal.arriostramiento.Lb_max_m + ' m'],
-                    ['Fuerza bracing (Pbr)', resultados.verificaciones.vigaPrincipal.arriostramiento.Pbr_kg + ' kg'],
-                  ])}
-                </div>
-                <p style={{ margin: '10px 0 0 0', fontSize: '11px', color: '#14532d' }}>
-                  <strong>Nota:</strong> {resultados.verificaciones.vigaPrincipal.arriostramiento.recomendacion}. La fuerza de arriostramiento se calcula según AISC 360 App. 6.3 como Pbr = 0.02·Mf/h0.
-                </p>
-              </div>
-
-              {/* CORREAS */}
-              <h4 style={{ margin: '24px 0 12px 0', fontSize: '14px', fontWeight: 700, color: theme.text }}>
-                {resultados.verificaciones.correas.descripcion}
-              </h4>
-              {verifRow('Momento', resultados.verificaciones.correas.momento.demanda, resultados.verificaciones.correas.momento.capacidad, resultados.verificaciones.correas.momento.cumple, resultados.verificaciones.correas.momento.ratio)}
-              <div style={{ padding: '0 0 10px 20px' }}>{progressBar(resultados.verificaciones.correas.momento.ratio)}</div>
-              {verifRow('Cortante', resultados.verificaciones.correas.cortante.demanda, resultados.verificaciones.correas.cortante.capacidad, resultados.verificaciones.correas.cortante.cumple, resultados.verificaciones.correas.cortante.ratio)}
-              {verifRow('Deflexión', resultados.verificaciones.correas.deflexion.demanda, resultados.verificaciones.correas.deflexion.limite, resultados.verificaciones.correas.deflexion.cumple, resultados.verificaciones.correas.deflexion.ratio)}
-
-              <div style={{ marginTop: '12px', padding: '14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                <h5 style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 700, color: '#14532d' }}>🔧 Arriostramiento lateral de correas</h5>
-                <div style={styles.grid3}>
-                  {infoCard('Parámetros', [
-                    ['Lb actual', resultados.verificaciones.correas.arriostramiento.Lb_m + ' m'],
-                    ['Lp', resultados.verificaciones.correas.arriostramiento.Lp_m + ' m'],
-                    ['Lr', resultados.verificaciones.correas.arriostramiento.Lr_m + ' m'],
-                    ['Zona', resultados.verificaciones.correas.arriostramiento.zona === 1 ? 'Zona 1' : (resultados.verificaciones.correas.arriostramiento.zona === 2 ? 'Zona 2' : 'Zona 3')],
-                  ])}
-                  {infoCard('Recomendación', [
-                    ['Estado', resultados.verificaciones.correas.arriostramiento.cumpleSinArriostre ? 'No requiere arriostre' : 'Requiere arriostre'],
-                    ['Máx. sin arriostre', resultados.verificaciones.correas.arriostramiento.Lb_max_m + ' m'],
-                    ['Fuerza bracing (Pbr)', resultados.verificaciones.correas.arriostramiento.Pbr_kg + ' kg'],
-                  ])}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: CONECTORES */}
-          {tabActivo === 'conectores' && (
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                <div>
-                  <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>📐 Geometría y Límites del Stud</h4>
-                  {infoCard('', [
-                    ['Diámetro seleccionado (ds)', resultados.verificaciones.conectoresCorte.diametroStud],
-                    ['Espesor ala VP (tf)', resultados.verificaciones.conectoresCorte.tf_vp],
-                    ['Límite ala VP (ds ≤ 2.5·tf)', resultados.verificaciones.conectoresCorte.cumpleTf_vp ? '✓ CUMPLE' : '✗ EXCEDE'],
-                    ['Espesor ala Correa (tf)', resultados.verificaciones.conectoresCorte.tf_correa],
-                    ['Límite ala Correa (ds ≤ 2.5·tf)', resultados.verificaciones.conectoresCorte.cumpleTf_correa ? '✓ CUMPLE' : '✗ EXCEDE'],
-                    ['Altura del stud (Hs)', resultados.verificaciones.conectoresCorte.alturaStud],
-                    ['Rango Hs admisible', `${resultados.verificaciones.conectoresCorte.Hs_min} a ${resultados.verificaciones.conectoresCorte.Hs_max}`],
-                    ['Verificación altura', resultados.verificaciones.conectoresCorte.cumpleHs ? '✓ CUMPLE' : '✗ FUERA DE RANGO'],
-                  ])}
-                </div>
-
-                <div>
-                  <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>📊 Resumen de Distribución total</h4>
-                  {infoCard('', [
-                    ['Total studs requeridos', resultados.verificaciones.conectoresCorte.totalStuds.toLocaleString() + ' und'],
-                    ['Separación en Viga Principal', resultados.verificaciones.conectoresCorte.s_vp],
-                    ['Separación en Correas', resultados.verificaciones.conectoresCorte.s_correa],
-                    ['Capacidad total ΣφQn', resultados.verificaciones.conectoresCorte.capacidadTotal],
-                    ['Costo total conectores', `$${(resultados.verificaciones.conectoresCorte.totalStuds * (costos.studUnd || 0)).toFixed(2)}`],
-                    ['Estado conectores', resultados.verificaciones.conectoresCorte.cumple ? '✓ OK' : '✗ REVISAR LÍMITES'],
-                  ])}
-                  <div style={{ marginTop: '14px', padding: '12px', background: '#f8fafc', borderRadius: '8px', fontSize: '11px', color: theme.textMuted, lineHeight: 1.5 }}>
-                    <strong style={{ color: theme.text }}>Normas AISC/ACI:</strong> La altura mínima de los studs sobre el tope del deck es de 1.5" (38 mm) y el recubrimiento de concreto superior mínimo es de 0.5" (13 mm). El diámetro del stud no debe exceder 2.5 veces el espesor de la ala de apoyo.
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div>
-                  <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>🌉 Vigas Principales (Pórticos)</h4>
-                  {infoCard('', [
-                    ['Capacidad φQn (perpendicular)', resultados.verificaciones.conectoresCorte.phiQn_vp],
-                    ['Fuerza plástica Py', resultados.verificaciones.conectoresCorte.P_acero_vp],
-                    ['Fuerza plástica Cc', resultados.verificaciones.conectoresCorte.P_conc_vp],
-                    ['Studs requeridos / tramo', resultados.verificaciones.conectoresCorte.N_total_vp + ' und'],
-                    ['Separación teórica (s)', resultados.verificaciones.conectoresCorte.s_vp],
-                    ['Rango s (mín / máx)', `${resultados.verificaciones.conectoresCorte.s_min_vp} / ${resultados.verificaciones.conectoresCorte.s_max_vp}`],
-                    ['Verificación s', resultados.verificaciones.conectoresCorte.cumpleS_vp ? '✓ CUMPLE' : '✗ REVISAR LÍMITES'],
-                    ['Acción compuesta', `${(parseFloat(resultados.verificaciones.conectoresCorte.ratio_vp) * 100).toFixed(0)}%`],
-                  ])}
-                </div>
-
-                <div>
-                  <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>📐 Correas (Viguetas secundarias)</h4>
-                  {infoCard('', [
-                    ['Capacidad φQn (paralela)', resultados.verificaciones.conectoresCorte.phiQn_correa],
-                    ['Fuerza plástica Py', resultados.verificaciones.conectoresCorte.P_acero_correa],
-                    ['Fuerza plástica Cc', resultados.verificaciones.conectoresCorte.P_conc_correa],
-                    ['Studs requeridos / correa', resultados.verificaciones.conectoresCorte.N_total_correa + ' und'],
-                    ['Separación teórica (s)', resultados.verificaciones.conectoresCorte.s_correa],
-                    ['Rango s (mín / máx)', `${resultados.verificaciones.conectoresCorte.s_min_correa} / ${resultados.verificaciones.conectoresCorte.s_max_correa}`],
-                    ['Verificación s', resultados.verificaciones.conectoresCorte.cumpleS_correa ? '✓ CUMPLE' : '✗ REVISAR LÍMITES'],
-                    ['Acción compuesta', `${(parseFloat(resultados.verificaciones.conectoresCorte.ratio_correa) * 100).toFixed(0)}%`],
-                  ])}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: FATIGA */}
-          {tabActivo === 'fatiga' && (
-            <div style={styles.grid2}>
-              <div>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Verificación de fatiga (AISC 360 App. 3)</h4>
-                {infoCard('', [
-                  ['Ciclos de carga', resultados.verificaciones.fatiga.ciclos],
-                  ['Esfuerzo en stud', resultados.verificaciones.fatiga.esfuerzo],
-                  ['Esfuerzo umbral (FTH)', resultados.verificaciones.fatiga.FTH],
-                  ['Ratio esfuerzo/FTH', resultados.verificaciones.fatiga.ratio],
-                  ['Estado', resultados.verificaciones.fatiga.cumple ? '✓ Cumple' : '✗ No cumple'],
-                ])}
-                <div style={{ marginTop: '10px' }}>
-                  {progressBar(resultados.verificaciones.fatiga.ratio)}
-                </div>
-              </div>
-              <div>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Vida útil estimada</h4>
-                {infoCard('', [
-                  ['Ciclos hasta falla (N)', resultados.verificaciones.fatiga.vidaCiclos],
-                  ['Vida útil estimada', resultados.verificaciones.fatiga.vidaAnios],
-                  ['Ciclos de diseño', resultados.verificaciones.fatiga.ciclos],
-                ])}
-                <div style={{ marginTop: '10px', padding: '10px', background: '#fefce8', borderRadius: '8px', fontSize: '12px', color: '#713f12' }}>
-                  <strong>Nota:</strong> La vida útil se estima con la ley de Miner simplificada (curva S-N). Para entrepisos de edificios, 100,000 ciclos corresponden aproximadamente a 10 años de uso normal. Para puentes o plantas industriales, ajustar los ciclos.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: LOSA */}
-          {tabActivo === 'losa' && (
-            <div>
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Momentos de losa (ACI 318 Tabla 6.5.2.2)</h4>
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                {infoCard('Momento positivo', [
-                  ['Demanda', resultados.verificaciones.losaConcreto.momentoPos.demanda],
-                  ['Coef. Ca', resultados.verificaciones.losaConcreto.momentoPos.coef],
-                ])}
-                {infoCard('Momento neg. exterior', [
-                  ['Demanda', resultados.verificaciones.losaConcreto.momentoNegExt.demanda],
-                  ['Coef. Ca', resultados.verificaciones.losaConcreto.momentoNegExt.coef],
-                ])}
-                {infoCard('Momento neg. interior', [
-                  ['Demanda', resultados.verificaciones.losaConcreto.momentoNegInt.demanda],
-                  ['Coef. Ca', resultados.verificaciones.losaConcreto.momentoNegInt.coef],
-                ])}
-              </div>
-
-              {verifRow('Cortante losa', resultados.verificaciones.losaConcreto.cortante.demanda, resultados.verificaciones.losaConcreto.cortante.capacidad, resultados.verificaciones.losaConcreto.cortante.cumple, resultados.verificaciones.losaConcreto.cortante.ratio)}
-              {verifRow('Punzonamiento', resultados.verificaciones.losaConcreto.punzonamiento.demanda, resultados.verificaciones.losaConcreto.punzonamiento.capacidad, resultados.verificaciones.losaConcreto.punzonamiento.cumple, resultados.verificaciones.losaConcreto.punzonamiento.ratio)}
-              {verifRow('Deflexión total', resultados.verificaciones.losaConcreto.deflexion.demanda, resultados.verificaciones.losaConcreto.deflexion.limite, resultados.verificaciones.losaConcreto.deflexion.cumple, resultados.verificaciones.losaConcreto.deflexion.ratio)}
-              {verifRow('Deflexión viva', resultados.verificaciones.losaConcreto.deflexionViva.demanda, resultados.verificaciones.losaConcreto.deflexionViva.limite, resultados.verificaciones.losaConcreto.deflexionViva.cumple, resultados.verificaciones.losaConcreto.deflexionViva.ratio)}
-
-              <div style={{ display: 'flex', alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${theme.border}`, fontSize: '13px' }}>
-                <span style={styles.verifLabel}>Vibración (frecuencia natural)</span>
-                <span style={styles.verifValue}>{resultados.verificaciones.losaConcreto.vibracion.frecuencia}</span>
-                <span style={styles.verifValue}>{resultados.verificaciones.losaConcreto.vibracion.limite}</span>
-                <span style={styles.verifValue}>—</span>
-                <span style={styles.verifStatus}><span style={styles.badge(resultados.verificaciones.losaConcreto.vibracion.cumple)}>{resultados.verificaciones.losaConcreto.vibracion.cumple ? '✓ OK' : '✗ FAIL'}</span></span>
-              </div>
-
-              <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
-                <span style={{ fontSize: '13px', color: theme.text }}>As mínimo: Req <strong>{resultados.verificaciones.losaConcreto.asMinimo.requerido}</strong> | Prov <strong>{resultados.verificaciones.losaConcreto.asMinimo.provisto}</strong></span>
-                <span style={styles.badge(resultados.verificaciones.losaConcreto.asMinimo.cumple)}>{resultados.verificaciones.losaConcreto.asMinimo.cumple ? '✓ OK' : '✗ FAIL'}</span>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: OPTIMIZADOR */}
-          {tabActivo === 'optimizador' && (
-            <div>
-              <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 700, color: theme.text }}>🔍 Optimizador automático de perfiles</h4>
-              <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: theme.textMuted }}>
-                El optimizador itera todos los perfiles disponibles y selecciona el más económico que cumpla momento, cortante y deflexión. Los ratios indican el grado de utilización.
-              </p>
-
-              <div style={styles.grid2}>
-                {/* VIGA PRINCIPAL OPTIMIZADA */}
-                <div>
-                  <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Viga principal optimizada</h5>
-                  <div style={{ ...styles.infoCard, background: resultados.optimizador.viga.optimo.cumple ? '#f0fdf4' : '#fef2f2', borderColor: resultados.optimizador.viga.optimo.cumple ? '#bbf7d0' : '#fecaca' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <span style={{ fontSize: '18px', fontWeight: 700, color: theme.text }}>{resultados.optimizador.viga.optimo.perfil}</span>
-                      <span style={styles.badge(resultados.optimizador.viga.optimo.cumple)}>
-                        {resultados.optimizador.viga.optimo.cumple ? 'ÓPTIMO' : 'MEJOR OPCIÓN'}
-                      </span>
-                    </div>
-                    {infoCard('', [
-                      ['φMn', (resultados.optimizador.viga.optimo.phiMn / 100000).toFixed(2) + ' t·m'],
-                      ['φVn', (resultados.optimizador.viga.optimo.phiVn / 1000).toFixed(2) + ' t'],
-                      ['Deflexión', resultados.optimizador.viga.optimo.defl.toFixed(2) + ' cm'],
-                      ['Peso', resultados.optimizador.viga.optimo.peso + ' kg/m'],
-                      ['Costo aprox.', '$' + resultados.optimizador.viga.optimo.costo.toFixed(2)],
-                      ['Ratio momento', resultados.optimizador.viga.optimo.ratioFlex],
-                      ['Ratio cortante', resultados.optimizador.viga.optimo.ratioCort],
-                      ['Ratio deflexión', resultados.optimizador.viga.optimo.ratioDefl],
-                    ])}
-                  </div>
-
-                  <h6 style={{ margin: '16px 0 8px 0', fontSize: '12px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase' }}>Todos los candidatos</h6>
-                  <table style={styles.table}>
-                    <thead>
-                      <tr><th style={styles.th}>Perfil</th><th style={styles.th}>φMn (t·m)</th><th style={styles.th}>φVn (t)</th><th style={styles.th}>Defl (cm)</th><th style={styles.th}>Cumple</th><th style={styles.th}>Costo ($)</th></tr>
-                    </thead>
-                    <tbody>
-                      {resultados.optimizador.viga.candidatos.map((c, i) => (
-                        <tr key={i} style={{ background: c.perfil === resultados.optimizador.viga.optimo.perfil ? '#eff6ff' : 'transparent' }}>
-                          <td style={styles.td}><strong>{c.perfil}</strong></td>
-                          <td style={styles.td}>{(c.phiMn / 100000).toFixed(2)}</td>
-                          <td style={styles.td}>{(c.phiVn / 1000).toFixed(2)}</td>
-                          <td style={styles.td}>{c.defl.toFixed(2)}</td>
-                          <td style={styles.td}><span style={styles.badge(c.cumple)}>{c.cumple ? 'Sí' : 'No'}</span></td>
-                          <td style={styles.td}>{c.costo.toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* CORREA OPTIMIZADA */}
-                <div>
-                  <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Correa optimizada</h5>
-                  <div style={{ ...styles.infoCard, background: resultados.optimizador.correa.optimo.cumple ? '#f0fdf4' : '#fef2f2', borderColor: resultados.optimizador.correa.optimo.cumple ? '#bbf7d0' : '#fecaca' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <span style={{ fontSize: '18px', fontWeight: 700, color: theme.text }}>{resultados.optimizador.correa.optimo.perfil}</span>
-                      <span style={styles.badge(resultados.optimizador.correa.optimo.cumple)}>
-                        {resultados.optimizador.correa.optimo.cumple ? 'ÓPTIMO' : 'MEJOR OPCIÓN'}
-                      </span>
-                    </div>
-                    {infoCard('', [
-                      ['φMn', (resultados.optimizador.correa.optimo.phiMn / 100000).toFixed(2) + ' t·m'],
-                      ['φVn', (resultados.optimizador.correa.optimo.phiVn / 1000).toFixed(2) + ' t'],
-                      ['Deflexión', resultados.optimizador.correa.optimo.defl.toFixed(2) + ' cm'],
-                      ['Peso', resultados.optimizador.correa.optimo.peso + ' kg/m'],
-                      ['Costo aprox.', '$' + resultados.optimizador.correa.optimo.costo.toFixed(2)],
-                      ['Ratio momento', resultados.optimizador.correa.optimo.ratioFlex],
-                      ['Ratio cortante', resultados.optimizador.correa.optimo.ratioCort],
-                      ['Ratio deflexión', resultados.optimizador.correa.optimo.ratioDefl],
-                    ])}
-                  </div>
-
-                  <h6 style={{ margin: '16px 0 8px 0', fontSize: '12px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase' }}>Todos los candidatos</h6>
-                  <table style={styles.table}>
-                    <thead>
-                      <tr><th style={styles.th}>Perfil</th><th style={styles.th}>φMn (t·m)</th><th style={styles.th}>φVn (t)</th><th style={styles.th}>Defl (cm)</th><th style={styles.th}>Cumple</th><th style={styles.th}>Costo ($)</th></tr>
-                    </thead>
-                    <tbody>
-                      {resultados.optimizador.correa.candidatos.map((c, i) => (
-                        <tr key={i} style={{ background: c.perfil === resultados.optimizador.correa.optimo.perfil ? '#eff6ff' : 'transparent' }}>
-                          <td style={styles.td}><strong>{c.perfil}</strong></td>
-                          <td style={styles.td}>{(c.phiMn / 100000).toFixed(2)}</td>
-                          <td style={styles.td}>{(c.phiVn / 1000).toFixed(2)}</td>
-                          <td style={styles.td}>{c.defl.toFixed(2)}</td>
-                          <td style={styles.td}><span style={styles.badge(c.cumple)}>{c.cumple ? 'Sí' : 'No'}</span></td>
-                          <td style={styles.td}>{c.costo.toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: COSTOS */}
-          {tabActivo === 'costos' && (
-            <div style={styles.grid3}>
-              {infoCard('Materiales', [
-                ['Vol. concreto', resultados.volConcreto + ' m³'],
-                ['Acero total', resultados.kgAcero + ' kg'],
-                ['Studs', resultados.numBloques.toLocaleString() + ' und'],
-                ['Deck', ((grid.luzX * Math.max(grid.cols - 1, 1) * grid.luzY * Math.max(grid.filas - 1, 1)) * 1.15).toFixed(2) + ' m²'],
-              ])}
-              {infoCard('Costos', [
-                ['Costo total', '$' + resultados.costoTotal],
-                ['Costo/m²', '$' + resultados.costoM2],
-                ['Peso propio', resultados.pesoPropio + ' kg/m²'],
-              ])}
-              {infoCard('Eficiencia', [
-                ['Ratio viga principal', resultados.verificaciones.vigaPrincipal.momento.ratio],
-                ['Ratio correas', resultados.verificaciones.correas.momento.ratio],
-                ['Ratio conectores', resultados.verificaciones.conectoresCorte.ratio],
-                ['Ratio fatiga', resultados.verificaciones.fatiga.ratio],
-              ])}
-            </div>
-          )}
-        </div>
-      )}
         </div>
       </div>
     </div>
