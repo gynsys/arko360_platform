@@ -15,12 +15,14 @@ export const verificarFlexion = (mMomentoKNm, bMM, dMM, fcMPa, fyMPa) => {
   return calcFlexion(mMomentoKNm, bMM, dMM, fcMPa, fyMPa);
 };
 
-export const verificarCortante = (wu, luzMayorM, fcMPa, bMM, dMM) => {
-  const Vc = FACTORES.VC_COEF * Math.sqrt(Math.max(fcMPa, 0)) * bMM * dMM; // N (si fc en MPa, b,d en mm)
-  const phiVc = FACTORES.PHI_CORTANTE * Vc;
-  const vuMax = (wu * luzMayorM) / 2; // kN/m² × m = kN/m (por metro de ancho)
-  // NOTA: Si calcCortante espera unidades distintas, ajusta aquí
-  return calcCortante(Vc, phiVc, vuMax);
+export const verificarCortante = (wu, luzMayorM, fcKgCm2, bMM, dMM) => {
+  const fcMPa = fcKgCm2 / 10;
+  const Vc_N = FACTORES.VC_COEF * Math.sqrt(Math.max(fcMPa, 0)) * bMM * dMM; // N (fc en MPa, b,d en mm)
+  const phiVc_N = FACTORES.PHI_CORTANTE * Vc_N;
+  const vuMax_kg = (wu * luzMayorM) / 2; // kg
+  const vuMax_N = vuMax_kg * 9.81; // N
+  // Devolver todo en kN para mantener consistencia
+  return calcCortante(Vc_N / 1000, phiVc_N / 1000, vuMax_N / 1000);
 };
 
 export const verificarDeflexion = (wServicio, luzMayorM, hMM, fcMPa) => {

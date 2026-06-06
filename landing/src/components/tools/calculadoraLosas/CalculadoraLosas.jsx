@@ -118,8 +118,17 @@ const CalculadoraLosas = () => {
       costos,
       macizaConfig
     };
-    console.log("Cálculo guardado para auditoría:", payload);
-    alert("Cálculo guardado exitosamente en modo auditoría.");
+    
+    // Crear un archivo JSON descargable ("Guardar como")
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `auditoria_losa_${losaActiva}_${new Date().getTime()}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    
+    alert("Cálculo exportado exitosamente en modo auditoría.");
   };
 
   const handleAligerada = (e) => {
