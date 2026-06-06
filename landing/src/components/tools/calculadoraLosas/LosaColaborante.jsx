@@ -895,8 +895,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
                        verificaciones.vigaPrincipal.cumpleGlobal &&
                        verificaciones.correas.cumpleGlobal &&
                        verificaciones.conectoresCorte.cumple &&
-                       verificaciones.losaConcreto.cumpleGlobal &&
-                       verificaciones.fatiga.cumple;
+                       verificaciones.losaConcreto.cumpleGlobal;
 
   return {
     h: h_total.toFixed(2),
@@ -1085,7 +1084,7 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
 
           <h2>2. Resultados Generales y Volúmenes</h2>
           <table>
-            <tr><th>Espesor Total de Losa (h)</th><td>${resultados.h} cm</td></tr>
+            <tr><th>Espesor Total de Losa (h)</th><td>${resultados.h} m</td></tr>
             <tr><th>Volumen Concreto Estimado</th><td>${resultados.volConcreto} m³</td></tr>
             <tr><th>Peso Acero (Vigas+Correas+Malla)</th><td>${resultados.kgAcero} kg</td></tr>
             <tr><th>Studs Requeridos</th><td>${resultados.numBloques} unidades</td></tr>
@@ -1101,19 +1100,19 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
               <th>Estado</th>
             </tr>
             <tr>
-              <td>Viga Principal - ${resultados.optimizador?.viga?.optimo?.perfil || steelDeckConfig.tipoVigaPrincipal}</td>
-              <td>${resultados.verificaciones.vigaPrincipal.momento.demanda}</td>
-              <td>${resultados.verificaciones.vigaPrincipal.momento.capacidad}</td>
+              <td>Viga Principal - ${steelDeckConfig.tipoVigaPrincipal}</td>
+              <td>M: ${resultados.verificaciones.vigaPrincipal.momento.demanda}<br/>V: ${resultados.verificaciones.vigaPrincipal.cortante.demanda}</td>
+              <td>M: ${resultados.verificaciones.vigaPrincipal.momento.capacidad}<br/>V: ${resultados.verificaciones.vigaPrincipal.cortante.capacidad}</td>
               <td class="${resultados.verificaciones.vigaPrincipal.cumpleGlobal ? 'badge-ok' : 'badge-fail'}">
-                ${resultados.verificaciones.vigaPrincipal.cumpleGlobal ? 'CUMPLE' : 'NO CUMPLE'}
+                ${resultados.verificaciones.vigaPrincipal.cumpleGlobal ? 'CUMPLE' : 'Falla V/M/Defl'}
               </td>
             </tr>
             <tr>
-              <td>Correa Típica - ${resultados.optimizador?.correa?.optimo?.perfil || steelDeckConfig.tipoCorrea}</td>
-              <td>${resultados.verificaciones.correas.momento.demanda}</td>
-              <td>${resultados.verificaciones.correas.momento.capacidad}</td>
+              <td>Correa Típica - ${steelDeckConfig.tipoCorrea}</td>
+              <td>M: ${resultados.verificaciones.correas.momento.demanda}<br/>V: ${resultados.verificaciones.correas.cortante.demanda}</td>
+              <td>M: ${resultados.verificaciones.correas.momento.capacidad}<br/>V: ${resultados.verificaciones.correas.cortante.capacidad}</td>
               <td class="${resultados.verificaciones.correas.cumpleGlobal ? 'badge-ok' : 'badge-fail'}">
-                ${resultados.verificaciones.correas.cumpleGlobal ? 'CUMPLE' : 'NO CUMPLE'}
+                ${resultados.verificaciones.correas.cumpleGlobal ? 'CUMPLE' : 'Falla V/M/Defl'}
               </td>
             </tr>
             <tr>
@@ -1126,8 +1125,8 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
             </tr>
             <tr>
               <td>Conectores de Corte (Studs)</td>
-              <td>${resultados.verificaciones.conectoresCorte.requeridos} req.</td>
-              <td>${resultados.numBloques} provistos</td>
+              <td>${resultados.numBloques} requeridos</td>
+              <td>-</td>
               <td class="${resultados.verificaciones.conectoresCorte.cumple ? 'badge-ok' : 'badge-fail'}">
                 ${resultados.verificaciones.conectoresCorte.cumple ? 'CUMPLE' : 'NO CUMPLE'}
               </td>
