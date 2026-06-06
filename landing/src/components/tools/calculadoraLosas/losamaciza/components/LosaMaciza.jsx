@@ -23,8 +23,6 @@ export default function LosaMaciza({ grid, datos, macizaConfig, costos, onConfig
       <ConfiguracionMaciza config={macizaConfig} onChange={onConfigChange} />
 
       {grid && resultados && renderGrid?.(grid, { ...resultados, ...vizProps }, 'maciza', null, null)}
-
-      {resultados && renderSeccion?.(resultados, 'maciza', null, null)}
     </div>
   );
 }
