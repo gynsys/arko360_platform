@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { API_URL } from '../../services/api';
+import { AuthContext } from '../../context/AuthContext';
 import { 
   FiUpload, FiUser, FiSettings, FiFileText, FiGrid, FiSave, 
   FiPlus, FiTrash2, FiEdit, FiCheck, FiX, FiChevronDown, FiChevronUp, 
@@ -7,6 +8,7 @@ import {
 } from 'react-icons/fi';
 
 export default function ProfilePage() {
+  const { logout } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('identidad');
   const [activeContentSection, setActiveContentSection] = useState('hero');
   const [siteConfig, setSiteConfig] = useState(null);
@@ -50,6 +52,11 @@ export default function ProfilePage() {
         },
         body: JSON.stringify(siteConfig)
       });
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
 
       if (response.ok) {
         const result = await response.json();
@@ -109,6 +116,11 @@ export default function ProfilePage() {
         },
         body: formData
       });
+      
+      if (response.status === 401) {
+        logout();
+        return;
+      }
       
       if (response.ok) {
         const data = await response.json();
@@ -1040,6 +1052,10 @@ export default function ProfilePage() {
                                 headers: { 'Authorization': `Bearer ${token}` },
                                 body: formData
                               });
+                              if (response.status === 401) {
+                                logout();
+                                return;
+                              }
                               if (response.ok) {
                                 const res = await response.json();
                                 setCrudData({ ...crudData, avatar: res.image_url });
