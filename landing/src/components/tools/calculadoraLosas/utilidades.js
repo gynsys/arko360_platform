@@ -22,22 +22,30 @@ export function calcBarraYSep(AsReq, areaBarra) {
   return { sep, cantidadPorMetro };
 }
 
-export function calcFlexion(Mu, b, d, fc, fy) {
-  const mu_kg_cm = Mu * 100;
+export function calcFlexion(Mu_kgm, b_mm, d_mm, fc_kgcm2, fy_kgcm2) {
+  const b = b_mm / 10; // Convertir a cm
+  const d = d_mm / 10; // Convertir a cm
+  const mu_kg_cm = Mu_kgm * 100; // kg·m a kg·cm
   const Ru = mu_kg_cm / (0.90 * b * Math.pow(d, 2));
-  let rho = (0.85 * fc / fy) * (1 - Math.sqrt(1 - (2 * Ru / (0.85 * fc))));
-  if (isNaN(rho) || rho < 0) rho = 0;
-  const As_min = 0.0018 * b * d;
-  const As_req = Math.max(rho * b * d, As_min);
   
-  const β1 = fc <= 280 ? 0.85 : Math.max(0.65, 0.85 - 0.05 * (fc - 280) / 70);
-  const a = rho * fy * d / (0.85 * fc);
+  let rho = (0.85 * fc_kgcm2 / fy_kgcm2) * (1 - Math.sqrt(1 - (2 * Ru / (0.85 * fc_kgcm2))));
+  if (isNaN(rho) || rho < 0) rho = 0;
+  
+  const As_min = 0.0018 * b * d; // As_min en cm²
+  const As_req_cm2 = Math.max(rho * b * d, As_min); // As_req en cm²
+  
+  // Convertir de vuelta a mm² para que coincida con lo que espera el resto de la app
+  const As_req = As_req_cm2 * 100;
+  const As_min_mm2 = As_min * 100;
+  
+  const β1 = fc_kgcm2 <= 280 ? 0.85 : Math.max(0.65, 0.85 - 0.05 * (fc_kgcm2 - 280) / 70);
+  const a = rho * fy_kgcm2 * d / (0.85 * fc_kgcm2);
   const c = a / β1;
-  const εty = fy / 2_000_000;
+  const εty = fy_kgcm2 / 2_000_000;
   const εt = c > 0 ? ((d - c) / c) * 0.003 : 0;
   const tensionControlada = εt >= εty + 0.003;
   
-  return { As_req, As_min, rho, Ru, a, c, εt, εty, tensionControlada };
+  return { As_req, As_min: As_min_mm2, rho, Ru, a, c, εt, εty, tensionControlada };
 }
 
 export function calcCortante(Vc, φVc, vuMax) {

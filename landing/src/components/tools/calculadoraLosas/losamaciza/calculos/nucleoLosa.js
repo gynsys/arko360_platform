@@ -71,9 +71,9 @@ export const calcGeometria = (grid) => {
 
 // Datos de entrada normalizados
 export const normalizarEntrada = (datos) => ({
-  fc: N(datos?.fc),          // MPa
-  fy: N(datos?.fy),          // MPa
-  cmExtra: N(datos?.cmExtra), // carga muerta adicional, misma unidad que wu
-  cv: N(datos?.cv),          // carga viva
-  recubrimiento: N(datos?.recubrimiento), // m
+  fc: N(datos?.fc),          // kg/cm2
+  fy: N(datos?.fy),          // kg/cm2
+  cmExtra: N(datos?.cmExtra), // kg/m2
+  cv: N(datos?.cv),          // kg/m2
+  recubrimiento: N(datos?.recubrimiento) / 100, // cm to m
 });

@@ -53,14 +53,14 @@ const ReporteImprimible = ({ grid, datos, calc, macizaConfig, costos }) => {
             <tr>
               <td style={tdStyle}>Fondo (Positivo) - Paralelo a X</td>
               <td style={tdStyle}>{macizaConfig.diametroPosX}"</td>
-              <td style={tdStyle}>{calc.metradoX?.posSep} cm</td>
+              <td style={tdStyle}>{calc.metradoX?.posSep ? (calc.metradoX.posSep * 100).toFixed(1) : '-'} cm</td>
               <td style={tdStyle}>{calc.metradoX?.posCant}</td>
               <td style={tdStyle}>{calc.metradoX?.posPeso} kg</td>
             </tr>
             <tr>
               <td style={tdStyle}>Apoyos (Negativo) - Paralelo a X</td>
               <td style={tdStyle}>{macizaConfig.diametroNegX}"</td>
-              <td style={tdStyle}>{calc.metradoX?.negSep} cm</td>
+              <td style={tdStyle}>{calc.metradoX?.negSep ? (calc.metradoX.negSep * 100).toFixed(1) : '-'} cm</td>
               <td style={tdStyle}>{calc.metradoX?.negCant}</td>
               <td style={tdStyle}>{calc.metradoX?.negPeso} kg</td>
             </tr>
@@ -69,14 +69,14 @@ const ReporteImprimible = ({ grid, datos, calc, macizaConfig, costos }) => {
                 <tr>
                   <td style={tdStyle}>Fondo (Positivo) - Paralelo a Y</td>
                   <td style={tdStyle}>{macizaConfig.diametroPosY}"</td>
-                  <td style={tdStyle}>{calc.metradoY?.posSep} cm</td>
+                  <td style={tdStyle}>{calc.metradoY?.posSep ? (calc.metradoY.posSep * 100).toFixed(1) : '-'} cm</td>
                   <td style={tdStyle}>{calc.metradoY?.posCant}</td>
                   <td style={tdStyle}>{calc.metradoY?.posPeso} kg</td>
                 </tr>
                 <tr>
                   <td style={tdStyle}>Apoyos (Negativo) - Paralelo a Y</td>
                   <td style={tdStyle}>{macizaConfig.diametroNegY}"</td>
-                  <td style={tdStyle}>{calc.metradoY?.negSep} cm</td>
+                  <td style={tdStyle}>{calc.metradoY?.negSep ? (calc.metradoY.negSep * 100).toFixed(1) : '-'} cm</td>
                   <td style={tdStyle}>{calc.metradoY?.negCant}</td>
                   <td style={tdStyle}>{calc.metradoY?.negPeso} kg</td>
                 </tr>
