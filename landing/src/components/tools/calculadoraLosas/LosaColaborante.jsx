@@ -327,16 +327,17 @@ function calcularQnStud(f_c, Ec, Asc, Fu_stud, R = 1.0) {
 
 // AISC 360-16 App. 3: Fatiga de conectores
 function verificarFatigaStuds(ciclos, Qn, Asc_stud, Fu_stud) {
-  // AISC 360-16 App. 3.1: Rango de esfuerzo permitido para studs
-  // FTH = 7 ksi ≈ 492 kg/cm² para studs en puentes/entrepisos
+  // AISC 360-16 App. 3.1: Solo aplica a estructuras con cargas cíclicas (puentes, grúst, etc.)
+  // Para entrepisos estáticos esta verificación es INFORMATIVA, no normativa.
+  // FTH = 7 ksi ≈ 492 kg/cm² es un límite de RANGO de esfuerzo cíclico, no el esfuerzo estático del stud.
   const FTH = 492; // kg/cm²
-  const esfuerzo = Qn / Asc_stud;
-  const cumple = esfuerzo <= FTH;
-  // Vida útil estimada (ley de Miner simplificada)
-  // N = 2e6 * (FTH / esfuerzo)^3  (aproximación S-N)
+  const esfuerzo = Qn / Asc_stud; // Esfuerzo estático del conector (referencial)
+  // Para edificios de uso normal, el check de fatiga no gobierna.
+  // Se asume que el límite de ciclos de 2 millones no se alcanza en entrepisos típicos.
+  const cumple = ciclos <= 20000; // Sólo es crítico para estructuras con más de 20,000 ciclos de carga
   const N = 2_000_000 * Math.pow(FTH / Math.max(esfuerzo, 1), 3);
   const vidaAnios = N / Math.max(ciclos, 1) / 365;
-  return { esfuerzo, FTH, cumple, N: Math.floor(N), vidaAnios: vidaAnios.toFixed(1) };
+  return { esfuerzo, FTH, cumple, N: Math.floor(N), vidaAnios: vidaAnios.toFixed(1), esInformativa: true };
 }
 
 // ACI 318-19
@@ -349,9 +350,12 @@ function calcularVcPunzonamiento(f_c, d_eff, b0) {
   const Vc = 0.33 * Math.sqrt(f_c) * b0 * d_eff;
   return { Vc, phiVc: PHI_VC * Vc };
 }
-function calcularAsMinLosa(h_total_cm, b_ancho_cm = 100, fy_rebar = 4200) {
+function calcularAsMinLosa(h_sobre_deck_cm, b_ancho_cm = 100, fy_rebar = 4200) {
+  // ACI 318-19 §24.4.3.2: Para losa colaborante (steel deck), el acero mínimo de temperatura y retracción
+  // se aplica SOLO al espesor sobre la cresta del deck (h_sobre_deck), no al total.
+  // La lamína colaborante actúa como armadura positiva (el deck es el acero de tracción).
   let rho_min = fy_rebar >= 4200 ? 0.0018 : (fy_rebar >= 2800 ? 0.0020 : 0.0014);
-  return rho_min * b_ancho_cm * h_total_cm;
+  return rho_min * b_ancho_cm * h_sobre_deck_cm;
 }
 
 
@@ -763,9 +767,10 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const Vu_punz = wuLosa * luzLosa * luzLosa;
   const cumpleVcPunz = Vu_punz <= phiVcPunz;
 
-  // 10. ACERO MÍNIMO
-  const As_min = calcularAsMinLosa(h_cm, 100, fy_rebar_val);
-  const As_prov = 0.142; // Malla 6x6-10/10
+  // 10. ACERO MÍNIMO - Solo sobre la cresta del deck (el deck mismo es la armadura de tracción)
+  const As_min = calcularAsMinLosa(espesorConcreto_efectivo, 100, fy_rebar_val);
+  const mallaTruskon = steelDeckConfig.mallaTruskon || 1.88; // cm²/m Truskon T-188
+  const As_prov = mallaTruskon;
   const cumpleAsMin = As_prov >= As_min;
 
   // 11. DEFLEXIONES Y VIBRACIÓN
@@ -986,6 +991,7 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
   const [normParams, setNormParams] = useState({
     f_c: 210, fy_rebar: 4200, alturaStud: 15,
     numStudsPorReborde: 1, anchoReborde: 15, ciclosFatiga: 100000,
+    mallaTruskon: 1.88, // cm²/m - Malla Truskon T-188 por defecto
   });
 
   const handleNormChange = (e) => {
@@ -1256,6 +1262,7 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
             ['tipoVigaPrincipal', 'Viga principal', 'select-w', null, null, null],
             ['tipoCorrea', 'Correa', 'select-c', null, null, null],
             ['diametroStud', 'Diámetro stud', 'select-ds', null, null, null],
+            ['mallaTruskon', 'Malla Truskon', 'select-malla', null, null, null],
             ['f_c', "f'c (kg/cm²)", 'number', 10, 140, 420],
             ['fy_rebar', 'fy rebar (kg/cm²)', 'number', 100, 2800, 6000],
             ['alturaStud', 'Altura stud (cm)', 'number', 1, 10, 25],
@@ -1291,6 +1298,16 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
                 <select name="numStudsPorReborde" value={normParams.numStudsPorReborde} onChange={handleNormChange} style={styles.input}>
                   <option value={1}>1 stud/reborde</option>
                   <option value={2}>2 studs/reborde</option>
+                </select>
+              ) : type === 'select-malla' ? (
+                <select name="mallaTruskon" value={normParams.mallaTruskon} onChange={handleNormChange} style={styles.input}>
+                  <option value="0.97">Truskon T-97 (0.97 cm²/m)</option>
+                  <option value="1.42">Truskon T-142 (1.42 cm²/m)</option>
+                  <option value="1.59">Truskon T-159 (1.59 cm²/m)</option>
+                  <option value="1.88">Truskon T-188 (1.88 cm²/m)</option>
+                  <option value="2.57">Truskon T-257 (2.57 cm²/m)</option>
+                  <option value="3.55">Truskon T-355 (3.55 cm²/m)</option>
+                  <option value="5.11">Truskon T-511 (5.11 cm²/m)</option>
                 </select>
               ) : (
                 <input type="number" name={name} value={type === 'number' && name in steelDeckConfig ? steelDeckConfig[name] : normParams[name]} onChange={name in steelDeckConfig ? onConfigChange : handleNormChange} step={step} min={min} max={max} style={styles.input} />

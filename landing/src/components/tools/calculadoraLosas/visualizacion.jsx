@@ -436,10 +436,10 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
 // ==================== SVG SECCIÓN TRANSVERSAL ====================
 export const renderSeccion = (calc, losaActiva, steelDeckConfig, aligeradaConfig) => {
   const h = parseFloat(calc.h) || 10;
-  const svgW = 560;
-  const svgH = 320;
-  const ox = 60;
-  const oy = 240;
+  const svgW = 600;
+  const svgH = 340;
+  const ox = 80;      // x origin of left support
+  const oy = 200;     // y baseline (bottom of deck / top of main beam)
   const scale = 3.5;
 
   const styles = {
@@ -469,125 +469,137 @@ export const renderSeccion = (calc, losaActiva, steelDeckConfig, aligeradaConfig
   };
 
   const espesorConcreto = steelDeckConfig?.espesorConcreto || 6;
-  const tipoVigaPrincipal = steelDeckConfig?.tipoVigaPrincipal || 'W12x26';
-  const tipoCorrea = steelDeckConfig?.tipoCorrea || 'Tubo 100x50x3';
+  const alturaDeck = steelDeckConfig?.alturaDeck || 5;
+  const alturaStud = Math.min(steelDeckConfig?.alturaStud || 10, espesorConcreto + alturaDeck - 1.5); // Stud no puede sobresalir
+  const tipoVigaPrincipal = steelDeckConfig?.tipoVigaPrincipal || 'IPE 200';
+  const tipoCorrea = steelDeckConfig?.tipoCorrea || 'Tubo 160x65x3.40';
 
-  // Helpers de dibujo de perfiles
   const drawIBeam = (cx, cy, w, h, tf = 3.5, tw = 3.5, color = "#2c3e50", strokeColor = "#1a252f") => {
-    const x1 = cx - w/2;
-    const x2 = cx + w/2;
-    const y1 = cy - h/2;
-    const y2 = cy + h/2;
+    const x1 = cx - w/2, x2 = cx + w/2;
+    const y1 = cy - h/2, y2 = cy + h/2;
     return (
-      <path d={`M ${x1} ${y1} H ${x2} V ${y1 + tf} H ${cx + tw/2} V ${y2 - tf} H ${x2} V ${y2} H ${x1} V ${y2 - tf} H ${cx - tw/2} V ${y1 + tf} H ${x1} Z`}
+      <path d={`M ${x1} ${y1} H ${x2} V ${y1+tf} H ${cx+tw/2} V ${y2-tf} H ${x2} V ${y2} H ${x1} V ${y2-tf} H ${cx-tw/2} V ${y1+tf} H ${x1} Z`}
             fill={color} stroke={strokeColor} strokeWidth="1.5" />
     );
   };
 
   const drawTuboRect = (cx, cy, w, h, t = 2.5, color = "#7f8c8d", strokeColor = "#34495e") => {
-    const x1 = cx - w/2;
-    const y1 = cy - h/2;
+    const x1 = cx - w/2, y1 = cy - h/2;
     return (
       <g>
         <rect x={x1} y={y1} width={w} height={h} fill={color} stroke={strokeColor} strokeWidth="1.5" rx="1.5" />
-        <rect x={x1 + t} y={y1 + t} width={w - 2*t} height={h - 2*t} fill="#fafbfc" stroke="none" />
+        <rect x={x1+t} y={y1+t} width={w-2*t} height={h-2*t} fill="#fafbfc" stroke="none" />
       </g>
     );
   };
 
-  const drawCChannel = (cx, cy, w, h, tf = 3.5, tw = 3.5, color = "#8e44ad", strokeColor = "#6c3483") => {
-    const x1 = cx - w/2;
-    const x2 = cx + w/2;
-    const y1 = cy - h/2;
-    const y2 = cy + h/2;
-    return (
-      <path d={`M ${x2} ${y1} H ${x1} V ${y2} H ${x2} V ${y2 - tf} H ${x1 + tw} V ${y1 + tf} H ${x2} Z`}
-            fill={color} stroke={strokeColor} strokeWidth="1.5" />
-    );
-  };
+  // Width of drawing area for the slab section
+  const slabWidth = 380;
+  const slabLeft = ox + 40;
+
+  // Heights in SVG pixels
+  const hConc = espesorConcreto * scale;       // concreto por encima de cresta
+  const hDeck = alturaDeck * scale;            // altura del deck
+  const hStud = alturaStud * scale;            // stud dentro del concreto
+
+  // Y positions
+  const yTopConc = oy - hConc - hDeck;         // top of concrete
+  const yBottomDeck = oy;                       // bottom of deck = top of vigas
+
+  // Viga principal: shown at left edge as large I-beam going below
+  const vpH = 50; const vpW = 44;
+  const vpCx = ox + 20;
+  const vpCy = oy + vpH / 2 + 2;
+
+  // Correa: shown in center going below deck
+  const corrH = 28; const corrW = 28;
+  const corrCx = slabLeft + slabWidth * 0.5;
+  const corrCy = oy + corrH / 2 + 2;
+
+  const isVPTubo = tipoVigaPrincipal.startsWith('Tubo') || tipoVigaPrincipal.includes('TUBO');
+  const isVPIPE = tipoVigaPrincipal.startsWith('IPE') || tipoVigaPrincipal.startsWith('IPN') || tipoVigaPrincipal.startsWith('HEA') || tipoVigaPrincipal.startsWith('W') || tipoVigaPrincipal.startsWith('C');
+  const isCorrTubo = tipoCorrea.startsWith('Tubo') || tipoCorrea.includes('TUBO');
 
   return (
     <div style={styles.svgPanel}>
       <h3 style={styles.svgTitle}>Sección Transversal Típica</h3>
       <svg width={svgW} height={svgH} style={styles.svg}>
         <defs>
-          <pattern id="hatchBloque" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="8" stroke="#f1c40f" strokeWidth="1" />
-          </pattern>
           <pattern id="hatchConcreto" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(-45)">
             <line x1="0" y1="0" x2="0" y2="6" stroke="#95a5a6" strokeWidth="0.8" />
           </pattern>
-          <pattern id="hatchMaciza" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="10" stroke="#7f8c8d" strokeWidth="1" />
-          </pattern>
         </defs>
 
-        {/* STEEL DECK */}
         {losaActiva === 'colaborante' && (
           <g>
-            {/* Concreto sobre deck */}
-            <rect x={ox} y={oy - espesorConcreto * scale} width={340}
-              height={espesorConcreto * scale} fill="#bdc3c7" stroke="#2c3e50" strokeWidth="2" />
-            <rect x={ox} y={oy - espesorConcreto * scale} width={340}
-              height={espesorConcreto * scale} fill="url(#hatchConcreto)" opacity="0.4" />
+            {/* === CONCRETO === */}
+            <rect x={slabLeft} y={yTopConc} width={slabWidth} height={hConc} fill="#bdc3c7" stroke="#2c3e50" strokeWidth="1.5" />
+            <rect x={slabLeft} y={yTopConc} width={slabWidth} height={hConc} fill="url(#hatchConcreto)" opacity="0.35" />
 
-            {/* Steel Deck (perfil acanalado) */}
-            <path d={`M ${ox} ${oy} 
-              L ${ox + 25} ${oy} L ${ox + 35} ${oy - 3 * scale} L ${ox + 55} ${oy - 3 * scale} 
-              L ${ox + 65} ${oy} L ${ox + 90} ${oy} L ${ox + 100} ${oy - 3 * scale} L ${ox + 120} ${oy - 3 * scale}
-              L ${ox + 130} ${oy} L ${ox + 155} ${oy} L ${ox + 165} ${oy - 3 * scale} L ${ox + 185} ${oy - 3 * scale}
-              L ${ox + 195} ${oy} L ${ox + 220} ${oy} L ${ox + 230} ${oy - 3 * scale} L ${ox + 250} ${oy - 3 * scale}
-              L ${ox + 260} ${oy} L ${ox + 285} ${oy} L ${ox + 295} ${oy - 3 * scale} L ${ox + 315} ${oy - 3 * scale}
-              L ${ox + 325} ${oy} L ${ox + 340} ${oy}`}
-              fill="none" stroke="#2980b9" strokeWidth="3" />
+            {/* === STEEL DECK (perfil acanalado) === */}
+            {(() => {
+              const nw = 65; // canal width
+              const canals = Math.floor(slabWidth / nw);
+              const paths = [];
+              for (let i = 0; i < canals; i++) {
+                const x0 = slabLeft + i * nw;
+                paths.push(
+                  <path key={i} d={`M ${x0} ${oy} L ${x0+12} ${oy} L ${x0+18} ${oy-hDeck} L ${x0+47} ${oy-hDeck} L ${x0+53} ${oy} L ${x0+nw} ${oy}`}
+                    fill="none" stroke="#2980b9" strokeWidth="3" />
+                );
+              }
+              return paths;
+            })()}
 
-            {/* Malla de temperatura */}
-            <line x1={ox + 10} y1={oy - (espesorConcreto - 2) * scale}
-              x2={ox + 330} y2={oy - (espesorConcreto - 2) * scale}
-              stroke="#c0392b" strokeWidth="1" strokeDasharray="3,3" />
-            <text x={ox + 335} y={oy - (espesorConcreto - 2) * scale + 4} fill="#a93226" fontSize="11" fontWeight="bold">Malla</text>
+            {/* === MALLA temperatura (línea punteada dentro del concreto) === */}
+            <line x1={slabLeft+10} y1={yTopConc + hConc * 0.35}
+              x2={slabLeft+slabWidth-10} y2={yTopConc + hConc * 0.35}
+              stroke="#c0392b" strokeWidth="1.5" strokeDasharray="4,3" />
+            <text x={slabLeft+slabWidth+6} y={yTopConc + hConc * 0.35 + 4} fill="#a93226" fontSize="10" fontWeight="bold">Malla Truskon</text>
 
-            {/* Conector de corte (stud) */}
-            <rect x={ox + 80} y={oy - (steelDeckConfig?.alturaStud || 10) * scale} width="6" height={(steelDeckConfig?.alturaStud || 10) * scale} fill="#e67e22" stroke="#d35400" strokeWidth="1" rx="2" />
-            <circle cx={ox + 83} cy={oy - (steelDeckConfig?.alturaStud || 10) * scale} r="5" fill="#e67e22" stroke="#d35400" strokeWidth="1" />
-            <text x={ox + 92} y={oy - ((steelDeckConfig?.alturaStud || 10) * scale) + 12} fill="#d35400" fontSize="11" fontWeight="bold">Stud {steelDeckConfig?.diametroStud ? `Ø${steelDeckConfig.diametroStud}"` : 'Ø3/4"'}</text>
+            {/* === STUD en el deck (dentro del concreto, sobre cresta del deck) === */}
+            <rect x={slabLeft+90} y={oy-hDeck-hStud} width="5" height={hStud} fill="#e67e22" stroke="#d35400" strokeWidth="1" rx="2" />
+            <circle cx={slabLeft+92.5} cy={oy-hDeck-hStud} r="5" fill="#e67e22" stroke="#d35400" strokeWidth="1" />
+            <text x={slabLeft+100} y={oy-hDeck-hStud*0.5} fill="#d35400" fontSize="10" fontWeight="bold">
+              Stud {steelDeckConfig?.diametroStud ? `Ø${steelDeckConfig.diametroStud}"` : 'Ø3/4"'}
+            </text>
 
-            {/* Cota h total */}
-            <line x1={ox - 20} y1={oy} x2={ox - 20} y2={oy - h * scale} stroke="#333" strokeWidth="1" />
-            <text x={ox - 65} y={oy - (h * scale) / 2 + 4} fill="#111" fontSize="12" fontWeight="bold">h = {h} cm</text>
-
-            {/* Cota concreto */}
-            <line x1={ox + 360} y1={oy - 3 * scale} x2={ox + 360} y2={oy - h * scale} stroke="#666" strokeWidth="1" strokeDasharray="3,2" />
-            <text x={ox + 365} y={oy - (h * scale + 3 * scale) / 2 + 4} fill="#111" fontSize="12" fontWeight="bold">t = {espesorConcreto} cm</text>
-
-            {/* Apoyo Izquierdo (Correa) */}
-            {tipoCorrea.startsWith('Tubo') || tipoCorrea.includes('TUBO')
-              ? drawTuboRect(ox + 80, oy + 15, 36, 30, 2.5, "#2c3e50", "#1a252f")
-              : (tipoCorrea.startsWith('C') || tipoCorrea.includes('C ')
-                  ? drawCChannel(ox + 80, oy + 15, 26, 30, 3.5, 3.5, "#2c3e50", "#1a252f")
-                  : drawIBeam(ox + 80, oy + 20, 36, 40, 4, 4, "#2c3e50", "#1a252f")
-                )
+            {/* === VIGA PRINCIPAL (extremo izquierdo como apoyo) === */}
+            {isVPTubo
+              ? drawTuboRect(vpCx, vpCy, vpW, vpH, 3, "#1a6b8a", "#0d4f6b")
+              : drawIBeam(vpCx, vpCy, vpW+8, vpH, 5, 4.5, "#1a6b8a", "#0d4f6b")
             }
-            <text x={ox + 80} y={oy + 48} fill="#1a252f" fontSize="10" fontWeight="bold" textAnchor="middle">{tipoCorrea}</text>
-            <text x={ox + 80} y={oy + 60} fill="#333" fontSize="10" fontWeight="bold" textAnchor="middle">Correa</text>
+            <text x={vpCx} y={vpCy + vpH/2 + 14} fill="#0d4f6b" fontSize="9" fontWeight="bold" textAnchor="middle">Viga Principal</text>
+            <text x={vpCx} y={vpCy + vpH/2 + 24} fill="#0d4f6b" fontSize="8" textAnchor="middle">{tipoVigaPrincipal}</text>
 
-            {/* Correa intermedia */}
-            {tipoCorrea.startsWith('Tubo') || tipoCorrea.includes('TUBO')
-              ? drawTuboRect(ox + 215, oy + 12.5, 30, 25, 2.5, "#8e44ad", "#6c3483")
-              : (tipoCorrea.startsWith('C') || tipoCorrea.includes('C ')
-                  ? drawCChannel(ox + 215, oy + 15, 26, 30, 3.5, 3.5, "#8e44ad", "#6c3483")
-                  : drawIBeam(ox + 215, oy + 15, 26, 30, 3.5, 3.5, "#8e44ad", "#6c3483")
-                )
+            {/* === CORREA (centro de la losa) === */}
+            {isCorrTubo
+              ? drawTuboRect(corrCx, corrCy, corrW, corrH, 2.5, "#8e44ad", "#6c3483")
+              : drawIBeam(corrCx, corrCy, corrW, corrH, 3.5, 3.5, "#8e44ad", "#6c3483")
             }
-            <text x={ox + 215} y={oy + 48} fill="#6c3483" fontSize="10" fontWeight="bold" textAnchor="middle">{tipoCorrea}</text>
-            <text x={ox + 215} y={oy + 60} fill="#333" fontSize="10" fontWeight="bold" textAnchor="middle">Correa</text>
+            <text x={corrCx} y={corrCy + corrH/2 + 14} fill="#6c3483" fontSize="9" fontWeight="bold" textAnchor="middle">Correa</text>
+            <text x={corrCx} y={corrCy + corrH/2 + 24} fill="#6c3483" fontSize="8" textAnchor="middle">{tipoCorrea}</text>
+
+            {/* === LÍNEA DE APOYO (top of main beam) === */}
+            <line x1={ox} y1={oy} x2={slabLeft+slabWidth+20} y2={oy} stroke="#555" strokeWidth="2.5" />
+
+            {/* === COTAS === */}
+            {/* h total */}
+            <line x1={slabLeft-30} y1={yTopConc} x2={slabLeft-30} y2={oy} stroke="#333" strokeWidth="1" markerStart="url(#arr)" />
+            <text x={slabLeft-60} y={oy - (hConc+hDeck)/2 + 4} fill="#111" fontSize="11" fontWeight="bold">h={h} cm</text>
+            {/* t concreto */}
+            <line x1={slabLeft+slabWidth+35} y1={yTopConc} x2={slabLeft+slabWidth+35} y2={oy-hDeck} stroke="#666" strokeWidth="1" strokeDasharray="3,2" />
+            <text x={slabLeft+slabWidth+40} y={yTopConc + hConc/2 + 4} fill="#333" fontSize="10" fontWeight="bold">t={espesorConcreto} cm</text>
+
+            {/* hr deck */}
+            <text x={slabLeft+slabWidth+40} y={oy-hDeck/2+4} fill="#2980b9" fontSize="10">hr={alturaDeck} cm</text>
+
+            {/* Etiqueta VP/Apoyo */}
+            <text x={ox} y={oy+vpH+42} fill="#0d4f6b" fontSize="10" fontWeight="bold">VP / Apoyo</text>
           </g>
         )}
-
-        {/* Suelo / Apoyo */}
-        <line x1={ox - 20} y1={oy} x2={ox + 380} y2={oy} stroke="#555" strokeWidth="3" />
-        <text x={ox + 385} y={oy + 4} fill="#555" fontSize="11">Viga / Apoyo</text>
       </svg>
     </div>
   );
 };
+
