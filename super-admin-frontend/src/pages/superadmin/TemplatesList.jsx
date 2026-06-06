@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const templates = [
+const initialTemplates = [
   {
     id: 'construccion',
     name: 'Arko360 - Construcción',
@@ -22,6 +22,18 @@ const templates = [
 
 export default function TemplatesList() {
   const navigate = useNavigate();
+  const [templates, setTemplates] = useState(initialTemplates);
+  const [templateToDelete, setTemplateToDelete] = useState(null);
+
+  const confirmDelete = (template) => {
+    setTemplateToDelete(template);
+  };
+
+  const deleteTemplate = () => {
+    if (!templateToDelete) return;
+    setTemplates(templates.filter(t => t.id !== templateToDelete.id));
+    setTemplateToDelete(null);
+  };
 
   const handleClone = (templateId) => {
     // Redirigir a LandingSitesList pero podríamos pasar el templateId por state o URL param
@@ -31,7 +43,41 @@ export default function TemplatesList() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-8 max-w-7xl mx-auto relative">
+      {/* Delete Confirmation Modal */}
+      {templateToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-center text-gray-900 mb-2">¿Eliminar plantilla?</h3>
+              <p className="text-sm text-center text-gray-500">
+                Estás a punto de eliminar la plantilla <span className="font-semibold text-gray-700">{templateToDelete.name}</span>. 
+                Esta acción ocultará la plantilla de la galería.
+              </p>
+            </div>
+            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+              <button
+                onClick={() => setTemplateToDelete(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={deleteTemplate}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+              >
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Plantillas Disponibles</h1>
         <p className="mt-2 text-sm text-gray-600">
@@ -48,8 +94,19 @@ export default function TemplatesList() {
                 alt={template.name} 
                 className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
               />
-              <div className="absolute top-4 right-4 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md z-10">
-                NUEVO
+              <div className="absolute top-4 right-4 flex items-center space-x-2 z-10">
+                <div className="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
+                  NUEVO
+                </div>
+                <button 
+                  onClick={() => confirmDelete(template)}
+                  className="bg-white text-red-600 hover:text-white hover:bg-red-600 transition-colors p-1.5 rounded-full shadow-md"
+                  title="Eliminar Plantilla"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
               </div>
             </div>
             
