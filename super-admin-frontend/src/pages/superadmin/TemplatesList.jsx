@@ -8,7 +8,7 @@ const templates = [
     description: 'Plantilla ideal para empresas de construcción, contratistas y arquitectos. Diseño robusto y profesional.',
     image: 'https://images.unsplash.com/photo-1541888081622-6323c28b70b5?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
     features: ['Galería de Proyectos', 'Formulario de Cotización', 'Servicios Destacados', 'Diseño Responsivo'],
-    demoUrl: 'https://construccion-demo.arko360.net'
+    demoUrl: 'https://arko360.net'
   },
   {
     id: 'medico',
@@ -16,7 +16,7 @@ const templates = [
     description: 'Perfecta para doctores, clínicas y profesionales de la salud. Incluye reserva de citas y sección de servicios médicos.',
     image: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
     features: ['Reserva de Citas', 'Perfil Profesional', 'Testimonios', 'Integración WhatsApp'],
-    demoUrl: 'https://medico-demo.arko360.net'
+    demoUrl: '#'
   }
 ];
 
