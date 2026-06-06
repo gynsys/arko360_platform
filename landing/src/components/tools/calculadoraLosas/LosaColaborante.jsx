@@ -1101,16 +1101,36 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
             </tr>
             <tr>
               <td>Viga Principal - ${steelDeckConfig.tipoVigaPrincipal}</td>
-              <td>M: ${resultados.verificaciones.vigaPrincipal.momento.demanda}<br/>V: ${resultados.verificaciones.vigaPrincipal.cortante.demanda}</td>
-              <td>M: ${resultados.verificaciones.vigaPrincipal.momento.capacidad}<br/>V: ${resultados.verificaciones.vigaPrincipal.cortante.capacidad}</td>
+              <td>
+                M: ${resultados.verificaciones.vigaPrincipal.momento.demanda}<br/>
+                V: ${resultados.verificaciones.vigaPrincipal.cortante.demanda}<br/>
+                Defl: ${resultados.verificaciones.vigaPrincipal.deflexion.demanda}<br/>
+                Defl (Comp): ${resultados.verificaciones.vigaPrincipal.deflexionCompuesta.demanda}
+              </td>
+              <td>
+                M: ${resultados.verificaciones.vigaPrincipal.momento.capacidad}<br/>
+                V: ${resultados.verificaciones.vigaPrincipal.cortante.capacidad}<br/>
+                Lim: ${resultados.verificaciones.vigaPrincipal.deflexion.limite}<br/>
+                Lim: ${resultados.verificaciones.vigaPrincipal.deflexionCompuesta.limite}
+              </td>
               <td class="${resultados.verificaciones.vigaPrincipal.cumpleGlobal ? 'badge-ok' : 'badge-fail'}">
                 ${resultados.verificaciones.vigaPrincipal.cumpleGlobal ? 'CUMPLE' : 'Falla V/M/Defl'}
               </td>
             </tr>
             <tr>
               <td>Correa Típica - ${steelDeckConfig.tipoCorrea}</td>
-              <td>M: ${resultados.verificaciones.correas.momento.demanda}<br/>V: ${resultados.verificaciones.correas.cortante.demanda}</td>
-              <td>M: ${resultados.verificaciones.correas.momento.capacidad}<br/>V: ${resultados.verificaciones.correas.cortante.capacidad}</td>
+              <td>
+                M: ${resultados.verificaciones.correas.momento.demanda}<br/>
+                V: ${resultados.verificaciones.correas.cortante.demanda}<br/>
+                Defl: ${resultados.verificaciones.correas.deflexion.demanda}<br/>
+                Defl (Comp): ${resultados.verificaciones.correas.deflexionCompuesta.demanda}
+              </td>
+              <td>
+                M: ${resultados.verificaciones.correas.momento.capacidad}<br/>
+                V: ${resultados.verificaciones.correas.cortante.capacidad}<br/>
+                Lim: ${resultados.verificaciones.correas.deflexion.limite}<br/>
+                Lim: ${resultados.verificaciones.correas.deflexionCompuesta.limite}
+              </td>
               <td class="${resultados.verificaciones.correas.cumpleGlobal ? 'badge-ok' : 'badge-fail'}">
                 ${resultados.verificaciones.correas.cumpleGlobal ? 'CUMPLE' : 'Falla V/M/Defl'}
               </td>
