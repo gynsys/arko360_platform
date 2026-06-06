@@ -311,8 +311,8 @@ const CalculadoraLosas = () => {
               </div>
             </div>
             <div style={styles.highlightBox}>
-              <p><strong>Área total:</strong> {calc.areaTotal.toFixed(2)} m²</p>
-              <p><strong>Ratio luces:</strong> {calc.ratio.toFixed(2)} {calc.esDosDirecciones ? '(Dos direcciones)' : '(Una dirección)'}</p>
+              <p><strong>Área total:</strong> {Number(calc.areaTotal).toFixed(2)} m²</p>
+              <p><strong>Ratio luces:</strong> {Number(calc.ratio).toFixed(2)} {calc.esDosDirecciones ? '(Dos direcciones)' : '(Una dirección)'}</p>
             </div>
           </div>
 
