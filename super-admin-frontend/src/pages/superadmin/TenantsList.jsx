@@ -24,7 +24,7 @@ export default function TenantsList() {
 
   const fetchTenants = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('arko_admin_token');
       const response = await fetch(`${API_URL}/arko/tenants/`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -50,7 +50,7 @@ export default function TenantsList() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('arko_admin_token');
       const response = await fetch(`${API_URL}/arko/tenants/`, {
         method: 'POST',
         headers: {
@@ -78,7 +78,7 @@ export default function TenantsList() {
   const toggleStatus = async (tenant) => {
     const newStatus = tenant.status === 'active' ? 'suspended' : 'active';
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('arko_admin_token');
       const response = await fetch(`${API_URL}/arko/tenants/${tenant.id}`, {
         method: 'PUT',
         headers: {
