@@ -20,6 +20,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # Import all models so Alembic can detect them
+from app.db.models.tenant import Tenant
+from app.db.models.tenant_module import TenantModule
+from app.db.models.landing_site import LandingSite
 from app.db.models.arko import ArkoPost, ArkoProject, ArkoAdmin
 
 
