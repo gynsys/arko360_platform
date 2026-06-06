@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Trash2, AlertTriangle } from 'lucide-react';
 import { API_URL } from '../../services/api';
 
 export default function LandingSitesList() {
@@ -118,9 +119,7 @@ export default function LandingSitesList() {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
             <div className="p-6">
               <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
+                <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <h3 className="text-lg font-medium text-center text-gray-900 mb-2">¿Eliminar sitio clonado?</h3>
               <p className="text-sm text-center text-gray-500">
@@ -244,10 +243,10 @@ export default function LandingSitesList() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Slug (Subdominio)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">URL del Sitio (Slug)</label>
                 <div className="flex items-center">
                   <span className="bg-gray-100 px-3 py-2 border border-r-0 border-gray-300 rounded-l-md text-gray-500">
-                    https://
+                    https://arko360.net/
                   </span>
                   <input
                     type="text"
@@ -255,12 +254,9 @@ export default function LandingSitesList() {
                     value={formData.slug}
                     onChange={handleInputChange}
                     required
-                    className="flex-1 px-3 py-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    placeholder="dr-juan-perez"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    placeholder="pablo-milano"
                   />
-                  <span className="bg-gray-100 px-3 py-2 border border-l-0 border-gray-300 rounded-r-md text-gray-500">
-                    .arko360.net
-                  </span>
                 </div>
               </div>
 
@@ -331,8 +327,8 @@ export default function LandingSitesList() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    <a href={`https://${site.slug}.arko360.net`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
-                      {site.slug}.arko360.net
+                    <a href={`https://arko360.net/${site.slug}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                      arko360.net/{site.slug}
                     </a>
                   </div>
                   {site.custom_domain && (
@@ -356,9 +352,7 @@ export default function LandingSitesList() {
                     className="text-gray-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50"
                     title="Eliminar sitio"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 </td>
               </tr>
