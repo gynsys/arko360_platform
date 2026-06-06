@@ -342,7 +342,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const {
     espesorConcreto, calibre, sepCorreas,
     tipoVigaPrincipal, tipoCorrea,
-    densidadStuds, alturaDeck, f_c, fy_rebar,
+    diametroStud = 0.75, alturaDeck, f_c, fy_rebar,
     alturaStud, numStudsPorReborde, anchoReborde,
     ciclosFatiga = 100000,
   } = steelDeckConfig;
@@ -405,43 +405,87 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const mNegExtLosa = coefs.Ca_neg_ext * wuLosa * luzLosa * luzLosa;
   const mNegIntLosa = coefs.Ca_neg_int * wuLosa * luzLosa * luzLosa;
 
-  // 5. SECCIÓN COMPUESTA
-  const b_eff_1 = (luzMayor * 100) / 4;
-  const b_eff_2 = 16 * h_sobre_deck + getProp(tipoVigaPrincipal, 'bf');
-  const b_eff_3 = (esDosDirecciones ? luzMenor : luzMayor) * 100;
-  const b_eff = Math.min(b_eff_1, b_eff_2, b_eff_3);
-  const secComp = calcularSeccionCompuesta(tipoVigaPrincipal, b_eff, h_sobre_deck, f_c_val, Ec);
-
-  // 6. CONECTORES
-  const Asc_stud = 1.27;
+  // 5. CONECTORES - SIZING GEOMÉTRICO
+  const d_stud_in = parseFloat(diametroStud) || 0.75;
+  const d_stud_cm = d_stud_in * 2.54;
+  const Asc_stud = (Math.PI * Math.pow(d_stud_cm, 2)) / 4;
   const Fu_stud = 4500;
   const hr = getDeckProp(calibre, 'hr') || 3.8;
-  const Hs = alturaStud || 15;
-  const Nc = numStudsPorReborde || 1;
-  const wr = anchoReborde || 15;
-  const R = calcularFactorR(hr, Hs, Nc, wr);
-  const resStud = calcularQnStud(f_c_val, Ec, Asc_stud, Fu_stud, R);
-  const phiQn = resStud.phiQn;
-  const longVigasPrincipalesX = (filas) * (luzX * nTramosX);
-  const longVigasPrincipalesY = (cols) * (luzY * nTramosY);
-  const totalStuds = Math.ceil((longVigasPrincipalesX + longVigasPrincipalesY) * densidadStuds);
-  const capacidadTotalStuds = totalStuds * phiQn;
+  const Hs = alturaStud || 10;
 
-  // 7. MOMENTO COMPUESTO
-  const resComp = calcularMomentoCompuesto(tipoVigaPrincipal, b_eff, h_sobre_deck, f_c_val, Ec, Asc_stud, capacidadTotalStuds);
+  const Hs_min = hr + 3.81;
+  const Hs_max = (espesorConcreto + alturaDeck) - 1.27;
+  const cumpleHs = Hs >= Hs_min && Hs <= Hs_max;
+  const Hs_rec = Math.max(Hs_min, Math.min(Hs, Hs_max));
 
-  // 8. VIGAS ACERO
+  const tf_vp = getProp(tipoVigaPrincipal, 'tf') || 1.0;
+  const tf_correa = getProp(tipoCorrea, 'tf') || 0.8;
+  const cumpleTf_vp = d_stud_cm <= 2.5 * tf_vp;
+  const cumpleTf_correa = d_stud_cm <= 2.5 * tf_correa;
+
+  // 6. SECCIÓN COMPUESTA - VIGA PRINCIPAL (VP)
   const luzVigaPrincipal_cm = luzMayor * 100;
-  const luzCorrea_cm = luzMenor * 100;
+  const b_eff_vp_1 = luzVigaPrincipal_cm / 4;
+  const b_eff_vp_2 = 16 * espesorConcreto + getProp(tipoVigaPrincipal, 'bf');
+  const b_eff_vp_3 = luzMenor * 100;
+  const b_eff_vp = Math.min(b_eff_vp_1, b_eff_vp_2, b_eff_vp_3);
+  const secComp_vp = calcularSeccionCompuesta(tipoVigaPrincipal, b_eff_vp, espesorConcreto, f_c_val, Ec);
 
+  // REDUCCIÓN STUDS - VP (perpendicular deck)
+  const Nc_vp = numStudsPorReborde || 1;
+  const wr_vp = anchoReborde || 15;
+  const R_vp = calcularFactorR(hr, Hs, Nc_vp, wr_vp);
+  const resStud_vp = calcularQnStud(f_c_val, Ec, Asc_stud, Fu_stud, R_vp);
+  const phiQn_vp = resStud_vp.phiQn;
+
+  // VIGA PRINCIPAL - DEMANDA Y CAPACIDAD
   const wuVigaPrincipal = wu * luzMenor;
   const Mu_vp = (wuVigaPrincipal * Math.pow(luzVigaPrincipal_cm / 100, 2)) / 8 * 100;
   const Vu_vp = (wuVigaPrincipal * luzVigaPrincipal_cm / 100) / 2;
-
   const Lb_vp = luzVigaPrincipal_cm;
-  const resFlex_vp = calcularMomentoNominalAISC(tipoVigaPrincipal, Lb_vp, 1.14);
-  const phiMn_vp = resFlex_vp.phiMn;
+
+  const P_acero_vp = getProp(tipoVigaPrincipal, 'A') * getProp(tipoVigaPrincipal, 'Fy');
+  const P_conc_vp = 0.85 * f_c_val * b_eff_vp * espesorConcreto;
+  const phiMn_steel_vp = PHI_B * getProp(tipoVigaPrincipal, 'Fy') * getProp(tipoVigaPrincipal, 'Zx');
+
+  let P_studs_req_vp = 0;
+  if (Mu_vp <= phiMn_steel_vp) {
+    P_studs_req_vp = 0.25 * Math.min(P_acero_vp, P_conc_vp);
+  } else {
+    let low = 0.25 * Math.min(P_acero_vp, P_conc_vp);
+    let high = Math.min(P_acero_vp, P_conc_vp);
+    P_studs_req_vp = high;
+    for (let iter = 0; iter < 15; iter++) {
+      const mid = (low + high) / 2;
+      const res = calcularMomentoCompuesto(tipoVigaPrincipal, b_eff_vp, espesorConcreto, f_c_val, Ec, Asc_stud, mid);
+      if (res && res.phiMn_comp >= Mu_vp) {
+        P_studs_req_vp = mid;
+        high = mid;
+      } else {
+        low = mid;
+      }
+    }
+  }
+
+  const N_half_vp = P_studs_req_vp / phiQn_vp;
+  let N_total_vp = Math.ceil(2 * N_half_vp);
+  if (N_total_vp % 2 !== 0) N_total_vp += 1;
+  if (N_total_vp < 4) N_total_vp = 4;
+
+  let s_vp = luzVigaPrincipal_cm / N_total_vp;
+  const s_max = Math.min(8 * (espesorConcreto + alturaDeck), 90);
+  const s_min = 6 * d_stud_cm;
+
+  if (s_vp > s_max) {
+    N_total_vp = Math.ceil(luzVigaPrincipal_cm / s_max);
+    if (N_total_vp % 2 !== 0) N_total_vp += 1;
+    s_vp = luzVigaPrincipal_cm / N_total_vp;
+  }
+
+  const capComp_vp = calcularMomentoCompuesto(tipoVigaPrincipal, b_eff_vp, espesorConcreto, f_c_val, Ec, Asc_stud, N_total_vp * phiQn_vp);
+  const phiMn_vp = capComp_vp ? capComp_vp.phiMn_comp : phiMn_steel_vp;
   const cumpleFlex_vp = Mu_vp <= phiMn_vp;
+
   const resCort_vp = calcularCortanteNominalAISC(tipoVigaPrincipal);
   const phiVn_vp = resCort_vp.phiVn;
   const cumpleCort_vp = Vu_vp <= phiVn_vp;
@@ -451,30 +495,90 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const defl_vp = deflexionViga(wServ_vp, luzVigaPrincipal_cm, E_ACERO, Ix_vp);
   const deflLim_vp = luzVigaPrincipal_cm / 360;
   const cumpleDefl_vp = defl_vp <= deflLim_vp;
-  const defl_vp_comp = secComp ? deflexionViga(wServ_vp, luzVigaPrincipal_cm, E_ACERO, secComp.I_tr) : defl_vp;
-  const deflLim_vp_comp = luzVigaPrincipal_cm / 360;
-  const cumpleDefl_vp_comp = defl_vp_comp <= deflLim_vp_comp;
-
-  // Arriostramiento lateral
+  const defl_vp_comp = secComp_vp ? deflexionViga(wServ_vp, luzVigaPrincipal_cm, E_ACERO, secComp_vp.I_tr) : defl_vp;
+  const cumpleDefl_vp_comp = defl_vp_comp <= deflLim_vp;
   const arriostre_vp = calcularArriostramiento(tipoVigaPrincipal, Lb_vp, 1.14);
 
-  // CORREAS
+  // 7. SECCIÓN COMPUESTA - CORREAS (Joists)
+  const luzCorrea_cm = luzMenor * 100;
+  const b_eff_correa_1 = luzCorrea_cm / 4;
+  const b_eff_correa_2 = 16 * espesorConcreto + getProp(tipoCorrea, 'bf');
+  const b_eff_correa_3 = sepReal * 100;
+  const b_eff_correa = Math.min(b_eff_correa_1, b_eff_correa_2, b_eff_correa_3);
+  const secComp_correa = calcularSeccionCompuesta(tipoCorrea, b_eff_correa, espesorConcreto, f_c_val, Ec);
+
+  // REDUCCIÓN STUDS - Correa (parallel deck: R = 0.75)
+  const resStud_correa = calcularQnStud(f_c_val, Ec, Asc_stud, Fu_stud, 0.75);
+  const phiQn_correa = resStud_correa.phiQn;
+
+  // CORREA - DEMANDA Y CAPACIDAD
   const wuCorrea = wu * sepReal;
   const Mu_correa = (wuCorrea * Math.pow(luzCorrea_cm / 100, 2)) / 8 * 100;
   const Vu_correa = (wuCorrea * luzCorrea_cm / 100) / 2;
   const Lb_correa = luzCorrea_cm;
-  const resFlex_correa = calcularMomentoNominalAISC(tipoCorrea, Lb_correa, 1.14);
-  const phiMn_correa = resFlex_correa.phiMn;
+
+  const P_acero_correa = getProp(tipoCorrea, 'A') * getProp(tipoCorrea, 'Fy');
+  const P_conc_correa = 0.85 * f_c_val * b_eff_correa * espesorConcreto;
+  const phiMn_steel_correa = PHI_B * getProp(tipoCorrea, 'Fy') * getProp(tipoCorrea, 'Zx');
+
+  let P_studs_req_correa = 0;
+  if (Mu_correa <= phiMn_steel_correa) {
+    P_studs_req_correa = 0.25 * Math.min(P_acero_correa, P_conc_correa);
+  } else {
+    let low = 0.25 * Math.min(P_acero_correa, P_conc_correa);
+    let high = Math.min(P_acero_correa, P_conc_correa);
+    P_studs_req_correa = high;
+    for (let iter = 0; iter < 15; iter++) {
+      const mid = (low + high) / 2;
+      const res = calcularMomentoCompuesto(tipoCorrea, b_eff_correa, espesorConcreto, f_c_val, Ec, Asc_stud, mid);
+      if (res && res.phiMn_comp >= Mu_correa) {
+        P_studs_req_correa = mid;
+        high = mid;
+      } else {
+        low = mid;
+      }
+    }
+  }
+
+  const N_half_correa = P_studs_req_correa / phiQn_correa;
+  let N_total_correa = Math.ceil(2 * N_half_correa);
+  if (N_total_correa % 2 !== 0) N_total_correa += 1;
+  if (N_total_correa < 4) N_total_correa = 4;
+
+  let s_correa = luzCorrea_cm / N_total_correa;
+  if (s_correa > s_max) {
+    N_total_correa = Math.ceil(luzCorrea_cm / s_max);
+    if (N_total_correa % 2 !== 0) N_total_correa += 1;
+    s_correa = luzCorrea_cm / N_total_correa;
+  }
+
+  const capComp_correa = calcularMomentoCompuesto(tipoCorrea, b_eff_correa, espesorConcreto, f_c_val, Ec, Asc_stud, N_total_correa * phiQn_correa);
+  const phiMn_correa = capComp_correa ? capComp_correa.phiMn_comp : phiMn_steel_correa;
   const cumpleFlex_correa = Mu_correa <= phiMn_correa;
+
   const resCort_correa = calcularCortanteNominalAISC(tipoCorrea);
   const phiVn_correa = resCort_correa.phiVn;
   const cumpleCort_correa = Vu_correa <= phiVn_correa;
+
   const wServ_correa = wServicio * sepReal / 100;
   const Ix_correa = getProp(tipoCorrea, 'Ix');
   const defl_correa = deflexionViga(wServ_correa, luzCorrea_cm, E_ACERO, Ix_correa);
   const deflLim_correa = luzCorrea_cm / 360;
   const cumpleDefl_correa = defl_correa <= deflLim_correa;
+  const defl_correa_comp = secComp_correa ? deflexionViga(wServ_correa, luzCorrea_cm, E_ACERO, secComp_correa.I_tr) : defl_correa;
+  const cumpleDefl_correa_comp = defl_correa_comp <= deflLim_correa;
   const arriostre_correa = calcularArriostramiento(tipoCorrea, Lb_correa, 1.14);
+
+  // 8. CÁLCULO DE CANTIDAD DE VIGAS Y CORREAS TOTALES PARA LA ESTRUCTURA
+  const correasHorizontales = luzX < luzY;
+  const numVigasPrincipales = correasHorizontales ? cols : filas;
+  const numCorreas = (correasHorizontales ? nTramosY : nTramosX) * nCorreasPerBay;
+
+  const numVPSpans = (correasHorizontales ? nTramosY : nTramosX) * numVigasPrincipales;
+  const numCorreaSpans = nTramosX * nTramosY * nCorreasPerBay;
+
+  const totalStuds = (N_total_vp * numVPSpans) + (N_total_correa * numCorreaSpans);
+  const capacidadTotalStuds = (N_total_vp * phiQn_vp * numVPSpans) + (N_total_correa * phiQn_correa * numCorreaSpans);
 
   // 9. CORTANTE CONCRETO
   const bw = 100;
@@ -492,7 +596,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
 
   // 10. ACERO MÍNIMO
   const As_min = calcularAsMinLosa(h_cm, 100, fy_rebar_val);
-  const As_prov = 0.142;
+  const As_prov = 0.142; // Malla 6x6-10/10
   const cumpleAsMin = As_prov >= As_min;
 
   // 11. DEFLEXIONES Y VIBRACIÓN
@@ -506,7 +610,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const cumpleVibracion = f_natural >= 3.0;
 
   // 12. FATIGA DE CONECTORES
-  const fatigaStuds = verificarFatigaStuds(ciclosFatiga, resStud.Qn, Asc_stud, Fu_stud);
+  const fatigaStuds = verificarFatigaStuds(ciclosFatiga, resStud_vp.Qn, Asc_stud, Fu_stud);
 
   // 13. OPTIMIZADOR
   const costoVigaKg = costos.vigaPrincipalKg || 2.5;
@@ -517,9 +621,9 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   // 14. MATERIALES Y COSTOS
   const areaDeck = areaTotal * 1.15;
   const volConcreto = areaTotal * (espesorConcreto / 100);
-  const totalLengthCorreas = nCorreasPerBay * luzMenor * nTramosX * nTramosY;
-  const numCorreasX = luzX < luzY ? 0 : totalLengthCorreas;
-  const numCorreasY = luzX < luzY ? totalLengthCorreas : 0;
+  const longVigasPrincipalesX = filas * (luzX * nTramosX);
+  const longVigasPrincipalesY = cols * (luzY * nTramosY);
+  const totalLengthCorreas = numCorreas * (correasHorizontales ? (luzX * nTramosX) : (luzY * nTramosY));
   const kgCorreas = (getProp(tipoCorrea, 'peso') || 15) * totalLengthCorreas;
   const kgVigas = (getProp(tipoVigaPrincipal, 'peso') || 30) * (longVigasPrincipalesX + longVigasPrincipalesY);
   const kgMalla = (0.142 / 10000) * areaTotal * 7850 * 1.1;
@@ -544,32 +648,32 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     },
     seccionCompuesta: {
       descripcion: 'Sección compuesta – Transformada (AISC 360 I3)',
-      anchoEfectivo: b_eff.toFixed(1) + ' cm',
+      anchoEfectivo: b_eff_vp.toFixed(1) + ' cm',
       n: n.toFixed(1),
-      bTransformado: secComp ? secComp.b_transf.toFixed(2) + ' cm' : 'N/A',
-      inerciaTransformada: secComp ? secComp.I_tr.toFixed(0) + ' cm⁴' : 'N/A',
-      yBar: secComp ? secComp.y_bar.toFixed(2) + ' cm' : 'N/A',
-      S_sup: secComp ? secComp.S_sup.toFixed(1) + ' cm³' : 'N/A',
-      S_inf: secComp ? secComp.S_inf.toFixed(1) + ' cm³' : 'N/A',
+      bTransformado: secComp_vp ? secComp_vp.b_transf.toFixed(2) + ' cm' : 'N/A',
+      inerciaTransformada: secComp_vp ? secComp_vp.I_tr.toFixed(0) + ' cm⁴' : 'N/A',
+      yBar: secComp_vp ? secComp_vp.y_bar.toFixed(2) + ' cm' : 'N/A',
+      S_sup: secComp_vp ? secComp_vp.S_sup.toFixed(1) + ' cm³' : 'N/A',
+      S_inf: secComp_vp ? secComp_vp.S_inf.toFixed(1) + ' cm³' : 'N/A',
     },
     momentoCompuesto: {
       descripcion: 'Momento resistente compuesto (AISC 360 I3)',
-      P_acero: resComp ? (resComp.P_acero / 1000).toFixed(2) + ' t' : 'N/A',
-      P_conc: resComp ? (resComp.P_conc / 1000).toFixed(2) + ' t' : 'N/A',
-      P_studs: resComp ? (resComp.P_studs / 1000).toFixed(2) + ' t' : 'N/A',
-      PNA: resComp ? resComp.PNA_tipo : 'N/A',
-      a: resComp ? resComp.a.toFixed(2) + ' cm' : 'N/A',
-      Y2: resComp ? resComp.Y2.toFixed(2) + ' cm' : 'N/A',
-      Mn_comp: resComp ? (resComp.Mn_comp / 100000).toFixed(2) + ' t·m' : 'N/A',
-      phiMn_comp: resComp ? (resComp.phiMn_comp / 100000).toFixed(2) + ' t·m' : 'N/A',
-      completa: resComp ? resComp.completa : false,
+      P_acero: capComp_vp ? (capComp_vp.P_acero / 1000).toFixed(2) + ' t' : 'N/A',
+      P_conc: capComp_vp ? (capComp_vp.P_conc / 1000).toFixed(2) + ' t' : 'N/A',
+      P_studs: capComp_vp ? (capComp_vp.P_studs / 1000).toFixed(2) + ' t' : 'N/A',
+      PNA: capComp_vp ? capComp_vp.PNA_tipo : 'N/A',
+      a: capComp_vp ? capComp_vp.a.toFixed(2) + ' cm' : 'N/A',
+      Y2: capComp_vp ? capComp_vp.Y2.toFixed(2) + ' cm' : 'N/A',
+      Mn_comp: capComp_vp ? (capComp_vp.Mn_comp / 100000).toFixed(2) + ' t·m' : 'N/A',
+      phiMn_comp: capComp_vp ? (capComp_vp.phiMn_comp / 100000).toFixed(2) + ' t·m' : 'N/A',
+      completa: capComp_vp ? capComp_vp.completa : false,
     },
     vigaPrincipal: {
       descripcion: `Viga principal ${tipoVigaPrincipal} (AISC 360 Cap F/G)`,
       momento: { demanda: (Mu_vp / 100000).toFixed(2) + ' t·m', capacidad: (phiMn_vp / 100000).toFixed(2) + ' t·m', cumple: cumpleFlex_vp, ratio: (Mu_vp / phiMn_vp).toFixed(2) },
       cortante: { demanda: (Vu_vp / 1000).toFixed(2) + ' t', capacidad: (phiVn_vp / 1000).toFixed(2) + ' t', cumple: cumpleCort_vp, ratio: (Vu_vp / phiVn_vp).toFixed(2) },
       deflexion: { demanda: defl_vp.toFixed(2) + ' cm', limite: deflLim_vp.toFixed(2) + ' cm', cumple: cumpleDefl_vp, ratio: (defl_vp / deflLim_vp).toFixed(2) },
-      deflexionCompuesta: { demanda: defl_vp_comp.toFixed(2) + ' cm', limite: deflLim_vp_comp.toFixed(2) + ' cm', cumple: cumpleDefl_vp_comp, ratio: (defl_vp_comp / deflLim_vp_comp).toFixed(2) },
+      deflexionCompuesta: { demanda: defl_vp_comp.toFixed(2) + ' cm', limite: deflLim_vp.toFixed(2) + ' cm', cumple: cumpleDefl_vp_comp, ratio: (defl_vp_comp / deflLim_vp).toFixed(2) },
       pandeo: { Lb: (Lb_vp / 100).toFixed(2) + ' m', Lp: (resFlex_vp.Lp / 100).toFixed(2) + ' m', Lr: (resFlex_vp.Lr / 100).toFixed(2) + ' m', zona: resFlex_vp.zona === 1 ? 'Zona 1 (Plástica)' : (resFlex_vp.zona === 2 ? 'Zona 2 (Inelástica)' : 'Zona 3 (Elástica)') },
       arriostramiento: arriostre_vp,
       cumpleGlobal: cumpleFlex_vp && cumpleCort_vp && cumpleDefl_vp && cumpleDefl_vp_comp,
@@ -579,21 +683,49 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
       momento: { demanda: (Mu_correa / 100000).toFixed(2) + ' t·m', capacidad: (phiMn_correa / 100000).toFixed(2) + ' t·m', cumple: cumpleFlex_correa, ratio: (Mu_correa / phiMn_correa).toFixed(2) },
       cortante: { demanda: (Vu_correa / 1000).toFixed(2) + ' t', capacidad: (phiVn_correa / 1000).toFixed(2) + ' t', cumple: cumpleCort_correa, ratio: (Vu_correa / phiVn_correa).toFixed(2) },
       deflexion: { demanda: defl_correa.toFixed(2) + ' cm', limite: deflLim_correa.toFixed(2) + ' cm', cumple: cumpleDefl_correa, ratio: (defl_correa / deflLim_correa).toFixed(2) },
+      deflexionCompuesta: { demanda: defl_correa_comp.toFixed(2) + ' cm', limite: deflLim_correa.toFixed(2) + ' cm', cumple: cumpleDefl_correa_comp, ratio: (defl_correa_comp / deflLim_correa).toFixed(2) },
       arriostramiento: arriostre_correa,
-      cumpleGlobal: cumpleFlex_correa && cumpleCort_correa && cumpleDefl_correa,
+      cumpleGlobal: cumpleFlex_correa && cumpleCort_correa && cumpleDefl_correa && cumpleDefl_correa_comp,
     },
     conectoresCorte: {
-      descripcion: 'Conectores de corte (AISC 360 I2 + I3.2d)',
-      Qn_bruto: resStud.Qn_bruto.toFixed(2) + ' kg',
-      factorR: R.toFixed(3),
-      Qn: resStud.Qn.toFixed(2) + ' kg',
-      phiQn: phiQn.toFixed(2) + ' kg',
+      descripcion: 'Conectores de corte (AISC 360 I2 + I8)',
+      diametroStud: d_stud_in + '" (' + (d_stud_cm * 10).toFixed(1) + ' mm)',
+      alturaStud: Hs + ' cm',
+      Hs_min: Hs_min.toFixed(2) + ' cm',
+      Hs_max: Hs_max.toFixed(2) + ' cm',
+      cumpleHs: cumpleHs,
+      cumpleTf_vp: cumpleTf_vp,
+      cumpleTf_correa: cumpleTf_correa,
+      tf_vp: tf_vp.toFixed(2) + ' cm',
+      tf_correa: tf_correa.toFixed(2) + ' cm',
+
+      // VP
+      Qn_vp: resStud_vp.Qn.toFixed(0) + ' kg',
+      phiQn_vp: phiQn_vp.toFixed(0) + ' kg',
+      N_total_vp: N_total_vp,
+      s_vp: s_vp.toFixed(1) + ' cm',
+      cumpleS_vp: s_vp >= s_min && s_vp <= s_max,
+      s_max_vp: s_max.toFixed(1) + ' cm',
+      s_min_vp: s_min.toFixed(1) + ' cm',
+      P_acero_vp: (P_acero_vp / 1000).toFixed(1) + ' t',
+      P_conc_vp: (P_conc_vp / 1000).toFixed(1) + ' t',
+      ratio_vp: (capComp_vp ? (capComp_vp.P_studs / Math.min(P_acero_vp, P_conc_vp)) : 0).toFixed(2),
+
+      // Correa
+      Qn_correa: resStud_correa.Qn.toFixed(0) + ' kg',
+      phiQn_correa: phiQn_correa.toFixed(0) + ' kg',
+      N_total_correa: N_total_correa,
+      s_correa: s_correa.toFixed(1) + ' cm',
+      cumpleS_correa: s_correa >= s_min && s_correa <= s_max,
+      s_max_correa: s_max.toFixed(1) + ' cm',
+      s_min_correa: s_min.toFixed(1) + ' cm',
+      P_acero_correa: (P_acero_correa / 1000).toFixed(1) + ' t',
+      P_conc_correa: (P_conc_correa / 1000).toFixed(1) + ' t',
+      ratio_correa: (capComp_correa ? (capComp_correa.P_studs / Math.min(P_acero_correa, P_conc_correa)) : 0).toFixed(2),
+
       totalStuds,
       capacidadTotal: capacidadTotalStuds.toFixed(0) + ' kg',
-      P_acero: resComp ? (resComp.P_acero / 1000).toFixed(2) + ' t' : 'N/A',
-      P_conc: resComp ? (resComp.P_conc / 1000).toFixed(2) + ' t' : 'N/A',
-      cumple: resComp ? (resComp.P_studs >= Math.min(resComp.P_acero, resComp.P_conc) * 0.5) : false,
-      ratio: resComp ? (Math.min(resComp.P_acero, resComp.P_conc) / resComp.P_studs).toFixed(2) : 'N/A',
+      cumple: cumpleHs && cumpleTf_vp && cumpleTf_correa && (s_vp >= s_min && s_vp <= s_max) && (s_correa >= s_min && s_correa <= s_max),
     },
     fatiga: {
       descripcion: 'Fatiga de conectores (AISC 360 App. 3)',
@@ -645,16 +777,16 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     optimizador: { viga: optViga, correa: optCorrea },
     steelDeckData: {
       espesorConcreto, calibre, sepCorreas, sepReal, tipoVigaPrincipal, tipoCorrea,
-      densidadStuds, alturaDeck, f_c: f_c_val, fy_rebar: fy_rebar_val,
+      diametroStud, alturaDeck, f_c: f_c_val, fy_rebar: fy_rebar_val,
       mConstruccion, vConstruccion, phiMn_pos_deck, phiMn_neg_deck, phiVn_deck,
       mPosLosa, mNegExtLosa, mNegIntLosa,
-      totalStuds, phiQn, capacidadTotalStuds, R,
+      totalStuds, phiQn: phiQn_vp, capacidadTotalStuds, R: R_vp,
       kgCorreas, kgVigas, kgMalla, areaDeck,
       longVigasPrincipalesX, longVigasPrincipalesY,
       Mu_vp, phiMn_vp, Vu_vp, phiVn_vp, defl_vp, deflLim_vp,
       Mu_correa, phiMn_correa, Vu_correa, phiVn_correa, defl_correa, deflLim_correa,
       As_min, As_prov, phiVc, Vu_losa_cm, cumpleVcLosa,
-      secComp, resComp, f_natural, fatigaStuds,
+      secComp: secComp_vp, resComp: capComp_vp, f_natural, fatigaStuds,
       arriostre_vp, arriostre_correa,
     },
   };
@@ -803,7 +935,7 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
             ['alturaDeck', 'Altura deck (cm)', 'number', 0.5, 5, 15],
             ['tipoVigaPrincipal', 'Viga principal', 'select-w', null, null, null],
             ['tipoCorrea', 'Correa', 'select-c', null, null, null],
-            ['densidadStuds', 'Densidad studs (studs/m)', 'number', 0.5, 1, 6],
+            ['diametroStud', 'Diámetro stud', 'select-ds', null, null, null],
             ['f_c', "f'c (kg/cm²)", 'number', 10, 140, 420],
             ['fy_rebar', 'fy rebar (kg/cm²)', 'number', 100, 2800, 6000],
             ['alturaStud', 'Altura stud (cm)', 'number', 1, 10, 25],
@@ -827,6 +959,13 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
               ) : type === 'select-c' ? (
                 <select name="tipoCorrea" value={steelDeckConfig.tipoCorrea} onChange={onConfigChange} style={styles.input}>
                   {PERFILES_C.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              ) : type === 'select-ds' ? (
+                <select name="diametroStud" value={steelDeckConfig.diametroStud || 0.75} onChange={onConfigChange} style={styles.input}>
+                  <option value="0.5">1/2" (12.7 mm)</option>
+                  <option value="0.625">5/8" (15.9 mm)</option>
+                  <option value="0.75">3/4" (19.1 mm)</option>
+                  <option value="0.875">7/8" (22.2 mm)</option>
                 </select>
               ) : type === 'select-nc' ? (
                 <select name="numStudsPorReborde" value={normParams.numStudsPorReborde} onChange={handleNormChange} style={styles.input}>
@@ -1016,31 +1155,63 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
 
           {/* TAB: CONECTORES */}
           {tabActivo === 'conectores' && (
-            <div style={styles.grid2}>
-              <div>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Capacidad nominal</h4>
-                {infoCard('', [
-                  ['Qn bruto (sin R)', resultados.verificaciones.conectoresCorte.Qn_bruto],
-                  ['Factor de reducción R', resultados.verificaciones.conectoresCorte.factorR],
-                  ['Qn (con R)', resultados.verificaciones.conectoresCorte.Qn],
-                  ['φQn', resultados.verificaciones.conectoresCorte.phiQn],
-                  ['Total studs', resultados.verificaciones.conectoresCorte.totalStuds.toLocaleString()],
-                  ['Capacidad total ΣφQn', resultados.verificaciones.conectoresCorte.capacidadTotal],
-                ])}
-                <div style={{ marginTop: '10px', padding: '10px', background: '#eff6ff', borderRadius: '8px', fontSize: '12px', color: '#1e40af' }}>
-                  <strong>Factor R (AISC I3.2d):</strong> Reduce la capacidad del stud cuando se coloca en el reborde del steel deck. Depende de hr, Hs, wr y Nc. Para 1 stud/reborde: Rmax=1.0. Para 2 studs/reborde: Rmax=0.75.
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>📐 Geometría y Límites del Stud</h4>
+                  {infoCard('', [
+                    ['Diámetro seleccionado (ds)', resultados.verificaciones.conectoresCorte.diametroStud],
+                    ['Espesor ala VP (tf)', resultados.verificaciones.conectoresCorte.tf_vp],
+                    ['Límite ala VP (ds ≤ 2.5·tf)', resultados.verificaciones.conectoresCorte.cumpleTf_vp ? '✓ CUMPLE' : '✗ EXCEDE'],
+                    ['Espesor ala Correa (tf)', resultados.verificaciones.conectoresCorte.tf_correa],
+                    ['Límite ala Correa (ds ≤ 2.5·tf)', resultados.verificaciones.conectoresCorte.cumpleTf_correa ? '✓ CUMPLE' : '✗ EXCEDE'],
+                    ['Altura del stud (Hs)', resultados.verificaciones.conectoresCorte.alturaStud],
+                    ['Rango Hs admisible', `${resultados.verificaciones.conectoresCorte.Hs_min} a ${resultados.verificaciones.conectoresCorte.Hs_max}`],
+                    ['Verificación altura', resultados.verificaciones.conectoresCorte.cumpleHs ? '✓ CUMPLE' : '✗ FUERA DE RANGO'],
+                  ])}
+                </div>
+
+                <div>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>📊 Resumen de Distribución total</h4>
+                  {infoCard('', [
+                    ['Total studs requeridos', resultados.verificaciones.conectoresCorte.totalStuds.toLocaleString() + ' und'],
+                    ['Capacidad total ΣφQn', resultados.verificaciones.conectoresCorte.capacidadTotal],
+                    ['Costo total conectores', `$${(resultados.verificaciones.conectoresCorte.totalStuds * (costos.studUnd || 0)).toFixed(2)}`],
+                    ['Estado conectores', resultados.verificaciones.conectoresCorte.cumple ? '✓ OK' : '✗ REVISAR LÍMITES'],
+                  ])}
+                  <div style={{ marginTop: '14px', padding: '12px', background: '#f8fafc', borderRadius: '8px', fontSize: '11px', color: theme.textMuted, lineHeight: 1.5 }}>
+                    <strong style={{ color: theme.text }}>Normas AISC/ACI:</strong> La altura mínima de los studs sobre el tope del deck es de 1.5" (38 mm) y el recubrimiento de concreto superior mínimo es de 0.5" (13 mm). El diámetro del stud no debe exceder 2.5 veces el espesor de la ala de apoyo.
+                  </div>
                 </div>
               </div>
-              <div>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>Verificación de transferencia</h4>
-                {infoCard('', [
-                  ['Fuerza acero Py', resultados.verificaciones.conectoresCorte.P_acero],
-                  ['Fuerza concreto Cc', resultados.verificaciones.conectoresCorte.P_conc],
-                  ['ΣφQn / min(Py,Cc)', resultados.verificaciones.conectoresCorte.ratio],
-                  ['Estado', resultados.verificaciones.conectoresCorte.cumple ? '✓ Cumple' : '✗ No cumple'],
-                ])}
-                <div style={{ marginTop: '10px' }}>
-                  {progressBar(resultados.verificaciones.conectoresCorte.ratio)}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>🌉 Vigas Principales (Pórticos)</h4>
+                  {infoCard('', [
+                    ['Capacidad φQn (perpendicular)', resultados.verificaciones.conectoresCorte.phiQn_vp],
+                    ['Fuerza plástica Py', resultados.verificaciones.conectoresCorte.P_acero_vp],
+                    ['Fuerza plástica Cc', resultados.verificaciones.conectoresCorte.P_conc_vp],
+                    ['Studs requeridos / tramo', resultados.verificaciones.conectoresCorte.N_total_vp + ' und'],
+                    ['Separación teórica (s)', resultados.verificaciones.conectoresCorte.s_vp],
+                    ['Rango s (mín / máx)', `${resultados.verificaciones.conectoresCorte.s_min_vp} / ${resultados.verificaciones.conectoresCorte.s_max_vp}`],
+                    ['Verificación s', resultados.verificaciones.conectoresCorte.cumpleS_vp ? '✓ CUMPLE' : '✗ REVISAR LÍMITES'],
+                    ['Acción compuesta', `${(parseFloat(resultados.verificaciones.conectoresCorte.ratio_vp) * 100).toFixed(0)}%`],
+                  ])}
+                </div>
+
+                <div>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: theme.text }}>📐 Correas (Viguetas secundarias)</h4>
+                  {infoCard('', [
+                    ['Capacidad φQn (paralela)', resultados.verificaciones.conectoresCorte.phiQn_correa],
+                    ['Fuerza plástica Py', resultados.verificaciones.conectoresCorte.P_acero_correa],
+                    ['Fuerza plástica Cc', resultados.verificaciones.conectoresCorte.P_conc_correa],
+                    ['Studs requeridos / correa', resultados.verificaciones.conectoresCorte.N_total_correa + ' und'],
+                    ['Separación teórica (s)', resultados.verificaciones.conectoresCorte.s_correa],
+                    ['Rango s (mín / máx)', `${resultados.verificaciones.conectoresCorte.s_min_correa} / ${resultados.verificaciones.conectoresCorte.s_max_correa}`],
+                    ['Verificación s', resultados.verificaciones.conectoresCorte.cumpleS_correa ? '✓ CUMPLE' : '✗ REVISAR LÍMITES'],
+                    ['Acción compuesta', `${(parseFloat(resultados.verificaciones.conectoresCorte.ratio_correa) * 100).toFixed(0)}%`],
+                  ])}
                 </div>
               </div>
             </div>

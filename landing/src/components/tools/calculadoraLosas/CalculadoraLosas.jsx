@@ -51,7 +51,7 @@ const CalculadoraLosas = () => {
     sepCorreas: 1.5,
     tipoVigaPrincipal: 'W12x26',
     tipoCorrea: 'C6x10.5',
-    densidadStuds: 2,
+    diametroStud: 0.75,
     alturaDeck: 7.5,
   });
 

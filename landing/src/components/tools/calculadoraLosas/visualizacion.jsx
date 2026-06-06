@@ -156,38 +156,8 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
       }
     }
 
-    // 4. CONECTORES DE CORTE (studs) en las vigas principales únicamente
-    if (correasHorizontales) {
-      for (let c = 0; c < cols; c++) {
-        const x = ox + c * luzX * scale;
-        const totalHeight = nTramosY * luzY * scale;
-        const nStuds = Math.max(5, Math.ceil(totalHeight / 30));
-        for (let k = 0; k <= nStuds; k++) {
-          const y = oy + (k / nStuds) * totalHeight;
-          studsElements.push(
-            <circle key={`stud-v-${c}-${k}`}
-              cx={x} cy={y}
-              r="4.5" fill="#e67e22" stroke="#d35400" strokeWidth="1.5"
-            />
-          );
-        }
-      }
-    } else {
-      for (let r = 0; r < filas; r++) {
-        const y = oy + r * luzY * scale;
-        const totalWidth = nTramosX * luzX * scale;
-        const nStuds = Math.max(5, Math.ceil(totalWidth / 30));
-        for (let k = 0; k <= nStuds; k++) {
-          const x = ox + (k / nStuds) * totalWidth;
-          studsElements.push(
-            <circle key={`stud-h-${r}-${k}`}
-              cx={x} cy={y}
-              r="4.5" fill="#e67e22" stroke="#d35400" strokeWidth="1.5"
-            />
-          );
-        }
-      }
-    }
+    // 4. CONECTORES DE CORTE (studs) - Removida representación en planta por solicitud del usuario
+
   }
 
   // Nervios para aligerada
@@ -423,7 +393,7 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
 
         {/* Leyenda */}
         <g transform={`translate(${svgW - 180}, ${mT})`}>
-          <rect x="0" y="0" width="170" height={losaActiva === 'colaborante' ? 145 : 110} fill="white" stroke="#ddd" strokeWidth="1" rx="6" opacity="0.95" />
+          <rect x="0" y="0" width="170" height={losaActiva === 'colaborante' ? 130 : 110} fill="white" stroke="#ddd" strokeWidth="1" rx="6" opacity="0.95" />
           <circle cx="15" cy="18" r="6" fill="#2c3e50" />
           <text x="28" y="22" fill="#333" fontSize="11">Columna / Apoyo</text>
           <line x1="10" y1="38" x2="30" y2="38" stroke="#0d6efd" strokeWidth="2" />
@@ -438,12 +408,10 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
               <text x="38" y="90" fill="#333" fontSize="11">Viga Secundaria</text>
               <line x1="10" y1="100" x2="30" y2="100" stroke="#8e44ad" strokeWidth="2" strokeDasharray="4,2" />
               <text x="38" y="104" fill="#333" fontSize="11">Correa (Joist)</text>
-              <circle cx="20" cy="115" r="4.5" fill="#e67e22" stroke="#d35400" strokeWidth="1" />
-              <text x="38" y="119" fill="#333" fontSize="11">Stud (corte)</text>
-              <line x1="10" y1="130" x2="30" y2="130" stroke="#3498db" strokeWidth="2" />
-              <polyline points="12,127 10,130 12,133" stroke="#3498db" strokeWidth="2" fill="none" />
-              <polyline points="28,127 30,130 28,133" stroke="#3498db" strokeWidth="2" fill="none" />
-              <text x="38" y="134" fill="#333" fontSize="11">Dir. Armado</text>
+              <line x1="10" y1="115" x2="30" y2="115" stroke="#3498db" strokeWidth="2" />
+              <polyline points="12,112 10,115 12,118" stroke="#3498db" strokeWidth="2" fill="none" />
+              <polyline points="28,112 30,115 28,118" stroke="#3498db" strokeWidth="2" fill="none" />
+              <text x="38" y="119" fill="#333" fontSize="11">Dir. Armado</text>
             </>
           )}
           {losaActiva === 'aligerada' && (
