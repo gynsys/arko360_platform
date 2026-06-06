@@ -1698,3 +1698,43 @@ textarea.form-input {
   .hero-actions .btn { width: 100%; justify-content: center; }
   .hero-stat:nth-child(2) { display: none; }
 }
+
+/* ============ PRINT STYLES ============ */
+@media print {
+  /* Hide non-printable elements */
+  .no-print, header, footer, nav, .sidebar, iframe {
+    display: none !important;
+  }
+
+  /* Show only printable report */
+  .print-only {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #pdf-report, #pdf-report * {
+    visibility: visible;
+  }
+
+  @page {
+    margin: 15mm;
+    size: letter portrait;
+  }
+
+  body {
+    background: #fff;
+    margin: 0;
+    padding: 0;
+  }
+}

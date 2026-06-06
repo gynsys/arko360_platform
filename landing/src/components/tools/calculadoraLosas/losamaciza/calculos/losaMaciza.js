@@ -75,6 +75,22 @@ export const calcularLosaMaciza = (grid, datos, macizaConfig, costos) => {
   const cumpleEspesor = toMM(h) >= toMM(hMin);
   const sMax = Math.min(3 * toMM(h), FACTORES.LIMITE_SEP_ACERO_CM * 10); // mm
 
+  const getAreaMM2 = (d) => {
+    const areas = { '3/8': 71, '1/2': 129, '5/8': 199, '3/4': 284, '1': 519 };
+    return areas[d] || 0;
+  };
+  const asProvX = armX.pos.sep > 0 ? (100 / armX.pos.sep) * getAreaMM2(macizaConfig?.diametroPosX) : 0;
+  const asProvY = armY.pos.sep > 0 ? (100 / armY.pos.sep) * getAreaMM2(macizaConfig?.diametroPosY) : 0;
+  const asProvGov = Math.max(asProvX, asProvY);
+
+  const ratioCortante = N(cortante.phiVc) > 0 ? N(cortante.vuMax) / N(cortante.phiVc) : 0;
+  const ratioEspesor = toMM(h) > 0 ? toMM(hMin) / toMM(h) : 0;
+  const ratioFlexion = asProvGov > 0 ? N(flexGov.As_req) / asProvGov : 0;
+  
+  const cumpleAcero = asProvGov >= N(flexGov.As_min);
+  const cumpleSeparacion = armX.pos.sep * 10 <= sMax && armY.pos.sep * 10 <= sMax; // sep is in cm
+  const ratioSeparacion = armX.pos.sep > 0 ? (armX.pos.sep * 10) / sMax : 0;
+
   return {
     // Geometría y cargas
     h: fmt(toCM(h), 1),
@@ -106,6 +122,7 @@ export const calcularLosaMaciza = (grid, datos, macizaConfig, costos) => {
     phiVc: fmtInt(N(cortante.phiVc)),
     vuMax: fmt(N(cortante.vuMax), 2),
     cumpleCortante: Boolean(cortante.cumpleCortante),
+    ratioCortante: fmt(ratioCortante, 2),
 
     // Deflexión
     deflexion: fmt(N(deflexion), 3),
@@ -114,8 +131,13 @@ export const calcularLosaMaciza = (grid, datos, macizaConfig, costos) => {
 
     // Verificaciones
     cumpleEspesor,
+    ratioEspesor: fmt(ratioEspesor, 2),
+    cumpleAcero,
+    cumpleSeparacion,
+    ratioFlexion: fmt(ratioFlexion, 2),
+    ratioSeparacion: fmt(ratioSeparacion, 2),
     s_max: fmt(sMax, 1),
-    cumpleGlobal: cumpleEspesor && Boolean(cortante.cumpleCortante) && cumpleDeflexion,
+    cumpleGlobal: cumpleEspesor && Boolean(cortante.cumpleCortante) && cumpleDeflexion && cumpleAcero && cumpleSeparacion,
 
     // Materiales
     volConcreto: fmt(volConcreto, 2),

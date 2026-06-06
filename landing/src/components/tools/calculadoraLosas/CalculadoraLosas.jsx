@@ -6,6 +6,7 @@ import { renderGrid } from './visualizacion';
 import LosaMaciza from './losamaciza/components/LosaMaciza';
 import LosaLigera from './LosaLigera';
 import LosaColaborante from './LosaColaborante';
+import ReporteImprimible from './losamaciza/components/ReporteImprimible';
 
 const CalculadoraLosas = () => {
   const [grid, setGrid] = useState({
@@ -413,15 +414,37 @@ const CalculadoraLosas = () => {
           <div style={styles.resultBox}>
             <div style={styles.resultLabel}>Cortante</div>
             <div style={styles.resultValue} className={calc.cumpleCortante ? styles.statusOk : styles.statusFail}>
-              {calc.cumpleCortante ? '✅ CUMPLE' : '❌ NO CUMPLE'}
+              ({calc.ratioCortante}) {calc.cumpleCortante ? '✅ CUMPLE' : '❌ NO CUMPLE'}
             </div>
           </div>
           <div style={styles.resultBox}>
             <div style={styles.resultLabel}>Espesor mínimo</div>
             <div style={styles.resultValue} className={calc.cumpleEspesor ? styles.statusOk : styles.statusFail}>
-              {calc.cumpleEspesor ? '✅ CUMPLE' : '❌ NO CUMPLE'}
+              ({calc.ratioEspesor}) {calc.cumpleEspesor ? '✅ CUMPLE' : '❌ NO CUMPLE'}
             </div>
           </div>
+          {losaActiva === 'maciza' && (
+            <>
+              <div style={styles.resultBox}>
+                <div style={styles.resultLabel}>Flexión (As req / prov)</div>
+                <div style={styles.resultValue} className={calc.ratioFlexion <= 1 ? styles.statusOk : styles.statusFail}>
+                  ({calc.ratioFlexion}) {calc.ratioFlexion <= 1 ? '✅ CUMPLE' : '❌ NO CUMPLE'}
+                </div>
+              </div>
+              <div style={styles.resultBox}>
+                <div style={styles.resultLabel}>Cuantía / Temp. (As ≥ As_min)</div>
+                <div style={styles.resultValue} className={calc.cumpleAcero ? styles.statusOk : styles.statusFail}>
+                  {calc.cumpleAcero ? '✅ CUMPLE' : '❌ NO CUMPLE'}
+                </div>
+              </div>
+              <div style={styles.resultBox}>
+                <div style={styles.resultLabel}>Separación máxima</div>
+                <div style={styles.resultValue} className={calc.cumpleSeparacion ? styles.statusOk : styles.statusFail}>
+                  ({calc.ratioSeparacion}) {calc.cumpleSeparacion ? '✅ CUMPLE' : '❌ NO CUMPLE'}
+                </div>
+              </div>
+            </>
+          )}
           {/*
           {losaActiva === 'aligerada' && (
             <div style={styles.resultBox}>
@@ -437,9 +460,34 @@ const CalculadoraLosas = () => {
             </div>
           )}
         </div>
+        
+        {losaActiva === 'maciza' && (
+          <div style={{ marginTop: '30px', textAlign: 'center' }} className="no-print">
+            <button 
+              onClick={() => window.print()}
+              style={{
+                backgroundColor: '#e74c3c',
+                color: '#fff',
+                padding: '12px 24px',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 4px 6px rgba(231, 76, 60, 0.3)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              Generar Reporte PDF
+            </button>
+          </div>
+        )}
       </div>
 
-      <div style={styles.panel}>
+      <div style={styles.panel} className="no-print">
         <h3 style={styles.sectionTitle('#27ae60')}>5. Costos Unitarios (USD)</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
           <div style={styles.field}>
@@ -490,6 +538,10 @@ const CalculadoraLosas = () => {
           )}
         </div>
       </div>
+
+      {losaActiva === 'maciza' && (
+        <ReporteImprimible grid={grid} datos={datos} calc={calc} macizaConfig={macizaConfig} costos={costos} />
+      )}
     </div>
   );
 };
