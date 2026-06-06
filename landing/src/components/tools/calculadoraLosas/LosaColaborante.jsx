@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from "react";
 import { RefreshCw, Save, FileDown, CheckCircle, XCircle, AlertTriangle, Info, Plus, Trash2, ArrowRight } from "lucide-react";
 import { calcularLosaColaboranteNormativo } from "../../../steelDeck/calcularLosaColaboranteNormativo";
 import { PERFILES_I_H_TUBO } from "../../../steelDeck/catalogos";
-import { renderSeccion } from "./visualizacion";
 
 export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid, datos, costos }) {
   const [tabActivo, setTabActivo] = useState('general');
@@ -332,10 +331,9 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
             )}
           </div>
 
-          {/* SVG SECCIÓN TRANSVERSAL Y ADVERTENCIA REUBICADOS */}
+          {/* ADVERTENCIA REUBICADA */}
           {resultados && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
-              {renderSeccion(resultados, 'colaborante', steelDeckConfig, null)}
               <div style={styles.alert}>
                 <strong>⚠️ Advertencia Normativa:</strong> Esta herramienta realiza verificaciones de pre-dimensionamiento basadas en ACI 318-19 y AISC 360-16 (LRFD). Incluye: método de la transformada para sección compuesta, factor de reducción R de conectores (AISC I3.2d), pandeo lateral-torsional con arriostramiento (AISC Cap. F / App. 6), cortante del concreto y punzonamiento (ACI 318), deflexiones en servicio y vibración. <strong>No sustituye el diseño estructural detallado</strong> ni la supervisión de un ingeniero estructural calificado.
               </div>
