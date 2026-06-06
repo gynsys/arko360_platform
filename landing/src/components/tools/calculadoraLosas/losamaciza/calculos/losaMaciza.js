@@ -46,9 +46,11 @@ export const calcularLosaMaciza = (grid, datos, macizaConfig, costos) => {
   const cortante = verificarCortante(wu, geo.luzMayor, params.fc, b, d);
 
   // 7. Deflexión
-  const deflexion = verificarDeflexion(wServicio, geo.luzMayor, toMM(h), params.fc);
-  const limiteDeflexion = toMM(geo.luzMayor) / FACTORES.LIMITE_FLECHA;
+  const deflexionObj = verificarDeflexion(wServicio, geo.luzMayor, toCM(h), params.fc);
+  const deflexion = N(deflexionObj.δ) * 10; // Convertir de cm a mm
+  const limiteDeflexion = N(deflexionObj.δLim) * 10; // Convertir de cm a mm
   const cumpleDeflexion = deflexion <= limiteDeflexion;
+  const ratioDeflexion = limiteDeflexion > 0 ? deflexion / limiteDeflexion : 0;
 
   // 8. Metrado
   const volConcreto = geo.areaTotal * h;
@@ -125,9 +127,10 @@ export const calcularLosaMaciza = (grid, datos, macizaConfig, costos) => {
     ratioCortante: fmt(ratioCortante, 2),
 
     // Deflexión
-    deflexion: fmt(N(deflexion), 3),
-    limiteDeflexion: fmt(limiteDeflexion, 3),
+    deflexion: fmt(deflexion, 2),
+    limiteDeflexion: fmt(limiteDeflexion, 2),
     cumpleDeflexion,
+    ratioDeflexion: fmt(ratioDeflexion, 2),
 
     // Verificaciones
     cumpleEspesor,

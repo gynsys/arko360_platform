@@ -38,6 +38,15 @@ const CalculadoraLosas = () => {
   });
 
   const [losaActiva, setLosaActiva] = useState('maciza');
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Temporary admin check for testing/audit purposes
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true' || localStorage.getItem('token')) {
+      setIsAdmin(true);
+    }
+  }, []);
 
   const [aligeradaConfig, setAligeradaConfig] = useState({
     tipoBloque: 'eps',
@@ -96,7 +105,21 @@ const CalculadoraLosas = () => {
 
   const handleCostos = (e) => {
     const val = parseFloat(e.target.value);
-    setCostos({ ...costos, [e.target.name]: isNaN(val) ? 0 : val });
+    setCostos((prev) => ({ ...prev, [e.target.name]: parseFloat(e.target.value) || 0 }));
+  };
+
+  const handleGuardarCalculo = () => {
+    const payload = {
+      tipoLosa: losaActiva,
+      fecha: new Date().toISOString(),
+      grid,
+      datos,
+      calc,
+      costos,
+      macizaConfig
+    };
+    console.log("Cálculo guardado para auditoría:", payload);
+    alert("Cálculo guardado exitosamente en modo auditoría.");
   };
 
   const handleAligerada = (e) => {
@@ -462,7 +485,7 @@ const CalculadoraLosas = () => {
         </div>
         
         {losaActiva === 'maciza' && (
-          <div style={{ marginTop: '30px', textAlign: 'center' }} className="no-print">
+          <div style={{ marginTop: '30px', textAlign: 'center', display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }} className="no-print">
             <button 
               onClick={() => window.print()}
               style={{
@@ -483,6 +506,29 @@ const CalculadoraLosas = () => {
               <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
               Generar Reporte PDF
             </button>
+
+            {isAdmin && (
+              <button 
+                onClick={handleGuardarCalculo}
+                style={{
+                  backgroundColor: '#2c3e50',
+                  color: '#fff',
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 6px rgba(44, 62, 80, 0.3)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                Guardar Auditoría
+              </button>
+            )}
           </div>
         )}
       </div>

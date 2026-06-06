@@ -31,9 +31,9 @@ const ReporteImprimible = ({ grid, datos, calc, macizaConfig, costos }) => {
           <p><strong>Carga Viva:</strong> {datos.cv} kg/m²</p>
           <p><strong>Carga Muerta (Extra):</strong> {datos.cmExtra} kg/m²</p>
           <p><strong>Carga Última (wu):</strong> {calc.wu} kg/m²</p>
-          <p><strong>Cortante vuMax:</strong> {calc.vuMax} kN - {calc.cumpleCortante ? '✅ CUMPLE' : '❌ FALLA'}</p>
-          <p><strong>Deflexión Máxima:</strong> {calc.deflexion} mm - {calc.cumpleDeflexion ? '✅ CUMPLE' : '❌ FALLA'}</p>
-          <p><strong>Flexión As_req vs As_prov:</strong> {calc.ratioFlexion <= 1 ? '✅ CUMPLE' : '❌ FALLA'}</p>
+          <p><strong>Cortante vuMax:</strong> {calc.vuMax} kN ({calc.ratioCortante}) - {calc.cumpleCortante ? '✅ CUMPLE' : '❌ FALLA'}</p>
+          <p><strong>Deflexión Máxima:</strong> {calc.deflexion} mm ({calc.ratioDeflexion}) - {calc.cumpleDeflexion ? '✅ CUMPLE' : '❌ FALLA'}</p>
+          <p><strong>Flexión As_req vs As_prov:</strong> ({calc.ratioFlexion}) - {calc.ratioFlexion <= 1 ? '✅ CUMPLE' : '❌ FALLA'}</p>
         </div>
       </div>
 
