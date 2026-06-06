@@ -7,6 +7,12 @@ from app.core.config import settings
 import logging
 logger = logging.getLogger(__name__)
 
+# Import all models so metadata knows about them
+from app.db.models.tenant import Tenant
+from app.db.models.tenant_module import TenantModule
+from app.db.models.landing_site import LandingSite
+from app.db.models.plan import Plan
+
 # Configurar Base de Datos para Arko
 logger.info("Initializing Arko360 database tables...")
 try:
