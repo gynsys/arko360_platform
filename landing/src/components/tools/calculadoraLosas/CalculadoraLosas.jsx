@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { calcularLosaMaciza } from './losamaciza/calculos/losaMaciza';
 import { calcularLosaLigera } from './LosaLigera';
 import { calcularLosaColaboranteNormativo } from '../../../steelDeck/calcularLosaColaboranteNormativo';
