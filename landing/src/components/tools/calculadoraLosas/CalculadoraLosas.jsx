@@ -379,60 +379,8 @@ const CalculadoraLosas = () => {
         )}
       </div>
 
-      <div style={styles.panel}>
-        <h3 style={styles.sectionTitle('#27ae60')}>4. Costos Unitarios (USD)</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-          <div style={styles.field}>
-            <label style={styles.label}>Concreto ($/m³)</label>
-            <input type="number" name="concretoM3" value={costos.concretoM3} onChange={handleCostos} style={styles.input} />
-          </div>
-          <div style={styles.field}>
-            <label style={styles.label}>Acero refuerzo ($/kg)</label>
-            <input type="number" name="aceroKg" value={costos.aceroKg} onChange={handleCostos} style={styles.input} />
-          </div>
-          {/*
-          {losaActiva === 'aligerada' && (
-            <>
-              <div style={styles.field}>
-                <label style={styles.label}>Bloque Arcilla ($/und)</label>
-                <input type="number" name="bloqueArcillaUnd" value={costos.bloqueArcillaUnd} onChange={handleCostos} style={styles.input} />
-              </div>
-              <div style={styles.field}>
-                <label style={styles.label}>Bloque EPS ($/und)</label>
-                <input type="number" name="bloqueEPSUnd" value={costos.bloqueEPSUnd} onChange={handleCostos} style={styles.input} />
-              </div>
-            </>
-          )}
-          */}
-          {losaActiva === 'colaborante' && (
-            <>
-              <div style={styles.field}>
-                <label style={styles.label}>Steel Deck ($/m²)</label>
-                <input type="number" name="steelDeckM2" value={costos.steelDeckM2} onChange={handleCostos} style={styles.input} />
-              </div>
-              <div style={styles.field}>
-                <label style={styles.label}>Malla ($/m²)</label>
-                <input type="number" name="mallaM2" value={costos.mallaM2} onChange={handleCostos} style={styles.input} />
-              </div>
-              <div style={styles.field}>
-                <label style={styles.label}>Correa acero ($/kg)</label>
-                <input type="number" name="correaKg" value={costos.correaKg} onChange={handleCostos} style={styles.input} />
-              </div>
-              <div style={styles.field}>
-                <label style={styles.label}>Viga principal ($/kg)</label>
-                <input type="number" name="vigaPrincipalKg" value={costos.vigaPrincipalKg} onChange={handleCostos} style={styles.input} />
-              </div>
-              <div style={styles.field}>
-                <label style={styles.label}>Stud conector ($/und)</label>
-                <input type="number" name="studUnd" value={costos.studUnd} onChange={handleCostos} style={styles.input} />
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
       <div style={styles.resultPanel}>
-        <h3 style={styles.sectionTitle('#2c3e50')}>5. Resultados</h3>
+        <h3 style={styles.sectionTitle('#2c3e50')}>4. Resultados</h3>
         <div style={styles.resultGrid}>
           <div style={styles.resultBox}>
             <div style={styles.resultLabel}>Espesor total (h)</div>
@@ -487,6 +435,58 @@ const CalculadoraLosas = () => {
               <div style={styles.resultLabel}>Total studs</div>
               <div style={styles.resultValue}>{calc.numBloques}</div>
             </div>
+          )}
+        </div>
+      </div>
+
+      <div style={styles.panel}>
+        <h3 style={styles.sectionTitle('#27ae60')}>5. Costos Unitarios (USD)</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+          <div style={styles.field}>
+            <label style={styles.label}>Concreto ($/m³)</label>
+            <input type="number" name="concretoM3" value={costos.concretoM3} onChange={handleCostos} style={styles.input} />
+          </div>
+          <div style={styles.field}>
+            <label style={styles.label}>Acero refuerzo ($/kg)</label>
+            <input type="number" name="aceroKg" value={costos.aceroKg} onChange={handleCostos} style={styles.input} />
+          </div>
+          {/*
+          {losaActiva === 'aligerada' && (
+            <>
+              <div style={styles.field}>
+                <label style={styles.label}>Bloque Arcilla ($/und)</label>
+                <input type="number" name="bloqueArcillaUnd" value={costos.bloqueArcillaUnd} onChange={handleCostos} style={styles.input} />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>Bloque EPS ($/und)</label>
+                <input type="number" name="bloqueEPSUnd" value={costos.bloqueEPSUnd} onChange={handleCostos} style={styles.input} />
+              </div>
+            </>
+          )}
+          */}
+          {losaActiva === 'colaborante' && (
+            <>
+              <div style={styles.field}>
+                <label style={styles.label}>Steel Deck ($/m²)</label>
+                <input type="number" name="steelDeckM2" value={costos.steelDeckM2} onChange={handleCostos} style={styles.input} />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>Malla ($/m²)</label>
+                <input type="number" name="mallaM2" value={costos.mallaM2} onChange={handleCostos} style={styles.input} />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>Correa acero ($/kg)</label>
+                <input type="number" name="correaKg" value={costos.correaKg} onChange={handleCostos} style={styles.input} />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>Viga principal ($/kg)</label>
+                <input type="number" name="vigaPrincipalKg" value={costos.vigaPrincipalKg} onChange={handleCostos} style={styles.input} />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>Stud conector ($/und)</label>
+                <input type="number" name="studUnd" value={costos.studUnd} onChange={handleCostos} style={styles.input} />
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { N, toMM, fmt, fmtInt } from '../config/unidades';
+import { N, toMM, toCM, fmt, fmtInt } from '../config/unidades';
 import { FACTORES, DENSIDAD, calcEspesorDiseno, calcEspesorMinimo } from '../config/materiales';
 import {
   calcGeometria,
@@ -77,8 +77,8 @@ export const calcularLosaMaciza = (grid, datos, macizaConfig, costos) => {
 
   return {
     // Geometría y cargas
-    h: fmt(toMM(h), 1),
-    h_min: fmt(toMM(hMin), 1),
+    h: fmt(toCM(h), 1),
+    h_min: fmt(toCM(hMin), 1),
     pesoPropio: fmtInt(pesoPropio),
     wu: fmt(wu, 2),
     wServicio: fmt(wServicio, 2),
