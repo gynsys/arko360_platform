@@ -225,14 +225,14 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
 
     if (nerviosEnX) {
       for (let r = 0; r < filas; r++) {
-        const numNervios = Math.ceil((luzY * nTramosY) / (anchoBloque / 100));
+        const numNervios = Math.ceil(totalH / (anchoBloque / 100));
         for (let k = 0; k < numNervios; k++) {
           const y = oy + k * sepNervios;
-          if (y <= oy + nTramosY * luzY * scale + 1) {
+          if (y <= cy[nTramosY] + 1) {
             nerviosElements.push(
               <line key={`nx-${r}-${k}`}
                 x1={ox} y1={y}
-                x2={ox + nTramosX * luzX * scale} y2={y}
+                x2={cx[nTramosX]} y2={y}
                 stroke="#d35400" strokeWidth="2" opacity="0.7"
               />
             );
@@ -248,14 +248,14 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
 
     if (nerviosEnY) {
       for (let c = 0; c < cols; c++) {
-        const numNervios = Math.ceil((luzX * nTramosX) / (anchoBloque / 100));
+        const numNervios = Math.ceil(totalW / (anchoBloque / 100));
         for (let k = 0; k < numNervios; k++) {
           const x = ox + k * sepNervios;
-          if (x <= ox + nTramosX * luzX * scale + 1) {
+          if (x <= cx[nTramosX] + 1) {
             nerviosElements.push(
               <line key={`ny-${c}-${k}`}
                 x1={x} y1={oy}
-                x2={x} y2={oy + nTramosY * luzY * scale}
+                x2={x} y2={cy[nTramosY]}
                 stroke="#d35400" strokeWidth="2" opacity="0.7"
               />
             );
@@ -278,17 +278,17 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
     // X
     const tramosX = calc.aligeradaData?.tramosX || [];
     const usetrX = tramosX.length > 0 ? tramosX : Array(nTramosX).fill(0).map((_, i) => ({
-      mPos: (calc.wu * luzX * luzX) / (i === 0 || i === nTramosX - 1 ? 14 : 16),
-      mNegIzq: (calc.wu * luzX * luzX) / (i === 0 ? 16 : 11),
-      mNegDer: (calc.wu * luzX * luzX) / (i === nTramosX - 1 ? 16 : 11),
+      mPos: (calc.wu * arrX[i] * arrX[i]) / (i === 0 || i === nTramosX - 1 ? 14 : 16),
+      mNegIzq: (calc.wu * arrX[i] * arrX[i]) / (i === 0 ? 16 : 11),
+      mNegDer: (calc.wu * arrX[i] * arrX[i]) / (i === nTramosX - 1 ? 16 : 11),
     }));
 
     for (let r = 0; r < filas; r++) {
       for (let i = 0; i < nTramosX; i++) {
         const tramo = usetrX[i];
-        const x1 = ox + i * luzX * scale;
-        const x2 = ox + (i + 1) * luzX * scale;
-        const y = oy + r * luzY * scale;
+        const x1 = cx[i];
+        const x2 = cx[i + 1];
+        const y = cy[r];
         const midX = (x1 + x2) / 2;
         const maxM = Math.max(tramo.mPos || 0, tramo.mNegIzq || 0, tramo.mNegDer || 0);
         const scaleM = maxM > 0 ? 25 / maxM : 0;
@@ -309,17 +309,17 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
     // Y
     const tramosY = calc.aligeradaData?.tramosY || [];
     const usetrY = tramosY.length > 0 ? tramosY : Array(nTramosY).fill(0).map((_, i) => ({
-      mPos: (calc.wu * luzY * luzY) / (i === 0 || i === nTramosY - 1 ? 14 : 16),
-      mNegIzq: (calc.wu * luzY * luzY) / (i === 0 ? 16 : 11),
-      mNegDer: (calc.wu * luzY * luzY) / (i === nTramosY - 1 ? 16 : 11),
+      mPos: (calc.wu * arrY[i] * arrY[i]) / (i === 0 || i === nTramosY - 1 ? 14 : 16),
+      mNegIzq: (calc.wu * arrY[i] * arrY[i]) / (i === 0 ? 16 : 11),
+      mNegDer: (calc.wu * arrY[i] * arrY[i]) / (i === nTramosY - 1 ? 16 : 11),
     }));
 
     for (let c = 0; c < cols; c++) {
       for (let i = 0; i < nTramosY; i++) {
         const tramo = usetrY[i];
-        const y1 = oy + i * luzY * scale;
-        const y2 = oy + (i + 1) * luzY * scale;
-        const x = ox + c * luzX * scale;
+        const y1 = cy[i];
+        const y2 = cy[i + 1];
+        const x = cx[c];
         const midY = (y1 + y2) / 2;
         const maxM = Math.max(tramo.mPos || 0, tramo.mNegIzq || 0, tramo.mNegDer || 0);
         const scaleM = maxM > 0 ? 25 / maxM : 0;
@@ -389,8 +389,8 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
         {Array.from({ length: filas }, (_, r) =>
           Array.from({ length: nTramosX }, (_, i) => (
             <line key={`vx-${r}-${i}`}
-              x1={ox + i * luzX * scale} y1={oy + r * luzY * scale}
-              x2={ox + (i + 1) * luzX * scale} y2={oy + r * luzY * scale}
+              x1={cx[i]} y1={cy[r]}
+              x2={cx[i+1]} y2={cy[r]}
               stroke={losaActiva === 'colaborante' ? "#bdc3c7" : "#7f8c8d"} strokeWidth={losaActiva === 'colaborante' ? "1" : "2"}
             />
           ))
