@@ -185,7 +185,7 @@ El backend se despliega en contenedores Docker en DigitalOcean:
 cd C:\Users\pablo\Documents\appgynsys
 
 # 2. Ejecuta comandos en el servidor
-python ssh_runner.py "cd /root/arko360_platform && docker-compose pull && docker-compose up -d"
+python ssh_runner.py "cd /var/www/arko360_platform && docker compose pull && docker compose up -d --build"
 ```
 
 ---

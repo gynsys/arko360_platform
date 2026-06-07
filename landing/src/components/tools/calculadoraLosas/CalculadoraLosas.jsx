@@ -109,14 +109,44 @@ const CalculadoraLosas = () => {
   };
 
   const handleGuardarCalculo = () => {
+    const formulasAuditoria = {
+      h_min: "Luz mayor / 20 (m)",
+      h_diseno: "max(h_min, 0.10m)",
+      pesoPropio: "h * Densidad Concreto (2400 kg/m³) [kg/m²]",
+      wu: "1.2 * (pesoPropio + cmExtra) + 1.6 * cv [kg/m²]",
+      wServicio: "pesoPropio + cmExtra + cv [kg/m²]",
+      vuMax: "(wu * luzMayor / 2) [kg] * 9.81 / 1000 [kN]",
+      Vc: "0.53 * sqrt(fc en MPa) * b * d [N] -> kN",
+      phiVc: "0.75 * Vc [kN]",
+      ratioCortante: "vuMax / phiVc",
+      As_min: "0.0018 * b * d [mm²]",
+      As_req: "rho * b * d (Fórmula flexión ACI con Ru y beta1) [mm²]",
+      deflexion: "5 * wServicio * L^4 / (384 * Ec * Ig) [mm]",
+      limiteDeflexion: "L / 360 [mm]",
+      costoTotal: "(volConcreto * costoConcreto) + (kgAcero * costoAcero) [USD]"
+    };
+
     const payload = {
       tipoLosa: losaActiva,
       fecha: new Date().toISOString(),
       grid,
       datos,
-      calc,
       costos,
-      macizaConfig
+      macizaConfig,
+      auditoriaMetodologia: {
+        norma: "ACI 318-19",
+        unidades: {
+          geometria: "m",
+          cargas: "kg/m²",
+          fuerzas: "kN",
+          momentos: "kN.m",
+          esfuerzos: "MPa y kg/cm²",
+          acero: "mm²",
+          deflexion: "mm"
+        },
+        formulas: formulasAuditoria
+      },
+      calc
     };
     
     // Crear un archivo JSON descargable ("Guardar como")
