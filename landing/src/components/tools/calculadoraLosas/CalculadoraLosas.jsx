@@ -151,6 +151,7 @@ const CalculadoraLosas = () => {
         newArr[index] = val;
         return { ...prev, lucesY: newArr };
       }
+    });
   };
 
   const handleAddAbertura = () => {
