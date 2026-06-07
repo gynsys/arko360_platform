@@ -59,13 +59,16 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
   const vigasElements = [];
   const studsElements = [];
 
+  const isCellVacio = (r, c) => {
+    if (r < 0 || r >= nTramosY || c < 0 || c >= nTramosX) return true;
+    return grid.celdas?.some(cell => cell.r === r && cell.c === c && cell.tipo === 'vacio') || false;
+  };
+
   if (losaActiva === 'colaborante') {
     const sepReal = calc.steelDeckData?.sepReal || steelDeckConfig?.sepCorreas || 1.5;
     const sepPx = sepReal * scale;
 
     const correasHorizontales = (totalW / nTramosX) < (totalH / nTramosY);
-
-    const isCellVacio = (r, c) => grid.celdas?.some(cell => cell.r === r && cell.c === c && cell.tipo === 'vacio');
 
     if (correasHorizontales) {
       // 1. DIBUJAR CORREAS HORIZONTALES (celda por celda)
@@ -159,8 +162,7 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
         const cxC = cx[i] + (arrX[i] * scale) / 2;
         const cyC = cy[j] + (arrY[j] * scale) / 2;
 
-        const isVacio = grid.celdas?.some(c => c.r === j && c.c === i && c.tipo === 'vacio');
-        if (isVacio) continue;
+        if (isCellVacio(j, i)) continue;
 
         if (correasHorizontales) {
           studsElements.push(
@@ -447,7 +449,7 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
         {/* Vigas X (líneas base de losa) */}
         {Array.from({ length: filas }, (_, r) =>
           Array.from({ length: nTramosX }, (_, i) => {
-            if (grid.celdas?.some(c => (c.r === r || c.r === r - 1) && c.c === i && c.tipo === 'vacio')) return null;
+            if (isCellVacio(r, i) && isCellVacio(r - 1, i)) return null;
             return (
               <line key={`vx-${r}-${i}`}
                 x1={cx[i]} y1={cy[r]}
@@ -461,7 +463,7 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
         {/* Líneas auxiliares Y */}
         {Array.from({ length: nTramosX + 1 }, (_, c) =>
           Array.from({ length: nTramosY }, (_, i) => {
-            if (grid.celdas?.some(cell => (cell.c === c || cell.c === c - 1) && cell.r === i && cell.tipo === 'vacio')) return null;
+            if (isCellVacio(i, c) && isCellVacio(i, c - 1)) return null;
             return (
               <line key={`vy-${c}-${i}`}
                 x1={cx[c]} y1={cy[i]}
@@ -483,11 +485,8 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
         {apoyos.map((a) => {
           const r = parseInt(a.id.split('-')[0]);
           const c = parseInt(a.id.split('-')[1]);
-          const isVacio = (row, col) => 
-            row < 0 || row >= nTramosY || col < 0 || col >= nTramosX || 
-            grid.celdas?.some(cell => cell.r === row && cell.c === col && cell.tipo === 'vacio');
           
-          if (isVacio(r-1, c-1) && isVacio(r-1, c) && isVacio(r, c-1) && isVacio(r, c)) {
+          if (isCellVacio(r-1, c-1) && isCellVacio(r-1, c) && isCellVacio(r, c-1) && isCellVacio(r, c)) {
             return null; // Nodo huérfano
           }
 
