@@ -6,7 +6,13 @@ Este documento registra el estado actual del proyecto y los pasos pendientes par
 
 ### ✅ Completado
 
-1. **Backend desarrollado** - Endpoints completos en `backend/app/api/v1/endpoints/arko.py`:
+1. **Herramienta Calculadora de Losas** - Implementado en `landing/src/components/tools/calculadoraLosas/`:
+   - Cálculo normativo de Losa Colaborante (Steel Deck), Losa Aligerada y Losa Maciza.
+   - Sistema Híbrido de Coordenadas (0,0 en esquina inferior izquierda) para definición de huecos y escaleras.
+   - Renderizado SVG dinámico con sistema de máscaras para ocultamiento de vigas, correas y nodos huérfanos.
+   - Auditoría JSON (`impactoAberturas`) de cantidades de acero, concreto y deck removido/agregado.
+
+2. **Backend desarrollado** - Endpoints completos en `backend/app/api/v1/endpoints/arko.py`:
    - CRUD de blog (GET, POST, PUT, DELETE /api/v1/arko/admin/posts)
    - Autenticación (POST /api/v1/arko/auth/login)
    - Configuración del sitio (GET /api/v1/arko/config, PUT /api/v1/arko/admin/config)
