@@ -85,7 +85,7 @@ export const calcularLosaMaciza = (grid, datos, macizaConfig, costos) => {
   const asProvY = armY.pos.sep > 0 ? (100 / armY.pos.sep) * getAreaMM2(macizaConfig?.diametroPosY) : 0;
   const asProvGov = Math.max(asProvX, asProvY);
 
-  const ratioCortante = N(cortante.phiVc) > 0 ? N(cortante.vuMax) / N(cortante.phiVc) : 0;
+  const ratioCortante = N(cortante.φVc) > 0 ? N(cortante.vuMax) / N(cortante.φVc) : 0;
   const ratioEspesor = toMM(h) > 0 ? toMM(hMin) / toMM(h) : 0;
   const ratioFlexion = asProvGov > 0 ? N(flexGov.As_req) / asProvGov : 0;
   
@@ -121,7 +121,7 @@ export const calcularLosaMaciza = (grid, datos, macizaConfig, costos) => {
 
     // Cortante
     Vc: fmtInt(N(cortante.Vc)),
-    phiVc: fmtInt(N(cortante.phiVc)),
+    phiVc: fmtInt(N(cortante.φVc)),
     vuMax: fmt(N(cortante.vuMax), 2),
     cumpleCortante: Boolean(cortante.cumpleCortante),
     ratioCortante: fmt(ratioCortante, 2),

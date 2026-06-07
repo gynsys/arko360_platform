@@ -131,6 +131,160 @@ const CalculadoraLosas = () => {
     alert("Cálculo exportado exitosamente en modo auditoría.");
   };
 
+  const exportarPDFMaciza = () => {
+    if (!calc || !grid) return;
+    const w = window.open('', '_blank');
+    
+    const hoy = new Date().toLocaleDateString('es-ES', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    const metradoYHtml = calc.esDosDirecciones ? `
+      <tr>
+        <td>Fondo (Positivo) - Paralelo a Y</td>
+        <td>${macizaConfig.diametroPosY}"</td>
+        <td>${calc.metradoY?.posSep ? (calc.metradoY.posSep * 100).toFixed(1) : '-'} cm</td>
+        <td>${calc.metradoY?.posCant}</td>
+        <td>${calc.metradoY?.posPeso} kg</td>
+      </tr>
+      <tr>
+        <td>Apoyos (Negativo) - Paralelo a Y</td>
+        <td>${macizaConfig.diametroNegY}"</td>
+        <td>${calc.metradoY?.negSep ? (calc.metradoY.negSep * 100).toFixed(1) : '-'} cm</td>
+        <td>${calc.metradoY?.negCant}</td>
+        <td>${calc.metradoY?.negPeso} kg</td>
+      </tr>
+    ` : '';
+
+    w.document.write(`
+      <html>
+        <head>
+          <title>Memoria de Cálculo - Losa Maciza</title>
+          <style>
+            body { font-family: 'Arial', sans-serif; padding: 40px; color: #333; }
+            h1 { color: #2c3e50; font-size: 24px; margin: 0; }
+            h2 { color: #7f8c8d; font-size: 18px; margin: 10px 0 0; }
+            h3 { border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; margin-top: 30px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+            th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: left; }
+            th { background-color: #ecf0f1; }
+            .badge-ok { color: #27ae60; font-weight: bold; }
+            .badge-fail { color: #c0392b; font-weight: bold; }
+            .header-section { text-align: center; border-bottom: 2px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }
+            .flex-container { display: flex; gap: 40px; margin-bottom: 30px; }
+            .flex-child { flex: 1; }
+            .footer { margin-top: 50px; font-size: 12px; color: #7f8c8d; text-align: center; border-top: 1px solid #ecf0f1; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header-section">
+            <h1>Memoria de Cálculo Estructural</h1>
+            <h2>Diseño de Losa Maciza (ACI 318)</h2>
+            <p>Fecha: ${hoy}</p>
+          </div>
+
+          <div class="flex-container">
+            <div class="flex-child">
+              <h3>Geometría y Materiales</h3>
+              <p><strong>Luz X:</strong> ${grid.luzX} m</p>
+              <p><strong>Luz Y:</strong> ${grid.luzY} m</p>
+              <p><strong>Filas x Cols:</strong> ${grid.filas} x ${grid.cols}</p>
+              <p><strong>Área Total / Encofrado:</strong> ${calc.areaTotal} m²</p>
+              <p><strong>Espesor Diseño (h):</strong> ${calc.h} cm</p>
+              <p><strong>f'c Concreto:</strong> ${datos.fc} kg/cm²</p>
+              <p><strong>fy Acero:</strong> ${datos.fy} kg/cm²</p>
+            </div>
+            <div class="flex-child">
+              <h3>Cargas y Verificaciones</h3>
+              <p><strong>Carga Viva:</strong> ${datos.cv} kg/m²</p>
+              <p><strong>Carga Muerta (Extra):</strong> ${datos.cmExtra} kg/m²</p>
+              <p><strong>Carga Última (wu):</strong> ${calc.wu} kg/m²</p>
+              <p><strong>Cortante vuMax:</strong> ${calc.vuMax} kN (${calc.ratioCortante}) - <span class="${calc.cumpleCortante ? 'badge-ok' : 'badge-fail'}">${calc.cumpleCortante ? 'CUMPLE' : 'FALLA'}</span></p>
+              <p><strong>Deflexión Máxima:</strong> ${calc.deflexion} mm (${calc.ratioDeflexion}) - <span class="${calc.cumpleDeflexion ? 'badge-ok' : 'badge-fail'}">${calc.cumpleDeflexion ? 'CUMPLE' : 'FALLA'}</span></p>
+              <p><strong>Flexión As_req vs As_prov:</strong> (${calc.ratioFlexion}) - <span class="${calc.ratioFlexion <= 1 ? 'badge-ok' : 'badge-fail'}">${calc.ratioFlexion <= 1 ? 'CUMPLE' : 'FALLA'}</span></p>
+            </div>
+          </div>
+
+          <div>
+            <h3>Despiece de Acero (Metrado)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Posición / Sentido</th>
+                  <th>Diámetro</th>
+                  <th>Separación</th>
+                  <th>Cantidad (Cabillas)</th>
+                  <th>Peso Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Fondo (Positivo) - Paralelo a X</td>
+                  <td>${macizaConfig.diametroPosX}"</td>
+                  <td>${calc.metradoX?.posSep ? (calc.metradoX.posSep * 100).toFixed(1) : '-'} cm</td>
+                  <td>${calc.metradoX?.posCant}</td>
+                  <td>${calc.metradoX?.posPeso} kg</td>
+                </tr>
+                <tr>
+                  <td>Apoyos (Negativo) - Paralelo a X</td>
+                  <td>${macizaConfig.diametroNegX}"</td>
+                  <td>${calc.metradoX?.negSep ? (calc.metradoX.negSep * 100).toFixed(1) : '-'} cm</td>
+                  <td>${calc.metradoX?.negCant}</td>
+                  <td>${calc.metradoX?.negPeso} kg</td>
+                </tr>
+                ${metradoYHtml}
+              </tbody>
+            </table>
+            <p style="text-align: right; margin-top: 10px;"><strong>Total Acero de Refuerzo:</strong> ${calc.kgAcero} kg</p>
+          </div>
+
+          <div>
+            <h3>Cantidades de Obra y Costos (Estimado)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Partida</th>
+                  <th>Cantidad</th>
+                  <th>Precio Unitario</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Concreto (f'c ${datos.fc})</td>
+                  <td>${calc.volConcreto} m³</td>
+                  <td>$${costos.concretoM3}/m³</td>
+                  <td>$${(parseFloat(calc.volConcreto) * costos.concretoM3).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Acero de Refuerzo (fy ${datos.fy})</td>
+                  <td>${calc.kgAcero} kg</td>
+                  <td>$${costos.aceroKg}/kg</td>
+                  <td>$${(parseFloat(calc.kgAcero) * costos.aceroKg).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td><strong>TOTAL MATERIALES</strong></td>
+                  <td colspan="2"></td>
+                  <td><strong>$${calc.costoTotal}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+            <p style="text-align: right; margin-top: 10px; font-size: 18px; color: #2c3e50;">
+              <strong>Costo por m²:</strong> $${calc.costoM2} / m²
+            </p>
+          </div>
+          
+          <div class="footer">
+            Reporte generado automáticamente por la Calculadora Estructural de Arko 360. Los resultados son una estimación basada en los parámetros ingresados y no sustituyen el criterio de un ingeniero estructurista.
+          </div>
+        </body>
+      </html>
+    `);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); }, 500);
+  };
+
   const handleAligerada = (e) => {
     const { name, value } = e.target;
     const val = name === 'tipoBloque' || name === 'dirNervios' ? value : parseFloat(value);
@@ -496,7 +650,7 @@ const CalculadoraLosas = () => {
         {losaActiva === 'maciza' && (
           <div style={{ marginTop: '30px', textAlign: 'center', display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }} className="no-print">
             <button 
-              onClick={() => window.print()}
+              onClick={exportarPDFMaciza}
               style={{
                 backgroundColor: '#e74c3c',
                 color: '#fff',
@@ -594,9 +748,6 @@ const CalculadoraLosas = () => {
         </div>
       </div>
 
-      {losaActiva === 'maciza' && (
-        <ReporteImprimible grid={grid} datos={datos} calc={calc} macizaConfig={macizaConfig} costos={costos} />
-      )}
     </div>
   );
 };
