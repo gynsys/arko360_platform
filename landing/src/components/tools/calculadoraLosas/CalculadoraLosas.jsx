@@ -356,7 +356,8 @@ const CalculadoraLosas = () => {
               <p><strong>Luz X:</strong> ${grid.luzX} m</p>
               <p><strong>Luz Y:</strong> ${grid.luzY} m</p>
               <p><strong>Filas x Cols:</strong> ${grid.filas} x ${grid.cols}</p>
-              <p><strong>Área Total / Encofrado:</strong> ${calc.areaTotal} m²</p>
+              <p><strong>Área de Encofrado (Total):</strong> ${calc.areaTotal} m²</p>
+              <p><strong>Área Efectiva (Neto):</strong> ${calc.areaEfectiva} m²</p>
               <p><strong>Espesor Diseño (h):</strong> ${calc.h} cm</p>
               <p><strong>f'c Concreto:</strong> ${datos.fc} kg/cm²</p>
               <p><strong>fy Acero:</strong> ${datos.fy} kg/cm²</p>
@@ -483,11 +484,24 @@ const CalculadoraLosas = () => {
     const maxLuzY = Math.max(...arrY.slice(0, nTramosY));
 
     const areaTotal = L_totalX * L_totalY;
+    
+    let areaHuecos = 0;
+    if (grid.celdas) {
+      grid.celdas.forEach(c => {
+        if (c.tipo === 'vacio' && c.r < nTramosY && c.c < nTramosX) {
+          areaHuecos += (arrX[c.c] * arrY[c.r]);
+        }
+      });
+    }
+    const areaEfectiva = areaTotal - areaHuecos;
+
     const ratio = Math.max(maxLuzX, maxLuzY) / Math.min(maxLuzX, maxLuzY);
     const esDosDirecciones = ratio <= 2;
 
     let resultado = {
       areaTotal,
+      areaHuecos,
+      areaEfectiva,
       nTramosX,
       nTramosY,
       ratio,
@@ -711,8 +725,10 @@ const CalculadoraLosas = () => {
               </div>
             </div>
             <div style={styles.highlightBox}>
-              <p><strong>Área total:</strong> {Number(calc.areaTotal).toFixed(2)} m²</p>
-              <p><strong>Ratio luces:</strong> {Number(calc.ratio).toFixed(2)} {calc.esDosDirecciones ? '(Dos direcciones)' : '(Una dirección)'}</p>
+              <p><strong>Área efectiva:</strong> {Number(calc.areaEfectiva).toFixed(2)} m²</p>
+              {losaActiva !== 'colaborante' && (
+                <p><strong>Ratio luces:</strong> {Number(calc.ratio).toFixed(2)} {calc.esDosDirecciones ? '(Dos direcciones)' : '(Una dirección)'}</p>
+              )}
             </div>
             
             <div style={{ marginTop: '20px' }}>
