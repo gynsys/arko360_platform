@@ -54,7 +54,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
 
   // Espesor mínimo ACI 318-19: mínimo 5 cm sobre la cresta del deck (Sección 26.3.3)
   const espesorMinimoACI = 5.0; // cm
-  const espesorConcreto_efectivo = Math.max(espesorConcreto, espesorMinimoACI);
+  const espesorConcreto_efectivo = espesorConcreto;
 
   const h_total = (espesorConcreto_efectivo + alturaDeck) / 100;
   const h_cm = h_total * 100;
@@ -485,11 +485,13 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     },
   };
 
+  const cumpleEspesor = espesorConcreto >= espesorMinimoACI;
   const cumpleGlobal = verificaciones.deckConstruccion.cumpleGlobal &&
                        verificaciones.vigaPrincipal.cumpleGlobal &&
                        verificaciones.correas.cumpleGlobal &&
                        verificaciones.conectoresCorte.cumple &&
-                       verificaciones.losaConcreto.cumpleGlobal;
+                       verificaciones.losaConcreto.cumpleGlobal &&
+                       cumpleEspesor;
 
   return {
     h: h_total.toFixed(2),
@@ -507,7 +509,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     cumpleGlobal,
     cumpleCortante: cumpleVcLosa,
     ratioCortante: (Vu_losa_cm / phiVc).toFixed(2),
-    cumpleEspesor: espesorConcreto >= espesorMinimoACI,
+    cumpleEspesor,
     ratioEspesor: espesorConcreto > 0 ? (espesorMinimoACI / espesorConcreto).toFixed(2) : "N/A",
     verificaciones,
     optimizador: { viga: optViga, correa: optCorrea },
