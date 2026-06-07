@@ -24,19 +24,32 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   let areaHuecos = 0;
   let areaEscaleras = 0;
   let numEscalerasL = 0;
+  let longitudVigasBorde = 0; // Para sumar acero extra
+
   if (grid.celdas) {
     grid.celdas.forEach(c => {
-      if (c.r < nTramosY && c.c < nTramosX) {
-        const areaCelda = arrX[c.c] * arrY[c.r];
-        if (c.tipo === 'hueco') {
-          areaHuecos += areaCelda;
-        } else if (c.tipo === 'escalera_recta' || c.tipo === 'escalera_l') {
-          areaEscaleras += areaCelda;
-          if (c.tipo === 'escalera_l') numEscalerasL++;
-        }
+      if (c.tipo === 'vacio' && c.r < nTramosY && c.c < nTramosX) {
+        areaHuecos += (arrX[c.c] * arrY[c.r]);
       }
     });
   }
+
+  if (grid.aberturas) {
+    grid.aberturas.forEach(ab => {
+      const areaAb = ab.w * ab.h;
+      if (ab.tipo === 'hueco') areaHuecos += areaAb;
+      else if (ab.tipo.includes('escalera')) {
+        areaEscaleras += areaAb;
+        if (ab.tipo === 'escalera_l') numEscalerasL++;
+      }
+      
+      // Añadir el perímetro de la abertura como vigas de borde/cabezales (longitud extra)
+      if (ab.tipo !== 'vacio') {
+        longitudVigasBorde += (2 * ab.w + 2 * ab.h);
+      }
+    });
+  }
+  
   const areaLosa = Math.max(0.1, areaTotal - areaHuecos - areaEscaleras);
 
   const ratio = Math.max(luzX, luzY) / Math.min(luzX, luzY);
@@ -362,7 +375,7 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const longVigasPrincipalesY = cols * (luzY * nTramosY);
   const totalLengthCorreas = numCorreas * (correasHorizontales ? (luzX * nTramosX) : (luzY * nTramosY));
   
-  const kgCorreas = (getProp(tipoCorrea, 'peso') || 15) * totalLengthCorreas * (areaCostos / areaTotal);
+  const kgCorreas = ((getProp(tipoCorrea, 'peso') || 15) * totalLengthCorreas * (areaCostos / areaTotal)) + (longitudVigasBorde * (getProp(tipoCorrea, 'peso') || 15));
   const kgVigas = (getProp(tipoVigaPrincipal, 'peso') || 30) * (longVigasPrincipalesX + longVigasPrincipalesY);
   const kgMalla = (0.142 / 10000) * areaCostos * 7850 * 1.1;
 

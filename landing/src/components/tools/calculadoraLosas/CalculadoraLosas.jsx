@@ -9,6 +9,7 @@ import LosaColaborante from './LosaColaborante';
 import ReporteImprimible from './losamaciza/components/ReporteImprimible';
 import HistorialCorridas from './HistorialCorridas';
 import { calculadoraService } from '../../../services/calculadoraService';
+import { FaHistory, FaCloudUploadAlt, FaFileCode } from 'react-icons/fa';
 
 const CalculadoraLosas = () => {
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
@@ -18,6 +19,7 @@ const CalculadoraLosas = () => {
     cols: 3,
     luzX: 4.5,
     luzY: 4.0,
+    aberturas: [],
   });
 
   const [datos, setDatos] = useState({
@@ -129,8 +131,7 @@ const CalculadoraLosas = () => {
     setGrid(prev => {
       const newCeldas = prev.celdas.map(celda => {
         if (celda.r === r && celda.c === c) {
-          const nextTipo = celda.tipo === 'lleno' ? 'hueco' : celda.tipo === 'hueco' ? 'escalera_recta' : celda.tipo === 'escalera_recta' ? 'escalera_l' : 'lleno';
-          return { ...celda, tipo: nextTipo };
+          return { ...celda, tipo: celda.tipo === 'lleno' ? 'vacio' : 'lleno' };
         }
         return celda;
       });
@@ -150,7 +151,30 @@ const CalculadoraLosas = () => {
         newArr[index] = val;
         return { ...prev, lucesY: newArr };
       }
-    });
+  };
+
+  const handleAddAbertura = () => {
+    setGrid(prev => ({
+      ...prev,
+      aberturas: [
+        ...(prev.aberturas || []),
+        { id: Date.now().toString(), tipo: 'hueco', x: 0, y: 0, w: 1, h: 1, orientacion: 'top_left' }
+      ]
+    }));
+  };
+
+  const handleUpdateAbertura = (id, field, value) => {
+    setGrid(prev => ({
+      ...prev,
+      aberturas: prev.aberturas.map(ab => ab.id === id ? { ...ab, [field]: value } : ab)
+    }));
+  };
+
+  const handleRemoveAbertura = (id) => {
+    setGrid(prev => ({
+      ...prev,
+      aberturas: prev.aberturas.filter(ab => ab.id !== id)
+    }));
   };
 
   const handleDatos = (e) => {
@@ -601,13 +625,13 @@ const CalculadoraLosas = () => {
         <p style={styles.subtitle}>Diseño y dimensionamiento normativo de sistemas de entrepiso</p>
         <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
           <button onClick={() => setMostrarHistorial(true)} style={{ ...styles.tab(false), backgroundColor: '#f39c12', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>🕒</span> Abrir Historial
+            <FaHistory /> Abrir Historial
           </button>
           <button onClick={() => handleGuardarCalculo(true)} style={{ ...styles.tab(false), backgroundColor: '#27ae60', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>💾</span> {isSaving ? 'Guardando...' : 'Guardar en la nube'}
+            <FaCloudUploadAlt /> {isSaving ? 'Guardando...' : 'Guardar en la nube'}
           </button>
           <button onClick={() => handleGuardarCalculo(false)} style={{ ...styles.tab(false), backgroundColor: '#8e44ad', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>📥</span> JSON Auditoría
+            <FaFileCode /> JSON Auditoría
           </button>
         </div>
       </div>
@@ -689,12 +713,62 @@ const CalculadoraLosas = () => {
               <p><strong>Área total:</strong> {Number(calc.areaTotal).toFixed(2)} m²</p>
               <p><strong>Ratio luces:</strong> {Number(calc.ratio).toFixed(2)} {calc.esDosDirecciones ? '(Dos direcciones)' : '(Una dirección)'}</p>
             </div>
+            
+            <div style={{ marginTop: '20px' }}>
+              <h4 style={{ color: '#34495e', marginBottom: '10px' }}>Aberturas y Escaleras Internas</h4>
+              <p style={{ fontSize: '11px', color: '#666', marginBottom: '10px' }}>Define huecos o escaleras exactas (X, Y desde la esquina superior izquierda).</p>
+              {grid.aberturas?.map((ab, idx) => (
+                <div key={ab.id} style={{ padding: '10px', backgroundColor: '#f1f5f9', borderRadius: '6px', marginBottom: '8px', border: '1px solid #cbd5e1' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '12px', color: '#333' }}>Abertura {idx + 1}</span>
+                    <button onClick={() => handleRemoveAbertura(ab.id)} style={{ color: '#e74c3c', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}>✖ Eliminar</button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                    <select value={ab.tipo} onChange={(e) => handleUpdateAbertura(ab.id, 'tipo', e.target.value)} style={{ ...styles.input, gridColumn: 'span 2' }}>
+                      <option value="hueco">Hueco / Vacío Libre</option>
+                      <option value="escalera_recta">Escalera Recta</option>
+                      <option value="escalera_l">Escalera en L</option>
+                    </select>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#666' }}>Pos X (m):</label>
+                      <input type="number" step="0.1" value={ab.x} onChange={e => handleUpdateAbertura(ab.id, 'x', parseFloat(e.target.value)||0)} style={styles.input} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#666' }}>Pos Y (m):</label>
+                      <input type="number" step="0.1" value={ab.y} onChange={e => handleUpdateAbertura(ab.id, 'y', parseFloat(e.target.value)||0)} style={styles.input} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#666' }}>Ancho (m):</label>
+                      <input type="number" step="0.1" value={ab.w} onChange={e => handleUpdateAbertura(ab.id, 'w', parseFloat(e.target.value)||0.1)} style={styles.input} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#666' }}>Largo (m):</label>
+                      <input type="number" step="0.1" value={ab.h} onChange={e => handleUpdateAbertura(ab.id, 'h', parseFloat(e.target.value)||0.1)} style={styles.input} />
+                    </div>
+                    {ab.tipo === 'escalera_l' && (
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <label style={{ fontSize: '11px', color: '#666' }}>Ubicación del descanso (Vértice):</label>
+                        <select value={ab.orientacion || 'top_left'} onChange={e => handleUpdateAbertura(ab.id, 'orientacion', e.target.value)} style={styles.input}>
+                          <option value="top_left">Superior Izquierdo</option>
+                          <option value="top_right">Superior Derecho</option>
+                          <option value="bottom_left">Inferior Izquierdo</option>
+                          <option value="bottom_right">Inferior Derecho</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <button onClick={handleAddAbertura} style={{ width: '100%', padding: '8px', backgroundColor: '#ecf0f1', color: '#2c3e50', border: '1px dashed #bdc3c7', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                + Añadir Abertura Exacta
+              </button>
+            </div>
           </div>
 
           {/* Columna derecha: Visualización SVG */}
           <div>
             <p style={{ fontSize: '12px', color: '#7f8c8d', marginBottom: '8px', fontStyle: 'italic' }}>
-              * Haz clic en una celda para alternar entre: Lleno, Hueco, Escalera Recta, Escalera en L.
+              * Haz clic en una celda perimetral para vaciarla y crear losas irregulares (ej. forma de "L").
             </p>
             {grid && renderGrid(grid, { ...calc, wu: calc.wu, ratio: calc.ratio, esDosDirecciones: calc.esDosDirecciones }, losaActiva, losaActiva === 'colaborante' ? steelDeckConfig : null, losaActiva === 'aligerada' ? aligeradaConfig : null, handleCeldasToggle)}
           </div>

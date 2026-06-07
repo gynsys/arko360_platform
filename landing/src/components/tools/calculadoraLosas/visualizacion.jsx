@@ -37,6 +37,22 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
     }
   }
 
+  // Combinar aberturas explícitas con celdas vacías del perímetro
+  const allAberturas = [...(grid.aberturas || [])];
+  if (grid.celdas) {
+    grid.celdas.forEach(c => {
+      if (c.tipo === 'vacio' && c.r < nTramosY && c.c < nTramosX) {
+        const ax = arrX.slice(0, c.c).reduce((sum, val) => sum + val, 0);
+        const ay = arrY.slice(0, c.r).reduce((sum, val) => sum + val, 0);
+        allAberturas.push({ 
+          id: `vac-${c.r}-${c.c}`, 
+          tipo: 'vacio', 
+          x: ax, y: ay, w: arrX[c.c], h: arrY[c.r] 
+        });
+      }
+    });
+  }
+
   // Elementos de steel deck: correas y vigas principales
   const correasElements = [];
   const vigasElements = [];
@@ -169,51 +185,77 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
     // 4. CONECTORES DE CORTE (studs) - Removida representación en planta por solicitud del usuario
   }
 
-  // Elementos de celdas (Huecos, Escaleras)
-  const celdasElements = [];
+  // Elementos de celdas (Huecos, Escaleras) y Aberturas Exactas
+  const aberturasElements = [];
+  allAberturas.forEach(ab => {
+    const vx = ox + ab.x * scale;
+    const vy = oy + ab.y * scale;
+    const vw = ab.w * scale;
+    const vh = ab.h * scale;
+
+    // 1. Máscara para tapar los nervios/correas/diagramas debajo
+    aberturasElements.push(
+      <rect key={`mask-${ab.id}`} x={vx} y={vy} width={vw} height={vh} fill="#fafbfc" stroke="none" />
+    );
+
+    // 2. Si es colaborante, vigas de borde/cabezal
+    if (losaActiva === 'colaborante' && ab.tipo !== 'vacio') {
+      aberturasElements.push(
+        <rect key={`beam-${ab.id}`} x={vx} y={vy} width={vw} height={vh} fill="none" stroke="#2c3e50" strokeWidth="2.5" />
+      );
+    }
+
+    // 3. Dibujar gráficos específicos del tipo de abertura
+    if (ab.tipo === 'hueco') {
+      aberturasElements.push(
+        <g key={`graf-${ab.id}`}>
+          <rect x={vx} y={vy} width={vw} height={vh} fill="#ecf0f1" opacity="0.8" stroke="#bdc3c7" strokeWidth="1" />
+          <line x1={vx} y1={vy} x2={vx + vw} y2={vy + vh} stroke="#bdc3c7" strokeWidth="2" />
+          <line x1={vx + vw} y1={vy} x2={vx} y2={vy + vh} stroke="#bdc3c7" strokeWidth="2" />
+          <text x={vx + vw/2} y={vy + vh/2 + 4} fill="#7f8c8d" fontSize="10" fontWeight="bold" textAnchor="middle">HUECO</text>
+        </g>
+      );
+    } else if (ab.tipo === 'escalera_recta' || ab.tipo === 'escalera_l') {
+      const isL = ab.tipo === 'escalera_l';
+      aberturasElements.push(
+        <g key={`graf-${ab.id}`}>
+          <rect x={vx} y={vy} width={vw} height={vh} fill="#fdebd0" opacity="0.9" stroke="#e67e22" strokeWidth="1" />
+          {/* Líneas de gradas */}
+          {Array.from({length: 5}).map((_, i) => (
+            <line key={`st-${i}`} x1={vx + vw * 0.2} y1={vy + (i+1)*(vh/6)} x2={vx + vw * 0.8} y2={vy + (i+1)*(vh/6)} stroke="#e67e22" strokeWidth="1" />
+          ))}
+          <text x={vx + vw/2} y={vy + vh/2 + 4} fill="#d35400" fontSize="10" fontWeight="bold" textAnchor="middle">{isL ? 'ESC (L)' : 'ESC'}</text>
+          {isL && (
+             <circle 
+               cx={ab.orientacion?.includes('right') ? vx + vw : vx} 
+               cy={ab.orientacion?.includes('bottom') ? vy + vh : vy} 
+               r="4" fill="#c0392b" 
+             />
+          )}
+        </g>
+      );
+    }
+  });
+
+  // Celdas clickeables (para toggle vacio/lleno)
+  const celdasClickElements = [];
   if (grid.celdas) {
     grid.celdas.forEach(celda => {
       const { r, c, tipo } = celda;
-      if (r >= nTramosY || c >= nTramosX) return; // Prevent out of bounds
+      if (r >= nTramosY || c >= nTramosX) return;
       const x1 = cx[c];
       const y1 = cy[r];
       const w = arrX[c] * scale;
       const h = arrY[r] * scale;
-
-      const handleClick = () => {
-        if (onCeldasToggle) onCeldasToggle(r, c);
-      };
-
-      if (tipo === 'hueco') {
-        celdasElements.push(
-          <g key={`celda-${r}-${c}`} onClick={handleClick} style={{ cursor: onCeldasToggle ? 'pointer' : 'default' }}>
-            <rect x={x1} y={y1} width={w} height={h} fill="#ecf0f1" opacity="0.8" />
-            <line x1={x1} y1={y1} x2={x1 + w} y2={y1 + h} stroke="#bdc3c7" strokeWidth="2" />
-            <line x1={x1 + w} y1={y1} x2={x1} y2={y1 + h} stroke="#bdc3c7" strokeWidth="2" />
-            <text x={x1 + w/2} y={y1 + h/2 + 5} fill="#7f8c8d" fontSize="14" fontWeight="bold" textAnchor="middle">HUECO</text>
-          </g>
-        );
-      } else if (tipo === 'escalera_recta' || tipo === 'escalera_l') {
-        const text = tipo === 'escalera_recta' ? 'ESCALERA (R)' : 'ESCALERA (L)';
-        celdasElements.push(
-          <g key={`celda-${r}-${c}`} onClick={handleClick} style={{ cursor: onCeldasToggle ? 'pointer' : 'default' }}>
-            <rect x={x1} y={y1} width={w} height={h} fill="#fdebd0" opacity="0.9" />
-            {/* Draw stairs lines */}
-            {Array.from({length: 5}).map((_, i) => (
-              <line key={`st-${i}`} x1={x1 + w * 0.2} y1={y1 + (i+1)*(h/6)} x2={x1 + w * 0.8} y2={y1 + (i+1)*(h/6)} stroke="#e67e22" strokeWidth="1" />
-            ))}
-            <text x={x1 + w/2} y={y1 + h/2 + 5} fill="#d35400" fontSize="12" fontWeight="bold" textAnchor="middle">{text}</text>
-            {tipo === 'escalera_l' && (
-              <circle cx={x1 + w} cy={y1 + h} r="4" fill="#c0392b" /> // Apoio (columna simulada en vértice)
-            )}
-          </g>
-        );
-      } else {
-        // Lleno: just an invisible clickable rect on top to toggle
-        celdasElements.push(
-          <rect key={`celda-click-${r}-${c}`} x={x1} y={y1} width={w} height={h} fill="transparent" onClick={handleClick} style={{ cursor: onCeldasToggle ? 'pointer' : 'default' }} />
-        );
-      }
+      celdasClickElements.push(
+        <rect 
+          key={`click-${r}-${c}`} 
+          x={x1} y={y1} width={w} height={h} 
+          fill="transparent" 
+          onClick={() => { if(onCeldasToggle) onCeldasToggle(r, c) }} 
+          style={{ cursor: onCeldasToggle ? 'pointer' : 'default' }} 
+        />
+      );
     });
   }
 
@@ -406,11 +448,15 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
             />
           ))
         )}
-        {celdasElements}
-        
         {/* Diagramas de momento */}
         {momentPathsX}
         {momentPathsY}
+
+        {/* Aberturas (se dibujan encima de los diagramas para enmascararlos) */}
+        {aberturasElements}
+
+        {/* Capa de clicks */}
+        {celdasClickElements}
 
         {/* Apoyos / Columnas */}
         {apoyos.map((a) => (

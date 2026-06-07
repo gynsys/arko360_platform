@@ -53,13 +53,13 @@ export const calcularLosaMaciza = (grid, datos, macizaConfig, costos) => {
   const ratioDeflexion = limiteDeflexion > 0 ? deflexion / limiteDeflexion : 0;
 
   // 8. Metrado
-  const volConcreto = geo.areaTotal * h;
+  const volConcreto = geo.areaEfectiva * h;
 
   const metradoX = calcularMetradoDireccion(
-    armX, geo.areaTotal, geo.luzX, geo.luzY, geo.nTramosY
+    armX, geo.areaEfectiva, geo.luzX, geo.luzY, geo.nTramosY
   );
   const metradoY = geo.esDosDirecciones
-    ? calcularMetradoDireccion(armY, geo.areaTotal, geo.luzY, geo.luzX, geo.nTramosX)
+    ? calcularMetradoDireccion(armY, geo.areaEfectiva, geo.luzY, geo.luzX, geo.nTramosX)
     : { pos: {}, neg: {}, pesoTotal: 0 };
 
   const kgAcero = metradoX.pesoTotal + metradoY.pesoTotal;
@@ -69,7 +69,7 @@ export const calcularLosaMaciza = (grid, datos, macizaConfig, costos) => {
     const c = calcularCostos(volConcreto, kgAcero, costos);
     return {
       costoTotal: c.costoTotal,
-      costoM2: geo.areaTotal > 0 ? c.costoTotal / geo.areaTotal : 0,
+      costoM2: geo.areaEfectiva > 0 ? c.costoTotal / geo.areaEfectiva : 0,
     };
   })();
 

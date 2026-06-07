@@ -53,7 +53,24 @@ export const calcGeometria = (grid) => {
 
   const nTramosX = Math.max(cols - 1, 1);
   const nTramosY = Math.max(filas - 1, 1);
-  const areaTotal = luzX * nTramosX * luzY * nTramosY;
+  const arrX = grid?.lucesX || Array(nTramosX).fill(luzX || 4.5);
+  const arrY = grid?.lucesY || Array(nTramosY).fill(luzY || 4.0);
+  const areaTotal = arrX.slice(0, nTramosX).reduce((a, b) => a + b, 0) * arrY.slice(0, nTramosY).reduce((a, b) => a + b, 0);
+
+  let areaHuecos = 0;
+  if (grid?.celdas) {
+    grid.celdas.forEach(c => {
+      if (c.tipo === 'vacio' && c.r < nTramosY && c.c < nTramosX) {
+        areaHuecos += (arrX[c.c] * arrY[c.r]);
+      }
+    });
+  }
+  if (grid?.aberturas) {
+    grid.aberturas.forEach(ab => {
+      areaHuecos += (ab.w * ab.h);
+    });
+  }
+  const areaEfectiva = Math.max(0.1, areaTotal - areaHuecos);
 
   const luzMayor = Math.max(luzX, luzY);
   const luzMenor = Math.min(luzX, luzY);
@@ -63,7 +80,7 @@ export const calcGeometria = (grid) => {
   return {
     luzX, luzY, filas, cols,
     nTramosX, nTramosY,
-    areaTotal,
+    areaTotal, areaEfectiva,
     luzMayor, luzMenor,
     ratio, esDosDirecciones,
   };

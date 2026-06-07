@@ -6,7 +6,24 @@ export function calcularLosaLigera(grid, datos, aligeradaConfig, costos) {
   const { filas, cols, luzX, luzY } = grid;
   const nTramosX = Math.max(cols - 1, 1);
   const nTramosY = Math.max(filas - 1, 1);
-  const areaTotal = luzX * nTramosX * luzY * nTramosY;
+  const arrX = grid.lucesX || Array(nTramosX).fill(luzX || 4.5);
+  const arrY = grid.lucesY || Array(nTramosY).fill(luzY || 4.0);
+  const areaTotal = arrX.slice(0, nTramosX).reduce((a, b) => a + b, 0) * arrY.slice(0, nTramosY).reduce((a, b) => a + b, 0);
+
+  let areaHuecos = 0;
+  if (grid.celdas) {
+    grid.celdas.forEach(c => {
+      if (c.tipo === 'vacio' && c.r < nTramosY && c.c < nTramosX) {
+        areaHuecos += (arrX[c.c] * arrY[c.r]);
+      }
+    });
+  }
+  if (grid.aberturas) {
+    grid.aberturas.forEach(ab => {
+      areaHuecos += (ab.w * ab.h);
+    });
+  }
+  const areaEfectiva = Math.max(0.1, areaTotal - areaHuecos);
 
   const ratio = Math.max(luzX, luzY) / Math.min(luzX, luzY);
   const esDosDirecciones = ratio <= 2;
@@ -89,7 +106,7 @@ export function calcularLosaLigera(grid, datos, aligeradaConfig, costos) {
   const cumpleEspesor = (h * 100) >= h_min;
 
   // Materiales
-  const volConcreto = areaTotal * volM2;
+  const volConcreto = areaEfectiva * volM2;
   const numNerviosX = nerviosEnX ? Math.ceil((luzY * nTramosY) / (anchoBloque / 100)) * nTramosX : 0;
   const numNerviosY = nerviosEnY ? Math.ceil((luzX * nTramosX) / (anchoBloque / 100)) * nTramosY : 0;
   const kgAceroX = nerviosEnX ? (flex.As_req / 10000) * luzX * numNerviosX * 7850 * 1.3 : 0;
@@ -97,11 +114,11 @@ export function calcularLosaLigera(grid, datos, aligeradaConfig, costos) {
   const kgAcero = kgAceroX + kgAceroY;
 
   // Malla en roseta
-  const kgMalla = (0.142 / 10000) * areaTotal * 7850 * 1.1;
+  const kgMalla = (0.142 / 10000) * areaEfectiva * 7850 * 1.1;
 
   // Bloques
   const areaPorBloque = (anchoBloque / 100) * (luzX < luzY ? luzX : luzY);
-  const numBloques = Math.ceil(areaTotal / areaPorBloque);
+  const numBloques = Math.ceil(areaEfectiva / areaPorBloque);
 
   const costoBloques = numBloques * (tipoBloque === 'arcilla' ? costos.bloqueArcillaUnd : costos.bloqueEPSUnd);
   const costoTotal = (volConcreto * costos.concretoM3) + (kgAcero * costos.aceroKg) + costoBloques + (kgMalla * costos.aceroKg);
