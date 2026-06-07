@@ -44,3 +44,13 @@ class ArkoProject(ArkoBase):
     description = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class ArkoProject3D(ArkoBase):
+    __tablename__ = "arko_projects_3d"
+
+    id = Column(String(50), primary_key=True, index=True) # UUID
+    name = Column(String(255), nullable=False)
+    topology = Column(JSONB, nullable=False, default=dict)
+    results = Column(JSONB, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

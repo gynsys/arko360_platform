@@ -284,7 +284,8 @@ DEFAULT_SITE_CONFIG = {
         "showDrywall": True,
         "showElectrica": True,
         "showEscaleras": True,
-        "showLosas": True
+        "showLosas": True,
+        "showArko3D": True
     },
     "hero": {
         "badge": "Ingeniería & Arquitectura",

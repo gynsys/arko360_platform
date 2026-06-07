@@ -925,7 +925,8 @@ export default function ProfilePage() {
                 { key: 'showDrywall', label: 'Calculadora de Drywall' },
                 { key: 'showElectrica', label: 'Calculadora Eléctrica' },
                 { key: 'showEscaleras', label: 'Calculadora de Escaleras' },
-                { key: 'showLosas', label: 'Calculadora de Losas' }
+                { key: 'showLosas', label: 'Calculadora de Losas' },
+                { key: 'showArko3D', label: 'Módulo ARKO3D (Cálculo FEM)' }
               ].map((calc) => (
                 <div key={calc.key} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
                   <span className="text-sm font-semibold text-gray-800">{calc.label}</span>

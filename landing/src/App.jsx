@@ -14,6 +14,7 @@ import EngineeringTools from './components/EngineeringTools.jsx';
 import BiblioGrid from './components/BiblioGrid.jsx';
 import BiblioArticle from './components/BiblioArticle.jsx';
 import MixDesignCalculator from './components/tools/MixDesignCalculator.jsx';
+import FEA3DContainer from './components/tools/fea3d/FEA3DContainer.jsx';
 import { getSiteConfig } from './services/api.js';
 
 export const SiteConfigContext = React.createContext(null);
@@ -113,6 +114,7 @@ export default function App() {
         <Route path="/biblio/:slug" element={<BiblioArticle />} />
         <Route path="/herramientas" element={<ToolsPage />} />
         <Route path="/herramientas/diseno-de-mezclas" element={<MixDesignCalculator />} />
+        <Route path="/arko3d" element={<FEA3DContainer />} />
       </Routes>
       <Footer />
     </SiteConfigContext.Provider>

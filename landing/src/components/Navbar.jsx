@@ -78,6 +78,17 @@ export default function Navbar() {
                   </Link>
                 </li>
               ))}
+              {siteConfig?.tools?.showArko3D !== false && (
+                <li>
+                  <Link 
+                    to="/arko3d" 
+                    onClick={(e) => handleLinkClick(e, '/arko3d')}
+                    style={{ color: '#f39c12', fontWeight: 'bold' }}
+                  >
+                    ARKO3D
+                  </Link>
+                </li>
+              )}
             </ul>
 
             <div className="navbar-actions">
