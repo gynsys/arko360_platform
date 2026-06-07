@@ -192,29 +192,30 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
     // 4. CONECTORES DE CORTE (studs) - Removida representación en planta por solicitud del usuario
   }
 
-  // Elementos de celdas (Huecos, Escaleras) y Aberturas Exactas
-  const aberturasElements = [];
+  const aberturasMasks = [];
+  const aberturasGraphics = [];
+  
   allAberturas.forEach(ab => {
     const vx = ox + ab.x * scale;
     const vy = (oy + totalH * scale) - (ab.y + ab.h) * scale;
     const vw = ab.w * scale;
     const vh = ab.h * scale;
 
-    // 1. Máscara para tapar los nervios/correas/diagramas debajo
-    aberturasElements.push(
+    // 1. Máscara para tapar los nervios/correas/diagramas debajo (va ANTES que las vigas)
+    aberturasMasks.push(
       <rect key={`mask-${ab.id}`} x={vx} y={vy} width={vw} height={vh} fill="#fafbfc" stroke="none" />
     );
 
-    // 2. Si es colaborante, vigas de borde/cabezal
+    // 2. Si es colaborante, vigas de borde/cabezal (va DESPUÉS de las vigas, en gráficos)
     if (losaActiva === 'colaborante' && ab.tipo !== 'vacio') {
-      aberturasElements.push(
+      aberturasGraphics.push(
         <rect key={`beam-${ab.id}`} x={vx} y={vy} width={vw} height={vh} fill="none" stroke="#2c3e50" strokeWidth="2.5" />
       );
     }
 
     // 3. Dibujar gráficos específicos del tipo de abertura
     if (ab.tipo === 'hueco') {
-      aberturasElements.push(
+      aberturasGraphics.push(
         <g key={`graf-${ab.id}`}>
           <rect x={vx} y={vy} width={vw} height={vh} fill="#ecf0f1" opacity="0.8" stroke="#bdc3c7" strokeWidth="1" />
           <line x1={vx} y1={vy} x2={vx + vw} y2={vy + vh} stroke="#bdc3c7" strokeWidth="2" />
@@ -224,7 +225,7 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
       );
     } else if (ab.tipo === 'escalera_recta' || ab.tipo === 'escalera_l') {
       const isL = ab.tipo === 'escalera_l';
-      aberturasElements.push(
+      aberturasGraphics.push(
         <g key={`graf-${ab.id}`}>
           <rect x={vx} y={vy} width={vw} height={vh} fill="#fdebd0" opacity="0.9" stroke="#e67e22" strokeWidth="1" />
           {/* Líneas de gradas */}
@@ -425,56 +426,78 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
           <line key={`gh${i}`} x1={0} y1={i * 40} x2={svgW} y2={i * 40} stroke="#f0f0f0" strokeWidth="1" />
         ))}
 
-        {/* Vigas principales Steel Deck */}
-        {vigasElements}
-
-        {/* Correas Steel Deck */}
+        {/* Correas Steel Deck (quedan debajo de máscaras) */}
         {correasElements}
+
+        {/* Studs y símbolos de armado */}
+        {studsElements}
 
         {/* Nervios Aligerada */}
         {nerviosElements}
 
-        {/* Vigas X (líneas base) */}
+        {/* Máscaras de aberturas (esconden correas y texto debajo de huecos) */}
+        {aberturasMasks}
+
+        {/* Vigas principales y secundarias (Steel Deck / Aligerada) - dibujadas sobre máscaras */}
+        {vigasElements}
+
+        {/* Gráficos de aberturas (bordes, texto HUECO/ESCALERA) */}
+        {aberturasGraphics}
+
+        {/* Vigas X (líneas base de losa) */}
         {Array.from({ length: filas }, (_, r) =>
-          Array.from({ length: nTramosX }, (_, i) => (
-            <line key={`vx-${r}-${i}`}
-              x1={cx[i]} y1={cy[r]}
-              x2={cx[i+1]} y2={cy[r]}
-              stroke={losaActiva === 'colaborante' ? "#bdc3c7" : "#7f8c8d"} strokeWidth={losaActiva === 'colaborante' ? "1" : "2"}
-            />
-          ))
+          Array.from({ length: nTramosX }, (_, i) => {
+            if (grid.celdas?.some(c => (c.r === r || c.r === r - 1) && c.c === i && c.tipo === 'vacio')) return null;
+            return (
+              <line key={`vx-${r}-${i}`}
+                x1={cx[i]} y1={cy[r]}
+                x2={cx[i+1]} y2={cy[r]}
+                stroke={losaActiva === 'colaborante' ? "#bdc3c7" : "#7f8c8d"} strokeWidth={losaActiva === 'colaborante' ? "1" : "2"}
+              />
+            );
+          })
         )}
 
-        {/* Líneas auxiliares */}
+        {/* Líneas auxiliares Y */}
         {Array.from({ length: nTramosX + 1 }, (_, c) =>
-          Array.from({ length: nTramosY }, (_, i) => (
-            <line key={`vy-${c}-${i}`}
-              x1={cx[c]} y1={cy[i]}
-              x2={cx[c]} y2={cy[i+1]}
-              stroke={losaActiva === 'colaborante' ? "#bdc3c7" : "#7f8c8d"} strokeWidth={losaActiva === 'colaborante' ? "1" : "2"}
-            />
-          ))
+          Array.from({ length: nTramosY }, (_, i) => {
+            if (grid.celdas?.some(cell => (cell.c === c || cell.c === c - 1) && cell.r === i && cell.tipo === 'vacio')) return null;
+            return (
+              <line key={`vy-${c}-${i}`}
+                x1={cx[c]} y1={cy[i]}
+                x2={cx[c]} y2={cy[i+1]}
+                stroke={losaActiva === 'colaborante' ? "#bdc3c7" : "#7f8c8d"} strokeWidth={losaActiva === 'colaborante' ? "1" : "2"}
+              />
+            );
+          })
         )}
+        
         {/* Diagramas de momento */}
         {momentPathsX}
         {momentPathsY}
 
-        {/* Aberturas (se dibujan encima de los diagramas para enmascararlos) */}
-        {aberturasElements}
-
         {/* Capa de clicks */}
         {celdasClickElements}
 
-        {/* Apoyos / Columnas */}
-        {apoyos.map((a) => (
-          <g key={a.id}>
-            <circle cx={a.x} cy={a.y} r="8" fill="#2c3e50" stroke="#fff" strokeWidth="2" />
-            <circle cx={a.x} cy={a.y} r="4" fill="#e74c3c" />
-          </g>
-        ))}
+        {/* Apoyos / Columnas (Ocultar si las 4 celdas adyacentes son vacías) */}
+        {apoyos.map((a) => {
+          const r = parseInt(a.id.split('-')[0]);
+          const c = parseInt(a.id.split('-')[1]);
+          const isVacio = (row, col) => 
+            row < 0 || row >= nTramosY || col < 0 || col >= nTramosX || 
+            grid.celdas?.some(cell => cell.r === row && cell.c === col && cell.tipo === 'vacio');
+          
+          if (isVacio(r-1, c-1) && isVacio(r-1, c) && isVacio(r, c-1) && isVacio(r, c)) {
+            return null; // Nodo huérfano
+          }
 
-        {/* Studs */}
-        {studsElements}
+          return (
+            <g key={a.id}>
+              <circle cx={a.x} cy={a.y} r="8" fill="#2c3e50" stroke="#fff" strokeWidth="2" />
+              <circle cx={a.x} cy={a.y} r="4" fill="#e74c3c" />
+            </g>
+          );
+        })}
 
         {/* Cotas X */}
         {Array.from({ length: nTramosX }, (_, i) => (
