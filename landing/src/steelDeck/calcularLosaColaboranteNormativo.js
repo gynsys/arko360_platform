@@ -466,6 +466,10 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
     costoTotal: costoTotal.toFixed(2),
     costoM2: (costoTotal / areaTotal).toFixed(2),
     cumpleGlobal,
+    cumpleCortante: cumpleVcLosa,
+    ratioCortante: (Vu_losa_cm / phiVc).toFixed(2),
+    cumpleEspesor: espesorConcreto >= espesorMinimoACI,
+    ratioEspesor: espesorConcreto > 0 ? (espesorMinimoACI / espesorConcreto).toFixed(2) : "N/A",
     verificaciones,
     optimizador: { viga: optViga, correa: optCorrea },
     steelDeckData: {
