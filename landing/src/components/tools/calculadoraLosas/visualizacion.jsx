@@ -43,11 +43,12 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
     grid.celdas.forEach(c => {
       if (c.tipo === 'vacio' && c.r < nTramosY && c.c < nTramosX) {
         const ax = arrX.slice(0, c.c).reduce((sum, val) => sum + val, 0);
-        const ay = arrY.slice(0, c.r).reduce((sum, val) => sum + val, 0);
+        const ayFromTop = arrY.slice(0, c.r).reduce((sum, val) => sum + val, 0);
+        const yFromBottom = totalH - (ayFromTop + arrY[c.r]);
         allAberturas.push({ 
           id: `vac-${c.r}-${c.c}`, 
           tipo: 'vacio', 
-          x: ax, y: ay, w: arrX[c.c], h: arrY[c.r] 
+          x: ax, y: yFromBottom, w: arrX[c.c], h: arrY[c.r] 
         });
       }
     });
@@ -64,88 +65,91 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
 
     const correasHorizontales = (totalW / nTramosX) < (totalH / nTramosY);
 
+    const isCellVacio = (r, c) => grid.celdas?.some(cell => cell.r === r && cell.c === c && cell.tipo === 'vacio');
+
     if (correasHorizontales) {
-      // 1. DIBUJAR CORREAS HORIZONTALES (una sola vez, sin bucles redundantes)
-      for (let j = 0; j < nTramosY; j++) {
-        const yStart = cy[j];
-        const luzTramoY = arrY[j];
+      // 1. DIBUJAR CORREAS HORIZONTALES (celda por celda)
+      for (let r = 0; r < nTramosY; r++) {
+        const yStart = cy[r];
+        const luzTramoY = arrY[r];
         const nEspacios = Math.ceil(luzTramoY / (calc.steelDeckData?.sepCorreas || steelDeckConfig?.sepCorreas || 1.5));
         const numCorreas = Math.max(0, nEspacios - 1);
         const sepPxLocal = (luzTramoY * scale) / nEspacios;
         
         for (let k = 1; k <= numCorreas; k++) {
           const y = yStart + k * sepPxLocal;
-          correasElements.push(
-            <line key={`cx-${j}-${k}`}
-              x1={cx[0]} y1={y}
-              x2={cx[nTramosX]} y2={y}
-              stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
-            />
-          );
+          for (let c = 0; c < nTramosX; c++) {
+            if (!isCellVacio(r, c)) {
+              correasElements.push(
+                <line key={`cx-${r}-${c}-${k}`} x1={cx[c]} y1={y} x2={cx[c+1]} y2={y} stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8" />
+              );
+            }
+          }
         }
       }
 
       // 2. DIBUJAR VIGAS PRINCIPALES Y SECUNDARIAS
       // Vigas Principales en Y (verticales)
       for (let c = 0; c <= nTramosX; c++) {
-        vigasElements.push(
-          <line key={`vpx-main-${c}`}
-            x1={cx[c]} y1={cy[0]}
-            x2={cx[c]} y2={cy[nTramosY]}
-            stroke="#2c3e50" strokeWidth="6" opacity="0.95"
-          />
-        );
+        for (let r = 0; r < nTramosY; r++) {
+          if (!isCellVacio(r, c - 1) || !isCellVacio(r, c)) {
+            vigasElements.push(
+              <line key={`vpy-main-${r}-${c}`} x1={cx[c]} y1={cy[r]} x2={cx[c]} y2={cy[r+1]} stroke="#2c3e50" strokeWidth="6" opacity="0.95" />
+            );
+          }
+        }
       }
       // Vigas Secundarias en X (horizontales)
       for (let r = 0; r <= nTramosY; r++) {
-        vigasElements.push(
-          <line key={`vpx-sec-${r}`}
-            x1={cx[0]} y1={cy[r]}
-            x2={cx[nTramosX]} y2={cy[r]}
-            stroke="#7f8c8d" strokeWidth="4" opacity="0.85"
-          />
-        );
+        for (let c = 0; c < nTramosX; c++) {
+          if (!isCellVacio(r - 1, c) || !isCellVacio(r, c)) {
+            vigasElements.push(
+              <line key={`vpx-sec-${r}-${c}`} x1={cx[c]} y1={cy[r]} x2={cx[c+1]} y2={cy[r]} stroke="#7f8c8d" strokeWidth="4" opacity="0.85" />
+            );
+          }
+        }
       }
     } else {
       // 1. DIBUJAR CORREAS VERTICALES
-      for (let i = 0; i < nTramosX; i++) {
-        const xStart = cx[i];
-        const luzTramoX = arrX[i];
+      for (let c = 0; c < nTramosX; c++) {
+        const xStart = cx[c];
+        const luzTramoX = arrX[c];
         const nEspacios = Math.ceil(luzTramoX / (calc.steelDeckData?.sepCorreas || steelDeckConfig?.sepCorreas || 1.5));
         const numCorreas = Math.max(0, nEspacios - 1);
         const sepPxLocal = (luzTramoX * scale) / nEspacios;
+        
         for (let k = 1; k <= numCorreas; k++) {
           const x = xStart + k * sepPxLocal;
-          correasElements.push(
-            <line key={`cy-${i}-${k}`}
-              x1={x} y1={cy[0]}
-              x2={x} y2={cy[nTramosY]}
-              stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
-            />
-          );
+          for (let r = 0; r < nTramosY; r++) {
+            if (!isCellVacio(r, c)) {
+              correasElements.push(
+                <line key={`cy-${r}-${c}-${k}`} x1={x} y1={cy[r]} x2={x} y2={cy[r+1]} stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8" />
+              );
+            }
+          }
         }
       }
 
       // 2. DIBUJAR VIGAS PRINCIPALES Y SECUNDARIAS
       // Vigas Principales en X (horizontales)
       for (let r = 0; r <= nTramosY; r++) {
-        vigasElements.push(
-          <line key={`vpy-main-${r}`}
-            x1={cx[0]} y1={cy[r]}
-            x2={cx[nTramosX]} y2={cy[r]}
-            stroke="#2c3e50" strokeWidth="6" opacity="0.95"
-          />
-        );
+        for (let c = 0; c < nTramosX; c++) {
+          if (!isCellVacio(r - 1, c) || !isCellVacio(r, c)) {
+            vigasElements.push(
+              <line key={`vpx-main-${r}-${c}`} x1={cx[c]} y1={cy[r]} x2={cx[c+1]} y2={cy[r]} stroke="#2c3e50" strokeWidth="6" opacity="0.95" />
+            );
+          }
+        }
       }
       // Vigas Secundarias en Y (verticales)
       for (let c = 0; c <= nTramosX; c++) {
-        vigasElements.push(
-          <line key={`vpy-sec-${c}`}
-            x1={cx[c]} y1={cy[0]}
-            x2={cx[c]} y2={cy[nTramosY]}
-            stroke="#7f8c8d" strokeWidth="4" opacity="0.85"
-          />
-        );
+        for (let r = 0; r < nTramosY; r++) {
+          if (!isCellVacio(r, c - 1) || !isCellVacio(r, c)) {
+            vigasElements.push(
+              <line key={`vpy-sec-${r}-${c}`} x1={cx[c]} y1={cy[r]} x2={cx[c]} y2={cy[r+1]} stroke="#7f8c8d" strokeWidth="4" opacity="0.85" />
+            );
+          }
+        }
       }
     }
 
@@ -154,6 +158,9 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
       for (let j = 0; j < nTramosY; j++) {
         const cxC = cx[i] + (arrX[i] * scale) / 2;
         const cyC = cy[j] + (arrY[j] * scale) / 2;
+
+        const isVacio = grid.celdas?.some(c => c.r === j && c.c === i && c.tipo === 'vacio');
+        if (isVacio) continue;
 
         if (correasHorizontales) {
           studsElements.push(
@@ -189,7 +196,7 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
   const aberturasElements = [];
   allAberturas.forEach(ab => {
     const vx = ox + ab.x * scale;
-    const vy = oy + ab.y * scale;
+    const vy = (oy + totalH * scale) - (ab.y + ab.h) * scale;
     const vw = ab.w * scale;
     const vh = ab.h * scale;
 
@@ -497,31 +504,29 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
 
         {/* Leyenda */}
         <g transform={`translate(${svgW - 180}, ${mT})`}>
-          <rect x="0" y="0" width="170" height={losaActiva === 'colaborante' ? 130 : 110} fill="white" stroke="#ddd" strokeWidth="1" rx="6" opacity="0.95" />
+          <rect x="0" y="0" width="170" height={losaActiva === 'colaborante' ? 90 : 50} fill="white" stroke="#ddd" strokeWidth="1" rx="6" opacity="0.95" />
+          
           <circle cx="15" cy="18" r="6" fill="#2c3e50" />
           <text x="28" y="22" fill="#333" fontSize="11">Columna / Apoyo</text>
-          <line x1="10" y1="38" x2="30" y2="38" stroke="#0d6efd" strokeWidth="2" />
-          <text x="38" y="42" fill="#333" fontSize="11">M(+) Tramo</text>
-          <line x1="10" y1="55" x2="30" y2="55" stroke="#e74c3c" strokeWidth="2" />
-          <text x="38" y="59" fill="#333" fontSize="11">M(-) Apoyo</text>
+
           {losaActiva === 'colaborante' && (
             <>
-              <line x1="10" y1="72" x2="30" y2="72" stroke="#2c3e50" strokeWidth="4" />
-              <text x="38" y="76" fill="#333" fontSize="11">Viga Principal</text>
-              <line x1="10" y1="86" x2="30" y2="86" stroke="#7f8c8d" strokeWidth="3" />
-              <text x="38" y="90" fill="#333" fontSize="11">Viga Secundaria</text>
-              <line x1="10" y1="100" x2="30" y2="100" stroke="#8e44ad" strokeWidth="2" strokeDasharray="4,2" />
-              <text x="38" y="104" fill="#333" fontSize="11">Correa (Joist)</text>
-              <line x1="10" y1="115" x2="30" y2="115" stroke="#3498db" strokeWidth="2" />
-              <polyline points="12,112 10,115 12,118" stroke="#3498db" strokeWidth="2" fill="none" />
-              <polyline points="28,112 30,115 28,118" stroke="#3498db" strokeWidth="2" fill="none" />
-              <text x="38" y="119" fill="#333" fontSize="11">Dir. Armado</text>
+              <line x1="10" y1="38" x2="30" y2="38" stroke="#2c3e50" strokeWidth="4" />
+              <text x="38" y="42" fill="#333" fontSize="11">Viga Principal</text>
+              
+              <line x1="10" y1="56" x2="30" y2="56" stroke="#8e44ad" strokeWidth="2" strokeDasharray="4,2" />
+              <text x="38" y="60" fill="#333" fontSize="11">Correa (Joist)</text>
+              
+              <line x1="10" y1="74" x2="30" y2="74" stroke="#3498db" strokeWidth="2" />
+              <polyline points="12,71 10,74 12,77" stroke="#3498db" strokeWidth="2" fill="none" />
+              <polyline points="28,71 30,74 28,77" stroke="#3498db" strokeWidth="2" fill="none" />
+              <text x="38" y="78" fill="#333" fontSize="11">Dir. Armado</text>
             </>
           )}
           {losaActiva === 'aligerada' && (
             <>
-              <line x1="10" y1="72" x2="30" y2="72" stroke="#d35400" strokeWidth="2" />
-              <text x="38" y="76" fill="#333" fontSize="11">Nervio + Armado</text>
+              <line x1="10" y1="38" x2="30" y2="38" stroke="#d35400" strokeWidth="2" />
+              <text x="38" y="42" fill="#333" fontSize="11">Nervio + Armado</text>
             </>
           )}
         </g>

@@ -496,6 +496,17 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
       optimo: optCorreaBorde.optimo.perfil,
       cumpleGlobal: optCorreaBorde.optimo.cumple,
     },
+    impactoAberturas: {
+      descripcion: 'Impacto de Aberturas y Celdas Vacías (Descuentos y Adiciones)',
+      areaVaciaRestada: areaHuecos.toFixed(2) + ' m²',
+      areaEscalerasRestada: areaEscaleras.toFixed(2) + ' m²',
+      concretoRestadoEstimado: ((areaHuecos + areaEscaleras) * ((espesorConcreto_efectivo / 100) + (wr_deck / Sr_deck) * (hr / 100))).toFixed(2) + ' m³',
+      deckRestado: (areaHuecos + areaEscaleras).toFixed(2) + ' m²',
+      longitudVigasBordeAgregada: longitudVigasBorde.toFixed(2) + ' ml',
+      pesoVigasBordeAgregado: (longitudVigasBorde * (getProp(tipoCorrea, 'peso') || 15)).toFixed(1) + ' kg',
+      studsRestadosEstimados: Math.round((areaHuecos + areaEscaleras) * (totalStuds / Math.max(0.1, areaTotal))),
+      longitudCorreasRestadas: ((areaHuecos + areaEscaleras) * (totalLengthCorreas / Math.max(0.1, areaTotal))).toFixed(2) + ' ml'
+    }
   };
 
   const cumpleEspesor = espesorConcreto >= espesorMinimoACI;
