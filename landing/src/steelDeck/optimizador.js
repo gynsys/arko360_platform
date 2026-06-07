@@ -12,10 +12,19 @@ export function optimizarPerfil(listaPerfiles, Mu, Vu, Lb, wServ_kgcm, deflLim_c
 
     let defl_comp_opt = null;
     if (compData) {
-      const { b_eff, espesorConcreto, f_c_val, Ec } = compData;
+      const { b_eff, espesorConcreto, f_c_val, Ec, phiQn, s_min, Lb: Lb_cm } = compData;
       const P_acero = getProp(perfil, 'A') * getProp(perfil, 'Fy');
       const P_conc = 0.85 * f_c_val * b_eff * espesorConcreto;
-      const P_studs = Math.min(P_acero, P_conc); // Full composite action assumed for optimization
+      
+      let P_studs = Math.min(P_acero, P_conc); // Default to full if no constraints
+      if (phiQn && s_min && Lb_cm) {
+        // Limit P_studs by the physical maximum number of studs that fit
+        const N_max = Math.floor(Lb_cm / s_min);
+        // We assume 1 row, so total studs = N_max
+        const max_capacity = N_max * phiQn;
+        P_studs = Math.min(P_studs, max_capacity);
+      }
+      
       const capComp = calcularMomentoCompuesto(perfil, b_eff, espesorConcreto, f_c_val, Ec, 1.0, P_studs);
       if (capComp && capComp.phiMn_comp > phiMn) {
         phiMn = capComp.phiMn_comp;
@@ -61,8 +70,22 @@ export function optimizarPerfil(listaPerfiles, Mu, Vu, Lb, wServ_kgcm, deflLim_c
   }
 
   candidatos.sort((a, b) => {
+    // 1. Both fulfill everything? Sort by cost
+    if (a.cumple && b.cumple) return a.costo - b.costo;
+    
+    // 2. One fulfills everything, the other doesn't? Prioritize the one that fulfills
     if (a.cumple && !b.cumple) return -1;
     if (!a.cumple && b.cumple) return 1;
+
+    // 3. Neither fulfills everything. Prioritize the one that passes Stud check
+    if (a.cumpleStud && !b.cumpleStud) return -1;
+    if (!a.cumpleStud && b.cumpleStud) return 1;
+
+    // 4. Prioritize the one that passes Flexure
+    if (a.cumpleFlex && !b.cumpleFlex) return -1;
+    if (!a.cumpleFlex && b.cumpleFlex) return 1;
+
+    // 5. If they fail the same things, return the cheapest
     return a.costo - b.costo;
   });
 

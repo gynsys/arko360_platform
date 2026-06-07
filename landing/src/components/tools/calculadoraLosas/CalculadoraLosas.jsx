@@ -139,7 +139,7 @@ const CalculadoraLosas = () => {
           geometria: "m",
           cargas: "kg/m²",
           fuerzas: "kN",
-          momentos: "kN.m",
+          momentos: "kg.m/m",
           esfuerzos: "MPa y kg/cm²",
           acero: "mm²",
           deflexion: "mm"

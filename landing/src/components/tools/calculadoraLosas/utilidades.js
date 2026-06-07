@@ -10,8 +10,16 @@ export const AREAS_BARRA = {
 
 export const SEPARACIONES_COMERCIALES = [10, 12.5, 15, 17.5, 20, 22.5, 25, 30];
 
-export function redondearSep(s) {
-  return SEPARACIONES_COMERCIALES.reduce((prev, curr) => Math.abs(curr - s) < Math.abs(prev - s) ? curr : prev, 15);
+export function redondearSep(s_teorico) {
+  let sep = SEPARACIONES_COMERCIALES[0];
+  for (let s of SEPARACIONES_COMERCIALES) {
+    if (s <= s_teorico) {
+      sep = s;
+    } else {
+      break;
+    }
+  }
+  return sep;
 }
 
 export function calcBarraYSep(AsReq, areaBarra) {

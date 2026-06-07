@@ -12,7 +12,8 @@ export const verificarFlexion = (mMomentoKNm, bMM, dMM, fcMPa, fyMPa) => {
   if (!mMomentoKNm || !bMM || !dMM || !fcMPa || !fyMPa) {
     return { As_req: 0, As_min: 0, rho: 0, et: 0, ety: 0, tensionControlada: false };
   }
-  return calcFlexion(mMomentoKNm, bMM, dMM, fcMPa, fyMPa);
+  const res = calcFlexion(mMomentoKNm, bMM, dMM, fcMPa, fyMPa);
+  return { ...res, et: res.εt, ety: res.εty };
 };
 
 export const verificarCortante = (wu, luzMayorM, fcKgCm2, bMM, dMM) => {

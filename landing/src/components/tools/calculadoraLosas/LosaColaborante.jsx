@@ -242,6 +242,54 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
     setTimeout(() => { w.print(); }, 500);
   };
 
+  const handleGuardarCalculo = () => {
+    const formulasAuditoria = {
+      pesoPropio: "Peso Concreto + Peso Deck + Peso Vigas/Correas_distribuido + 15 kg/m² extra [kg/m²]",
+      wu: "1.2 * (pesoPropio + cmExtra) + 1.6 * cv [kg/m²]",
+      wServicio: "pesoPropio + cmExtra + cv [kg/m²]",
+      Mu_Viga: "wu * ancho_tributario * L^2 / 8 [kN.m] (Asumiendo apoyos simples)",
+      Vu_Viga: "wu * ancho_tributario * L / 2 [kN]",
+      Deflexion_Viga: "5 * wServicio * ancho_tributario * L^4 / (384 * E * I) [mm]",
+      Capacidad_Momento_Viga: "phi * Zx * Fy [kN.m] (AISC 360-16 LRFD)",
+      Capacidad_Cortante_Viga: "phi * 0.6 * Fy * Aw [kN] (AISC 360-16 LRFD)",
+      Fuerza_Horizontal_V_h: "min(0.85 * f'c * Ac, As_viga * Fy) [kN] (AISC 360-16 I3.2b)",
+      Capacidad_Stud_Qn: "0.5 * Asc * sqrt(f'c * Ec) <= Rg * Rp * Asc * Fu [kN] (AISC 360-16 I8.2a)",
+      Numero_Studs_Requeridos: "2 * V_h / Qn"
+    };
+
+    const payload = {
+      tipoLosa: "colaborante",
+      fecha: new Date().toISOString(),
+      grid,
+      datos,
+      steelDeckConfig,
+      costos,
+      auditoriaMetodologia: {
+        norma: "AISC 360-16 LRFD / ACI 318-19",
+        unidades: {
+          geometria: "m",
+          cargas: "kg/m²",
+          fuerzas: "kN",
+          momentos: "kN.m",
+          esfuerzos: "MPa y kg/cm²",
+          deflexion: "mm"
+        },
+        formulas: formulasAuditoria
+      },
+      resultados
+    };
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `auditoria_losa_colaborante_${new Date().getTime()}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    
+    alert("Cálculo exportado exitosamente en modo auditoría.");
+  };
+
   return (
     <div style={styles.container}>
       <div style={{...styles.header, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
@@ -249,12 +297,20 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
           <h2 style={styles.title}>Losa Colaborante Steel Deck</h2>
           <p style={styles.subtitle}>Pre-dimensionamiento normativo ACI 318-19 · AISC 360-16 LRFD · Optimización</p>
         </div>
-        <button 
-          onClick={exportarPDF}
-          style={{ padding: '10px 20px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 2px 4px rgba(37,99,235,0.2)' }}
-        >
-          📄 Exportar Memoria
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }} className="no-print">
+          <button 
+            onClick={handleGuardarCalculo}
+            style={{ padding: '10px 20px', backgroundColor: '#e67e22', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 2px 4px rgba(230,126,34,0.2)' }}
+          >
+            💾 Guardar Auditoría (JSON)
+          </button>
+          <button 
+            onClick={exportarPDF}
+            style={{ padding: '10px 20px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 2px 4px rgba(37,99,235,0.2)' }}
+          >
+            📄 Exportar Memoria
+          </button>
+        </div>
       </div>
 
       <div style={styles.mainLayout}>
@@ -597,7 +653,6 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
                   </div>
 
                   {verifRow('Cortante losa', resultados.verificaciones.losaConcreto.cortante.demanda, resultados.verificaciones.losaConcreto.cortante.capacidad, resultados.verificaciones.losaConcreto.cortante.cumple, resultados.verificaciones.losaConcreto.cortante.ratio)}
-                  {verifRow('Punzonamiento', resultados.verificaciones.losaConcreto.punzonamiento.demanda, resultados.verificaciones.losaConcreto.punzonamiento.capacidad, resultados.verificaciones.losaConcreto.punzonamiento.cumple, resultados.verificaciones.losaConcreto.punzonamiento.ratio)}
                   {verifRow('Deflexión total', resultados.verificaciones.losaConcreto.deflexion.demanda, resultados.verificaciones.losaConcreto.deflexion.limite, resultados.verificaciones.losaConcreto.deflexion.cumple, resultados.verificaciones.losaConcreto.deflexion.ratio)}
                   {verifRow('Deflexión viva', resultados.verificaciones.losaConcreto.deflexionViva.demanda, resultados.verificaciones.losaConcreto.deflexionViva.limite, resultados.verificaciones.losaConcreto.deflexionViva.cumple, resultados.verificaciones.losaConcreto.deflexionViva.ratio)}
 

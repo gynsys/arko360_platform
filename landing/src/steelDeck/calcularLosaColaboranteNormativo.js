@@ -276,17 +276,12 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
 
   // 9. CORTANTE CONCRETO
   const bw = 100;
-  const d_eff = h_cm - 2.5;
+  const d_eff = espesorConcreto_efectivo - 2.5; // Solo concreto sobre la cresta del deck
   const resVc = calcularVcLosa(f_c_val, bw, d_eff);
   const phiVc = resVc.phiVc;
   const Vu_losa = wuLosa * luzLosa / 2;
   const Vu_losa_cm = Vu_losa / 100;
   const cumpleVcLosa = Vu_losa_cm <= phiVc;
-  const b0_punz = 4 * (getProp(tipoVigaPrincipal, 'bf') + d_eff);
-  const resVcPunz = calcularVcPunzonamiento(f_c_val, d_eff, b0_punz);
-  const phiVcPunz = resVcPunz.phiVc;
-  const Vu_punz = wuLosa * luzLosa * luzLosa;
-  const cumpleVcPunz = Vu_punz <= phiVcPunz;
 
   // 10. ACERO MÍNIMO - Solo sobre la cresta del deck (el deck mismo es la armadura de tracción)
   const As_min = calcularAsMinLosa(espesorConcreto_efectivo, 100, fy_rebar_val);
@@ -308,10 +303,10 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const costoVigaKg = costos.vigaPrincipalKg || 2.5;
   const costoCorreaKg = costos.correaKg || 2.0;
 
-  const compDataVP = { b_eff: b_eff_vp, espesorConcreto: espesorConcreto_efectivo, f_c_val, Ec };
+  const compDataVP = { b_eff: b_eff_vp, espesorConcreto: espesorConcreto_efectivo, f_c_val, Ec, phiQn: phiQn_vp, s_min, Lb: luzVigaPrincipal_cm };
   const optViga = optimizarPerfil(PERFILES_I_H_TUBO, Mu_vp, Vu_vp, luzVigaPrincipal_cm, wServ_vp, deflLim_vp, costoVigaKg, 'viga', compDataVP, d_stud_cm);
 
-  const compDataCorrea = { b_eff: b_eff_correa, espesorConcreto: espesorConcreto_efectivo, f_c_val, Ec };
+  const compDataCorrea = { b_eff: b_eff_correa, espesorConcreto: espesorConcreto_efectivo, f_c_val, Ec, phiQn: phiQn_correa, s_min, Lb: luzCorrea_cm };
   const optCorrea = optimizarPerfil(PERFILES_I_H_TUBO, Mu_correa, Vu_correa, luzCorrea_cm, wServ_correa, deflLim_correa, costoCorreaKg, 'correa', compDataCorrea, d_stud_cm);
 
   const wuCorreaBorde = wu * sepReal / 2;
@@ -437,12 +432,11 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
       momentoNegExt: { demanda: mNegExtLosa.toFixed(2) + ' kg·m/m', coef: '1/10' },
       momentoNegInt: { demanda: mNegIntLosa.toFixed(2) + ' kg·m/m', coef: '1/10' },
       cortante: { demanda: Vu_losa_cm.toFixed(2) + ' kg/cm', capacidad: phiVc.toFixed(2) + ' kg/cm', cumple: cumpleVcLosa, ratio: (Vu_losa_cm / phiVc).toFixed(2) },
-      punzonamiento: { demanda: Vu_punz.toFixed(0) + ' kg', capacidad: phiVcPunz.toFixed(0) + ' kg', cumple: cumpleVcPunz, ratio: (Vu_punz / phiVcPunz).toFixed(2) },
       asMinimo: { requerido: As_min.toFixed(3) + ' cm²/m', provisto: As_prov.toFixed(3) + ' cm²/m', cumple: cumpleAsMin },
-      deflexion: { demanda: (deflLosa * 100).toFixed(2) + ' cm', limite: (deflLimLosa * 100).toFixed(2) + ' cm', cumple: cumpleDeflLosa, ratio: (deflLosa / deflLimLosa).toFixed(2) },
-      deflexionViva: { demanda: (deflLosaViva * 100).toFixed(2) + ' cm', limite: (deflLimLosaViva * 100).toFixed(2) + ' cm', cumple: cumpleDeflLosaViva, ratio: (deflLosaViva / deflLimLosaViva).toFixed(2) },
+      deflexion: { demanda: (deflLosa * 100).toFixed(3) + ' cm', limite: (deflLimLosa * 100).toFixed(3) + ' cm', cumple: cumpleDeflLosa, ratio: (deflLosa / deflLimLosa).toFixed(2) },
+      deflexionViva: { demanda: (deflLosaViva * 100).toFixed(3) + ' cm', limite: (deflLimLosaViva * 100).toFixed(3) + ' cm', cumple: cumpleDeflLosaViva, ratio: (deflLosaViva / deflLimLosaViva).toFixed(2) },
       vibracion: { frecuencia: f_natural.toFixed(2) + ' Hz', limite: '3.0 Hz', cumple: cumpleVibracion },
-      cumpleGlobal: cumpleVcLosa && cumpleVcPunz && cumpleAsMin && cumpleDeflLosa && cumpleDeflLosaViva && cumpleVibracion,
+      cumpleGlobal: cumpleVcLosa && cumpleAsMin && cumpleDeflLosa && cumpleDeflLosaViva && cumpleVibracion,
     },
     correaBorde: {
       descripcion: `Correa de Borde (AISC 360) - Mitad de carga tributaria`,

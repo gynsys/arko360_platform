@@ -45,11 +45,11 @@ CATALOGO_PERFILES.IPE.forEach(p => {
     Fy: 2500, // A36/S275
     Fu: 4000,
     A: p.area,
-    Sx_est: p.Ix / (dims.d / 2),
-    ry_est: 0.22 * dims.bf,
-    J_est: 2 * p.Ix * 0.05,
-    Cw_est: 0,
-    rts_est: 0.25 * dims.bf,
+    Sx: p.Ix / (dims.d / 2),
+    ry: 0.22 * dims.bf,
+    J: 2 * p.Ix * 0.05,
+    Cw: 1, // avoid division by 0
+    rts: 0.25 * dims.bf,
     tipo: 'IPE'
   };
 });
@@ -86,11 +86,11 @@ CATALOGO_PERFILES.HEA.forEach(p => {
     Fy: 2500,
     Fu: 4000,
     A: p.area,
-    Sx_est: p.Ix / (dims.d / 2),
-    ry_est: 0.25 * dims.bf,
-    J_est: 2 * p.Ix * 0.05,
-    Cw_est: 0,
-    rts_est: 0.28 * dims.bf,
+    Sx: p.Ix / (dims.d / 2),
+    ry: 0.25 * dims.bf,
+    J: 2 * p.Ix * 0.05,
+    Cw: 1, // avoid division by 0
+    rts: 0.28 * dims.bf,
     tipo: 'HEA'
   };
 });
@@ -125,11 +125,11 @@ CATALOGO_PERFILES.IPN.forEach(p => {
     Fy: 2500,
     Fu: 4000,
     A: p.area,
-    Sx_est: p.Ix / (dims.d / 2),
-    ry_est: 0.20 * dims.bf,
-    J_est: 2 * p.Ix * 0.05,
-    Cw_est: 0,
-    rts_est: 0.22 * dims.bf,
+    Sx: p.Ix / (dims.d / 2),
+    ry: 0.20 * dims.bf,
+    J: 2 * p.Ix * 0.05,
+    Cw: 1, // avoid division by 0
+    rts: 0.22 * dims.bf,
     tipo: 'IPN'
   };
 });
@@ -153,11 +153,11 @@ Object.keys(TUBO_RECT).forEach(key => {
     tipo: 'TUBO',
     ...t,
     A: t.area,
-    Sx_est: t.Ix / (t.d / 2),
-    ry_est: Math.sqrt(t.Iy / t.area),
-    J_est: 2 * t.Ix,
-    Cw_est: 0,
-    rts_est: 0
+    Sx: t.Ix / (t.d / 2),
+    ry: Math.sqrt(t.Iy / t.area),
+    J: 2 * t.Ix,
+    Cw: 1, // avoid division by 0
+    rts: Math.sqrt(t.Iy / t.area) * 0.95
   };
 });
 

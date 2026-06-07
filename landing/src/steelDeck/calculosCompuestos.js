@@ -35,31 +35,34 @@ export function calcularMomentoCompuesto(perfil, b_eff_cm, h_conc_cm, f_c, Ec, A
   const P_studs = Qn_total;
 
   let PNA_tipo, a, Y2, Mn_comp, phiMn_comp;
+  const P_max = Math.min(P_conc, P_acero);
 
-  if (P_studs >= P_conc && P_conc >= P_acero) {
-    PNA_tipo = 'En losa (acero totalmente en tracción)';
-    a = P_acero / (0.85 * f_c * b_eff_cm);
-    Y2 = h_conc_cm - a / 2;
-    Mn_comp = P_acero * (Y2 + d / 2);
-  } else if (P_studs >= P_conc && P_conc < P_acero) {
-    PNA_tipo = 'En el alma del acero';
-    const P_tension = (P_acero - P_conc) / 2;
-    const y_pna = P_tension / (tw * Fy);
-    Mn_comp = P_conc * (d / 2 + h_conc_cm - y_pna / 2) + P_tension * (d / 2 - y_pna / 2) * 2;
+  if (P_studs >= P_max) {
+    if (P_conc >= P_acero) {
+      PNA_tipo = 'En losa (completamente compuesta)';
+      a = P_acero / (0.85 * f_c * b_eff_cm);
+      Y2 = h_conc_cm - a / 2;
+      Mn_comp = P_acero * (Y2 + d / 2);
+    } else {
+      PNA_tipo = 'En perfil de acero (completamente compuesta)';
+      const P_tension = (P_acero - P_conc) / 2;
+      const y_pna = P_tension / (tw * Fy);
+      Mn_comp = P_conc * (d / 2 + h_conc_cm - y_pna / 2) + P_tension * (d / 2 - y_pna / 2) * 2;
+    }
   } else {
     PNA_tipo = 'Limitado por conectores (parcialmente compuesta)';
     const P_comp = P_studs;
     a = P_comp / (0.85 * f_c * b_eff_cm);
     Y2 = h_conc_cm - a / 2;
-    const P_tension = (P_acero - P_studs) / 2;
+    const P_tension = (P_acero - P_comp) / 2;
     const y_pna = P_tension / (tw * Fy);
-    Mn_comp = P_studs * (d / 2 + Y2 - y_pna / 2) + P_tension * (d / 2 - y_pna / 2) * 2;
+    Mn_comp = P_comp * (d / 2 + Y2 - y_pna / 2) + P_tension * (d / 2 - y_pna / 2) * 2;
   }
 
   phiMn_comp = PHI_B * Mn_comp;
   return {
     P_acero, P_conc, P_studs, PNA_tipo, a, Y2,
     Mn_comp, phiMn_comp,
-    completa: P_studs >= Math.min(P_acero, P_conc)
+    completa: P_studs >= P_max
   };
 }

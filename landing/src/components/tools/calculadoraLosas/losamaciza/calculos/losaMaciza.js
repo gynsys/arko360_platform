@@ -83,13 +83,17 @@ export const calcularLosaMaciza = (grid, datos, macizaConfig, costos) => {
   };
   const asProvX = armX.pos.sep > 0 ? (100 / armX.pos.sep) * getAreaMM2(macizaConfig?.diametroPosX) : 0;
   const asProvY = armY.pos.sep > 0 ? (100 / armY.pos.sep) * getAreaMM2(macizaConfig?.diametroPosY) : 0;
-  const asProvGov = Math.max(asProvX, asProvY);
+  
+  const ratioFlexionX = asProvX > 0 ? N(flexX.As_req) / asProvX : 0;
+  const ratioFlexionY = geo.esDosDirecciones && asProvY > 0 ? N(flexY.As_req) / asProvY : 0;
+  const ratioFlexion = geo.esDosDirecciones ? Math.max(ratioFlexionX, ratioFlexionY) : ratioFlexionX;
 
   const ratioCortante = N(cortante.φVc) > 0 ? N(cortante.vuMax) / N(cortante.φVc) : 0;
   const ratioEspesor = toMM(h) > 0 ? toMM(hMin) / toMM(h) : 0;
-  const ratioFlexion = asProvGov > 0 ? N(flexGov.As_req) / asProvGov : 0;
   
-  const cumpleAcero = asProvGov >= N(flexGov.As_min);
+  const cumpleAceroX = asProvX >= N(flexX.As_req) && asProvX >= N(flexX.As_min);
+  const cumpleAceroY = !geo.esDosDirecciones || (asProvY >= N(flexY.As_req) && asProvY >= N(flexY.As_min));
+  const cumpleAcero = cumpleAceroX && cumpleAceroY;
   const cumpleSeparacion = armX.pos.sep * 10 <= sMax && armY.pos.sep * 10 <= sMax; // sep is in cm
   const ratioSeparacion = armX.pos.sep > 0 ? (armX.pos.sep * 10) / sMax : 0;
 
