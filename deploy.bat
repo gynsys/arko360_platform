@@ -17,7 +17,7 @@ git push
 
 echo.
 echo [3/3] Actualizando y reconstruyendo contenedores en DigitalOcean...
-python ssh_runner.py "cd /var/www/arko360_platform && docker compose pull && docker compose up -d --build"
+python ssh_runner.py "cd /var/www/arko360_platform && git pull origin main && docker compose pull && docker compose up -d --build"
 
 echo.
 echo ==========================================
