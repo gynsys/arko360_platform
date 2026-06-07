@@ -1,10 +1,16 @@
 import React from 'react';
 
 // ==================== SVG RETÍCULA ====================
-export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaConfig) => {
-  const { filas, cols, luzX, luzY } = grid;
-  const nTramosX = Math.max(cols - 1, 1);
-  const nTramosY = Math.max(filas - 1, 1);
+export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaConfig, onCeldasToggle) => {
+  const { filas, cols, luzX: defaultLuzX, luzY: defaultLuzY } = grid;
+  const nTramosX = Math.max(Math.floor(cols) - 1, 1);
+  const nTramosY = Math.max(Math.floor(filas) - 1, 1);
+  
+  const arrX = grid.lucesX || Array(nTramosX).fill(defaultLuzX || 4.5);
+  const arrY = grid.lucesY || Array(nTramosY).fill(defaultLuzY || 4.0);
+
+  const totalW = arrX.slice(0, nTramosX).reduce((a, b) => a + b, 0);
+  const totalH = arrY.slice(0, nTramosY).reduce((a, b) => a + b, 0);
 
   const svgW = 720;
   const svgH = 520;
@@ -13,21 +19,21 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
   const mT = 50;
   const mB = 60;
 
-  const totalW = nTramosX * luzX;
-  const totalH = nTramosY * luzY;
   const scale = Math.min((svgW - mL - mR) / totalW, (svgH - mT - mB) / totalH);
 
   const ox = mL + (svgW - mL - mR - totalW * scale) / 2;
   const oy = mT + (svgH - mT - mB - totalH * scale) / 2;
 
+  // Compute accumulated X and Y coordinates for lines
+  const cx = [ox];
+  for(let i=0; i<nTramosX; i++) cx.push(cx[i] + arrX[i]*scale);
+  const cy = [oy];
+  for(let i=0; i<nTramosY; i++) cy.push(cy[i] + arrY[i]*scale);
+
   const apoyos = [];
-  for (let r = 0; r < filas; r++) {
-    for (let c = 0; c < cols; c++) {
-      apoyos.push({
-        x: ox + c * luzX * scale,
-        y: oy + r * luzY * scale,
-        id: `${r}-${c}`,
-      });
+  for (let r = 0; r <= nTramosY; r++) {
+    for (let c = 0; c <= nTramosX; c++) {
+      apoyos.push({ x: cx[c], y: cy[r], id: `${r}-${c}` });
     }
   }
 
@@ -40,20 +46,23 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
     const sepReal = calc.steelDeckData?.sepReal || steelDeckConfig?.sepCorreas || 1.5;
     const sepPx = sepReal * scale;
 
-    const correasHorizontales = luzX < luzY;
+    const correasHorizontales = (totalW / nTramosX) < (totalH / nTramosY);
 
     if (correasHorizontales) {
       // 1. DIBUJAR CORREAS HORIZONTALES (una sola vez, sin bucles redundantes)
       for (let j = 0; j < nTramosY; j++) {
-        const yStart = oy + j * luzY * scale;
-        const nEspacios = Math.ceil(luzY / (calc.steelDeckData?.sepCorreas || steelDeckConfig?.sepCorreas || 1.5));
+        const yStart = cy[j];
+        const luzTramoY = arrY[j];
+        const nEspacios = Math.ceil(luzTramoY / (calc.steelDeckData?.sepCorreas || steelDeckConfig?.sepCorreas || 1.5));
         const numCorreas = Math.max(0, nEspacios - 1);
+        const sepPxLocal = (luzTramoY * scale) / nEspacios;
+        
         for (let k = 1; k <= numCorreas; k++) {
-          const y = yStart + k * sepPx;
+          const y = yStart + k * sepPxLocal;
           correasElements.push(
             <line key={`cx-${j}-${k}`}
-              x1={ox} y1={y}
-              x2={ox + nTramosX * luzX * scale} y2={y}
+              x1={cx[0]} y1={y}
+              x2={cx[nTramosX]} y2={y}
               stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
             />
           );
@@ -62,21 +71,21 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
 
       // 2. DIBUJAR VIGAS PRINCIPALES Y SECUNDARIAS
       // Vigas Principales en Y (verticales)
-      for (let c = 0; c < cols; c++) {
+      for (let c = 0; c <= nTramosX; c++) {
         vigasElements.push(
           <line key={`vpx-main-${c}`}
-            x1={ox + c * luzX * scale} y1={oy}
-            x2={ox + c * luzX * scale} y2={oy + nTramosY * luzY * scale}
+            x1={cx[c]} y1={cy[0]}
+            x2={cx[c]} y2={cy[nTramosY]}
             stroke="#2c3e50" strokeWidth="6" opacity="0.95"
           />
         );
       }
       // Vigas Secundarias en X (horizontales)
-      for (let r = 0; r < filas; r++) {
+      for (let r = 0; r <= nTramosY; r++) {
         vigasElements.push(
           <line key={`vpx-sec-${r}`}
-            x1={ox} y1={oy + r * luzY * scale}
-            x2={ox + nTramosX * luzX * scale} y2={oy + r * luzY * scale}
+            x1={cx[0]} y1={cy[r]}
+            x2={cx[nTramosX]} y2={cy[r]}
             stroke="#7f8c8d" strokeWidth="4" opacity="0.85"
           />
         );
@@ -84,15 +93,17 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
     } else {
       // 1. DIBUJAR CORREAS VERTICALES
       for (let i = 0; i < nTramosX; i++) {
-        const xStart = ox + i * luzX * scale;
-        const nEspacios = Math.ceil(luzX / (calc.steelDeckData?.sepCorreas || steelDeckConfig?.sepCorreas || 1.5));
+        const xStart = cx[i];
+        const luzTramoX = arrX[i];
+        const nEspacios = Math.ceil(luzTramoX / (calc.steelDeckData?.sepCorreas || steelDeckConfig?.sepCorreas || 1.5));
         const numCorreas = Math.max(0, nEspacios - 1);
+        const sepPxLocal = (luzTramoX * scale) / nEspacios;
         for (let k = 1; k <= numCorreas; k++) {
-          const x = xStart + k * sepPx;
+          const x = xStart + k * sepPxLocal;
           correasElements.push(
             <line key={`cy-${i}-${k}`}
-              x1={x} y1={oy}
-              x2={x} y2={oy + nTramosY * luzY * scale}
+              x1={x} y1={cy[0]}
+              x2={x} y2={cy[nTramosY]}
               stroke="#8e44ad" strokeWidth="3" strokeDasharray="4,2" opacity="0.8"
             />
           );
@@ -101,21 +112,21 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
 
       // 2. DIBUJAR VIGAS PRINCIPALES Y SECUNDARIAS
       // Vigas Principales en X (horizontales)
-      for (let r = 0; r < filas; r++) {
+      for (let r = 0; r <= nTramosY; r++) {
         vigasElements.push(
           <line key={`vpy-main-${r}`}
-            x1={ox} y1={oy + r * luzY * scale}
-            x2={ox + nTramosX * luzX * scale} y2={oy + r * luzY * scale}
+            x1={cx[0]} y1={cy[r]}
+            x2={cx[nTramosX]} y2={cy[r]}
             stroke="#2c3e50" strokeWidth="6" opacity="0.95"
           />
         );
       }
       // Vigas Secundarias en Y (verticales)
-      for (let c = 0; c < cols; c++) {
+      for (let c = 0; c <= nTramosX; c++) {
         vigasElements.push(
           <line key={`vpy-sec-${c}`}
-            x1={ox + c * luzX * scale} y1={oy}
-            x2={ox + c * luzX * scale} y2={oy + nTramosY * luzY * scale}
+            x1={cx[c]} y1={cy[0]}
+            x2={cx[c]} y2={cy[nTramosY]}
             stroke="#7f8c8d" strokeWidth="4" opacity="0.85"
           />
         );
@@ -125,17 +136,17 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
     // 3. DIBUJAR FLECHAS DE SENTIDO DE ARMADO
     for (let i = 0; i < nTramosX; i++) {
       for (let j = 0; j < nTramosY; j++) {
-        const cx = ox + (i + 0.5) * luzX * scale;
-        const cy = oy + (j + 0.5) * luzY * scale;
+        const cxC = cx[i] + (arrX[i] * scale) / 2;
+        const cyC = cy[j] + (arrY[j] * scale) / 2;
 
         if (correasHorizontales) {
           studsElements.push(
             <g key={`arrow-${i}-${j}`} stroke="#3498db" strokeWidth="2.5" fill="none" opacity="0.85">
-              <line x1={cx} y1={cy - 22} x2={cx} y2={cy + 22} />
-              <polyline points={`${cx - 6},${cy - 16} ${cx},${cy - 22} ${cx + 6},${cy - 16}`} />
-              <polyline points={`${cx - 6},${cy + 16} ${cx},${cy + 22} ${cx + 6},${cy + 16}`} />
-              <circle cx={cx} cy={cy} r="3" fill="#3498db" />
-              <text x={cx} y={cy + 34} stroke="none" fill="#2980b9" fontSize="9" fontWeight="bold" textAnchor="middle">
+              <line x1={cxC} y1={cyC - 22} x2={cxC} y2={cyC + 22} />
+              <polyline points={`${cxC - 6},${cyC - 16} ${cxC},${cyC - 22} ${cxC + 6},${cyC - 16}`} />
+              <polyline points={`${cxC - 6},${cyC + 16} ${cxC},${cyC + 22} ${cxC + 6},${cyC + 16}`} />
+              <circle cx={cxC} cy={cyC} r="3" fill="#3498db" />
+              <text x={cxC} y={cyC + 34} stroke="none" fill="#2980b9" fontSize="9" fontWeight="bold" textAnchor="middle">
                 ARMADO LOSA
               </text>
             </g>
@@ -143,11 +154,11 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
         } else {
           studsElements.push(
             <g key={`arrow-${i}-${j}`} stroke="#3498db" strokeWidth="2.5" fill="none" opacity="0.85">
-              <line x1={cx - 22} y1={cy} x2={cx + 22} y2={cy} />
-              <polyline points={`${cx - 16},${cy - 6} ${cx - 22},${cy} ${cx - 16},${cy + 6}`} />
-              <polyline points={`${cx + 16},${cy - 6} ${cx + 22},${cy} ${cx + 16},${cy + 6}`} />
-              <circle cx={cx} cy={cy} r="3" fill="#3498db" />
-              <text x={cx} y={cy - 12} stroke="none" fill="#2980b9" fontSize="9" fontWeight="bold" textAnchor="middle">
+              <line x1={cxC - 22} y1={cyC} x2={cxC + 22} y2={cyC} />
+              <polyline points={`${cxC - 16},${cyC - 6} ${cxC - 22},${cyC} ${cxC - 16},${cyC + 6}`} />
+              <polyline points={`${cxC + 16},${cyC - 6} ${cxC + 22},${cyC} ${cxC + 16},${cyC + 6}`} />
+              <circle cx={cxC} cy={cyC} r="3" fill="#3498db" />
+              <text x={cxC} y={cyC - 12} stroke="none" fill="#2980b9" fontSize="9" fontWeight="bold" textAnchor="middle">
                 ARMADO LOSA
               </text>
             </g>
@@ -155,9 +166,55 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
         }
       }
     }
-
     // 4. CONECTORES DE CORTE (studs) - Removida representación en planta por solicitud del usuario
+  }
 
+  // Elementos de celdas (Huecos, Escaleras)
+  const celdasElements = [];
+  if (grid.celdas) {
+    grid.celdas.forEach(celda => {
+      const { r, c, tipo } = celda;
+      if (r >= nTramosY || c >= nTramosX) return; // Prevent out of bounds
+      const x1 = cx[c];
+      const y1 = cy[r];
+      const w = arrX[c] * scale;
+      const h = arrY[r] * scale;
+
+      const handleClick = () => {
+        if (onCeldasToggle) onCeldasToggle(r, c);
+      };
+
+      if (tipo === 'hueco') {
+        celdasElements.push(
+          <g key={`celda-${r}-${c}`} onClick={handleClick} style={{ cursor: onCeldasToggle ? 'pointer' : 'default' }}>
+            <rect x={x1} y={y1} width={w} height={h} fill="#ecf0f1" opacity="0.8" />
+            <line x1={x1} y1={y1} x2={x1 + w} y2={y1 + h} stroke="#bdc3c7" strokeWidth="2" />
+            <line x1={x1 + w} y1={y1} x2={x1} y2={y1 + h} stroke="#bdc3c7" strokeWidth="2" />
+            <text x={x1 + w/2} y={y1 + h/2 + 5} fill="#7f8c8d" fontSize="14" fontWeight="bold" textAnchor="middle">HUECO</text>
+          </g>
+        );
+      } else if (tipo === 'escalera_recta' || tipo === 'escalera_l') {
+        const text = tipo === 'escalera_recta' ? 'ESCALERA (R)' : 'ESCALERA (L)';
+        celdasElements.push(
+          <g key={`celda-${r}-${c}`} onClick={handleClick} style={{ cursor: onCeldasToggle ? 'pointer' : 'default' }}>
+            <rect x={x1} y={y1} width={w} height={h} fill="#fdebd0" opacity="0.9" />
+            {/* Draw stairs lines */}
+            {Array.from({length: 5}).map((_, i) => (
+              <line key={`st-${i}`} x1={x1 + w * 0.2} y1={y1 + (i+1)*(h/6)} x2={x1 + w * 0.8} y2={y1 + (i+1)*(h/6)} stroke="#e67e22" strokeWidth="1" />
+            ))}
+            <text x={x1 + w/2} y={y1 + h/2 + 5} fill="#d35400" fontSize="12" fontWeight="bold" textAnchor="middle">{text}</text>
+            {tipo === 'escalera_l' && (
+              <circle cx={x1 + w} cy={y1 + h} r="4" fill="#c0392b" /> // Apoio (columna simulada en vértice)
+            )}
+          </g>
+        );
+      } else {
+        // Lleno: just an invisible clickable rect on top to toggle
+        celdasElements.push(
+          <rect key={`celda-click-${r}-${c}`} x={x1} y={y1} width={w} height={h} fill="transparent" onClick={handleClick} style={{ cursor: onCeldasToggle ? 'pointer' : 'default' }} />
+        );
+      }
+    });
   }
 
   // Nervios para aligerada
@@ -339,17 +396,18 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
           ))
         )}
 
-        {/* Vigas Y */}
-        {Array.from({ length: cols }, (_, c) =>
+        {/* Líneas auxiliares */}
+        {Array.from({ length: nTramosX + 1 }, (_, c) =>
           Array.from({ length: nTramosY }, (_, i) => (
             <line key={`vy-${c}-${i}`}
-              x1={ox + c * luzX * scale} y1={oy + i * luzY * scale}
-              x2={ox + c * luzX * scale} y2={oy + (i + 1) * luzY * scale}
+              x1={cx[c]} y1={cy[i]}
+              x2={cx[c]} y2={cy[i+1]}
               stroke={losaActiva === 'colaborante' ? "#bdc3c7" : "#7f8c8d"} strokeWidth={losaActiva === 'colaborante' ? "1" : "2"}
             />
           ))
         )}
-
+        {celdasElements}
+        
         {/* Diagramas de momento */}
         {momentPathsX}
         {momentPathsY}
@@ -368,26 +426,26 @@ export const renderGrid = (grid, calc, losaActiva, steelDeckConfig, aligeradaCon
         {/* Cotas X */}
         {Array.from({ length: nTramosX }, (_, i) => (
           <g key={`cx-${i}`}>
-            <line x1={ox + i * luzX * scale} y1={oy + nTramosY * luzY * scale + 20}
-              x2={ox + (i + 1) * luzX * scale} y2={oy + nTramosY * luzY * scale + 20} stroke="#333" strokeWidth="1" />
-            <line x1={ox + i * luzX * scale} y1={oy + nTramosY * luzY * scale + 15}
-              x2={ox + i * luzX * scale} y2={oy + nTramosY * luzY * scale + 25} stroke="#333" strokeWidth="1" />
-            <line x1={ox + (i + 1) * luzX * scale} y1={oy + nTramosY * luzY * scale + 15}
-              x2={ox + (i + 1) * luzX * scale} y2={oy + nTramosY * luzY * scale + 25} stroke="#333" strokeWidth="1" />
-            <text x={ox + (i + 0.5) * luzX * scale - 15} y={oy + nTramosY * luzY * scale + 38} fill="#333" fontSize="11">{luzX}m</text>
+            <line x1={cx[i]} y1={cy[nTramosY] + 20}
+              x2={cx[i+1]} y2={cy[nTramosY] + 20} stroke="#333" strokeWidth="1" />
+            <line x1={cx[i]} y1={cy[nTramosY] + 15}
+              x2={cx[i]} y2={cy[nTramosY] + 25} stroke="#333" strokeWidth="1" />
+            <line x1={cx[i+1]} y1={cy[nTramosY] + 15}
+              x2={cx[i+1]} y2={cy[nTramosY] + 25} stroke="#333" strokeWidth="1" />
+            <text x={cx[i] + (arrX[i] * scale) / 2} y={cy[nTramosY] + 38} fill="#333" fontSize="11" textAnchor="middle">{arrX[i]}m</text>
           </g>
         ))}
 
         {/* Cotas Y */}
         {Array.from({ length: nTramosY }, (_, i) => (
           <g key={`cy-${i}`}>
-            <line x1={ox - 25} y1={oy + i * luzY * scale}
-              x2={ox - 25} y2={oy + (i + 1) * luzY * scale} stroke="#333" strokeWidth="1" />
-            <line x1={ox - 30} y1={oy + i * luzY * scale}
-              x2={ox - 20} y2={oy + i * luzY * scale} stroke="#333" strokeWidth="1" />
-            <line x1={ox - 30} y1={oy + (i + 1) * luzY * scale}
-              x2={ox - 20} y2={oy + (i + 1) * luzY * scale} stroke="#333" strokeWidth="1" />
-            <text x={ox - 55} y={oy + (i + 0.5) * luzY * scale + 4} fill="#333" fontSize="11">{luzY}m</text>
+            <line x1={cx[0] - 25} y1={cy[i]}
+              x2={cx[0] - 25} y2={cy[i+1]} stroke="#333" strokeWidth="1" />
+            <line x1={cx[0] - 30} y1={cy[i]}
+              x2={cx[0] - 20} y2={cy[i]} stroke="#333" strokeWidth="1" />
+            <line x1={cx[0] - 30} y1={cy[i+1]}
+              x2={cx[0] - 20} y2={cy[i+1]} stroke="#333" strokeWidth="1" />
+            <text x={cx[0] - 40} y={cy[i] + (arrY[i] * scale) / 2 + 4} fill="#333" fontSize="11" textAnchor="end">{arrY[i]}m</text>
           </g>
         ))}
 

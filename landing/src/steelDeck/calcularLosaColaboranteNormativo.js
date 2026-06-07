@@ -7,10 +7,37 @@ import { calcularSeccionCompuesta, calcularMomentoCompuesto } from './calculosCo
 import { optimizarPerfil } from './optimizador';
 
 export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, costos) {
-  const { filas, cols, luzX, luzY } = grid;
-  const nTramosX = Math.max(cols - 1, 1);
-  const nTramosY = Math.max(filas - 1, 1);
-  const areaTotal = luzX * nTramosX * luzY * nTramosY;
+  const { filas, cols, luzX: defaultLuzX, luzY: defaultLuzY } = grid;
+  const nTramosX = Math.max(Math.floor(cols) - 1, 1);
+  const nTramosY = Math.max(Math.floor(filas) - 1, 1);
+  
+  const arrX = grid.lucesX || Array(nTramosX).fill(defaultLuzX || 4.5);
+  const arrY = grid.lucesY || Array(nTramosY).fill(defaultLuzY || 4.0);
+  const L_totalX = arrX.slice(0, nTramosX).reduce((a, b) => a + b, 0);
+  const L_totalY = arrY.slice(0, nTramosY).reduce((a, b) => a + b, 0);
+  
+  const luzX = Math.max(...arrX.slice(0, nTramosX));
+  const luzY = Math.max(...arrY.slice(0, nTramosY));
+
+  const areaTotal = L_totalX * L_totalY;
+
+  let areaHuecos = 0;
+  let areaEscaleras = 0;
+  let numEscalerasL = 0;
+  if (grid.celdas) {
+    grid.celdas.forEach(c => {
+      if (c.r < nTramosY && c.c < nTramosX) {
+        const areaCelda = arrX[c.c] * arrY[c.r];
+        if (c.tipo === 'hueco') {
+          areaHuecos += areaCelda;
+        } else if (c.tipo === 'escalera_recta' || c.tipo === 'escalera_l') {
+          areaEscaleras += areaCelda;
+          if (c.tipo === 'escalera_l') numEscalerasL++;
+        }
+      }
+    });
+  }
+  const areaLosa = Math.max(0.1, areaTotal - areaHuecos - areaEscaleras);
 
   const ratio = Math.max(luzX, luzY) / Math.min(luzX, luzY);
   const esDosDirecciones = ratio <= 2;
@@ -42,8 +69,12 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const pesoConcreto = (espesorConcreto_efectivo / 100) * GAMMA_CONC;
   const pesoDeck = getDeckProp(calibre, 'peso') || 9;
   const pesoCorreas = (getProp(tipoCorrea, 'peso') || 15) / sepReal;
-  const pesoVigas = (getProp(tipoVigaPrincipal, 'peso') || 30) * (1 / luzX + 1 / luzY);
-  const pesoPropio = pesoConcreto + pesoDeck + pesoCorreas + pesoVigas + 15;
+  const peso_viga_lineal = getProp(tipoVigaPrincipal, 'peso') || 30;
+  const pesoVigas = peso_viga_lineal * ((nTramosY + 1) / L_totalY + (nTramosX + 1) / L_totalX);
+  
+  // Peso propio incluye estimación de escalera distribuida (ej. 800 kg/m2 de escalera)
+  const pesoEscaleraDistribuido = (areaEscaleras * 800) / areaTotal;
+  const pesoPropio = pesoConcreto + pesoDeck + pesoCorreas + pesoVigas + 15 + pesoEscaleraDistribuido;
 
   const wD = pesoPropio + (datos.cmExtra || 0);
   const wL = datos.cv || 0;
@@ -316,16 +347,24 @@ export function calcularLosaColaboranteNormativo(grid, datos, steelDeckConfig, c
   const optCorreaBorde = optimizarPerfil(PERFILES_I_H_TUBO, Mu_correa_borde, Vu_correa_borde, luzCorrea_cm, wServ_correa_borde, deflLim_correa, costoCorreaKg, 'correa', compDataCorrea, d_stud_cm);
 
   // 13. MATERIALES Y COSTOS
-  const areaDeck = areaTotal * 1.15;
+  const areaCostos = Math.max(0.1, areaTotal - areaHuecos);
+  const areaDeck = areaCostos * 1.15;
   const wr_deck = getDeckProp(calibre, 'wr') || 6.5;
   const Sr_deck = getDeckProp(calibre, 'Sr') || 15.24;
-  const volConcreto = areaTotal * ((espesorConcreto_efectivo / 100) + (wr_deck / Sr_deck) * (hr / 100));
+  
+  // Concreto: Slab + approximate stairs concrete volume
+  let volConcreto = areaCostos * ((espesorConcreto_efectivo / 100) + (wr_deck / Sr_deck) * (hr / 100));
+  if (areaEscaleras > 0) {
+    volConcreto += areaEscaleras * 0.15; // Estimado 15cm espesor equivalente para escaleras
+  }
+  
   const longVigasPrincipalesX = filas * (luzX * nTramosX);
   const longVigasPrincipalesY = cols * (luzY * nTramosY);
   const totalLengthCorreas = numCorreas * (correasHorizontales ? (luzX * nTramosX) : (luzY * nTramosY));
-  const kgCorreas = (getProp(tipoCorrea, 'peso') || 15) * totalLengthCorreas;
+  
+  const kgCorreas = (getProp(tipoCorrea, 'peso') || 15) * totalLengthCorreas * (areaCostos / areaTotal);
   const kgVigas = (getProp(tipoVigaPrincipal, 'peso') || 30) * (longVigasPrincipalesX + longVigasPrincipalesY);
-  const kgMalla = (0.142 / 10000) * areaTotal * 7850 * 1.1;
+  const kgMalla = (0.142 / 10000) * areaCostos * 7850 * 1.1;
 
   const costoTotal =
     (volConcreto * (costos.concretoM3 || 0)) +

@@ -7,8 +7,12 @@ import LosaMaciza from './losamaciza/components/LosaMaciza';
 import LosaLigera from './LosaLigera';
 import LosaColaborante from './LosaColaborante';
 import ReporteImprimible from './losamaciza/components/ReporteImprimible';
+import HistorialCorridas from './HistorialCorridas';
+import { calculadoraService } from '../../../services/calculadoraService';
 
 const CalculadoraLosas = () => {
+  const [mostrarHistorial, setMostrarHistorial] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [grid, setGrid] = useState({
     filas: 2,
     cols: 3,
@@ -79,7 +83,74 @@ const CalculadoraLosas = () => {
   const handleGrid = (e) => {
     const { name, value } = e.target;
     const val = parseFloat(value);
-    setGrid({ ...grid, [name]: isNaN(val) || val <= 0 ? 1 : val });
+    const finalVal = isNaN(val) || val <= 0 ? 1 : val;
+    
+    setGrid(prev => {
+      const next = { ...prev, [name]: finalVal };
+      const nTramosX = Math.max(Math.floor(next.cols) - 1, 1);
+      const nTramosY = Math.max(Math.floor(next.filas) - 1, 1);
+      
+      // Ajustar lucesX
+      if (name === 'cols' || name === 'luzX') {
+        const arrX = [];
+        for (let i = 0; i < nTramosX; i++) {
+          arrX.push(name === 'luzX' ? finalVal : (prev.lucesX?.[i] || next.luzX));
+        }
+        next.lucesX = arrX;
+      }
+      
+      // Ajustar lucesY
+      if (name === 'filas' || name === 'luzY') {
+        const arrY = [];
+        for (let i = 0; i < nTramosY; i++) {
+          arrY.push(name === 'luzY' ? finalVal : (prev.lucesY?.[i] || next.luzY));
+        }
+        next.lucesY = arrY;
+      }
+
+      // Ajustar celdas
+      if (name === 'cols' || name === 'filas') {
+        const oldCeldas = prev.celdas || [];
+        const newCeldas = [];
+        for (let r = 0; r < nTramosY; r++) {
+          for (let c = 0; c < nTramosX; c++) {
+            const ext = oldCeldas.find(x => x.r === r && x.c === c);
+            newCeldas.push(ext || { r, c, tipo: 'lleno' });
+          }
+        }
+        next.celdas = newCeldas;
+      }
+      
+      return next;
+    });
+  };
+
+  const handleCeldasToggle = (r, c) => {
+    setGrid(prev => {
+      const newCeldas = prev.celdas.map(celda => {
+        if (celda.r === r && celda.c === c) {
+          const nextTipo = celda.tipo === 'lleno' ? 'hueco' : celda.tipo === 'hueco' ? 'escalera_recta' : celda.tipo === 'escalera_recta' ? 'escalera_l' : 'lleno';
+          return { ...celda, tipo: nextTipo };
+        }
+        return celda;
+      });
+      return { ...prev, celdas: newCeldas };
+    });
+  };
+
+  const handleLuzChange = (e, index, isX) => {
+    const val = parseFloat(e.target.value) || 1;
+    setGrid(prev => {
+      if (isX) {
+        const newArr = [...(prev.lucesX || [])];
+        newArr[index] = val;
+        return { ...prev, lucesX: newArr };
+      } else {
+        const newArr = [...(prev.lucesY || [])];
+        newArr[index] = val;
+        return { ...prev, lucesY: newArr };
+      }
+    });
   };
 
   const handleDatos = (e) => {
@@ -108,7 +179,7 @@ const CalculadoraLosas = () => {
     setCostos((prev) => ({ ...prev, [e.target.name]: parseFloat(e.target.value) || 0 }));
   };
 
-  const handleGuardarCalculo = () => {
+  const handleGuardarCalculo = (guardarEnNube = false) => {
     const formulasAuditoria = {
       h_min: "Luz mayor / 20 (m)",
       h_diseno: "max(h_min, 0.10m)",
@@ -129,10 +200,16 @@ const CalculadoraLosas = () => {
     const payload = {
       tipoLosa: losaActiva,
       fecha: new Date().toISOString(),
-      grid,
+      grid: {
+        ...grid,
+        lucesX: grid.lucesX || Array(Math.max(Math.floor(grid.cols) - 1, 1)).fill(grid.luzX),
+        lucesY: grid.lucesY || Array(Math.max(Math.floor(grid.filas) - 1, 1)).fill(grid.luzY),
+      },
       datos,
       costos,
       macizaConfig,
+      steelDeckConfig,
+      aligeradaConfig,
       auditoriaMetodologia: {
         norma: "ACI 318-19",
         unidades: {
@@ -148,6 +225,26 @@ const CalculadoraLosas = () => {
       },
       calc
     };
+
+    if (guardarEnNube) {
+      if (isSaving) return;
+      const nombre = prompt('Ingresa un nombre para guardar esta corrida:', `Losa ${losaActiva} - ${new Date().toLocaleDateString()}`);
+      if (!nombre) return;
+      
+      setIsSaving(true);
+      calculadoraService.guardarCorrida(nombre, losaActiva, payload)
+        .then(() => {
+          alert('¡Corrida guardada exitosamente en la nube!');
+        })
+        .catch(err => {
+          alert('Error al guardar en la nube.');
+          console.error(err);
+        })
+        .finally(() => {
+          setIsSaving(false);
+        });
+      return;
+    }
     
     // Crear un archivo JSON descargable ("Guardar como")
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
@@ -157,8 +254,23 @@ const CalculadoraLosas = () => {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+    downloadAnchorNode.remove();
     
     alert("Cálculo exportado exitosamente en modo auditoría.");
+  };
+
+  const cargarDesdeHistorial = (run) => {
+    setLosaActiva(run.tipo_losa);
+    if (run.inputs) {
+      if (run.inputs.grid) setGrid(run.inputs.grid);
+      if (run.inputs.datos) setDatos(run.inputs.datos);
+      if (run.inputs.costos) setCostos(run.inputs.costos);
+      if (run.inputs.macizaConfig) setMacizaConfig(run.inputs.macizaConfig);
+      if (run.inputs.steelDeckConfig) setSteelDeckConfig(run.inputs.steelDeckConfig);
+      if (run.inputs.aligeradaConfig) setAligeradaConfig(run.inputs.aligeradaConfig);
+    }
+    setMostrarHistorial(false);
+    alert(`Se ha cargado la corrida: ${run.nombre_proyecto}`);
   };
 
   const exportarPDFMaciza = () => {
@@ -334,11 +446,19 @@ const CalculadoraLosas = () => {
   // Cálculos
   const calc = useMemo(() => {
     const { filas, cols, luzX, luzY } = grid;
-    const nTramosX = Math.max(cols - 1, 1);
-    const nTramosY = Math.max(filas - 1, 1);
-    const areaTotal = luzX * nTramosX * luzY * nTramosY;
+    const nTramosX = Math.max(Math.floor(cols) - 1, 1);
+    const nTramosY = Math.max(Math.floor(filas) - 1, 1);
+    
+    const arrX = grid.lucesX || Array(nTramosX).fill(luzX || 4.5);
+    const arrY = grid.lucesY || Array(nTramosY).fill(luzY || 4.0);
+    const L_totalX = arrX.slice(0, nTramosX).reduce((a, b) => a + b, 0);
+    const L_totalY = arrY.slice(0, nTramosY).reduce((a, b) => a + b, 0);
+    
+    const maxLuzX = Math.max(...arrX.slice(0, nTramosX));
+    const maxLuzY = Math.max(...arrY.slice(0, nTramosY));
 
-    const ratio = Math.max(luzX, luzY) / Math.min(luzX, luzY);
+    const areaTotal = L_totalX * L_totalY;
+    const ratio = Math.max(maxLuzX, maxLuzY) / Math.min(maxLuzX, maxLuzY);
     const esDosDirecciones = ratio <= 2;
 
     let resultado = {
@@ -478,8 +598,26 @@ const CalculadoraLosas = () => {
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>Calculadora de Losas Estructurales</h1>
-        <p style={styles.subtitle}>Diseño según ACI 318-19 y SDI para losas macizas, aligeradas y colaborantes</p>
+        <p style={styles.subtitle}>Diseño y dimensionamiento normativo de sistemas de entrepiso</p>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+          <button onClick={() => setMostrarHistorial(true)} style={{ ...styles.tab(false), backgroundColor: '#f39c12', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>🕒</span> Abrir Historial
+          </button>
+          <button onClick={() => handleGuardarCalculo(true)} style={{ ...styles.tab(false), backgroundColor: '#27ae60', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>💾</span> {isSaving ? 'Guardando...' : 'Guardar en la nube'}
+          </button>
+          <button onClick={() => handleGuardarCalculo(false)} style={{ ...styles.tab(false), backgroundColor: '#8e44ad', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>📥</span> JSON Auditoría
+          </button>
+        </div>
       </div>
+
+      {mostrarHistorial && (
+        <HistorialCorridas 
+          onCargarCorrida={cargarDesdeHistorial} 
+          onClose={() => setMostrarHistorial(false)} 
+        />
+      )}
 
       <div style={styles.tabs}>
         <button
@@ -518,13 +656,33 @@ const CalculadoraLosas = () => {
                 <label style={styles.label}>Columnas de apoyos</label>
                 <input type="number" name="cols" value={grid.cols} onChange={handleGrid} min="1" style={styles.input} />
               </div>
-              <div style={styles.field}>
-                <label style={styles.label}>Luz X (m)</label>
-                <input type="number" name="luzX" value={grid.luzX} onChange={handleGrid} step="0.1" min="1" style={styles.input} />
+            </div>
+
+            <div style={{ marginTop: '16px' }}>
+              <label style={styles.label}>Luces horizontales (X) por tramo (m)</label>
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
+                {(grid.lucesX || Array(Math.max(1, Math.floor(grid.cols) - 1)).fill(grid.luzX || 4.5)).map((lx, i) => (
+                  <input 
+                    key={`lx-${i}`} type="number" value={lx} 
+                    onChange={e => handleLuzChange(e, i, true)} 
+                    step="0.1" min="0.1" style={{ ...styles.input, width: '70px', flexShrink: 0 }} 
+                    title={`Tramo X ${i+1}`}
+                  />
+                ))}
               </div>
-              <div style={styles.field}>
-                <label style={styles.label}>Luz Y (m)</label>
-                <input type="number" name="luzY" value={grid.luzY} onChange={handleGrid} step="0.1" min="1" style={styles.input} />
+            </div>
+
+            <div style={{ marginTop: '8px' }}>
+              <label style={styles.label}>Luces verticales (Y) por tramo (m)</label>
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
+                {(grid.lucesY || Array(Math.max(1, Math.floor(grid.filas) - 1)).fill(grid.luzY || 4.0)).map((ly, i) => (
+                  <input 
+                    key={`ly-${i}`} type="number" value={ly} 
+                    onChange={e => handleLuzChange(e, i, false)} 
+                    step="0.1" min="0.1" style={{ ...styles.input, width: '70px', flexShrink: 0 }} 
+                    title={`Tramo Y ${i+1}`}
+                  />
+                ))}
               </div>
             </div>
             <div style={styles.highlightBox}>
@@ -535,7 +693,10 @@ const CalculadoraLosas = () => {
 
           {/* Columna derecha: Visualización SVG */}
           <div>
-            {grid && renderGrid(grid, { ...calc, wu: calc.wu, ratio: calc.ratio, esDosDirecciones: calc.esDosDirecciones }, losaActiva, losaActiva === 'colaborante' ? steelDeckConfig : null, losaActiva === 'aligerada' ? aligeradaConfig : null)}
+            <p style={{ fontSize: '12px', color: '#7f8c8d', marginBottom: '8px', fontStyle: 'italic' }}>
+              * Haz clic en una celda para alternar entre: Lleno, Hueco, Escalera Recta, Escalera en L.
+            </p>
+            {grid && renderGrid(grid, { ...calc, wu: calc.wu, ratio: calc.ratio, esDosDirecciones: calc.esDosDirecciones }, losaActiva, losaActiva === 'colaborante' ? steelDeckConfig : null, losaActiva === 'aligerada' ? aligeradaConfig : null, handleCeldasToggle)}
           </div>
         </div>
       </div>

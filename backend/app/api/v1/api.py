@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import arko
 from app.api.v1.endpoints import arko_tenants
 from app.api.v1.endpoints import arko_landing_sites
+from app.api.v1.endpoints import calculadora
 
 api_router = APIRouter()
 
@@ -16,4 +17,7 @@ api_router.include_router(
 )
 api_router.include_router(
     arko_landing_sites.router, prefix="/arko/landing_sites", tags=["arko_admin_landing_sites"]
+)
+api_router.include_router(
+    calculadora.router, prefix="/calculadora-losas", tags=["calculadora_losas"]
 )
