@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStructureStore } from '../../store/useStructureStore';
+import { useStructureStore } from './useStructureStore';
 import { Box, Columns, Rows, Layers } from 'lucide-react';
 
 export function TemplateWizard() {
