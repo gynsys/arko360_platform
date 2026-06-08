@@ -1,10 +1,12 @@
 import React from 'react';
 import { StructureCanvas } from './StructureCanvas';
 import { PropertyPanel } from './PropertyPanel';
+import { TemplateWizard } from './TemplateWizard';
 
 export default function FEA3DContainer() {
   return (
     <div className="flex h-[calc(100vh-80px)] mt-[80px] overflow-hidden bg-slate-900">
+      <TemplateWizard />
       <div className="flex-1 relative">
         <StructureCanvas />
       </div>
