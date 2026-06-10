@@ -109,7 +109,7 @@ export function StructureCanvas() {
   return (
     <div className="w-full h-full bg-slate-900">
       <Canvas 
-        camera={{ position: [10, 10, 10], up: [0, 0, 1] }}
+        camera={{ position: [20, 20, 20], fov: 35, up: [0, 0, 1] }}
         onPointerMissed={() => {
           if (!isDrawingShell) setSelectedId(null);
         }}

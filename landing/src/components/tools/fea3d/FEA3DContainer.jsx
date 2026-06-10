@@ -5,6 +5,7 @@ import { PropertyPanel } from './PropertyPanel';
 import { TemplateWizard } from './TemplateWizard';
 import { ShellPanel } from './ShellPanel';
 import { useStructureStore } from './useStructureStore';
+import { useSolver } from './useSolver';
 
 export default function FEA3DContainer() {
   const [wizardOpen, setWizardOpen] = useState(true);
@@ -28,10 +29,34 @@ export default function FEA3DContainer() {
     }
   };
 
-  // TODO: Conectar con useSolver.js cuando el endpoint POST /api/v1/arko3d/{projectId}/solve
-  // esté activo en el backend. Por ahora solo loguea.
-  const handleRunAnalysis = () => {
-    console.log('[ARKO3D] Análisis estructural — pendiente de conectar con backend solver');
+  const { solveMutation } = useSolver('project-001');
+  const [isSolving, setIsSolving] = useState(false);
+
+  const handleRunAnalysis = async () => {
+    setIsSolving(true);
+    try {
+      const state = useStructureStore.getState();
+      const payload = {
+        nodes: state.nodes,
+        elements: state.elements,
+        materials: state.materials,
+        sections: state.sections,
+        loads: state.loads || []
+      };
+      
+      const res = await solveMutation.mutateAsync(payload);
+      console.log('[ARKO3D] Análisis completado:', res.data);
+      alert('Análisis estructural completado con éxito (Revisar consola).');
+      
+      // TODO: Guardar los resultados en el store cuando existan visores
+      // useStructureStore.setState({ results: res.data });
+      
+    } catch (err) {
+      console.error('[ARKO3D] Error en el solver:', err);
+      alert('Error de conexión con el motor de cálculo en el servidor.');
+    } finally {
+      setIsSolving(false);
+    }
   };
 
   return (
@@ -122,10 +147,15 @@ export default function FEA3DContainer() {
         {/* Acción Principal */}
         <button
           onClick={handleRunAnalysis}
-          className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black shadow-lg shadow-blue-900/40 transition-all active:scale-95"
+          disabled={isSolving || totalElements === 0}
+          className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-black shadow-lg transition-all active:scale-95 ${
+            isSolving 
+            ? 'bg-slate-700 text-slate-400 cursor-not-allowed shadow-none' 
+            : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/40'
+          }`}
         >
-          <Play size={14} fill="currentColor" />
-          CALCULAR
+          <Play size={14} fill="currentColor" className={isSolving ? 'animate-spin' : ''} />
+          {isSolving ? 'CALCULANDO...' : 'CALCULAR'}
         </button>
       </div>
 
