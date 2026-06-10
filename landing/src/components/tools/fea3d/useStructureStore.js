@@ -40,6 +40,16 @@ export const useStructureStore = create((set, get) => ({
   isDrawingShell: false,
   drawingNodes: [], // IDs de los nudos seleccionados para la losa actual
 
+  // Estado para selección por ventana
+  selectionBox: {
+    isSelecting: false,
+    startX: 0,
+    startY: 0,
+    endX: 0,
+    endY: 0,
+    mode: 'window' // 'window' (Left->Right) or 'crossing' (Right->Left)
+  },
+
   // --- ACCIONES GENERALES ---
   toggleSelection: (id, multi = false) => set(state => {
     if (multi) {
@@ -55,6 +65,8 @@ export const useStructureStore = create((set, get) => ({
   setCurrentUser: (user) => set({ currentUser: user }),
   toggleShowLoads: () => set(state => ({ showLoads: !state.showLoads })),
 
+  setSelectionBox: (data) => set(state => ({ selectionBox: { ...state.selectionBox, ...data } })),
+  
   // --- NAVEGACIÓN 2D/3D ---
   setCameraView: (view) => set(state => {
     if (view === '3D') return { cameraView: view };

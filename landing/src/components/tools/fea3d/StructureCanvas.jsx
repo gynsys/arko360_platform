@@ -369,6 +369,172 @@ function CameraController() {
   return null;
 }
 
+// Controlador de Selección por Ventana
+function SelectionHandler() {
+  const { gl, camera } = useThree();
+  const { 
+    nodes, elements, shells, 
+    setSelectionBox, setSelectedIds, selectedIds, 
+    viewMode, cameraView, activeLevel 
+  } = useStructureStore();
+  
+  const isResultsMode = viewMode === 'results';
+
+  // Tolerancia para vistas 2D (reutilizada)
+  const TOLERANCE = 0.05;
+  const isNodeActive = (n) => {
+    if (cameraView === '3D') return true;
+    if (cameraView === 'XY') return Math.abs(n.z - activeLevel) <= TOLERANCE;
+    if (cameraView === 'XZ') return Math.abs(n.y - activeLevel) <= TOLERANCE;
+    if (cameraView === 'YZ') return Math.abs(n.x - activeLevel) <= TOLERANCE;
+    return true;
+  };
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+    let isDragging = false;
+    let startPos = { x: 0, y: 0 };
+
+    const onPointerDown = (e) => {
+      // Solo clic izquierdo y no en modo resultados
+      if (e.button !== 0 || isResultsMode) return;
+      
+      // Evitar iniciar selección si se hizo clic en un objeto interactivo
+      // (Los objetos interactivos consumen el evento gracias a e.stopPropagation() en R3F)
+      
+      isDragging = true;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      startPos = { x, y };
+      
+      setSelectionBox({ isSelecting: true, startX: x, startY: y, endX: x, endY: y, mode: 'window' });
+    };
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // Determinar modo: de Izquierda a Derecha = 'window', de Derecha a Izquierda = 'crossing'
+      const mode = x >= startPos.x ? 'window' : 'crossing';
+      
+      setSelectionBox({ endX: x, endY: y, mode });
+    };
+
+    const onPointerUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      
+      const rect = canvas.getBoundingClientRect();
+      const endX = e.clientX - rect.left;
+      const endY = e.clientY - rect.top;
+      
+      // Si el área es muy pequeña, fue un clic normal
+      const dist = Math.hypot(endX - startPos.x, endY - startPos.y);
+      if (dist < 5) {
+        setSelectionBox({ isSelecting: false });
+        return;
+      }
+      
+      // Procesar selección
+      const minX = Math.min(startPos.x, endX);
+      const maxX = Math.max(startPos.x, endX);
+      const minY = Math.min(startPos.y, endY);
+      const maxY = Math.max(startPos.y, endY);
+      
+      const mode = endX >= startPos.x ? 'window' : 'crossing';
+      
+      const isPointInside = (nx, ny, nz) => {
+        const p = new THREE.Vector3(nx, ny, nz);
+        p.project(camera);
+        // NDC a Píxeles del canvas
+        const px = (p.x *  .5 + .5) * rect.width;
+        const py = (p.y * -.5 + .5) * rect.height;
+        // Comprobar también que no esté detrás de la cámara (z > 1)
+        if (p.z > 1 || p.z < -1) return false;
+        return px >= minX && px <= maxX && py >= minY && py <= maxY;
+      };
+
+      const newSelected = new Set(e.shiftKey || e.ctrlKey ? selectedIds : []);
+
+      // Seleccionar nodos
+      nodes.forEach(n => {
+        if (!isNodeActive(n)) return;
+        if (isPointInside(n.x, n.y, n.z)) {
+          newSelected.add(n.id);
+        }
+      });
+
+      // Seleccionar elementos
+      elements.forEach(el => {
+        const n1 = nodes.find(n => n.id === el.nodes[0]);
+        const n2 = nodes.find(n => n.id === el.nodes[1]);
+        if (!n1 || !n2) return;
+        if (!isNodeActive(n1) || !isNodeActive(n2)) return;
+
+        const in1 = isPointInside(n1.x, n1.y, n1.z);
+        const in2 = isPointInside(n2.x, n2.y, n2.z);
+
+        if (mode === 'window') {
+          // Ambos nodos adentro
+          if (in1 && in2) newSelected.add(el.id);
+        } else {
+          // Crossing: Al menos uno adentro, O punto medio adentro (aproximación rápida a intersección de línea)
+          if (in1 || in2) {
+            newSelected.add(el.id);
+          } else {
+            const mx = (n1.x + n2.x) / 2;
+            const my = (n1.y + n2.y) / 2;
+            const mz = (n1.z + n2.z) / 2;
+            if (isPointInside(mx, my, mz)) newSelected.add(el.id);
+          }
+        }
+      });
+
+      // Seleccionar shells
+      shells.forEach(s => {
+        const shellNodes = s.nodes.map(nid => nodes.find(n => n.id === nid)).filter(Boolean);
+        if (shellNodes.length === 0) return;
+        if (cameraView !== '3D' && !shellNodes.every(n => isNodeActive(n))) return;
+
+        const insides = shellNodes.map(n => isPointInside(n.x, n.y, n.z));
+        const allInside = insides.every(val => val === true);
+        const someInside = insides.some(val => val === true);
+
+        if (mode === 'window' && allInside) {
+          newSelected.add(s.id);
+        } else if (mode === 'crossing' && someInside) {
+          newSelected.add(s.id);
+        } else if (mode === 'crossing' && !someInside) {
+          // Aproximación: punto central del shell
+          let cx = 0, cy = 0, cz = 0;
+          shellNodes.forEach(n => { cx += n.x; cy += n.y; cz += n.z; });
+          cx /= shellNodes.length; cy /= shellNodes.length; cz /= shellNodes.length;
+          if (isPointInside(cx, cy, cz)) newSelected.add(s.id);
+        }
+      });
+
+      setSelectedIds(Array.from(newSelected));
+      setSelectionBox({ isSelecting: false });
+    };
+
+    // Agregar listeners al window en lugar del canvas para no perder el tracking si sale del área
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
+  }, [gl, camera, nodes, elements, shells, selectedIds, viewMode, cameraView, activeLevel, setSelectionBox, setSelectedIds]);
+
+  return null;
+}
+
 export function StructureCanvas() {
   const { 
     nodes, elements, shells, loads, isDrawingShell, clearSelection,
@@ -516,7 +682,18 @@ export function StructureCanvas() {
           return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={!active} />;
         })}
 
-        <OrbitControls makeDefault />
+        {/* OrbitControls Mapeado al Clic Derecho (Estilo ETABS) */}
+        <OrbitControls 
+          makeDefault 
+          mouseButtons={{ 
+            LEFT: THREE.MOUSE.NONE,    // Izquierdo para selección
+            MIDDLE: THREE.MOUSE.PAN,   // Medio para paneo
+            RIGHT: THREE.MOUSE.ROTATE  // Derecho para rotar
+          }}
+        />
+        
+        <SelectionHandler />
+        
         <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
           <GizmoViewport axisColors={['#ef4444', '#22c55e', '#3b82f6']} labelColor="white" />
         </GizmoHelper>

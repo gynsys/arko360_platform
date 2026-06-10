@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStructureStore } from './useStructureStore';
-import { Box, Columns, Rows, ArrowUp, ArrowDown } from 'lucide-react';
+import { Box, Columns, Rows, ArrowUp, ArrowDown, Info } from 'lucide-react';
 
 export function ViewControls() {
   const { cameraView, setCameraView, activeLevel, levelUp, levelDown, nodes } = useStructureStore();
 
   const is3D = cameraView === '3D';
+  const [showHelp, setShowHelp] = useState(false);
   
   // Format level text
   let levelText = '';
@@ -79,6 +80,27 @@ export function ViewControls() {
           </button>
         </div>
       )}
+
+      {/* Control Help / Tooltip */}
+      <div className="relative mt-2 pointer-events-auto w-fit" onMouseEnter={() => setShowHelp(true)} onMouseLeave={() => setShowHelp(false)}>
+        <div className="flex items-center gap-1 text-slate-400 bg-slate-800/80 border border-slate-700 px-2 py-1.5 rounded shadow-sm text-xs cursor-help">
+          <Info size={14} /> Controles Mouse
+        </div>
+        
+        {showHelp && (
+          <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700 shadow-2xl rounded-lg p-3 z-50 text-xs text-slate-300 pointer-events-none">
+            <h4 className="font-bold text-white border-b border-slate-700 pb-1 mb-2">Resumen de Selección</h4>
+            <ul className="space-y-1.5">
+              <li><span className="font-bold text-blue-400">Clic Izq + Arrastrar</span>: Dibujar Ventana.</li>
+              <li><span className="text-blue-300 ml-3">&bull; De Izq a Der</span>: Modo <i>Window</i> (Adentro).</li>
+              <li><span className="text-green-400 ml-3">&bull; De Der a Izq</span>: Modo <i>Crossing</i> (Toca).</li>
+              <li><span className="font-bold text-slate-200">Shift + Arrastrar</span>: Sumar a la selección.</li>
+              <li className="pt-1 border-t border-slate-800 mt-1"><span className="font-bold text-yellow-400">Clic Derecho + Arrastrar</span>: Rotar (Orbitar).</li>
+              <li><span className="font-bold text-slate-200">Rueda + Arrastrar</span>: Panear.</li>
+            </ul>
+          </div>
+        )}
+      </div>
 
     </div>
   );

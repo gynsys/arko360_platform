@@ -43,7 +43,8 @@ export default function FEA3DContainer() {
     wizardConfig, elements, shells, metadata, setMetadata,
     exportProject, importProject, isDrawingShell, toggleDrawingShell, drawingNodes,
     viewMode, activeResultType, setResultsMode,
-    isSaved, currentUser, setCurrentUser, showLoads, toggleShowLoads
+    isSaved, currentUser, setCurrentUser, showLoads, toggleShowLoads,
+    selectionBox
   } = useStructureStore();
 
   useEffect(() => {
@@ -255,7 +256,27 @@ export default function FEA3DContainer() {
       <div className="flex flex-1 relative overflow-hidden">
         
         {/* Render Canvas ocupando flex-1 */}
-        <div className="flex-1 relative">
+        <div 
+          className="flex-1 relative"
+          onContextMenu={(e) => e.preventDefault()} // Deshabilitar menú contextual (clic derecho) para usar OrbitControls
+        >
+          {/* Overlay de Selección 2D */}
+          {selectionBox.isSelecting && (
+            <div
+              style={{
+                position: 'absolute',
+                left: Math.min(selectionBox.startX, selectionBox.endX),
+                top: Math.min(selectionBox.startY, selectionBox.endY),
+                width: Math.abs(selectionBox.endX - selectionBox.startX),
+                height: Math.abs(selectionBox.endY - selectionBox.startY),
+                backgroundColor: selectionBox.mode === 'window' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(34, 197, 94, 0.2)', // Azul o Verde
+                border: `1px ${selectionBox.mode === 'window' ? 'solid' : 'dashed'} ${selectionBox.mode === 'window' ? 'rgba(59, 130, 246, 0.8)' : 'rgba(34, 197, 94, 0.8)'}`,
+                pointerEvents: 'none',
+                zIndex: 50
+              }}
+            />
+          )}
+
           <ViewControls />
           {hasModel ? (
             <StructureCanvas />
