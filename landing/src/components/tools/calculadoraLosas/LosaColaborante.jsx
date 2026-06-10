@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { RefreshCw, Save, FileDown, CheckCircle, XCircle, AlertTriangle, Info, Plus, Trash2, ArrowRight } from "lucide-react";
+import toast from "react-hot-toast";
 import { calcularLosaColaboranteNormativo } from "../../../steelDeck/calcularLosaColaboranteNormativo";
 import { PERFILES_I_H_TUBO } from "../../../steelDeck/catalogos";
 
@@ -280,14 +281,13 @@ export default function LosaColaborante({ steelDeckConfig, onConfigChange, grid,
     };
     
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `auditoria_losa_colaborante_${new Date().getTime()}.json`);
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-    
-    alert("Cálculo exportado exitosamente en modo auditoría.");
+    const a = document.createElement('a');
+    a.setAttribute("href", dataStr);
+    a.setAttribute("download", `auditoria_losa_colaborante_${new Date().getTime()}.json`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("Cálculo exportado exitosamente en modo auditoría.");
   };
 
   return (

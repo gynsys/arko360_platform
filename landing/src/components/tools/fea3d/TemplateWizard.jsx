@@ -10,6 +10,7 @@ const DEFAULT_CONFIG = {
   floorHeight: 3.0,
   bayWidthX: 5.0,
   bayWidthY: 5.0,
+  units: 'm, kgf, C'
 };
 
 export function TemplateWizard({ isOpen, onClose }) {
@@ -128,7 +129,7 @@ export function TemplateWizard({ isOpen, onClose }) {
                 onChange={v => setConfig({ ...config, numFloors: v })}
               />
               <Input
-                label="Altura entre pisos (m)"
+                label={`Altura entre pisos (${config.units?.split(',')[0] || 'm'})`}
                 value={config.floorHeight}
                 onChange={v => setConfig({ ...config, floorHeight: v })}
               />
@@ -138,7 +139,7 @@ export function TemplateWizard({ isOpen, onClose }) {
                 onChange={v => setConfig({ ...config, numBaysX: v })}
               />
               <Input
-                label="Ancho de Vanos X (m)"
+                label={`Ancho de Vanos X (${config.units?.split(',')[0] || 'm'})`}
                 value={config.bayWidthX}
                 onChange={v => setConfig({ ...config, bayWidthX: v })}
               />
@@ -148,11 +149,26 @@ export function TemplateWizard({ isOpen, onClose }) {
                 onChange={v => setConfig({ ...config, numBaysY: v })}
               />
               <Input
-                label="Ancho de Vanos Y (m)"
+                label={`Ancho de Vanos Y (${config.units?.split(',')[0] || 'm'})`}
                 value={config.bayWidthY}
                 onChange={v => setConfig({ ...config, bayWidthY: v })}
               />
             </div>
+            
+            {isFirstTime && (
+              <div className="mt-4">
+                <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Unidades del Proyecto</label>
+                <select 
+                  value={config.units || 'm, kgf, C'} 
+                  onChange={(e) => setConfig({ ...config, units: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                >
+                  <option value="m, kgf, C">Métrico MKS (m, kgf, C)</option>
+                  <option value="m, kN, C">Métrico SI (m, kN, C)</option>
+                  <option value="ft, kip, F">US Customary (ft, kip, F)</option>
+                </select>
+              </div>
+            )}
 
             {!isFirstTime && (
               <p className="text-xs text-amber-400 bg-amber-900/20 border border-amber-700/40 rounded-lg px-3 py-2">

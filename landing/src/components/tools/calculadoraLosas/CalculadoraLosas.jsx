@@ -9,7 +9,8 @@ import LosaColaborante from './LosaColaborante';
 import ReporteImprimible from './losamaciza/components/ReporteImprimible';
 import HistorialCorridas from './HistorialCorridas';
 import { calculadoraService } from '../../../services/calculadoraService';
-import { FaHistory, FaCloudUploadAlt, FaFileCode } from 'react-icons/fa';
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
+import toast from 'react-hot-toast';
 
 const CalculadoraLosas = () => {
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
@@ -204,7 +205,7 @@ const CalculadoraLosas = () => {
     setCostos((prev) => ({ ...prev, [e.target.name]: parseFloat(e.target.value) || 0 }));
   };
 
-  const handleGuardarCalculo = (guardarEnNube = false) => {
+  const handleGuardarCalculo = async (guardarEnNube = false) => {
     const formulasAuditoria = {
       h_min: "Luz mayor / 20 (m)",
       h_diseno: "max(h_min, 0.10m)",
@@ -257,34 +258,34 @@ const CalculadoraLosas = () => {
       if (!nombre) return;
       
       setIsSaving(true);
-      calculadoraService.guardarCorrida(nombre, losaActiva, payload)
-        .then(() => {
-          alert('¡Corrida guardada exitosamente en la nube!');
-        })
-        .catch(err => {
-          alert('Error al guardar en la nube.');
-          console.error(err);
-        })
-        .finally(() => {
-          setIsSaving(false);
-        });
+      try {
+        const res = await calculadoraService.guardarCorrida(nombre, losaActiva, payload);
+        if (res.ok) {
+          toast.success('¡Corrida guardada exitosamente en la nube!');
+        } else {
+          toast.error('Error al guardar en la nube.');
+        }
+      } catch (err) {
+        toast.error('Error al guardar en la nube.');
+        console.error(err);
+      } finally {
+        setIsSaving(false);
+      }
       return;
     }
     
     // Crear un archivo JSON descargable ("Guardar como")
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `auditoria_losa_${losaActiva}_${new Date().getTime()}.json`);
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-    downloadAnchorNode.remove();
-    
-    alert("Cálculo exportado exitosamente en modo auditoría.");
+    const a = document.createElement('a');
+    a.setAttribute("href", dataStr);
+    a.setAttribute("download", `auditoria_losa_${losaActiva}_${new Date().getTime()}.json`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("Cálculo exportado exitosamente en modo auditoría.");
   };
 
-  const cargarDesdeHistorial = (run) => {
+  const handleLoadRun = (run) => {
     setLosaActiva(run.tipo_losa);
     if (run.inputs) {
       if (run.inputs.grid) setGrid(run.inputs.grid);
@@ -295,7 +296,7 @@ const CalculadoraLosas = () => {
       if (run.inputs.aligeradaConfig) setAligeradaConfig(run.inputs.aligeradaConfig);
     }
     setMostrarHistorial(false);
-    alert(`Se ha cargado la corrida: ${run.nombre_proyecto}`);
+    toast.success(`Se ha cargado la corrida: ${run.nombre_proyecto}`);
   };
 
   const exportarPDFMaciza = () => {

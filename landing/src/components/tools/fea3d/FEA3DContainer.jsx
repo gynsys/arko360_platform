@@ -7,14 +7,21 @@ import { ShellPanel } from './ShellPanel';
 import { LoadCombosModal } from './LoadCombosModal';
 import { ResultsPanel } from './ResultsPanel';
 import { ElementResultsModal } from './ElementResultsModal';
+import { DefineMaterialsModal } from './DefineMaterialsModal';
+import { DefineSectionsModal } from './DefineSectionsModal';
+import { ResultsTableModal } from './ResultsTableModal';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
 import { Calculator } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function FEA3DContainer() {
   const [wizardOpen, setWizardOpen] = useState(true);
   const [shellPanelOpen, setShellPanelOpen] = useState(false);
   const [combosModalOpen, setCombosModalOpen] = useState(false);
+  const [materialsModalOpen, setMaterialsModalOpen] = useState(false);
+  const [sectionsModalOpen, setSectionsModalOpen] = useState(false);
+  const [tablesModalOpen, setTablesModalOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const { 
@@ -54,15 +61,15 @@ export default function FEA3DContainer() {
       };
       
       const res = await solveMutation.mutateAsync(payload);
-      console.log('[ARKO3D] Análisis completado:', res.data);
-      alert('Análisis estructural completado con éxito (Revisar consola).');
-      
-      // Pasar a modo resultados
-      setResultsMode(res.data);
-      
+      if (res && res.data) {
+        setResultsMode(res.data);
+        toast.success('Análisis estructural completado con éxito.');
+      } else {
+        toast.error('Error al interpretar los resultados.');
+      }
     } catch (err) {
       console.error('[ARKO3D] Error en el solver:', err);
-      alert('Error de conexión con el motor de cálculo en el servidor.');
+      toast.error('Error de conexión con el motor de cálculo en el servidor.');
     } finally {
       setIsSolving(false);
     }
@@ -146,6 +153,41 @@ export default function FEA3DContainer() {
           COMBINACIONES
         </button>
 
+        {/* Separador */}
+        <div className="w-px h-8 bg-slate-700 mx-1"></div>
+
+        {/* Define Materials & Sections */}
+        <button
+          onClick={() => setMaterialsModalOpen(true)}
+          disabled={isResultsMode}
+          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
+            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
+          }`}
+          title="Definir Materiales"
+        >
+          MATERIALES
+        </button>
+        <button
+          onClick={() => setSectionsModalOpen(true)}
+          disabled={isResultsMode}
+          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
+            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
+          }`}
+          title="Definir Secciones"
+        >
+          SECCIONES
+        </button>
+
+        {isResultsMode && (
+          <button
+            onClick={() => setTablesModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 border border-indigo-500 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold text-white transition-all ml-2"
+            title="Ver Tablas de Resultados"
+          >
+            TABLAS
+          </button>
+        )}
+
         <div className="flex-1" />
 
         {/* Metadata & Status */}
@@ -210,6 +252,9 @@ export default function FEA3DContainer() {
       <TemplateWizard isOpen={wizardOpen} onClose={() => setWizardOpen(false)} />
       <ShellPanel isOpen={shellPanelOpen} onClose={() => setShellPanelOpen(false)} />
       <LoadCombosModal isOpen={combosModalOpen} onClose={() => setCombosModalOpen(false)} />
+      {materialsModalOpen && <DefineMaterialsModal onClose={() => setMaterialsModalOpen(false)} />}
+      {sectionsModalOpen && <DefineSectionsModal onClose={() => setSectionsModalOpen(false)} />}
+      {tablesModalOpen && <ResultsTableModal onClose={() => setTablesModalOpen(false)} />}
     </div>
   );
 }

@@ -107,7 +107,7 @@ export const useStructureStore = create((set, get) => ({
       addShell({
         nodes: newDrawingNodes,
         thickness: 0.20,
-        material_id: 'CONC_28',
+        material_id: '4000Psi',
         loads: { CM: 2.0, CV: 1.8 } // Valores por defecto
       });
       toggleDrawingShell();
@@ -160,6 +160,28 @@ export const useStructureStore = create((set, get) => ({
       selectedId: state.selectedId === id ? null : state.selectedId
     };
   }),
+
+  // --- CRUD MATERIALES ---
+  addMaterial: (material) => set((state) => ({
+    materials: [...state.materials, { ...material }]
+  })),
+  updateMaterial: (id, data) => set((state) => ({
+    materials: state.materials.map(m => m.id === id ? { ...m, ...data } : m)
+  })),
+  deleteMaterial: (id) => set((state) => ({
+    materials: state.materials.filter(m => m.id !== id)
+  })),
+
+  // --- CRUD SECCIONES ---
+  addSection: (section) => set((state) => ({
+    sections: [...state.sections, { ...section }]
+  })),
+  updateSection: (id, data) => set((state) => ({
+    sections: state.sections.map(s => s.id === id ? { ...s, ...data } : s)
+  })),
+  deleteSection: (id) => set((state) => ({
+    sections: state.sections.filter(s => s.id !== id)
+  })),
 
   // --- CARGAS Y OTROS ---
   addLoad: (load) => set((state) => ({
@@ -250,7 +272,7 @@ export const useStructureStore = create((set, get) => ({
         for (let y = 0; y <= numBaysY; y++) {
           const n1 = newNodes.find(n => n.x === x*bayWidthX && n.y === y*bayWidthY && n.z === z*floorHeight);
           const n2 = newNodes.find(n => n.x === x*bayWidthX && n.y === y*bayWidthY && n.z === (z+1)*floorHeight);
-          newElements.push({ id: elemCount++, type: 'frame', nodes: [n1.id, n2.id], section_id: 'COL_DEF', material_id: 'CONC_28' });
+          newElements.push({ id: elemCount++, type: 'frame', nodes: [n1.id, n2.id], section_id: 'COL_DEF', material_id: '4000Psi' });
         }
       }
     }
@@ -262,26 +284,45 @@ export const useStructureStore = create((set, get) => ({
           if (x < numBaysX) {
             const n1 = newNodes.find(n => n.x === x*bayWidthX && n.y === y*bayWidthY && n.z === z*floorHeight);
             const n2 = newNodes.find(n => n.x === (x+1)*bayWidthX && n.y === y*bayWidthY && n.z === z*floorHeight);
-            newElements.push({ id: elemCount++, type: 'frame', nodes: [n1.id, n2.id], section_id: 'BEAM_DEF', material_id: 'CONC_28' });
+            newElements.push({ id: elemCount++, type: 'frame', nodes: [n1.id, n2.id], section_id: 'BEAM_DEF', material_id: '4000Psi' });
           }
           if (y < numBaysY) {
             const n1 = newNodes.find(n => n.x === x*bayWidthX && n.y === y*bayWidthY && n.z === z*floorHeight);
             const n2 = newNodes.find(n => n.x === x*bayWidthX && n.y === (y+1)*bayWidthY && n.z === z*floorHeight);
-            newElements.push({ id: elemCount++, type: 'frame', nodes: [n1.id, n2.id], section_id: 'BEAM_DEF', material_id: 'CONC_28' });
+            newElements.push({ id: elemCount++, type: 'frame', nodes: [n1.id, n2.id], section_id: 'BEAM_DEF', material_id: '4000Psi' });
           }
         }
       }
     }
 
+    // Definir materiales base según unidades (MKS por defecto)
+    const isUS = config.units?.includes('ft');
+    const matConcrete = { 
+      id: '4000Psi', name: '4000Psi', type: 'Concrete', color: '#ff00ff',
+      density: isUS ? 2402.77 : 2400, 
+      weightVol: isUS ? 23.56 : 2400, // asumiendo kN o kgf según unidad
+      E: isUS ? 24855580 : 25000000000, 
+      U: 0.2, A: 0.0000099, G: 10356490, fc: isUS ? 28000 : 28000000 
+    };
+    
+    const matRebar = { 
+      id: 'A615Gr60', name: 'A615Gr60', type: 'Rebar', color: '#ffff00',
+      density: 7849.047, weightVol: isUS ? 76.97 : 7850,
+      E: isUS ? 200000000 : 200000000000, 
+      U: 0.3, A: 0.0000117, G: 76923000,
+      Fy: isUS ? 420000 : 420000000, Fu: isUS ? 630000 : 630000000 
+    };
+
     set({
       nodes: newNodes,
       elements: newElements,
       shells: [], // Limpiar losas viejas al regenerar
+      metadata: { ...get().metadata, units: config.units || 'm, kgf, C' },
       sections: [
-        { id: 'COL_DEF', A: 0.16, Ix: 0.002, Iy: 0.002, J: 0.003, params: { b: 0.4, h: 0.4 } },
-        { id: 'BEAM_DEF', A: 0.12, Ix: 0.001, Iy: 0.0005, J: 0.001, params: { b: 0.3, h: 0.4 } }
+        { id: 'COL_DEF', name: 'COL_40x40', type: 'Rectangular', material_id: '4000Psi', A: 0.16, Ix: 0.002133, Iy: 0.002133, J: 0.004266, params: { b: 0.4, h: 0.4 } },
+        { id: 'BEAM_DEF', name: 'VIGA_30x40', type: 'Rectangular', material_id: '4000Psi', A: 0.12, Ix: 0.0016, Iy: 0.0009, J: 0.0025, params: { b: 0.3, h: 0.4 } }
       ],
-      materials: [{ id: 'CONC_28', E: 25000000000, G: 10000000000, nu: 0.2, density: 2400 }],
+      materials: [matConcrete, matRebar],
       wizardConfig: config,
       results: null
     });

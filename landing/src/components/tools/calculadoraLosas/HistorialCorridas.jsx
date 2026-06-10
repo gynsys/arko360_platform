@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { calculadoraService } from '../../../services/calculadoraService';
+import toast from 'react-hot-toast';
 
 const HistorialCorridas = ({ onCargarCorrida, onClose }) => {
   const [corridas, setCorridas] = useState([]);
@@ -16,7 +17,7 @@ const HistorialCorridas = ({ onCargarCorrida, onClose }) => {
       setCorridas(data);
     } catch (error) {
       console.error(error);
-      alert('Error al cargar el historial.');
+      toast.error('Error al cargar el historial.');
     } finally {
       setLoading(false);
     }

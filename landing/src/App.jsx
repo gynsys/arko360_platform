@@ -16,6 +16,7 @@ import BiblioArticle from './components/BiblioArticle.jsx';
 import MixDesignCalculator from './components/tools/MixDesignCalculator.jsx';
 import FEA3DContainer from './components/tools/fea3d/FEA3DContainer.jsx';
 import { getSiteConfig } from './services/api.js';
+import { Toaster } from 'react-hot-toast';
 
 export const SiteConfigContext = React.createContext(null);
 
@@ -107,6 +108,7 @@ export default function App() {
 
   return (
     <SiteConfigContext.Provider value={config}>
+      <Toaster position="bottom-right" toastOptions={{ className: 'font-sans text-sm shadow-xl' }} />
       <Navbar />
       <Routes>
         <Route path="/" element={<LandingPage />} />
