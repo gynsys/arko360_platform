@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Table as TableIcon, Download } from 'lucide-react';
 import { useStructureStore } from './useStructureStore';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 export function ResultsTableModal({ onClose }) {
   const { results, loadCombinations, nodes, elements } = useStructureStore();
@@ -55,7 +55,7 @@ export function ResultsTableModal({ onClose }) {
         });
       });
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: 28,
         head: [['Story', 'Element', 'Output Case', 'Step Type', 'Station (m)', 'P', 'V2', 'V3', 'T', 'M2', 'M3']],
         body: rows,
@@ -90,7 +90,7 @@ export function ResultsTableModal({ onClose }) {
         });
       });
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: 28,
         head: [['Story', 'Joint', 'Output Case', 'U1', 'U2', 'U3', 'R1', 'R2', 'R3']],
         body: rows,

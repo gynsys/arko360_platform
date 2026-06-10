@@ -76,6 +76,36 @@ export function PropertyPanel() {
           </div>
 
           <div className="pt-4 border-t border-slate-800">
+            <label className="text-xs font-bold text-slate-400 block mb-2">Asignar Apoyo (Restraints)</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button 
+                onClick={() => updateNode(node.id, { restraint: { ux: true, uy: true, uz: true, rx: true, ry: true, rz: true }})}
+                className="bg-slate-800 hover:bg-blue-600/30 hover:text-blue-400 border border-slate-700 p-2 rounded-lg text-xs font-bold transition-all"
+              >
+                Empotrado
+              </button>
+              <button 
+                onClick={() => updateNode(node.id, { restraint: { ux: true, uy: true, uz: true, rx: false, ry: false, rz: false }})}
+                className="bg-slate-800 hover:bg-emerald-600/30 hover:text-emerald-400 border border-slate-700 p-2 rounded-lg text-xs font-bold transition-all"
+              >
+                Articulado
+              </button>
+              <button 
+                onClick={() => updateNode(node.id, { restraint: { ux: false, uy: false, uz: true, rx: false, ry: false, rz: false }})}
+                className="bg-slate-800 hover:bg-orange-600/30 hover:text-orange-400 border border-slate-700 p-2 rounded-lg text-xs font-bold transition-all"
+              >
+                Rodillo (Z)
+              </button>
+              <button 
+                onClick={() => updateNode(node.id, { restraint: null })}
+                className="bg-slate-800 hover:bg-red-600/30 hover:text-red-400 border border-slate-700 p-2 rounded-lg text-xs font-bold transition-all"
+              >
+                Libre
+              </button>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-800">
             <label className="text-xs font-bold text-slate-400 block mb-2">Asignar Carga Puntual (kN)</label>
             <div className="flex gap-2 mb-2">
               <select id="q_dir" className="bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">

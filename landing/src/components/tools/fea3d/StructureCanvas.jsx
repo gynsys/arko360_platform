@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid, GizmoHelper, GizmoViewport } from '@react-three/drei';
+import { OrbitControls, Grid, GizmoHelper, GizmoViewport, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStructureStore } from './useStructureStore';
 
@@ -162,22 +162,58 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
     geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3));
     geo.computeVertexNormals();
-    return geo;
+
+    // Encontrar picos para el texto
+    let maxAbsVal = 0;
+    let maxPoint = null;
+    let minPoint = null;
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+
+    points.forEach(p => {
+      if (p.val > maxVal) { maxVal = p.val; maxPoint = p.offset; }
+      if (p.val < minVal) { minVal = p.val; minPoint = p.offset; }
+    });
+
+    return { geo, maxPoint, minPoint, maxVal, minVal };
   }, [stations, scale, resultType, start, end]);
 
   return (
-    <mesh geometry={geometry}>
-      <meshBasicMaterial vertexColors transparent opacity={0.6} side={THREE.DoubleSide} />
-    </mesh>
+    <group>
+      <mesh geometry={geometry.geo}>
+        <meshBasicMaterial vertexColors transparent opacity={0.6} side={THREE.DoubleSide} />
+      </mesh>
+      
+      {/* Textos de Picos */}
+      {geometry.maxPoint && Math.abs(geometry.maxVal) > 1e-4 && (
+        <Text 
+          position={[geometry.maxPoint.x, geometry.maxPoint.y, geometry.maxPoint.z + 0.2]} 
+          fontSize={0.25} color="white" outlineColor="black" outlineWidth={0.05}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          {geometry.maxVal.toFixed(2)}
+        </Text>
+      )}
+      {geometry.minPoint && Math.abs(geometry.minVal) > 1e-4 && geometry.maxVal !== geometry.minVal && (
+        <Text 
+          position={[geometry.minPoint.x, geometry.minPoint.y, geometry.minPoint.z + 0.2]} 
+          fontSize={0.25} color="white" outlineColor="black" outlineWidth={0.05}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          {geometry.minVal.toFixed(2)}
+        </Text>
+      )}
+    </group>
   );
 }
 
-function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, hasRestraint }) {
+function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint }) {
   const { selectedIds, toggleSelection, isDrawingShell, drawingNodes, addNodeToDrawing, viewMode } = useStructureStore();
   
   const isSelected = selectedIds.includes(id);
   const isPartofDrawing = drawingNodes.includes(id);
   const isResultsMode = viewMode === 'results';
+  const hasRestraint = !!restraint;
 
   const handleClick = (e) => {
     if (isResultsMode) return;
@@ -189,15 +225,56 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, hasRestraint }) {
     }
   };
 
+  // Determinar tipo de apoyo
+  let supportMesh = null;
+  if (hasRestraint) {
+    const isFixed = restraint.ux && restraint.uy && restraint.uz && restraint.rx && restraint.ry && restraint.rz;
+    const isPinned = restraint.ux && restraint.uy && restraint.uz && !restraint.rx && !restraint.ry && !restraint.rz;
+    const isRoller = !restraint.ux && !restraint.uy && restraint.uz && !restraint.rx && !restraint.ry && !restraint.rz;
+
+    if (isFixed) {
+      supportMesh = (
+        <mesh position={[0, 0, -0.15]}>
+          <boxGeometry args={[0.3, 0.3, 0.3]} />
+          <meshStandardMaterial color="#3b82f6" opacity={0.8} transparent />
+        </mesh>
+      );
+    } else if (isPinned) {
+      supportMesh = (
+        <mesh position={[0, 0, -0.15]} rotation={[Math.PI / 2, 0, 0]}>
+          <coneGeometry args={[0.2, 0.3, 4]} />
+          <meshStandardMaterial color="#10b981" opacity={0.8} transparent />
+        </mesh>
+      );
+    } else if (isRoller) {
+      supportMesh = (
+        <mesh position={[0, 0, -0.1]} rotation={[0, 0, 0]}>
+          <cylinderGeometry args={[0.15, 0.15, 0.2, 16]} />
+          <meshStandardMaterial color="#f97316" opacity={0.8} transparent />
+        </mesh>
+      );
+    } else {
+      supportMesh = (
+        <mesh position={[0, 0, -0.1]}>
+          <boxGeometry args={[0.2, 0.2, 0.1]} />
+          <meshStandardMaterial color="#64748b" opacity={0.8} transparent />
+        </mesh>
+      );
+    }
+  }
+
   return (
-    <mesh position={[x + dx, y + dy, z + dz]} onClick={handleClick}>
-      <sphereGeometry args={[0.08, 8, 8]} />
-      <meshStandardMaterial
-        color={isPartofDrawing ? '#fb923c' : isSelected ? '#facc15' : hasRestraint ? '#ef4444' : isResultsMode ? '#38bdf8' : '#60a5fa'}
-        emissive={isPartofDrawing ? '#fb923c' : '#000'}
-        emissiveIntensity={0.5}
-      />
-    </mesh>
+    <group position={[x + dx, y + dy, z + dz]} onClick={handleClick}>
+      <mesh>
+        <sphereGeometry args={[0.08, 8, 8]} />
+        <meshStandardMaterial
+          color={isPartofDrawing ? '#fb923c' : isSelected ? '#facc15' : hasRestraint ? '#ef4444' : isResultsMode ? '#38bdf8' : '#60a5fa'}
+          emissive={isPartofDrawing ? '#fb923c' : '#000'}
+          emissiveIntensity={0.5}
+        />
+      </mesh>
+      {supportMesh && !isResultsMode && supportMesh}
+    </group>
   );
 }
 
@@ -218,7 +295,21 @@ function PointLoadArrow({ node, load }) {
 
   const origin = new THREE.Vector3(node.x, node.y, node.z).sub(dir.clone().multiplyScalar(length));
 
-  return <arrowHelper args={[dir, origin, length, color, 0.4, 0.2]} />;
+  return (
+    <group>
+      <arrowHelper args={[dir, origin, length, color, 0.4, 0.2]} />
+      <Text 
+        position={[origin.x, origin.y, origin.z + 0.2]} 
+        fontSize={0.3} 
+        color="#f97316" 
+        outlineColor="black" 
+        outlineWidth={0.05}
+        rotation={[Math.PI / 2, 0, 0]} // Mirando hacia arriba en el grid XY
+      >
+        {Math.abs(load.magnitude)} kN
+      </Text>
+    </group>
+  );
 }
 
 export function StructureCanvas() {
@@ -267,7 +358,7 @@ export function StructureCanvas() {
         {/* Nodos */}
         {nodes.map(n => {
           const d = getDisplacement(n.id);
-          return <NodePoint key={n.id} {...n} dx={d[0]} dy={d[1]} dz={d[2]} hasRestraint={!!n.restraint} />;
+          return <NodePoint key={n.id} {...n} dx={d[0]} dy={d[1]} dz={d[2]} restraint={n.restraint} />;
         })}
 
         {/* Cargas Puntuales */}

@@ -31,6 +31,7 @@ export const useStructureStore = create((set, get) => ({
   rightClickedElementId: null, // ID para modal de diagrama de elemento
   wizardConfig: null,
   isSaved: true,
+  currentUser: null, // Guardará { id, email, name }
 
   // Estado para dibujo de losas
   isDrawingShell: false,
@@ -48,6 +49,7 @@ export const useStructureStore = create((set, get) => ({
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   setRightClickedElementId: (id) => set({ rightClickedElementId: id }),
   setMetadata: (data) => set(state => ({ metadata: { ...state.metadata, ...data } })),
+  setCurrentUser: (user) => set({ currentUser: user }),
   
   setResultsMode: (resultsData) => set((state) => {
     // 1. Encontrar la combinación por defecto (la primera)

@@ -7,6 +7,7 @@ from app.api.v1.endpoints import arko
 from app.api.v1.endpoints import arko_tenants
 from app.api.v1.endpoints import arko_landing_sites
 from app.api.v1.endpoints import calculadora
+from app.api.v1.endpoints import arko_app
 
 api_router = APIRouter()
 
@@ -25,4 +26,7 @@ api_router.include_router(
 )
 api_router.include_router(
     solver.router, prefix="/arko3d", tags=["arko3d_solver"]
+)
+api_router.include_router(
+    arko_app.router, prefix="/arko_app", tags=["arko_app"]
 )

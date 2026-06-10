@@ -14,9 +14,13 @@ import { SelectElementsModal } from './SelectElementsModal';
 import { AssignSectionModal } from './AssignSectionModal';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
-import { Calculator } from 'lucide-react';
+import { Calculator, ChevronRight, ChevronLeft, LogIn, Cloud } from 'lucide-react';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { MenuDropdown } from './MenuDropdown';
+import { AuthModal } from './AuthModal';
+import { ProjectsDashboardModal } from './ProjectsDashboardModal';
+import { createProject, updateProject, loadTokenFromStorage } from './api';
 
 export default function FEA3DContainer() {
   const [wizardOpen, setWizardOpen] = useState(true);
@@ -27,14 +31,26 @@ export default function FEA3DContainer() {
   const [tablesModalOpen, setTablesModalOpen] = useState(false);
   const [selectModalOpen, setSelectModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [projectsModalOpen, setProjectsModalOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [currentProjectId, setCurrentProjectId] = useState(null); // ID en base de datos
+  
   const fileInputRef = useRef(null);
 
   const { 
     wizardConfig, elements, shells, metadata, setMetadata,
     exportProject, importProject, isDrawingShell, toggleDrawingShell, drawingNodes,
     viewMode, activeResultType, setResultsMode,
-    isSaved
+    isSaved, currentUser, setCurrentUser
   } = useStructureStore();
+
+  useEffect(() => {
+    // Intentar cargar token de sesión al iniciar
+    loadTokenFromStorage();
+    // En un app real, harías fetch del /me para obtener el usuario.
+    // Por ahora confiaremos en que el token está si loadTokenFromStorage no lanza error (simplificado).
+  }, []);
 
   // Prevenir cierre de pestaña si hay cambios sin guardar
   useEffect(() => {
@@ -64,6 +80,41 @@ export default function FEA3DContainer() {
 
   const { solveMutation } = useSolver('project-001');
   const [isSolving, setIsSolving] = useState(false);
+
+  const handleSaveToCloud = async () => {
+    if (!currentUser) {
+      setAuthModalOpen(true);
+      return;
+    }
+    
+    const projectData = {
+      name: metadata.name || 'Sin Título',
+      topology: {
+        nodes: useStructureStore.getState().nodes,
+        elements: useStructureStore.getState().elements,
+        shells: useStructureStore.getState().shells,
+        materials: useStructureStore.getState().materials,
+        sections: useStructureStore.getState().sections,
+        loads: useStructureStore.getState().loads,
+        combinations: useStructureStore.getState().loadCombinations,
+      },
+      results: useStructureStore.getState().results
+    };
+
+    try {
+      if (currentProjectId) {
+        await updateProject(currentProjectId, projectData);
+        toast.success("Proyecto actualizado en la nube");
+      } else {
+        const res = await createProject(projectData);
+        setCurrentProjectId(res.id);
+        toast.success("Proyecto guardado en la nube");
+      }
+      useStructureStore.setState({ isSaved: true });
+    } catch (err) {
+      toast.error("Error al guardar en la nube");
+    }
+  };
 
   const handleRunAnalysis = async () => {
     setIsSolving(true);
@@ -116,198 +167,123 @@ export default function FEA3DContainer() {
     <div className="flex flex-col h-[calc(100vh-80px)] mt-[80px] overflow-hidden bg-slate-900 font-sans">
       
       {/* ── Toolbar Superior ── */}
-      <div className="flex items-center gap-3 px-4 h-14 min-h-[56px] bg-slate-800 border-b border-slate-700 z-50">
+      <div className="flex items-center justify-between px-4 h-14 min-h-[56px] bg-slate-800 border-b border-slate-700 z-50">
         
-        {/* Archivo */}
-        <div className="flex items-center gap-1 border-r border-slate-700 pr-3">
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all"
-            title="Abrir Proyecto (.arko3d)"
-          >
-            <FolderOpen size={18} />
-          </button>
-          <button 
-            onClick={exportProject}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all"
-            title="Descargar Copia Local"
-          >
-            <Save size={18} />
-          </button>
+        <div className="flex items-center gap-1">
+          <MenuDropdown title="File" items={[
+            { label: 'Nuevo Proyecto', icon: Plus, onClick: () => setWizardOpen(true), disabled: isResultsMode },
+            { separator: true },
+            { label: 'Abrir de la Nube', icon: Cloud, onClick: () => {
+                if (!currentUser) setAuthModalOpen(true);
+                else setProjectsModalOpen(true);
+              } 
+            },
+            { label: 'Guardar en la Nube', icon: Save, onClick: handleSaveToCloud },
+            { separator: true },
+            { label: 'Abrir Local (.arko3d)', icon: FolderOpen, onClick: () => fileInputRef.current?.click() },
+            { label: 'Guardar Copia Local', icon: Save, onClick: exportProject }
+          ]} />
+
+          <MenuDropdown title="Define" items={[
+            { label: 'Materiales', icon: Settings, onClick: () => setMaterialsModalOpen(true), disabled: isResultsMode },
+            { label: 'Secciones', icon: Settings, onClick: () => setSectionsModalOpen(true), disabled: isResultsMode },
+            { label: 'Combinaciones de Carga', icon: Calculator, onClick: () => setCombosModalOpen(true), disabled: isResultsMode }
+          ]} />
+
+          <MenuDropdown title="Draw" items={[
+            { label: isDrawingShell ? `Seleccione Nudos (${drawingNodes.length}/4)` : 'Dibujar Losa', icon: MousePointer2, onClick: toggleDrawingShell, disabled: isResultsMode },
+            { label: 'Losa (Formulario)', icon: Layers, onClick: () => setShellPanelOpen(true), disabled: isResultsMode }
+          ]} />
+
+          <MenuDropdown title="Assign" items={[
+            { label: 'Seleccionar (Select)', icon: MousePointer2, onClick: () => setSelectModalOpen(true), disabled: isResultsMode },
+            { label: 'Asignar Propiedades', icon: Settings, onClick: () => setAssignModalOpen(true), disabled: isResultsMode }
+          ]} />
+
+          <MenuDropdown title="Analyze" items={[
+            { label: 'Ejecutar Análisis', icon: Play, onClick: handleRunAnalysis, disabled: isResultsMode || totalElements === 0 }
+          ]} />
+
+          <MenuDropdown title="Display" items={[
+            { label: 'Tablas de Resultados', icon: Settings, onClick: () => setTablesModalOpen(true), disabled: !isResultsMode }
+          ]} />
+          
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".arko3d,.json" />
         </div>
 
-        {/* Geometría */}
-        <button
-          onClick={() => setWizardOpen(true)}
-          disabled={isResultsMode}
-          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
-            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
-          }`}
-        >
-          <Settings size={14} />
-          GEOMETRÍA
-        </button>
-
-        {/* Dibujo de Losas (click en canvas) */}
-        <button
-          onClick={toggleDrawingShell}
-          disabled={isResultsMode}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-            isResultsMode ? 'bg-slate-800 text-slate-500 cursor-not-allowed' :
-            isDrawingShell 
-            ? 'bg-orange-600 text-white animate-pulse' 
-            : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
-          }`}
-        >
-          {isDrawingShell ? <MousePointer2 size={14} /> : <Plus size={14} />}
-          {isDrawingShell ? `SELECCIONE NUDOS (${drawingNodes.length}/4)` : 'DIBUJAR LOSA'}
-        </button>
-
-        {/* Losa por formulario */}
-        <button
-          onClick={() => setShellPanelOpen(true)}
-          disabled={isResultsMode}
-          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
-            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-indigo-900/60 border-indigo-700/50 text-indigo-300 hover:bg-indigo-800/60'
-          }`}
-          title="Definir losa por formulario"
-        >
-          <Layers size={14} />
-          + LOSA
-        </button>
-
-        {/* Combinaciones */}
-        <button
-          onClick={() => setCombosModalOpen(true)}
-          disabled={isResultsMode}
-          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ml-2 ${
-            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
-          }`}
-          title="Gestionar Combinaciones de Carga"
-        >
-          <Calculator size={14} />
-          COMBINACIONES
-        </button>
-
-        {/* Separador */}
-        <div className="w-px h-8 bg-slate-700 mx-1"></div>
-
-        {/* Select & Assign */}
-        <button
-          onClick={() => setSelectModalOpen(true)}
-          disabled={isResultsMode}
-          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
-            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
-          }`}
-          title="Select Elements"
-        >
-          SELECT
-        </button>
-        <button
-          onClick={() => setAssignModalOpen(true)}
-          disabled={isResultsMode}
-          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
-            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-blue-900/60 border-blue-700/50 text-blue-300 hover:bg-blue-800/60'
-          }`}
-          title="Assign Section/Material"
-        >
-          ASSIGN
-        </button>
-
-        {/* Separador */}
-        <div className="w-px h-8 bg-slate-700 mx-1"></div>
-
-        {/* Define Materials & Sections */}
-        <button
-          onClick={() => setMaterialsModalOpen(true)}
-          disabled={isResultsMode}
-          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
-            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
-          }`}
-          title="Definir Materiales"
-        >
-          MATERIALES
-        </button>
-        <button
-          onClick={() => setSectionsModalOpen(true)}
-          disabled={isResultsMode}
-          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
-            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
-          }`}
-          title="Definir Secciones"
-        >
-          SECCIONES
-        </button>
-
-        {isResultsMode && (
-          <button
-            onClick={() => setTablesModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 border border-indigo-500 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold text-white transition-all ml-2"
-            title="Ver Tablas de Resultados"
-          >
-            TABLAS
-          </button>
-        )}
-
-        <div className="flex-1" />
-
-        {/* Metadata & Status */}
-        <div className="flex flex-col items-end px-4">
-          <input 
-            value={metadata.name}
-            onChange={(e) => setMetadata({ name: e.target.value })}
-            className="bg-transparent text-white text-sm font-bold text-right outline-none focus:border-b border-blue-500"
-          />
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest">
-              {totalElements} Elementos
-            </span>
-            <select
-              value={metadata.units || 'm, kN, C'}
-              onChange={(e) => setMetadata({ units: e.target.value })}
-              className="bg-slate-800 text-slate-300 text-[9px] uppercase font-bold outline-none border border-slate-600 rounded px-1 py-0.5 cursor-pointer"
+        <div className="flex items-center gap-3">
+          {currentUser ? (
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
+              <span className="bg-blue-600/20 text-blue-400 px-3 py-1.5 rounded-lg border border-blue-500/30">
+                {currentUser.name}
+              </span>
+            </div>
+          ) : (
+            <button 
+              onClick={() => setAuthModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-bold transition-colors"
             >
-              <option value="m, kN, C">m, kN, C</option>
-              <option value="mm, N, C">mm, N, C</option>
-              <option value="m, kgf, C">m, kgf, C</option>
-              <option value="m, tonf, C">m, tonf, C</option>
-              <option value="ft, kip, F">ft, kip, F</option>
-              <option value="in, lb, F">in, lb, F</option>
-            </select>
-          </div>
+              <LogIn size={14} />
+              Iniciar Sesión
+            </button>
+          )}
+          
+          <button
+            onClick={handleRunAnalysis}
+            disabled={isSolving || totalElements === 0}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold shadow-lg transition-all ${
+              isSolving || totalElements === 0 
+                ? 'bg-slate-600 text-slate-400 cursor-not-allowed' 
+                : isResultsMode 
+                  ? 'bg-orange-600 hover:bg-orange-500 text-white animate-pulse'
+                  : 'bg-green-600 hover:bg-green-500 text-white'
+            }`}
+          >
+            {isSolving ? (
+              <span className="animate-spin">⌛</span>
+            ) : (
+              <Play size={16} className={isResultsMode ? 'fill-current' : ''} />
+            )}
+            {isSolving ? 'CALCULANDO...' : isResultsMode ? 'ACTUALIZAR RESULTADOS' : 'RUN'}
+          </button>
         </div>
-
-        {/* Acción Principal */}
-        <button
-          onClick={handleRunAnalysis}
-          disabled={isSolving || totalElements === 0 || isResultsMode}
-          className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-black shadow-lg transition-all active:scale-95 ${
-            isSolving || isResultsMode
-            ? 'bg-slate-700 text-slate-400 cursor-not-allowed shadow-none' 
-            : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/40'
-          }`}
-        >
-          <Play size={14} fill="currentColor" className={isSolving ? 'animate-spin' : ''} />
-          {isSolving ? 'CALCULANDO...' : 'CALCULAR'}
-        </button>
       </div>
 
-      {/* ── Área de Trabajo ── */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* ── Area Principal (Canvas + Sidebar) ── */}
+      <div className="flex flex-1 relative overflow-hidden">
+        
+        {/* Render Canvas ocupando flex-1 */}
         <div className="flex-1 relative">
-          {isDrawingShell && !isResultsMode && (
-            <div className="absolute top-4 left-4 z-10 bg-orange-600 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl border border-orange-400">
-              MODO DIBUJO: Seleccione 4 nudos para crear la losa
+          {hasModel ? (
+            <StructureCanvas />
+          ) : (
+            <div className="flex h-full items-center justify-center text-slate-500 bg-slate-900">
+              <div className="text-center">
+                <Building2 size={48} className="mx-auto mb-4 opacity-50" />
+                <p>Usa la barra de menús para iniciar un proyecto.</p>
+              </div>
             </div>
           )}
-          <ResultsPanel />
-          <StructureCanvas />
           <ElementResultsModal />
         </div>
 
-        <div className="w-[340px] border-l border-slate-800 shadow-2xl z-20 bg-slate-900">
-          <PropertyPanel />
+        {/* Botón Abatible del Sidebar */}
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 z-40" style={{ transform: isSidebarOpen ? 'translateX(-320px) translateY(-50%)' : 'translateY(-50%)' }}>
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="bg-slate-800 border border-slate-700 rounded-l-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 shadow-xl"
+            title={isSidebarOpen ? "Ocultar Panel" : "Mostrar Panel"}
+          >
+            {isSidebarOpen ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          </button>
+        </div>
+
+        {/* Panel Lateral (Property / Results) */}
+        <div 
+          className="bg-slate-800 border-l border-slate-700 flex flex-col h-full shadow-2xl transition-all duration-300 absolute right-0 top-0 bottom-0 z-30"
+          style={{ width: '320px', transform: isSidebarOpen ? 'translateX(0)' : 'translateX(100%)' }}
+        >
+          {isResultsMode ? <ResultsPanel /> : <PropertyPanel />}
         </div>
       </div>
 
@@ -319,6 +295,9 @@ export default function FEA3DContainer() {
       {tablesModalOpen && <ResultsTableModal onClose={() => setTablesModalOpen(false)} />}
       {selectModalOpen && <SelectElementsModal onClose={() => setSelectModalOpen(false)} />}
       {assignModalOpen && <AssignSectionModal onClose={() => setAssignModalOpen(false)} />}
+      
+      {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} onLoginSuccess={(u) => { setCurrentUser(u); setAuthModalOpen(false); }} />}
+      {projectsModalOpen && <ProjectsDashboardModal onClose={() => setProjectsModalOpen(false)} />}
     </div>
   );
 }
