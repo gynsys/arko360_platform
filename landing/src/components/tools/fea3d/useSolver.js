@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL 
-  ? `${import.meta.env.VITE_API_URL}/v1/arko3d` 
+  ? `${import.meta.env.VITE_API_URL}/arko3d` 
   : "http://localhost:8000/api/v1/arko3d";
 
 export function useSolver(projectId) {
