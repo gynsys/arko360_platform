@@ -32,7 +32,7 @@ async def submit_solver_job(project_id: str, topology: Topology):
                 project.results = results
             db.commit()
             
-        return {"job_id": project_id, "status": "completed"}
+        return {"job_id": project_id, "status": "completed", **results}
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
