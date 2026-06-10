@@ -50,12 +50,30 @@ export default function FEA3DContainer() {
     setIsSolving(true);
     try {
       const state = useStructureStore.getState();
+      
+      const mappedMaterials = state.materials.map(m => ({
+        id: m.id,
+        E: m.E,
+        G: m.G,
+        nu: m.u !== undefined ? m.u : 0.2,
+        density: m.mass !== undefined ? m.mass : (m.density || 2.4)
+      }));
+
+      const mappedSections = state.sections.map(s => ({
+        id: s.id,
+        A: s.A,
+        Ix: s.I3 !== undefined ? s.I3 : s.Ix,
+        Iy: s.I2 !== undefined ? s.I2 : s.Iy,
+        J: s.J,
+        params: { b: s.b || 0, h: s.h || 0 }
+      }));
+
       const payload = {
         nodes: state.nodes,
         elements: state.elements,
         shells: state.shells,
-        materials: state.materials,
-        sections: state.sections,
+        materials: mappedMaterials,
+        sections: mappedSections,
         loads: state.loads || [],
         combinations: state.loadCombinations || []
       };
