@@ -58,7 +58,8 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
     >
       <meshStandardMaterial
         color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
-        transparent
+        transparent={isFaded}
+        depthWrite={!isFaded}
         opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? 0.8 : 0.25}
         side={THREE.DoubleSide}
         wireframe={isFaded}
@@ -94,6 +95,7 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
         color={isShadow ? '#334155' : isFaded ? '#475569' : isSelected ? '#facc15' : isResultsMode ? '#38bdf8' : '#94a3b8'} 
         linewidth={isShadow ? 1 : 2} 
         transparent={isShadow || isFaded}
+        depthWrite={!(isShadow || isFaded)}
         opacity={isShadow ? 0.3 : isFaded ? 0.15 : 1}
       />
     </line>
@@ -270,6 +272,7 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint, isFaded }) 
           emissive={isPartofDrawing ? '#fb923c' : '#000'}
           emissiveIntensity={0.5}
           transparent={isFaded}
+          depthWrite={!isFaded}
           opacity={isFaded ? 0.15 : 1}
         />
       </mesh>
@@ -583,7 +586,7 @@ export function StructureCanvas() {
   }
 
   return (
-    <div className="w-full h-full bg-slate-900">
+    <div className="w-full h-screen bg-slate-900">
       <Canvas 
         onPointerMissed={() => {
           if (!isDrawingShell && viewMode !== 'results') clearSelection();

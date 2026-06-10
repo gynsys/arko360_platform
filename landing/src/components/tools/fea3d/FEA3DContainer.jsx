@@ -166,7 +166,7 @@ export default function FEA3DContainer() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] mt-[80px] overflow-hidden bg-slate-900 font-sans">
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-900 font-sans">
       
       {/* ── Toolbar Superior ── */}
       <div className="flex items-center justify-between px-4 h-14 min-h-[56px] bg-slate-800 border-b border-slate-700 z-50">
