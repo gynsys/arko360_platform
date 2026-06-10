@@ -101,7 +101,8 @@ export const useStructureStore = create((set, get) => ({
       addShell({
         nodes: newDrawingNodes,
         thickness: 0.20,
-        loads: { CM: 2.0, CV: 1.8 } // Valores por defecto kN/m2
+        material_id: 'CONC_28',
+        loads: { CM: 2.0, CV: 1.8 } // Valores por defecto
       });
       toggleDrawingShell();
     } else {
