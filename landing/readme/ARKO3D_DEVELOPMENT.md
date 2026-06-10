@@ -58,7 +58,9 @@ landing/src/components/tools/fea3d/
 ├── StructureCanvas.jsx     ← Visor 3D (R3F): nudos como esferas, elementos como líneas
 ├── TemplateWizard.jsx      ← Modal inicial de configuración de plantilla
 ├── PropertyPanel.jsx       ← Panel derecho: editar nudo/elemento seleccionado
-├── DataEntryPanel.jsx      ← [EN DESARROLLO] Panel izquierdo: tablas CRUD
+├── ResultsTableModal.jsx   ← Tablas de resultados formato ETABS
+├── SelectElementsModal.jsx ← Selección masiva de elementos (tipo/sección/material)
+├── AssignSectionModal.jsx  ← Asignación de propiedades a selección
 ├── useStructureStore.js    ← Zustand store: nodes, elements, materials, sections, loads
 ├── useSolver.js            ← Hook de comunicación con API FastAPI
 └── utils.js                ← Helpers: geometría, unidades
@@ -82,11 +84,13 @@ backend/app/
 
 | Componente | Descripción | Estado |
 |---|---|---|
-| `TemplateWizard.jsx` | Modal con 4 plantillas (Edificio 3D, Pórtico 2D, Viga, Muro). Genera retícula de nudos y elementos. | ✅ |
+| `TemplateWizard.jsx` | Modal de generación. **¡NUEVO!** Pide Material Predominante (Concreto/Acero) y secciones de Viga/Columna obligatorias. | ✅ |
 | `useStructureStore.js` | Store Zustand con: `generateStructure()`, `addShell()`, `deleteShell()`, `updateShell()`, `exportProject()`, `importProject()`, `addLoad()`, `updateNode()`, `deleteNode()`, `updateElement()`, `deleteElement()`, modo dibujo (`isDrawingShell`, `drawingNodes`, `addNodeToDrawing`). | ✅ |
 | `StructureCanvas.jsx` | Visor 3D con R3F. Nudos como esferas de colores, elementos como líneas. Shells visualizados con `BufferGeometry` triangulada (2 triángulos por quad). Fix del error `Float32Array`. Modo dibujo de losas integrado. Deselección rápida al hacer clic en el fondo (`onPointerMissed`). | ✅ |
-| `PropertyPanel.jsx` | Panel derecho. Al clic en nudo: edita X,Y,Z y asigna cargas. Al clic en elemento: muestra info. Al clic en shell: edita espesor y cargas CM/CV. Botón **Eliminar** para nudo, elemento o shell. | ✅ |
-| `FEA3DContainer.jsx` | Layout base. Toolbar con Abrir/Guardar, botón DIBUJAR LOSA, botón **+ LOSA**, botón GEOMETRÍA, nombre editable del proyecto y **Selector de Unidades** (SI, Imperial, MKS técnico COVENIN). | ✅ |
+| `PropertyPanel.jsx` | Panel derecho. Maneja selección múltiple. Al clic en nudo: edita X,Y,Z y asigna cargas. Al clic en elemento: muestra info. Al clic en shell: edita espesor y cargas. Botón **Eliminar** para nudos, elementos o shells. | ✅ |
+| `FEA3DContainer.jsx` | Layout base. Toolbar con Abrir/Guardar, SELECT, ASSIGN, botones de definición y tablas. | ✅ |
+| `Select & Assign` | `SelectElementsModal.jsx` y `AssignSectionModal.jsx` implementados para selección masiva y asignación rápida de secciones estilo ETABS. | ✅ |
+| `ResultsTableModal.jsx` | Tablas estilo ETABS. Muestra Story, Element, Output Case y fuerzas ordenadas: P, V2, V3, T, M2, M3. | ✅ |
 | `ShellPanel.jsx` | Modal de formulario para definir losa maciza: selectores de 4 nudos, espesor, material, cargas CM/CV. Muestra área estimada y carga factorizada en tiempo real. | ✅ |
 | Limpieza Inteligente | Al eliminar elementos o losas, si algún nudo asociado queda huérfano (sin conexión a ninguna entidad), se elimina automáticamente de la estructura (`cleanupOrphans`). | ✅ |
 | Guardar / Abrir | Export `.arko3d` (JSON) vía `exportProject()` en el store y `FileReader` para importar. Botones en toolbar. | ✅ |
@@ -99,8 +103,7 @@ backend/app/
 
 | Feature | Descripción | Prioridad |
 |---|---|---|
-| **Wizard Editable** | Botón "Editar Modelo" para volver al wizard y modificar pisos, vanos, ejes sin perder datos. | 🔴 Alta |
-| `DataEntryPanel.jsx` | Panel CRUD izquierdo estilo ETABS: tablas de nudos, elementos, materiales, secciones, cargas. | 🔴 Alta |
+| `DataEntryPanel.jsx` | Panel CRUD izquierdo estilo ETABS: tablas de edición de nudos y cargas. | 🔴 Alta |
 | Botón "Ejecutar Análisis" | Conectar el solver Python desde el frontend vía `useSolver.js`. | 🔴 Alta |
 | Visualización de resultados | Diagrama de deformada, diagramas M, V, N sobre los elementos. | 🟡 Media |
 | Persistencia de proyectos | Guardar/cargar modelos en PostgreSQL (tabla `arko_projects_3d`). | 🟡 Media |

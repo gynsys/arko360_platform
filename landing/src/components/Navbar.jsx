@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { SiteConfigContext } from '../App.jsx';
 import { useContext } from 'react';
+import { useStructureStore } from './tools/fea3d/useStructureStore';
 
 const NAV_LINKS = [
   { label: 'Servicios', href: '/#servicios' },
@@ -21,6 +22,12 @@ export default function Navbar() {
   const navigate = useNavigate();
   const siteConfig = useContext(SiteConfigContext);
   
+  // ARKO3D Unsaved Changes Logic
+  const { elements, isSaved, exportProject } = useStructureStore();
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [pendingHref, setPendingHref] = useState(null);
+  const hasUnsavedChanges = elements.length > 0 && !isSaved;
+
   const logoUrl = siteConfig?.logoUrl || "/images/logo_aeko360.png";
 
   useEffect(() => {
@@ -41,6 +48,14 @@ export default function Navbar() {
   }, [location]);
 
   const handleLinkClick = (e, href) => {
+    // Interceptar navegación si estamos en ARKO3D y hay cambios sin guardar
+    if (location.pathname === '/arko3d' && href !== '/arko3d' && hasUnsavedChanges) {
+      e.preventDefault();
+      setPendingHref(href);
+      setShowWarningModal(true);
+      return;
+    }
+
     setMobileOpen(false);
     
     // If it's a hash link on the same page (landing)
@@ -178,6 +193,61 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Unsaved Changes Warning Modal */}
+      {showWarningModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-700 p-6 rounded-lg text-center max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-2">¡Cambios sin guardar!</h3>
+            <p className="text-slate-300 mb-6 text-sm">
+              Tienes un modelo de ARKO3D activo con cambios sin guardar. Si sales ahora, perderás tu progreso.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <button 
+                onClick={() => setShowWarningModal(false)} 
+                className="px-4 py-2 border border-slate-600 hover:bg-slate-800 text-white rounded text-sm font-bold transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => { 
+                  setShowWarningModal(false); 
+                  setMobileOpen(false);
+                  navigate(pendingHref); 
+                  if (pendingHref.startsWith('/#') && pendingHref !== '/#') {
+                    setTimeout(() => {
+                      const id = pendingHref.replace('/#', '');
+                      const el = document.getElementById(id);
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                  }
+                }} 
+                className="px-4 py-2 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded text-sm font-bold transition-colors"
+              >
+                Salir sin guardar
+              </button>
+              <button 
+                onClick={() => { 
+                  exportProject(); 
+                  setShowWarningModal(false); 
+                  setMobileOpen(false);
+                  navigate(pendingHref); 
+                  if (pendingHref.startsWith('/#') && pendingHref !== '/#') {
+                    setTimeout(() => {
+                      const id = pendingHref.replace('/#', '');
+                      const el = document.getElementById(id);
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                  }
+                }} 
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-bold shadow-md transition-colors"
+              >
+                Guardar y Salir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

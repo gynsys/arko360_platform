@@ -30,6 +30,7 @@ export const useStructureStore = create((set, get) => ({
   selectedIds: [],
   rightClickedElementId: null, // ID para modal de diagrama de elemento
   wizardConfig: null,
+  isSaved: true,
 
   // Estado para dibujo de losas
   isDrawingShell: false,
@@ -126,7 +127,8 @@ export const useStructureStore = create((set, get) => ({
 
   // --- CRUD NODOS ---
   updateNode: (id, data) => set((state) => ({
-    nodes: state.nodes.map(n => n.id === id ? { ...n, ...data } : n)
+    nodes: state.nodes.map(n => n.id === id ? { ...n, ...data } : n),
+    isSaved: false
   })),
   deleteNode: (id) => set((state) => {
     const newNodes = state.nodes.filter(n => n.id !== id);
@@ -136,75 +138,91 @@ export const useStructureStore = create((set, get) => ({
       nodes: cleanupOrphans(newNodes, newElements, newShells),
       elements: newElements,
       shells: newShells,
-      selectedIds: state.selectedIds.filter(sid => sid !== id)
+      selectedIds: state.selectedIds.filter(sid => sid !== id),
+      isSaved: false
     };
   }),
 
   // --- CRUD ELEMENTOS ---
   updateElement: (id, data) => set((state) => ({
-    elements: state.elements.map(e => e.id === id ? { ...e, ...data } : e)
+    elements: state.elements.map(e => e.id === id ? { ...e, ...data } : e),
+    isSaved: false
   })),
   deleteElement: (id) => set((state) => {
     const newElements = state.elements.filter(e => e.id !== id);
     return {
       elements: newElements,
       nodes: cleanupOrphans(state.nodes, newElements, state.shells),
-      selectedIds: state.selectedIds.filter(sid => sid !== id)
+      selectedIds: state.selectedIds.filter(sid => sid !== id),
+      isSaved: false
     };
   }),
 
   // --- CRUD SHELLS (LOSAS) ---
   addShell: (shell) => set((state) => ({
-    shells: [...state.shells, { ...shell, id: `S-${Date.now()}`, type: 'shell' }]
+    shells: [...state.shells, { ...shell, id: `S-${Date.now()}`, type: 'shell' }],
+    isSaved: false
   })),
   updateShell: (id, data) => set((state) => ({
-    shells: state.shells.map(s => s.id === id ? { ...s, ...data } : s)
+    shells: state.shells.map(s => s.id === id ? { ...s, ...data } : s),
+    isSaved: false
   })),
   deleteShell: (id) => set((state) => {
     const newShells = state.shells.filter(s => s.id !== id);
     return {
       shells: newShells,
       nodes: cleanupOrphans(state.nodes, state.elements, newShells),
-      selectedIds: state.selectedIds.filter(sid => sid !== id)
+      selectedIds: state.selectedIds.filter(sid => sid !== id),
+      isSaved: false
     };
   }),
 
   // --- CRUD MATERIALES ---
   addMaterial: (material) => set((state) => ({
-    materials: [...state.materials, { ...material }]
+    materials: [...state.materials, { ...material }],
+    isSaved: false
   })),
   updateMaterial: (id, data) => set((state) => ({
-    materials: state.materials.map(m => m.id === id ? { ...m, ...data } : m)
+    materials: state.materials.map(m => m.id === id ? { ...m, ...data } : m),
+    isSaved: false
   })),
   deleteMaterial: (id) => set((state) => ({
-    materials: state.materials.filter(m => m.id !== id)
+    materials: state.materials.filter(m => m.id !== id),
+    isSaved: false
   })),
 
   // --- CRUD SECCIONES ---
   addSection: (section) => set((state) => ({
-    sections: [...state.sections, { ...section }]
+    sections: [...state.sections, { ...section }],
+    isSaved: false
   })),
   updateSection: (id, data) => set((state) => ({
-    sections: state.sections.map(s => s.id === id ? { ...s, ...data } : s)
+    sections: state.sections.map(s => s.id === id ? { ...s, ...data } : s),
+    isSaved: false
   })),
   deleteSection: (id) => set((state) => ({
-    sections: state.sections.filter(s => s.id !== id)
+    sections: state.sections.filter(s => s.id !== id),
+    isSaved: false
   })),
 
   // --- CARGAS Y OTROS ---
   addLoad: (load) => set((state) => ({
-    loads: [...state.loads, { ...load, id: `L-${Date.now()}` }]
+    loads: [...state.loads, { ...load, id: `L-${Date.now()}` }],
+    isSaved: false
   })),
   
   // --- COMBINACIONES DE CARGA ---
   addLoadCombination: (combo) => set(state => ({ 
-    loadCombinations: [...state.loadCombinations, { ...combo, id: `C-${Date.now()}` }] 
+    loadCombinations: [...state.loadCombinations, { ...combo, id: `C-${Date.now()}` }],
+    isSaved: false
   })),
   updateLoadCombination: (id, data) => set(state => ({
-    loadCombinations: state.loadCombinations.map(c => c.id === id ? { ...c, ...data } : c)
+    loadCombinations: state.loadCombinations.map(c => c.id === id ? { ...c, ...data } : c),
+    isSaved: false
   })),
   deleteLoadCombination: (id) => set(state => ({
-    loadCombinations: state.loadCombinations.filter(c => c.id !== id)
+    loadCombinations: state.loadCombinations.filter(c => c.id !== id),
+    isSaved: false
   })),
   
   // --- PERSISTENCIA LOCAL ---
@@ -227,6 +245,7 @@ export const useStructureStore = create((set, get) => ({
     link.href = url;
     link.download = `${metadata.name.replace(/\s+/g, '_')}.arko3d`;
     link.click();
+    set({ isSaved: true });
   },
 
   importProject: (jsonData) => {
@@ -245,7 +264,8 @@ export const useStructureStore = create((set, get) => ({
         wizardConfig: data.wizardConfig || null,
         metadata: data.metadata || { name: 'Importado', author: '' },
         results: null,
-        selectedIds: []
+        selectedIds: [],
+        isSaved: true
       });
     } catch (e) {
       console.error("Error cargando archivo .arko3d", e);
@@ -345,7 +365,8 @@ export const useStructureStore = create((set, get) => ({
       sections: defaultSections,
       materials: defaultMaterials,
       wizardConfig: config,
-      results: null
+      results: null,
+      isSaved: false
     });
   }
 }));

@@ -15,6 +15,7 @@ import { AssignSectionModal } from './AssignSectionModal';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
 import { Calculator } from 'lucide-react';
+import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 export default function FEA3DContainer() {
@@ -31,8 +32,22 @@ export default function FEA3DContainer() {
   const { 
     wizardConfig, elements, shells, metadata, setMetadata,
     exportProject, importProject, isDrawingShell, toggleDrawingShell, drawingNodes,
-    viewMode, setResultsMode
+    viewMode,    activeResultType,
+    isSaved
   } = useStructureStore();
+
+  // Prevenir cierre de pestaña si hay cambios sin guardar
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (elements.length > 0 && !isSaved) {
+        e.preventDefault();
+        e.returnValue = ''; // Requerido por navegadores modernos para mostrar el prompt
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [elements.length, isSaved]);
 
   const hasModel = wizardConfig !== null;
   const isResultsMode = viewMode === 'results';

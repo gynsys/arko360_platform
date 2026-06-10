@@ -12,6 +12,12 @@ Este documento registra el estado actual del proyecto y los pasos pendientes par
    - Renderizado SVG dinámico con sistema de máscaras para ocultamiento de vigas, correas y nodos huérfanos.
    - Auditoría JSON (`impactoAberturas`) de cantidades de acero, concreto y deck removido/agregado.
 
+2. **Flujo ETABS en ARKO3D** - Implementado en el visor 3D web:
+   - **Selección Masiva y Asignación:** Modales `SelectElementsModal` y `AssignSectionModal` para manipular vigas/columnas en lote.
+   - **Wizard Avanzado:** Definición inicial de "Material Predominante" (Acero/Concreto) con preasignación de secciones por defecto.
+   - **Tablas de Resultados Estilo ETABS:** Visor tabular que consolida Story, Element, Output Case, y las fuerzas internas ordenadas (P, V2, V3, T, M2, M3).
+   - **Multi-Selección:** Soporte nativo para seleccionar múltiples elementos en R3F con tecla Shift/Ctrl.
+
 2. **Backend desarrollado** - Endpoints completos en `backend/app/api/v1/endpoints/arko.py`:
    - CRUD de blog (GET, POST, PUT, DELETE /api/v1/arko/admin/posts)
    - Autenticación (POST /api/v1/arko/auth/login)

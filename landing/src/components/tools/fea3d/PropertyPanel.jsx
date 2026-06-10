@@ -77,13 +77,26 @@ export function PropertyPanel() {
 
           <div className="pt-4 border-t border-slate-800">
             <label className="text-xs font-bold text-slate-400 block mb-2">Asignar Carga Puntual (kN)</label>
-            <div className="flex gap-2">
-              <input id="q_mag" type="number" defaultValue="10" className="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm"/>
-              <button 
-                className="bg-blue-600 hover:bg-blue-500 px-4 rounded-lg font-bold text-xs"
-                onClick={() => addLoad({ target_id: node.id, type: 'point', direction: 'Z', magnitude: -parseFloat(document.getElementById('q_mag').value) })}
-              >Z-</button>
+            <div className="flex gap-2 mb-2">
+              <select id="q_dir" className="bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
+                <option value="X">Eje Global X</option>
+                <option value="Y">Eje Global Y</option>
+                <option value="Z">Eje Global Z</option>
+              </select>
+              <input id="q_mag" type="number" placeholder="Magnitud" defaultValue="-10" className="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white"/>
             </div>
+            <button 
+              className="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-colors"
+              onClick={() => {
+                const mag = parseFloat(document.getElementById('q_mag').value);
+                const dir = document.getElementById('q_dir').value;
+                if (!isNaN(mag)) {
+                  addLoad({ target_id: node.id, type: 'point', direction: dir, magnitude: mag, load_case: 'CV' });
+                }
+              }}
+            >
+              Asignar Carga al Nudo
+            </button>
           </div>
         </div>
       )}

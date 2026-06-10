@@ -201,9 +201,29 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, hasRestraint }) {
   );
 }
 
+function PointLoadArrow({ node, load }) {
+  const { viewMode } = useStructureStore();
+  if (viewMode === 'results') return null;
+
+  const length = 1.5;
+  const color = 0xf97316; // Orange-500
+
+  // Direction logic
+  let dir = new THREE.Vector3(0, 0, -1);
+  if (load.direction === 'X') dir.set(Math.sign(load.magnitude), 0, 0);
+  else if (load.direction === 'Y') dir.set(0, Math.sign(load.magnitude), 0);
+  else if (load.direction === 'Z') dir.set(0, 0, Math.sign(load.magnitude));
+  
+  if (load.magnitude === 0) return null;
+
+  const origin = new THREE.Vector3(node.x, node.y, node.z).sub(dir.clone().multiplyScalar(length));
+
+  return <arrowHelper args={[dir, origin, length, color, 0.4, 0.2]} />;
+}
+
 export function StructureCanvas() {
   const { 
-    nodes, elements, shells, isDrawingShell, clearSelection,
+    nodes, elements, shells, loads, isDrawingShell, clearSelection,
     viewMode, results, activeResultCombo, activeResultType, displacementScale, diagramScale 
   } = useStructureStore();
 
@@ -248,6 +268,14 @@ export function StructureCanvas() {
         {nodes.map(n => {
           const d = getDisplacement(n.id);
           return <NodePoint key={n.id} {...n} dx={d[0]} dy={d[1]} dz={d[2]} hasRestraint={!!n.restraint} />;
+        })}
+
+        {/* Cargas Puntuales */}
+        {loads.map(load => {
+          if (load.type !== 'point') return null;
+          const targetNode = nodes.find(n => n.id === load.target_id);
+          if (!targetNode) return null;
+          return <PointLoadArrow key={load.id} node={targetNode} load={load} />;
         })}
         
         {/* Elementos y Diagramas */}

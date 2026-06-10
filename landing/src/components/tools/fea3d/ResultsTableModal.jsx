@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, Table as TableIcon } from 'lucide-react';
+import { X, Table as TableIcon, Download } from 'lucide-react';
 import { useStructureStore } from './useStructureStore';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export function ResultsTableModal({ onClose }) {
   const { results, loadCombinations, nodes, elements } = useStructureStore();
@@ -19,6 +21,92 @@ export function ResultsTableModal({ onClose }) {
 
   // Combinaciones con resultados
   const availableCombos = loadCombinations.filter(c => results.results[c.id]);
+
+  const exportPDF = () => {
+    const doc = new jsPDF('landscape');
+    const title = activeTab === 'forces' ? 'ARKO3D - Element Forces (Frames)' : 'ARKO3D - Joint Displacements';
+    
+    doc.setFontSize(14);
+    doc.text(title, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generado el: ${new Date().toLocaleString()}`, 14, 22);
+
+    if (activeTab === 'forces') {
+      const rows = [];
+      elements.forEach(el => {
+        availableCombos.forEach(combo => {
+          const comboData = results.results[combo.id];
+          const stations = comboData?.element_forces[el.id] || [];
+          stations.forEach((st, i) => {
+            rows.push([
+              'Base',
+              i === 0 ? el.id.toString() : '',
+              i === 0 ? combo.name : '',
+              'Max',
+              st.x.toFixed(3),
+              st.P.toExponential(3),
+              st.V2.toExponential(3),
+              st.V3.toExponential(3),
+              st.T.toExponential(3),
+              st.M2.toExponential(3),
+              st.M3.toExponential(3)
+            ]);
+          });
+        });
+      });
+
+      doc.autoTable({
+        startY: 28,
+        head: [['Story', 'Element', 'Output Case', 'Step Type', 'Station (m)', 'P', 'V2', 'V3', 'T', 'M2', 'M3']],
+        body: rows,
+        theme: 'striped',
+        styles: { fontSize: 8, cellPadding: 1, halign: 'right' },
+        headStyles: { fillColor: [37, 99, 235], halign: 'center' }, // blue-600
+        columnStyles: {
+          0: { halign: 'center' },
+          1: { halign: 'center', fontStyle: 'bold' },
+          2: { halign: 'center' },
+          3: { halign: 'center' },
+          4: { halign: 'center' }
+        }
+      });
+    } else {
+      const rows = [];
+      nodes.forEach(node => {
+        availableCombos.forEach((combo, i) => {
+          const comboData = results.results[combo.id];
+          const disp = comboData?.displacements[node.id] || [0,0,0,0,0,0];
+          rows.push([
+            'Base',
+            i === 0 ? node.id.toString() : '',
+            combo.name,
+            disp[0].toExponential(3),
+            disp[1].toExponential(3),
+            disp[2].toExponential(3),
+            disp[3].toExponential(3),
+            disp[4].toExponential(3),
+            disp[5].toExponential(3)
+          ]);
+        });
+      });
+
+      doc.autoTable({
+        startY: 28,
+        head: [['Story', 'Joint', 'Output Case', 'U1', 'U2', 'U3', 'R1', 'R2', 'R3']],
+        body: rows,
+        theme: 'striped',
+        styles: { fontSize: 8, cellPadding: 1, halign: 'right' },
+        headStyles: { fillColor: [37, 99, 235], halign: 'center' },
+        columnStyles: {
+          0: { halign: 'center' },
+          1: { halign: 'center', fontStyle: 'bold' },
+          2: { halign: 'center' }
+        }
+      });
+    }
+
+    doc.save(`arko3d_results_${activeTab}.pdf`);
+  };
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -133,8 +221,19 @@ export function ResultsTableModal({ onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-200 border-t border-slate-300 px-4 py-3 flex justify-end gap-2 rounded-b-md">
-          <button onClick={onClose} className="bg-blue-600 text-white px-6 py-1.5 rounded hover:bg-blue-700 font-medium">Done</button>
+        <div className="bg-slate-200 border-t border-slate-300 px-4 py-3 flex justify-end gap-3 rounded-b-md">
+          <button 
+            onClick={exportPDF} 
+            className="flex items-center gap-2 border border-slate-400 text-slate-700 px-4 py-1.5 rounded hover:bg-slate-300 font-bold transition-colors"
+          >
+            <Download size={16} /> PDF
+          </button>
+          <button 
+            onClick={onClose} 
+            className="bg-blue-600 text-white px-6 py-1.5 rounded hover:bg-blue-700 font-medium shadow-sm transition-colors"
+          >
+            Done
+          </button>
         </div>
       </div>
     </div>
