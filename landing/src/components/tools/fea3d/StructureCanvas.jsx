@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid, GizmoHelper, GizmoViewport, Text } from '@react-three/drei';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { OrbitControls, Grid, GizmoHelper, GizmoViewport, Text, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStructureStore } from './useStructureStore';
 
-function ShellMesh({ id, nodeIds, getDisplacement }) {
+function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
   const { nodes, selectedIds, toggleSelection, viewMode } = useStructureStore();
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
@@ -54,19 +54,20 @@ function ShellMesh({ id, nodeIds, getDisplacement }) {
   return (
     <mesh
       geometry={geometry}
-      onClick={(e) => { if(!isResultsMode) { e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); } }}
+      onClick={(e) => { if(!isResultsMode && !isFaded) { e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); } }}
     >
       <meshStandardMaterial
         color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
         transparent
-        opacity={isSelected ? 0.5 : isResultsMode ? 0.8 : 0.25}
+        opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? 0.8 : 0.25}
         side={THREE.DoubleSide}
+        wireframe={isFaded}
       />
     </mesh>
   );
 }
 
-function FrameElement({ start, end, id, isShadow }) {
+function FrameElement({ start, end, id, isShadow, isFaded }) {
   const { selectedIds, toggleSelection, setRightClickedElementId, viewMode } = useStructureStore();
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
@@ -82,20 +83,20 @@ function FrameElement({ start, end, id, isShadow }) {
     <line 
       geometry={geometry} 
       onClick={(e) => { 
-        if(!isResultsMode && !isShadow) { e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); } 
+        if(!isResultsMode && !isShadow && !isFaded) { e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); } 
       }}
       onContextMenu={(e) => {
-        if (isResultsMode && !isShadow) {
+        if (isResultsMode && !isShadow && !isFaded) {
           e.stopPropagation();
           setRightClickedElementId(id);
         }
       }}
     >
       <lineBasicMaterial 
-        color={isShadow ? '#334155' : isSelected ? '#facc15' : isResultsMode ? '#38bdf8' : '#94a3b8'} 
+        color={isShadow ? '#334155' : isFaded ? '#475569' : isSelected ? '#facc15' : isResultsMode ? '#38bdf8' : '#94a3b8'} 
         linewidth={isShadow ? 1 : 2} 
-        transparent={isShadow}
-        opacity={isShadow ? 0.3 : 1}
+        transparent={isShadow || isFaded}
+        opacity={isShadow ? 0.3 : isFaded ? 0.15 : 1}
       />
     </line>
   );
@@ -207,7 +208,7 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
   );
 }
 
-function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint }) {
+function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint, isFaded }) {
   const { selectedIds, toggleSelection, isDrawingShell, drawingNodes, addNodeToDrawing, viewMode } = useStructureStore();
   
   const isSelected = selectedIds.includes(id);
@@ -216,7 +217,7 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint }) {
   const hasRestraint = !!restraint;
 
   const handleClick = (e) => {
-    if (isResultsMode) return;
+    if (isResultsMode || isFaded) return;
     e.stopPropagation();
     if (isDrawingShell) {
       addNodeToDrawing(id);
@@ -268,12 +269,14 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint }) {
       <mesh>
         <sphereGeometry args={[0.08, 8, 8]} />
         <meshStandardMaterial
-          color={isPartofDrawing ? '#fb923c' : isSelected ? '#facc15' : hasRestraint ? '#ef4444' : isResultsMode ? '#38bdf8' : '#60a5fa'}
+          color={isFaded ? '#475569' : isPartofDrawing ? '#fb923c' : isSelected ? '#facc15' : hasRestraint ? '#ef4444' : isResultsMode ? '#38bdf8' : '#60a5fa'}
           emissive={isPartofDrawing ? '#fb923c' : '#000'}
           emissiveIntensity={0.5}
+          transparent={isFaded}
+          opacity={isFaded ? 0.15 : 1}
         />
       </mesh>
-      {supportMesh && !isResultsMode && supportMesh}
+      {supportMesh && !isResultsMode && !isFaded && supportMesh}
     </group>
   );
 }
@@ -312,10 +315,65 @@ function PointLoadArrow({ node, load }) {
   );
 }
 
+// Controlador para animar y posicionar la cámara según la vista activa
+function CameraController() {
+  const { cameraView, activeLevel, nodes } = useStructureStore();
+  const { camera, controls } = useThree();
+
+  useEffect(() => {
+    if (!controls) return;
+
+    // Calcular el centro geométrico de la estructura
+    let cx = 0, cy = 0, cz = 0;
+    if (nodes.length > 0) {
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+      let minZ = Infinity, maxZ = -Infinity;
+      nodes.forEach(n => {
+        if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
+        if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
+        if (n.z < minZ) minZ = n.z; if (n.z > maxZ) maxZ = n.z;
+      });
+      cx = (minX + maxX) / 2;
+      cy = (minY + maxY) / 2;
+      cz = (minZ + maxZ) / 2;
+    }
+
+    if (cameraView === '3D') {
+      controls.enableRotate = true;
+      // Posición isométrica predeterminada si venimos de 2D
+      if (camera.isOrthographicCamera) {
+        // En react-three-fiber, el cambio de cámara lo hacemos con componentes condicionales, 
+        // pero reseteamos el target aquí
+        controls.target.set(cx, cy, cz);
+      }
+    } else if (cameraView === 'XY') {
+      controls.enableRotate = false;
+      camera.position.set(cx, cy, activeLevel + 100);
+      camera.up.set(0, 1, 0); // Para que Y sea arriba
+      controls.target.set(cx, cy, activeLevel);
+    } else if (cameraView === 'XZ') {
+      controls.enableRotate = false;
+      camera.position.set(cx, activeLevel - 100, cz);
+      camera.up.set(0, 0, 1); // Z es arriba
+      controls.target.set(cx, activeLevel, cz);
+    } else if (cameraView === 'YZ') {
+      controls.enableRotate = false;
+      camera.position.set(activeLevel + 100, cy, cz);
+      camera.up.set(0, 0, 1); // Z es arriba
+      controls.target.set(activeLevel, cy, cz);
+    }
+    controls.update();
+  }, [cameraView, activeLevel, controls, camera, nodes]);
+
+  return null;
+}
+
 export function StructureCanvas() {
   const { 
     nodes, elements, shells, loads, isDrawingShell, clearSelection,
-    viewMode, results, activeResultCombo, activeResultType, displacementScale, diagramScale 
+    viewMode, results, activeResultCombo, activeResultType, displacementScale, diagramScale, showLoads,
+    cameraView, activeLevel
   } = useStructureStore();
 
   const getDisplacement = (nodeId) => {
@@ -329,16 +387,54 @@ export function StructureCanvas() {
     return [0, 0, 0];
   };
 
+  // Tolerancia para considerar si un elemento está en el nivel activo
+  const TOLERANCE = 0.05;
+
+  const isNodeActive = (n) => {
+    if (cameraView === '3D') return true;
+    if (cameraView === 'XY') return Math.abs(n.z - activeLevel) <= TOLERANCE;
+    if (cameraView === 'XZ') return Math.abs(n.y - activeLevel) <= TOLERANCE;
+    if (cameraView === 'YZ') return Math.abs(n.x - activeLevel) <= TOLERANCE;
+    return true;
+  };
+
+  const isElementActive = (n1, n2) => {
+    if (cameraView === '3D') return true;
+    return isNodeActive(n1) && isNodeActive(n2);
+  };
+
+  // Posición de la grilla
+  const gridPosition = [
+    cameraView === 'YZ' ? activeLevel : 0,
+    cameraView === 'XZ' ? activeLevel : 0,
+    cameraView === 'XY' ? activeLevel : 0
+  ];
+  
+  const gridRotation = [
+    cameraView === 'XY' || cameraView === '3D' ? Math.PI / 2 : 0, // XY es plano horizontal
+    cameraView === 'YZ' ? Math.PI / 2 : 0, // YZ rota en Y
+    0
+  ];
+  if (cameraView === 'XZ') {
+    gridRotation[0] = 0; // XZ plano frontal
+  }
+
   return (
     <div className="w-full h-full bg-slate-900">
       <Canvas 
-        camera={{ position: [20, 20, 20], fov: 35, up: [0, 0, 1] }}
         onPointerMissed={() => {
           if (!isDrawingShell && viewMode !== 'results') clearSelection();
         }}
       >
+        {cameraView === '3D' ? (
+          <PerspectiveCamera makeDefault position={[20, 20, 20]} fov={35} up={[0, 0, 1]} />
+        ) : (
+          <OrthographicCamera makeDefault zoom={20} up={cameraView === 'XY' ? [0, 1, 0] : [0, 0, 1]} />
+        )}
+        <CameraController />
+        
         <color attach="background" args={['#0f172a']} />
-        <Grid infiniteGrid fadeDistance={40} cellColor="#334155" sectionColor="#475569" rotation={[Math.PI / 2, 0, 0]} />
+        <Grid infiniteGrid fadeDistance={cameraView === '3D' ? 40 : 100} cellColor="#334155" sectionColor="#475569" rotation={gridRotation} position={gridPosition} />
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 10]} intensity={1} />
 
@@ -358,14 +454,15 @@ export function StructureCanvas() {
         {/* Nodos */}
         {nodes.map(n => {
           const d = getDisplacement(n.id);
-          return <NodePoint key={n.id} {...n} dx={d[0]} dy={d[1]} dz={d[2]} restraint={n.restraint} />;
+          const active = isNodeActive(n);
+          return <NodePoint key={n.id} {...n} dx={d[0]} dy={d[1]} dz={d[2]} restraint={n.restraint} isFaded={!active} />;
         })}
 
         {/* Cargas Puntuales */}
-        {loads.map(load => {
+        {showLoads && loads.map(load => {
           if (load.type !== 'point') return null;
           const targetNode = nodes.find(n => n.id === load.target_id);
-          if (!targetNode) return null;
+          if (!targetNode || !isNodeActive(targetNode)) return null; // Ocultar cargas en nodos atenuados
           return <PointLoadArrow key={load.id} node={targetNode} load={load} />;
         })}
         
@@ -374,8 +471,10 @@ export function StructureCanvas() {
           const n1 = nodes.find(n => n.id === el.nodes[0]);
           const n2 = nodes.find(n => n.id === el.nodes[1]);
           if (!n1 || !n2) return null;
+          
           const d1 = getDisplacement(n1.id);
           const d2 = getDisplacement(n2.id);
+          const active = isElementActive(n1, n2);
           
           let elementForces = null;
           if (viewMode === 'results' && activeResultCombo && activeResultType !== 'deformed') {
@@ -392,10 +491,11 @@ export function StructureCanvas() {
                 id={el.id} 
                 start={[n1.x+d1[0], n1.y+d1[1], n1.z+d1[2]]} 
                 end={[n2.x+d2[0], n2.y+d2[1], n2.z+d2[2]]} 
+                isFaded={!active}
               />
               
               {/* Diagrama de esfuerzos */}
-              {elementForces && (
+              {elementForces && active && (
                 <ForceDiagram 
                   id={el.id}
                   start={[n1.x, n1.y, n1.z]} // Los diagramas se dibujan sobre la estructura no deformada
@@ -410,7 +510,11 @@ export function StructureCanvas() {
         })}
 
         {/* Shells */}
-        {shells.map(s => <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} />)}
+        {shells.map(s => {
+          const shellNodes = s.nodes.map(nid => nodes.find(n => n.id === nid)).filter(Boolean);
+          const active = cameraView === '3D' || shellNodes.every(n => isNodeActive(n));
+          return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={!active} />;
+        })}
 
         <OrbitControls makeDefault />
         <GizmoHelper alignment="bottom-right" margin={[80, 80]}>

@@ -23,6 +23,9 @@ export const useStructureStore = create((set, get) => ({
   metadata: { name: 'Proyecto ARKO3D', author: '', units: 'm, kgf, C' },
   results: null,
   viewMode: 'geometry', // 'geometry' | 'results'
+  cameraView: '3D', // '3D', 'XY', 'XZ', 'YZ'
+  activeLevel: 0, // El valor Z, Y, o X actual según la vista
+  showLoads: true, // Toggle para visibilidad de cargas
   activeResultCombo: null, // ID de la combinación activa en resultados
   activeResultType: 'deformed', // 'deformed', 'P', 'V2', 'V3', 'M2', 'M3'
   displacementScale: 100, // Factor de exageración
@@ -50,6 +53,49 @@ export const useStructureStore = create((set, get) => ({
   setRightClickedElementId: (id) => set({ rightClickedElementId: id }),
   setMetadata: (data) => set(state => ({ metadata: { ...state.metadata, ...data } })),
   setCurrentUser: (user) => set({ currentUser: user }),
+  toggleShowLoads: () => set(state => ({ showLoads: !state.showLoads })),
+
+  // --- NAVEGACIÓN 2D/3D ---
+  setCameraView: (view) => set(state => {
+    if (view === '3D') return { cameraView: view };
+    
+    // Al cambiar a un plano 2D, encontrar el nivel más cercano al 0 o el menor posible
+    let levels = [];
+    if (view === 'XY') levels = [...new Set(state.nodes.map(n => n.z))].sort((a,b)=>a-b);
+    else if (view === 'XZ') levels = [...new Set(state.nodes.map(n => n.y))].sort((a,b)=>a-b);
+    else if (view === 'YZ') levels = [...new Set(state.nodes.map(n => n.x))].sort((a,b)=>a-b);
+    
+    const defaultLevel = levels.length > 0 ? levels[0] : 0;
+    return { cameraView: view, activeLevel: defaultLevel };
+  }),
+
+  levelUp: () => set(state => {
+    if (state.cameraView === '3D') return {};
+    let levels = [];
+    if (state.cameraView === 'XY') levels = [...new Set(state.nodes.map(n => n.z))].sort((a,b)=>a-b);
+    else if (state.cameraView === 'XZ') levels = [...new Set(state.nodes.map(n => n.y))].sort((a,b)=>a-b);
+    else if (state.cameraView === 'YZ') levels = [...new Set(state.nodes.map(n => n.x))].sort((a,b)=>a-b);
+    
+    const currIdx = levels.findIndex(l => Math.abs(l - state.activeLevel) < 0.001);
+    if (currIdx >= 0 && currIdx < levels.length - 1) {
+      return { activeLevel: levels[currIdx + 1] };
+    }
+    return {};
+  }),
+
+  levelDown: () => set(state => {
+    if (state.cameraView === '3D') return {};
+    let levels = [];
+    if (state.cameraView === 'XY') levels = [...new Set(state.nodes.map(n => n.z))].sort((a,b)=>a-b);
+    else if (state.cameraView === 'XZ') levels = [...new Set(state.nodes.map(n => n.y))].sort((a,b)=>a-b);
+    else if (state.cameraView === 'YZ') levels = [...new Set(state.nodes.map(n => n.x))].sort((a,b)=>a-b);
+    
+    const currIdx = levels.findIndex(l => Math.abs(l - state.activeLevel) < 0.001);
+    if (currIdx > 0) {
+      return { activeLevel: levels[currIdx - 1] };
+    }
+    return {};
+  }),
   
   setResultsMode: (resultsData) => set((state) => {
     // 1. Encontrar la combinación por defecto (la primera)

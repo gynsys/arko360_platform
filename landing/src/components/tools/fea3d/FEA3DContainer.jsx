@@ -12,6 +12,7 @@ import { DefineSectionsModal } from './DefineSectionsModal';
 import { ResultsTableModal } from './ResultsTableModal';
 import { SelectElementsModal } from './SelectElementsModal';
 import { AssignSectionModal } from './AssignSectionModal';
+import { ViewControls } from './ViewControls';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
 import { Calculator, ChevronRight, ChevronLeft, LogIn, Cloud } from 'lucide-react';
@@ -42,7 +43,7 @@ export default function FEA3DContainer() {
     wizardConfig, elements, shells, metadata, setMetadata,
     exportProject, importProject, isDrawingShell, toggleDrawingShell, drawingNodes,
     viewMode, activeResultType, setResultsMode,
-    isSaved, currentUser, setCurrentUser
+    isSaved, currentUser, setCurrentUser, showLoads, toggleShowLoads
   } = useStructureStore();
 
   useEffect(() => {
@@ -205,6 +206,7 @@ export default function FEA3DContainer() {
           ]} />
 
           <MenuDropdown title="Display" items={[
+            { label: showLoads ? 'Ocultar Cargas' : 'Mostrar Cargas', icon: Settings, onClick: toggleShowLoads, disabled: isResultsMode },
             { label: 'Tablas de Resultados', icon: Settings, onClick: () => setTablesModalOpen(true), disabled: !isResultsMode }
           ]} />
           
@@ -254,6 +256,7 @@ export default function FEA3DContainer() {
         
         {/* Render Canvas ocupando flex-1 */}
         <div className="flex-1 relative">
+          <ViewControls />
           {hasModel ? (
             <StructureCanvas />
           ) : (

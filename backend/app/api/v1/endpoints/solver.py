@@ -16,21 +16,7 @@ async def submit_solver_job(project_id: str, topology: Topology):
         solver = StructuralSolver(topology)
         results = solver.solve()
         
-        # Save to DB
-        with get_db_session() as db:
-            project = db.query(ArkoProject3D).filter(ArkoProject3D.id == project_id).first()
-            if not project:
-                project = ArkoProject3D(
-                    id=project_id,
-                    name=f"Project {project_id}",
-                    topology=topology.dict(),
-                    results=results
-                )
-                db.add(project)
-            else:
-                project.topology = topology.dict()
-                project.results = results
-            db.commit()
+        # El solver ahora actúa como función pura, el guardado lo hace el usuario manualmente.
             
         return {"job_id": project_id, "status": "completed", **results}
     except Exception as e:
