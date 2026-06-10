@@ -1,51 +1,123 @@
 import React from 'react';
 import { useStructureStore } from './useStructureStore';
+import { Trash2, Info, Layers } from 'lucide-react';
 
 export function PropertyPanel() {
-  const { selectedId, nodes, elements, updateNode, addLoad } = useStructureStore();
+  const { selectedId, nodes, elements, shells, updateNode, updateShell, addLoad, deleteNode, deleteElement, deleteShell } = useStructureStore();
   
   const node = nodes.find(n => n.id === selectedId);
   const element = elements.find(e => e.id === selectedId);
+  const shell = shells.find(s => s.id === selectedId);
 
-  if (!node && !element) return <div className="p-4 text-slate-500">Seleccione un objeto</div>;
+  if (!node && !element && !shell) {
+    return (
+      <div className="p-8 text-center text-slate-500">
+        <Info className="mx-auto mb-2 opacity-20" size={48} />
+        <p className="text-sm">Selecciona un elemento en el canvas para ver sus propiedades</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-80 bg-slate-800 border-l border-slate-700 h-full p-4 text-white overflow-y-auto">
-      <h2 className="text-lg font-bold mb-4 border-b border-slate-600 pb-2">Propiedades</h2>
+    <div className="bg-slate-900 h-full p-4 text-white overflow-y-auto">
+      <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+        <h2 className="text-lg font-bold">Propiedades</h2>
+        <button 
+          onClick={() => {
+            if (node) deleteNode(node.id);
+            if (element) deleteElement(element.id);
+            if (shell) deleteShell(shell.id);
+          }}
+          className="p-2 bg-red-900/30 text-red-400 hover:bg-red-600 hover:text-white rounded-lg transition-all"
+          title="Eliminar Objeto"
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
 
       {node && (
-        <div className="space-y-4">
-          <p className="text-blue-400 font-bold">NODO ID: {node.id}</p>
-          <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-6">
+          <div className="bg-blue-600/10 border border-blue-500/20 p-3 rounded-xl">
+            <p className="text-blue-400 text-xs font-bold uppercase tracking-wider">NODO</p>
+            <p className="text-2xl font-mono">ID: {node.id}</p>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-3">
             {['x', 'y', 'z'].map(axis => (
               <div key={axis}>
-                <label className="text-xs uppercase text-slate-400">{axis}</label>
+                <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">{axis} (m)</label>
                 <input 
                   type="number" 
-                  className="w-full bg-slate-900 border border-slate-600 rounded p-1 text-sm"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm"
                   value={node[axis]}
-                  onChange={(e) => updateNode(node.id, { [axis]: parseFloat(e.target.value) })}
+                  onChange={(e) => updateNode(node.id, { [axis]: parseFloat(e.target.value) || 0 })}
                 />
               </div>
             ))}
           </div>
-          <div className="pt-4 border-t border-slate-700">
-            <h4 className="text-sm font-bold mb-2">Asignar Carga</h4>
-            <input id="q_mag" type="number" placeholder="Magnitud (N)" className="w-full bg-slate-900 mb-2 p-1 text-sm rounded"/>
-            <button 
-              className="w-full bg-green-600 hover:bg-green-500 py-1 rounded font-bold text-xs"
-              onClick={() => addLoad({ target_id: node.id, type: 'point', direction: 'Z', magnitude: -parseFloat(document.getElementById('q_mag').value) })}
-            >ASIGNAR CARGA Z</button>
+
+          <div className="pt-4 border-t border-slate-800">
+            <label className="text-xs font-bold text-slate-400 block mb-2">Asignar Carga Puntual (kN)</label>
+            <div className="flex gap-2">
+              <input id="q_mag" type="number" defaultValue="10" className="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm"/>
+              <button 
+                className="bg-blue-600 hover:bg-blue-500 px-4 rounded-lg font-bold text-xs"
+                onClick={() => addLoad({ target_id: node.id, type: 'point', direction: 'Z', magnitude: -parseFloat(document.getElementById('q_mag').value) })}
+              >Z-</button>
+            </div>
           </div>
         </div>
       )}
 
       {element && (
         <div className="space-y-4">
-          <p className="text-green-400 font-bold">ELEMENTO ID: {element.id}</p>
-          <p className="text-xs text-slate-400">Tipo: {element.type}</p>
-          <div className="pt-4 border-t border-slate-700">
-             <button className="w-full bg-blue-600 py-1 rounded text-xs font-bold">Ver Diagramas</button>
+          <div className="bg-emerald-600/10 border border-emerald-500/20 p-3 rounded-xl">
+            <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider">ELEMENTO FRAME</p>
+            <p className="text-2xl font-mono">ID: {element.id}</p>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm text-slate-400">Nudos: {element.nodes.join(' → ')}</p>
+            <p className="text-sm text-slate-400">Sección: <span className="text-white font-mono">{element.section_id}</span></p>
+          </div>
+        </div>
+      )}
+
+      {shell && (
+        <div className="space-y-6">
+          <div className="bg-indigo-600/10 border border-indigo-500/20 p-3 rounded-xl">
+            <p className="text-indigo-400 text-xs font-bold uppercase tracking-wider">LOSA (SHELL)</p>
+            <p className="text-2xl font-mono">ID: {shell.id}</p>
+          </div>
+
+          <div>
+            <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">Espesor (m)</label>
+            <input 
+              type="number" 
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm"
+              value={shell.thickness}
+              onChange={(e) => updateShell(shell.id, { thickness: parseFloat(e.target.value) || 0.1 })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">CM (kN/m²)</label>
+              <input 
+                type="number" 
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm"
+                value={shell.loads.CM}
+                onChange={(e) => updateShell(shell.id, { loads: { ...shell.loads, CM: parseFloat(e.target.value) || 0 } })}
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">CV (kN/m²)</label>
+              <input 
+                type="number" 
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm"
+                value={shell.loads.CV}
+                onChange={(e) => updateShell(shell.id, { loads: { ...shell.loads, CV: parseFloat(e.target.value) || 0 } })}
+              />
+            </div>
           </div>
         </div>
       )}

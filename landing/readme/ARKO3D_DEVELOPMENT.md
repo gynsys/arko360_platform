@@ -83,10 +83,12 @@ backend/app/
 | Componente | Descripción | Estado |
 |---|---|---|
 | `TemplateWizard.jsx` | Modal con 4 plantillas (Edificio 3D, Pórtico 2D, Viga, Muro). Genera retícula de nudos y elementos. | ✅ |
-| `useStructureStore.js` | Store Zustand con: `generateStructure()`, `loadDemo()`, `updateNode()`, `updateElement()`, `addLoad()` | ✅ |
-| `StructureCanvas.jsx` | Visor 3D con R3F. Nudos como esferas de colores, elementos como líneas. Fix del error `Float32Array`. | ✅ |
-| `PropertyPanel.jsx` | Panel derecho. Al clic en nudo: edita X,Y,Z y asigna cargas. Al clic en elemento: muestra info. | ✅ |
-| `FEA3DContainer.jsx` | Layout base. Incluye TemplateWizard, StructureCanvas, PropertyPanel. | ✅ |
+| `useStructureStore.js` | Store Zustand con: `generateStructure()`, `addShell()`, `deleteShell()`, `updateShell()`, `exportProject()`, `importProject()`, `addLoad()`, `updateNode()`, `deleteNode()`, `updateElement()`, `deleteElement()`, modo dibujo (`isDrawingShell`, `drawingNodes`, `addNodeToDrawing`). | ✅ |
+| `StructureCanvas.jsx` | Visor 3D con R3F. Nudos como esferas de colores, elementos como líneas. Shells visualizados con `BufferGeometry` triangulada (2 triángulos por quad). Fix del error `Float32Array`. Modo dibujo de losas integrado. | ✅ |
+| `PropertyPanel.jsx` | Panel derecho. Al clic en nudo: edita X,Y,Z y asigna cargas. Al clic en elemento: muestra info. Al clic en shell: edita espesor y cargas CM/CV. Botón **Eliminar** para nudo, elemento o shell. | ✅ |
+| `FEA3DContainer.jsx` | Layout base. Toolbar con Abrir/Guardar (archivo local), botón DIBUJAR LOSA (modo click), botón **+ LOSA** (formulario), botón GEOMETRÍA y nombre editable del proyecto. | ✅ |
+| `ShellPanel.jsx` | (**NUEVO**) Modal de formulario para definir losa maciza: selectores de 4 nudos, espesor, material, cargas CM/CV. Muestra área estimada y carga factorizada en tiempo real. | ✅ |
+| Guardar / Abrir | Export `.arko3d` (JSON) vía `exportProject()` en el store y `FileReader` para importar. Botones en toolbar. | ✅ |
 | Backend `solvers.py` | Motor FEM completo: ensamble de la matriz de rigidez global K, vector de fuerzas F, resolución sparse. | ✅ |
 | Backend `fem_frame.py` | Matrices locales de elemento frame 3D con 12 DOF. | ✅ |
 | Backend `solver.py` | Endpoint FastAPI para recibir topología y devolver desplazamientos. | ✅ |
@@ -247,5 +249,67 @@ REGLAS TÉCNICAS A RESPETAR:
 
 ---
 
-*Documento creado: 2026-06-09 | Última actualización: 2026-06-09*
+*Documento creado: 2026-06-09 | Última actualización: 2026-06-10*
 *Autor: Antigravity AI + Pablo (Ingeniería Arko 360)*
+
+---
+
+## 7. Formato de Archivo `.arko3d`
+
+Los proyectos ARKO3D se exportan/importan como archivos JSON con extensión `.arko3d`.
+La función `exportProject()` del store los genera; `importProject()` los consume.
+
+### Estructura JSON
+
+```json
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "Edificio Torre A",
+    "author": "",
+    "units": "m"
+  },
+  "nodes": [
+    { "id": 1, "x": 0.0, "y": 0.0, "z": 0.0, "restraint": { "dofs": [true, true, true, true, true, true] } },
+    { "id": 2, "x": 5.0, "y": 0.0, "z": 0.0, "restraint": null }
+  ],
+  "elements": [
+    { "id": 1, "type": "frame", "nodes": [1, 2], "section_id": "COL_DEF", "material_id": "CONC_28" }
+  ],
+  "shells": [
+    {
+      "id": "S-1749500000000",
+      "type": "shell",
+      "nodes": [1, 2, 3, 4],
+      "thickness": 0.20,
+      "material_id": "CONC_28",
+      "loads": { "CM": 2.0, "CV": 1.5 }
+    }
+  ],
+  "materials": [
+    { "id": "CONC_28", "E": 25000000000, "G": 10000000000, "nu": 0.2, "density": 2400 }
+  ],
+  "sections": [
+    { "id": "COL_DEF", "A": 0.16, "Ix": 0.002, "Iy": 0.002, "J": 0.003, "params": { "b": 0.4, "h": 0.4 } },
+    { "id": "BEAM_DEF", "A": 0.12, "Ix": 0.001, "Iy": 0.0005, "J": 0.001, "params": { "b": 0.3, "h": 0.4 } }
+  ],
+  "wizardConfig": {
+    "type": "3d_frame",
+    "numFloors": 2,
+    "numBaysX": 2,
+    "numBaysY": 2,
+    "floorHeight": 3.0,
+    "bayWidthX": 5.0,
+    "bayWidthY": 5.0
+  }
+}
+```
+
+### Reglas de compatibilidad
+
+- El campo `version` debe ser `"1.0"` para los archivos generados actualmente.
+- `nodes` y `elements` son **obligatorios** para la importación (validación mínima en UI).
+- `shells`, `materials`, `sections` y `wizardConfig` son opcionales y pueden ser arrays/objetos vacíos.
+- Los IDs de nudos son enteros. Los IDs de shells son strings con formato `S-{timestamp}`.
+- Los apoyos (`restraint`) siguen el orden `[Fx, Fy, Fz, Mx, My, Mz]` en booleanos.
+- Unidades siempre en metros (m) y kilonewtons (kN).
