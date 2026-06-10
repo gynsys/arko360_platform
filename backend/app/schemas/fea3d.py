@@ -19,11 +19,28 @@ class Node(BaseModel):
 
 class Element(BaseModel):
     id: int
-    type: str # "frame", "shell"
+    type: str # "frame"
     nodes: List[int]
     section_id: str
     material_id: str
     beta_angle: float = 0.0
+
+class ShellLoads(BaseModel):
+    CM: float = 0.0
+    CV: float = 0.0
+
+class Shell(BaseModel):
+    id: str
+    type: str = "shell"
+    nodes: List[int]
+    thickness: float
+    material_id: str
+    loads: ShellLoads
+
+class LoadCombination(BaseModel):
+    id: str
+    name: str
+    factors: Dict[str, float] # e.g. {"CM": 1.2, "CV": 1.6}
 
 class LoadAssignment(BaseModel):
     id: str
@@ -52,9 +69,11 @@ class Section(BaseModel):
 class Topology(BaseModel):
     nodes: List[Node]
     elements: List[Element]
+    shells: List[Shell] = []
     materials: List[Material]
     sections: List[Section]
-    loads: List[LoadAssignment]
+    loads: List[LoadAssignment] = []
+    combinations: List[LoadCombination] = []
 
 class ProjectResults(BaseModel):
     displacements: Dict[int, List[float]]

@@ -4,12 +4,15 @@ import { StructureCanvas } from './StructureCanvas';
 import { PropertyPanel } from './PropertyPanel';
 import { TemplateWizard } from './TemplateWizard';
 import { ShellPanel } from './ShellPanel';
+import { LoadCombosModal } from './LoadCombosModal';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
+import { Calculator } from 'lucide-react';
 
 export default function FEA3DContainer() {
   const [wizardOpen, setWizardOpen] = useState(true);
   const [shellPanelOpen, setShellPanelOpen] = useState(false);
+  const [combosModalOpen, setCombosModalOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const { 
@@ -39,9 +42,11 @@ export default function FEA3DContainer() {
       const payload = {
         nodes: state.nodes,
         elements: state.elements,
+        shells: state.shells,
         materials: state.materials,
         sections: state.sections,
-        loads: state.loads || []
+        loads: state.loads || [],
+        combinations: state.loadCombinations || []
       };
       
       const res = await solveMutation.mutateAsync(payload);
@@ -116,6 +121,16 @@ export default function FEA3DContainer() {
           + LOSA
         </button>
 
+        {/* Combinaciones */}
+        <button
+          onClick={() => setCombosModalOpen(true)}
+          className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-xs font-bold hover:bg-slate-600 transition-all ml-2"
+          title="Gestionar Combinaciones de Carga"
+        >
+          <Calculator size={14} />
+          COMBINACIONES
+        </button>
+
         <div className="flex-1" />
 
         {/* Metadata & Status */}
@@ -177,6 +192,7 @@ export default function FEA3DContainer() {
 
       <TemplateWizard isOpen={wizardOpen} onClose={() => setWizardOpen(false)} />
       <ShellPanel isOpen={shellPanelOpen} onClose={() => setShellPanelOpen(false)} />
+      <LoadCombosModal isOpen={combosModalOpen} onClose={() => setCombosModalOpen(false)} />
     </div>
   );
 }

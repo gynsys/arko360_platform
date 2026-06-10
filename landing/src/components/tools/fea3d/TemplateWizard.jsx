@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStructureStore } from './useStructureStore';
-import { Box, Columns, Rows, Layers, X } from 'lucide-react';
+import { Box, Columns, Rows, Layers, X, FolderOpen } from 'lucide-react';
 
 const DEFAULT_CONFIG = {
   type: '3d_frame',
@@ -30,6 +30,20 @@ export function TemplateWizard({ isOpen, onClose }) {
   const handleGenerate = () => {
     generateStructure(config);
     onClose();
+  };
+
+  const fileInputRef = React.useRef(null);
+  
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        useStructureStore.getState().importProject(ev.target.result);
+        onClose();
+      };
+      reader.readAsText(file);
+    }
   };
 
   if (!isOpen) return null;
@@ -89,6 +103,20 @@ export function TemplateWizard({ isOpen, onClose }) {
               icon={<Layers size={18} />}
               label="Muro/Cimentación"
             />
+
+            {/* Abrir Proyecto Existente */}
+            {isFirstTime && (
+              <div className="mt-8 pt-6 border-t border-slate-800">
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".arko3d,.json" />
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all font-medium"
+                >
+                  <FolderOpen size={18} />
+                  Abrir Proyecto
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Formulario */}

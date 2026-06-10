@@ -16,7 +16,11 @@ export const useStructureStore = create((set, get) => ({
   loads: [],
   sections: [],
   materials: [],
-  metadata: { name: 'Proyecto ARKO3D', author: '', units: 'm, kN, C' },
+  loadCombinations: [
+    { id: 'combo-1', name: '1.4 CM (ACI)', factors: { CM: 1.4, CV: 0.0 } },
+    { id: 'combo-2', name: '1.2 CM + 1.6 CV (ACI)', factors: { CM: 1.2, CV: 1.6 } }
+  ],
+  metadata: { name: 'Proyecto ARKO3D', author: '', units: 'm, kgf, C' },
   results: null,
   selectedId: null,
   wizardConfig: null,
@@ -105,9 +109,20 @@ export const useStructureStore = create((set, get) => ({
     loads: [...state.loads, { ...load, id: `L-${Date.now()}` }]
   })),
   
+  // --- COMBINACIONES DE CARGA ---
+  addLoadCombination: (combo) => set(state => ({ 
+    loadCombinations: [...state.loadCombinations, { ...combo, id: `C-${Date.now()}` }] 
+  })),
+  updateLoadCombination: (id, data) => set(state => ({
+    loadCombinations: state.loadCombinations.map(c => c.id === id ? { ...c, ...data } : c)
+  })),
+  deleteLoadCombination: (id) => set(state => ({
+    loadCombinations: state.loadCombinations.filter(c => c.id !== id)
+  })),
+  
   // --- PERSISTENCIA LOCAL ---
   exportProject: () => {
-    const { nodes, elements, shells, materials, sections, wizardConfig, metadata } = get();
+    const { nodes, elements, shells, materials, sections, wizardConfig, metadata, loadCombinations } = get();
     const projectData = {
       version: "1.0",
       metadata,
@@ -116,6 +131,7 @@ export const useStructureStore = create((set, get) => ({
       shells,
       materials,
       sections,
+      loadCombinations,
       wizardConfig
     };
     const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
@@ -135,6 +151,10 @@ export const useStructureStore = create((set, get) => ({
         shells: data.shells || [],
         materials: data.materials || [],
         sections: data.sections || [],
+        loadCombinations: data.loadCombinations || [
+          { id: 'combo-1', name: '1.4 CM (ACI)', factors: { CM: 1.4, CV: 0.0 } },
+          { id: 'combo-2', name: '1.2 CM + 1.6 CV (ACI)', factors: { CM: 1.2, CV: 1.6 } }
+        ],
         wizardConfig: data.wizardConfig || null,
         metadata: data.metadata || { name: 'Importado', author: '' },
         results: null,
