@@ -22,6 +22,9 @@ export const useStructureStore = create((set, get) => ({
   ],
   metadata: { name: 'Proyecto ARKO3D', author: '', units: 'm, kgf, C' },
   results: null,
+  viewMode: 'geometry', // 'geometry' | 'results'
+  activeResultCombo: null, // ID de la combinación activa en resultados
+  displacementScale: 100, // Factor de exageración
   selectedId: null,
   wizardConfig: null,
 
@@ -32,6 +35,53 @@ export const useStructureStore = create((set, get) => ({
   // --- ACCIONES GENERALES ---
   setSelectedId: (id) => set({ selectedId: id }),
   setMetadata: (data) => set(state => ({ metadata: { ...state.metadata, ...data } })),
+  
+  setResultsMode: (resultsData) => set((state) => {
+    // 1. Encontrar la combinación por defecto (la primera)
+    const defaultComboId = resultsData.combinations && resultsData.combinations.length > 0 
+      ? resultsData.combinations[0].id 
+      : null;
+      
+    // 2. Calcular factor de escala automático (estilo ETABS: deformación max = 5% del tamaño de la estructura)
+    let autoScale = 100;
+    if (defaultComboId && resultsData.results[defaultComboId]) {
+      const displacements = resultsData.results[defaultComboId].displacements;
+      let maxDisp = 0;
+      for (const nodeId in displacements) {
+        const d = displacements[nodeId];
+        const dispMag = Math.sqrt(d[0]*d[0] + d[1]*d[1] + d[2]*d[2]);
+        if (dispMag > maxDisp) maxDisp = dispMag;
+      }
+      
+      if (maxDisp > 1e-8 && state.nodes.length > 1) {
+        let minZ = Infinity, maxZ = -Infinity, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        state.nodes.forEach(n => {
+          if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
+          if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
+          if (n.z < minZ) minZ = n.z; if (n.z > maxZ) maxZ = n.z;
+        });
+        const maxDim = Math.max(maxX - minX, maxY - minY, maxZ - minZ) || 10;
+        // Queremos que el maxDisp se dibuje como el 5% de maxDim
+        const targetVisDisp = maxDim * 0.05;
+        autoScale = Math.round(targetVisDisp / maxDisp);
+      }
+    }
+    
+    // Limitar la escala a rangos razonables para el slider
+    autoScale = Math.max(1, Math.min(autoScale, 10000));
+
+    return {
+      results: resultsData,
+      viewMode: 'results',
+      displacementScale: autoScale,
+      activeResultCombo: defaultComboId,
+      selectedId: null,
+      isDrawingShell: false
+    };
+  }),
+  exitResultsMode: () => set({ viewMode: 'geometry', results: null }),
+  setDisplacementScale: (scale) => set({ displacementScale: scale }),
+  setActiveResultCombo: (comboId) => set({ activeResultCombo: comboId }),
 
   // --- MODO DIBUJO ---
   toggleDrawingShell: () => set(state => ({ 

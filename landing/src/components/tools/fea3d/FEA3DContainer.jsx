@@ -5,6 +5,7 @@ import { PropertyPanel } from './PropertyPanel';
 import { TemplateWizard } from './TemplateWizard';
 import { ShellPanel } from './ShellPanel';
 import { LoadCombosModal } from './LoadCombosModal';
+import { ResultsPanel } from './ResultsPanel';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
 import { Calculator } from 'lucide-react';
@@ -17,10 +18,12 @@ export default function FEA3DContainer() {
 
   const { 
     wizardConfig, elements, shells, metadata, setMetadata,
-    exportProject, importProject, isDrawingShell, toggleDrawingShell, drawingNodes
+    exportProject, importProject, isDrawingShell, toggleDrawingShell, drawingNodes,
+    viewMode, setResultsMode
   } = useStructureStore();
 
   const hasModel = wizardConfig !== null;
+  const isResultsMode = viewMode === 'results';
   const totalElements = elements.length + shells.length;
 
   const handleFileUpload = (e) => {
@@ -53,8 +56,8 @@ export default function FEA3DContainer() {
       console.log('[ARKO3D] Análisis completado:', res.data);
       alert('Análisis estructural completado con éxito (Revisar consola).');
       
-      // TODO: Guardar los resultados en el store cuando existan visores
-      // useStructureStore.setState({ results: res.data });
+      // Pasar a modo resultados
+      setResultsMode(res.data);
       
     } catch (err) {
       console.error('[ARKO3D] Error en el solver:', err);
@@ -92,7 +95,10 @@ export default function FEA3DContainer() {
         {/* Geometría */}
         <button
           onClick={() => setWizardOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-xs font-bold hover:bg-slate-600 transition-all"
+          disabled={isResultsMode}
+          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
+            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
+          }`}
         >
           <Settings size={14} />
           GEOMETRÍA
@@ -101,7 +107,9 @@ export default function FEA3DContainer() {
         {/* Dibujo de Losas (click en canvas) */}
         <button
           onClick={toggleDrawingShell}
+          disabled={isResultsMode}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            isResultsMode ? 'bg-slate-800 text-slate-500 cursor-not-allowed' :
             isDrawingShell 
             ? 'bg-orange-600 text-white animate-pulse' 
             : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
@@ -114,7 +122,10 @@ export default function FEA3DContainer() {
         {/* Losa por formulario */}
         <button
           onClick={() => setShellPanelOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-indigo-900/60 border border-indigo-700/50 rounded-lg text-indigo-300 text-xs font-bold hover:bg-indigo-800/60 transition-all"
+          disabled={isResultsMode}
+          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
+            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-indigo-900/60 border-indigo-700/50 text-indigo-300 hover:bg-indigo-800/60'
+          }`}
           title="Definir losa por formulario"
         >
           <Layers size={14} />
@@ -124,7 +135,10 @@ export default function FEA3DContainer() {
         {/* Combinaciones */}
         <button
           onClick={() => setCombosModalOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-xs font-bold hover:bg-slate-600 transition-all ml-2"
+          disabled={isResultsMode}
+          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ml-2 ${
+            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
+          }`}
           title="Gestionar Combinaciones de Carga"
         >
           <Calculator size={14} />
@@ -162,9 +176,9 @@ export default function FEA3DContainer() {
         {/* Acción Principal */}
         <button
           onClick={handleRunAnalysis}
-          disabled={isSolving || totalElements === 0}
+          disabled={isSolving || totalElements === 0 || isResultsMode}
           className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-black shadow-lg transition-all active:scale-95 ${
-            isSolving 
+            isSolving || isResultsMode
             ? 'bg-slate-700 text-slate-400 cursor-not-allowed shadow-none' 
             : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/40'
           }`}
@@ -177,11 +191,12 @@ export default function FEA3DContainer() {
       {/* ── Área de Trabajo ── */}
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 relative">
-          {isDrawingShell && (
+          {isDrawingShell && !isResultsMode && (
             <div className="absolute top-4 left-4 z-10 bg-orange-600 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl border border-orange-400">
               MODO DIBUJO: Seleccione 4 nudos para crear la losa
             </div>
           )}
+          <ResultsPanel />
           <StructureCanvas />
         </div>
 
