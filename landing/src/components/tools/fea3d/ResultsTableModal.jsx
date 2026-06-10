@@ -5,9 +5,6 @@ import { useStructureStore } from './useStructureStore';
 export function ResultsTableModal({ onClose }) {
   const { results, loadCombinations, nodes, elements } = useStructureStore();
   const [activeTab, setActiveTab] = useState('forces'); // 'displacements', 'forces'
-  const [activeComboId, setActiveComboId] = useState(
-    loadCombinations.length > 0 ? loadCombinations[0].id : ''
-  );
 
   if (!results || !results.results) {
     return (
@@ -20,7 +17,8 @@ export function ResultsTableModal({ onClose }) {
     );
   }
 
-  const currentCombo = results.results[activeComboId] || Object.values(results.results)[0];
+  // Combinaciones con resultados
+  const availableCombos = loadCombinations.filter(c => results.results[c.id]);
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -39,7 +37,7 @@ export function ResultsTableModal({ onClose }) {
               onClick={() => setActiveTab('forces')}
               className={`px-4 py-1.5 rounded-t-md font-bold text-sm border-b-2 transition-colors ${activeTab === 'forces' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
             >
-              Element Forces
+              Element Forces - Frames
             </button>
             <button 
               onClick={() => setActiveTab('displacements')}
@@ -48,83 +46,86 @@ export function ResultsTableModal({ onClose }) {
               Joint Displacements
             </button>
           </div>
-
-          <div className="flex items-center gap-2 text-sm">
-            <label className="font-bold text-slate-600">Load Combo:</label>
-            <select 
-              value={activeComboId} 
-              onChange={e => setActiveComboId(e.target.value)}
-              className="border border-slate-300 rounded px-2 py-1 bg-white"
-            >
-              {loadCombinations.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
-        <div className="flex-1 overflow-auto bg-white p-4">
-          {activeTab === 'forces' && currentCombo?.element_forces && (
-            <table className="w-full text-xs text-right border-collapse">
-              <thead className="bg-slate-100 sticky top-0 shadow-sm">
+        <div className="flex-1 overflow-auto bg-white p-0">
+          {activeTab === 'forces' && (
+            <table className="w-full text-xs text-right border-collapse whitespace-nowrap">
+              <thead className="bg-slate-200 sticky top-0 shadow-sm text-slate-700">
                 <tr>
-                  <th className="border border-slate-300 px-2 py-1 text-center bg-blue-50">Element</th>
-                  <th className="border border-slate-300 px-2 py-1 text-center bg-blue-50">Station (m)</th>
-                  <th className="border border-slate-300 px-2 py-1 text-red-800 bg-red-50">M3</th>
-                  <th className="border border-slate-300 px-2 py-1 text-red-800 bg-red-50">M2</th>
-                  <th className="border border-slate-300 px-2 py-1 text-blue-800 bg-blue-50">V2</th>
-                  <th className="border border-slate-300 px-2 py-1 text-blue-800 bg-blue-50">V3</th>
-                  <th className="border border-slate-300 px-2 py-1 text-green-800 bg-green-50">P</th>
-                  <th className="border border-slate-300 px-2 py-1 text-amber-800 bg-amber-50">T</th>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Story</th>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Element</th>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Output Case</th>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Step Type</th>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Station (m)</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">P</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">V2</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">V3</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">T</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">M2</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">M3</th>
                 </tr>
               </thead>
               <tbody>
                 {elements.map(el => {
-                  const stations = currentCombo.element_forces[el.id] || [];
-                  return stations.map((st, i) => (
-                    <tr key={`${el.id}-${i}`} className="hover:bg-slate-50">
-                      <td className="border border-slate-200 px-2 py-1 text-center font-bold text-slate-600">{i === 0 ? el.id : ''}</td>
-                      <td className="border border-slate-200 px-2 py-1 text-center text-slate-500">{st.x.toFixed(3)}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{st.M3.toExponential(3)}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{st.M2.toExponential(3)}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{st.V2.toExponential(3)}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{st.V3.toExponential(3)}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{st.P.toExponential(3)}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{st.T.toExponential(3)}</td>
-                    </tr>
-                  ));
+                  return availableCombos.map(combo => {
+                    const comboData = results.results[combo.id];
+                    const stations = comboData?.element_forces[el.id] || [];
+                    return stations.map((st, i) => (
+                      <tr key={`${el.id}-${combo.id}-${i}`} className="hover:bg-slate-50 border-b border-slate-100">
+                        <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-500">Base</td>
+                        <td className="border-r border-slate-200 px-2 py-1 text-center font-bold text-slate-700">{i === 0 ? el.id : ''}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-600">{i === 0 ? combo.name : ''}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-400">Max</td>
+                        <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-600">{st.x.toFixed(3)}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.P.toExponential(3)}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.V2.toExponential(3)}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.V3.toExponential(3)}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.T.toExponential(3)}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.M2.toExponential(3)}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.M3.toExponential(3)}</td>
+                      </tr>
+                    ));
+                  });
                 })}
               </tbody>
             </table>
           )}
 
-          {activeTab === 'displacements' && currentCombo?.displacements && (
-            <table className="w-full text-xs text-right border-collapse">
-              <thead className="bg-slate-100 sticky top-0 shadow-sm">
+          {activeTab === 'displacements' && (
+            <table className="w-full text-xs text-right border-collapse whitespace-nowrap">
+              <thead className="bg-slate-200 sticky top-0 shadow-sm text-slate-700">
                 <tr>
-                  <th className="border border-slate-300 px-2 py-1 text-center bg-blue-50">Joint</th>
-                  <th className="border border-slate-300 px-2 py-1 text-blue-800 bg-blue-50">U1 (X)</th>
-                  <th className="border border-slate-300 px-2 py-1 text-blue-800 bg-blue-50">U2 (Y)</th>
-                  <th className="border border-slate-300 px-2 py-1 text-blue-800 bg-blue-50">U3 (Z)</th>
-                  <th className="border border-slate-300 px-2 py-1 text-amber-800 bg-amber-50">R1 (RX)</th>
-                  <th className="border border-slate-300 px-2 py-1 text-amber-800 bg-amber-50">R2 (RY)</th>
-                  <th className="border border-slate-300 px-2 py-1 text-amber-800 bg-amber-50">R3 (RZ)</th>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Story</th>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Joint</th>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Output Case</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">U1</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">U2</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">U3</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">R1</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">R2</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">R3</th>
                 </tr>
               </thead>
               <tbody>
                 {nodes.map(node => {
-                  const disp = currentCombo.displacements[node.id] || [0,0,0,0,0,0];
-                  return (
-                    <tr key={node.id} className="hover:bg-slate-50">
-                      <td className="border border-slate-200 px-2 py-1 text-center font-bold text-slate-600">{node.id}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{disp[0].toExponential(3)}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{disp[1].toExponential(3)}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{disp[2].toExponential(3)}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{disp[3].toExponential(3)}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{disp[4].toExponential(3)}</td>
-                      <td className="border border-slate-200 px-2 py-1 font-mono">{disp[5].toExponential(3)}</td>
-                    </tr>
-                  );
+                  return availableCombos.map((combo, i) => {
+                    const comboData = results.results[combo.id];
+                    const disp = comboData?.displacements[node.id] || [0,0,0,0,0,0];
+                    return (
+                      <tr key={`${node.id}-${combo.id}`} className="hover:bg-slate-50 border-b border-slate-100">
+                        <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-500">Base</td>
+                        <td className="border-r border-slate-200 px-2 py-1 text-center font-bold text-slate-700">{i === 0 ? node.id : ''}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-600">{combo.name}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{disp[0].toExponential(3)}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{disp[1].toExponential(3)}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{disp[2].toExponential(3)}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{disp[3].toExponential(3)}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{disp[4].toExponential(3)}</td>
+                        <td className="border-r border-slate-200 px-2 py-1 font-mono">{disp[5].toExponential(3)}</td>
+                      </tr>
+                    );
+                  });
                 })}
               </tbody>
             </table>

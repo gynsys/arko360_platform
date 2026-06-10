@@ -3,20 +3,39 @@ import { useStructureStore } from './useStructureStore';
 import { Trash2, Info, Layers } from 'lucide-react';
 
 export function PropertyPanel() {
-  const { selectedId, nodes, elements, shells, updateNode, updateShell, addLoad, deleteNode, deleteElement, deleteShell } = useStructureStore();
+  const { selectedIds, nodes, elements, shells, updateNode, updateShell, addLoad, deleteNode, deleteElement, deleteShell } = useStructureStore();
   
+  if (selectedIds.length === 0) {
+    return (
+      <div className="p-8 text-center text-slate-500">
+        <Info className="mx-auto mb-2 opacity-20" size={48} />
+        <p className="text-sm">Selecciona elementos en el canvas para ver o editar sus propiedades</p>
+      </div>
+    );
+  }
+
+  if (selectedIds.length > 1) {
+    return (
+      <div className="bg-slate-900 h-full p-4 text-white overflow-y-auto">
+        <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+          <h2 className="text-lg font-bold">Selección Múltiple</h2>
+        </div>
+        <div className="p-8 text-center text-slate-400 bg-slate-800/50 rounded-xl border border-slate-700 border-dashed">
+          <Layers className="mx-auto mb-3 text-blue-500" size={32} />
+          <p className="text-2xl font-bold text-white mb-1">{selectedIds.length}</p>
+          <p className="text-xs uppercase font-bold tracking-widest">Elementos Seleccionados</p>
+          <p className="text-xs mt-4 opacity-60">Usa el menú "Assign" para aplicar propiedades a la selección.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const selectedId = selectedIds[0];
   const node = nodes.find(n => n.id === selectedId);
   const element = elements.find(e => e.id === selectedId);
   const shell = shells.find(s => s.id === selectedId);
 
-  if (!node && !element && !shell) {
-    return (
-      <div className="p-8 text-center text-slate-500">
-        <Info className="mx-auto mb-2 opacity-20" size={48} />
-        <p className="text-sm">Selecciona un elemento en el canvas para ver sus propiedades</p>
-      </div>
-    );
-  }
+  if (!node && !element && !shell) return null;
 
   return (
     <div className="bg-slate-900 h-full p-4 text-white overflow-y-auto">

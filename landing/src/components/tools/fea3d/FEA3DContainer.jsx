@@ -10,6 +10,8 @@ import { ElementResultsModal } from './ElementResultsModal';
 import { DefineMaterialsModal } from './DefineMaterialsModal';
 import { DefineSectionsModal } from './DefineSectionsModal';
 import { ResultsTableModal } from './ResultsTableModal';
+import { SelectElementsModal } from './SelectElementsModal';
+import { AssignSectionModal } from './AssignSectionModal';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
 import { Calculator } from 'lucide-react';
@@ -22,6 +24,8 @@ export default function FEA3DContainer() {
   const [materialsModalOpen, setMaterialsModalOpen] = useState(false);
   const [sectionsModalOpen, setSectionsModalOpen] = useState(false);
   const [tablesModalOpen, setTablesModalOpen] = useState(false);
+  const [selectModalOpen, setSelectModalOpen] = useState(false);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const { 
@@ -174,6 +178,31 @@ export default function FEA3DContainer() {
         {/* Separador */}
         <div className="w-px h-8 bg-slate-700 mx-1"></div>
 
+        {/* Select & Assign */}
+        <button
+          onClick={() => setSelectModalOpen(true)}
+          disabled={isResultsMode}
+          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
+            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
+          }`}
+          title="Select Elements"
+        >
+          SELECT
+        </button>
+        <button
+          onClick={() => setAssignModalOpen(true)}
+          disabled={isResultsMode}
+          className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-bold transition-all ${
+            isResultsMode ? 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-blue-900/60 border-blue-700/50 text-blue-300 hover:bg-blue-800/60'
+          }`}
+          title="Assign Section/Material"
+        >
+          ASSIGN
+        </button>
+
+        {/* Separador */}
+        <div className="w-px h-8 bg-slate-700 mx-1"></div>
+
         {/* Define Materials & Sections */}
         <button
           onClick={() => setMaterialsModalOpen(true)}
@@ -273,6 +302,8 @@ export default function FEA3DContainer() {
       {materialsModalOpen && <DefineMaterialsModal onClose={() => setMaterialsModalOpen(false)} />}
       {sectionsModalOpen && <DefineSectionsModal onClose={() => setSectionsModalOpen(false)} />}
       {tablesModalOpen && <ResultsTableModal onClose={() => setTablesModalOpen(false)} />}
+      {selectModalOpen && <SelectElementsModal onClose={() => setSelectModalOpen(false)} />}
+      {assignModalOpen && <AssignSectionModal onClose={() => setAssignModalOpen(false)} />}
     </div>
   );
 }

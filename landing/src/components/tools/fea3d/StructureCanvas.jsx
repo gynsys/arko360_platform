@@ -5,8 +5,8 @@ import * as THREE from 'three';
 import { useStructureStore } from './useStructureStore';
 
 function ShellMesh({ id, nodeIds, getDisplacement }) {
-  const { nodes, selectedId, setSelectedId, viewMode } = useStructureStore();
-  const isSelected = selectedId === id;
+  const { nodes, selectedIds, toggleSelection, viewMode } = useStructureStore();
+  const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
 
   // Triangular el cuadrilátero en 2 triángulos: [0,1,2] y [0,2,3]
@@ -54,7 +54,7 @@ function ShellMesh({ id, nodeIds, getDisplacement }) {
   return (
     <mesh
       geometry={geometry}
-      onClick={(e) => { if(!isResultsMode) { e.stopPropagation(); setSelectedId(id); } }}
+      onClick={(e) => { if(!isResultsMode) { e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); } }}
     >
       <meshStandardMaterial
         color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
@@ -67,8 +67,8 @@ function ShellMesh({ id, nodeIds, getDisplacement }) {
 }
 
 function FrameElement({ start, end, id, isShadow }) {
-  const { selectedId, setSelectedId, setRightClickedElementId, viewMode } = useStructureStore();
-  const isSelected = selectedId === id;
+  const { selectedIds, toggleSelection, setRightClickedElementId, viewMode } = useStructureStore();
+  const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
 
   const geometry = useMemo(() => {
@@ -82,7 +82,7 @@ function FrameElement({ start, end, id, isShadow }) {
     <line 
       geometry={geometry} 
       onClick={(e) => { 
-        if(!isResultsMode && !isShadow) { e.stopPropagation(); setSelectedId(id); } 
+        if(!isResultsMode && !isShadow) { e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); } 
       }}
       onContextMenu={(e) => {
         if (isResultsMode && !isShadow) {
@@ -173,9 +173,9 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
 }
 
 function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, hasRestraint }) {
-  const { selectedId, setSelectedId, isDrawingShell, drawingNodes, addNodeToDrawing, viewMode } = useStructureStore();
+  const { selectedIds, toggleSelection, isDrawingShell, drawingNodes, addNodeToDrawing, viewMode } = useStructureStore();
   
-  const isSelected = selectedId === id;
+  const isSelected = selectedIds.includes(id);
   const isPartofDrawing = drawingNodes.includes(id);
   const isResultsMode = viewMode === 'results';
 
@@ -185,7 +185,7 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, hasRestraint }) {
     if (isDrawingShell) {
       addNodeToDrawing(id);
     } else {
-      setSelectedId(id);
+      toggleSelection(id, e.shiftKey || e.ctrlKey);
     }
   };
 
@@ -203,7 +203,7 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, hasRestraint }) {
 
 export function StructureCanvas() {
   const { 
-    nodes, elements, shells, isDrawingShell, setSelectedId,
+    nodes, elements, shells, isDrawingShell, clearSelection,
     viewMode, results, activeResultCombo, activeResultType, displacementScale, diagramScale 
   } = useStructureStore();
 
@@ -223,7 +223,7 @@ export function StructureCanvas() {
       <Canvas 
         camera={{ position: [20, 20, 20], fov: 35, up: [0, 0, 1] }}
         onPointerMissed={() => {
-          if (!isDrawingShell && viewMode !== 'results') setSelectedId(null);
+          if (!isDrawingShell && viewMode !== 'results') clearSelection();
         }}
       >
         <color attach="background" args={['#0f172a']} />

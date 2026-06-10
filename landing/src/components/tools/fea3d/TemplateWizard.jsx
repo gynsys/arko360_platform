@@ -10,11 +10,14 @@ const DEFAULT_CONFIG = {
   floorHeight: 3.0,
   bayWidthX: 5.0,
   bayWidthY: 5.0,
-  units: 'm, kgf, C'
+  units: 'm, kgf, C',
+  systemMaterial: 'Concrete', // 'Concrete' or 'Steel'
+  colSectionId: '',
+  beamSectionId: ''
 };
 
 export function TemplateWizard({ isOpen, onClose }) {
-  const { generateStructure, wizardConfig } = useStructureStore();
+  const { generateStructure, wizardConfig, sections, materials, addMaterial, addSection } = useStructureStore();
   const [config, setConfig] = useState(DEFAULT_CONFIG);
 
   // Sincronizar estado local con el store cuando se abre el modal
@@ -156,23 +159,81 @@ export function TemplateWizard({ isOpen, onClose }) {
             </div>
             
             {isFirstTime && (
-              <div className="mt-4">
-                <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Unidades del Proyecto</label>
-                <select 
-                  value={config.units || 'm, kgf, C'} 
-                  onChange={(e) => setConfig({ ...config, units: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                >
-                  <option value="m, kgf, C">Métrico MKS (m, kgf, C)</option>
-                  <option value="m, kN, C">Métrico SI (m, kN, C)</option>
-                  <option value="ft, kip, F">US Customary (ft, kip, F)</option>
-                </select>
-              </div>
+              <>
+                <div className="mt-4">
+                  <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Unidades del Proyecto</label>
+                  <select 
+                    value={config.units || 'm, kgf, C'} 
+                    onChange={(e) => setConfig({ ...config, units: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="m, kgf, C">Métrico MKS (m, kgf, C)</option>
+                    <option value="m, kN, C">Métrico SI (m, kN, C)</option>
+                    <option value="ft, kip, F">US Customary (ft, kip, F)</option>
+                  </select>
+                </div>
+                
+                <div className="mt-4">
+                  <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Material Predominante (Sistema)</label>
+                  <select 
+                    value={config.systemMaterial || 'Concrete'} 
+                    onChange={(e) => {
+                      const mat = e.target.value;
+                      setConfig({ 
+                        ...config, 
+                        systemMaterial: mat,
+                        colSectionId: mat === 'Steel' ? 'W14X90' : 'COL_DEF',
+                        beamSectionId: mat === 'Steel' ? 'W14X90' : 'BEAM_DEF'
+                      });
+                    }}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="Concrete">Concreto Armado</option>
+                    <option value="Steel">Acero Estructural</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Sección de Columnas</label>
+                    <select 
+                      value={config.colSectionId || (config.systemMaterial === 'Steel' ? 'W14X90' : 'COL_DEF')} 
+                      onChange={(e) => setConfig({ ...config, colSectionId: e.target.value })}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                    >
+                      {/* En ETABS, si no hay secciones, permite usar un default o crear una. Mostramos opciones hardcodeadas o del store */}
+                      {sections.length > 0 ? sections.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      )) : (
+                        config.systemMaterial === 'Steel' 
+                        ? <option value="W14X90">W14X90 (Acero)</option> 
+                        : <option value="COL_DEF">COL_40x40 (Concreto)</option>
+                      )}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Sección de Vigas</label>
+                    <select 
+                      value={config.beamSectionId || (config.systemMaterial === 'Steel' ? 'W14X90' : 'BEAM_DEF')} 
+                      onChange={(e) => setConfig({ ...config, beamSectionId: e.target.value })}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                    >
+                      {sections.length > 0 ? sections.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      )) : (
+                        config.systemMaterial === 'Steel' 
+                        ? <option value="W14X90">W14X90 (Acero)</option> 
+                        : <option value="BEAM_DEF">VIGA_30x40 (Concreto)</option>
+                      )}
+                    </select>
+                  </div>
+                </div>
+              </>
             )}
 
             {!isFirstTime && (
               <p className="text-xs text-amber-400 bg-amber-900/20 border border-amber-700/40 rounded-lg px-3 py-2">
-                ⚠️ Al regenerar se actualizan nudos y elementos. Las secciones y materiales se conservan.
+                ⚠️ Al regenerar se actualizan nudos y elementos. Las secciones y materiales de los elementos se re-asignarán a los valores por defecto del Wizard.
               </p>
             )}
 
