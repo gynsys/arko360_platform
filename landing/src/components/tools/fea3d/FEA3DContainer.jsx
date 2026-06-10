@@ -100,9 +100,23 @@ export default function FEA3DContainer() {
             onChange={(e) => setMetadata({ name: e.target.value })}
             className="bg-transparent text-white text-sm font-bold text-right outline-none focus:border-b border-blue-500"
           />
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest">
-            {totalElements} Elementos totales
-          </span>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest">
+              {totalElements} Elementos
+            </span>
+            <select
+              value={metadata.units || 'm, kN, C'}
+              onChange={(e) => setMetadata({ units: e.target.value })}
+              className="bg-slate-800 text-slate-300 text-[9px] uppercase font-bold outline-none border border-slate-600 rounded px-1 py-0.5 cursor-pointer"
+            >
+              <option value="m, kN, C">m, kN, C</option>
+              <option value="mm, N, C">mm, N, C</option>
+              <option value="m, kgf, C">m, kgf, C</option>
+              <option value="m, tonf, C">m, tonf, C</option>
+              <option value="ft, kip, F">ft, kip, F</option>
+              <option value="in, lb, F">in, lb, F</option>
+            </select>
+          </div>
         </div>
 
         {/* Acción Principal */}

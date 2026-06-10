@@ -84,10 +84,11 @@ backend/app/
 |---|---|---|
 | `TemplateWizard.jsx` | Modal con 4 plantillas (Edificio 3D, Pórtico 2D, Viga, Muro). Genera retícula de nudos y elementos. | ✅ |
 | `useStructureStore.js` | Store Zustand con: `generateStructure()`, `addShell()`, `deleteShell()`, `updateShell()`, `exportProject()`, `importProject()`, `addLoad()`, `updateNode()`, `deleteNode()`, `updateElement()`, `deleteElement()`, modo dibujo (`isDrawingShell`, `drawingNodes`, `addNodeToDrawing`). | ✅ |
-| `StructureCanvas.jsx` | Visor 3D con R3F. Nudos como esferas de colores, elementos como líneas. Shells visualizados con `BufferGeometry` triangulada (2 triángulos por quad). Fix del error `Float32Array`. Modo dibujo de losas integrado. | ✅ |
+| `StructureCanvas.jsx` | Visor 3D con R3F. Nudos como esferas de colores, elementos como líneas. Shells visualizados con `BufferGeometry` triangulada (2 triángulos por quad). Fix del error `Float32Array`. Modo dibujo de losas integrado. Deselección rápida al hacer clic en el fondo (`onPointerMissed`). | ✅ |
 | `PropertyPanel.jsx` | Panel derecho. Al clic en nudo: edita X,Y,Z y asigna cargas. Al clic en elemento: muestra info. Al clic en shell: edita espesor y cargas CM/CV. Botón **Eliminar** para nudo, elemento o shell. | ✅ |
-| `FEA3DContainer.jsx` | Layout base. Toolbar con Abrir/Guardar (archivo local), botón DIBUJAR LOSA (modo click), botón **+ LOSA** (formulario), botón GEOMETRÍA y nombre editable del proyecto. | ✅ |
-| `ShellPanel.jsx` | (**NUEVO**) Modal de formulario para definir losa maciza: selectores de 4 nudos, espesor, material, cargas CM/CV. Muestra área estimada y carga factorizada en tiempo real. | ✅ |
+| `FEA3DContainer.jsx` | Layout base. Toolbar con Abrir/Guardar, botón DIBUJAR LOSA, botón **+ LOSA**, botón GEOMETRÍA, nombre editable del proyecto y **Selector de Unidades** (SI, Imperial, MKS técnico COVENIN). | ✅ |
+| `ShellPanel.jsx` | Modal de formulario para definir losa maciza: selectores de 4 nudos, espesor, material, cargas CM/CV. Muestra área estimada y carga factorizada en tiempo real. | ✅ |
+| Limpieza Inteligente | Al eliminar elementos o losas, si algún nudo asociado queda huérfano (sin conexión a ninguna entidad), se elimina automáticamente de la estructura (`cleanupOrphans`). | ✅ |
 | Guardar / Abrir | Export `.arko3d` (JSON) vía `exportProject()` en el store y `FileReader` para importar. Botones en toolbar. | ✅ |
 | Backend `solvers.py` | Motor FEM completo: ensamble de la matriz de rigidez global K, vector de fuerzas F, resolución sparse. | ✅ |
 | Backend `fem_frame.py` | Matrices locales de elemento frame 3D con 12 DOF. | ✅ |
@@ -267,7 +268,7 @@ La función `exportProject()` del store los genera; `importProject()` los consum
   "metadata": {
     "name": "Edificio Torre A",
     "author": "",
-    "units": "m"
+    "units": "m, kgf, C"
   },
   "nodes": [
     { "id": 1, "x": 0.0, "y": 0.0, "z": 0.0, "restraint": { "dofs": [true, true, true, true, true, true] } },
@@ -312,4 +313,4 @@ La función `exportProject()` del store los genera; `importProject()` los consum
 - `shells`, `materials`, `sections` y `wizardConfig` son opcionales y pueden ser arrays/objetos vacíos.
 - Los IDs de nudos son enteros. Los IDs de shells son strings con formato `S-{timestamp}`.
 - Los apoyos (`restraint`) siguen el orden `[Fx, Fy, Fz, Mx, My, Mz]` en booleanos.
-- Unidades siempre en metros (m) y kilonewtons (kN).
+- Las unidades (`units`) viajan como un string libre en la `metadata` (e.g. `"m, kgf, C"` o `"m, kN, C"`). Sirve de referencia para la interfaz, el usuario debe proveer los valores consistentes con la unidad elegida.

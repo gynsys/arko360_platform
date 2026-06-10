@@ -1,5 +1,13 @@
 import { create } from 'zustand';
 
+// Helper para limpiar nudos huérfanos (que no pertenecen a ningún elemento ni losa)
+const cleanupOrphans = (nodes, elements, shells) => {
+  const connectedNodeIds = new Set();
+  elements.forEach(e => e.nodes.forEach(nid => connectedNodeIds.add(nid)));
+  shells.forEach(s => s.nodes.forEach(nid => connectedNodeIds.add(nid)));
+  return nodes.filter(n => connectedNodeIds.has(n.id));
+};
+
 export const useStructureStore = create((set, get) => ({
   // --- ESTADO ---
   nodes: [],
@@ -8,7 +16,7 @@ export const useStructureStore = create((set, get) => ({
   loads: [],
   sections: [],
   materials: [],
-  metadata: { name: 'Proyecto ARKO3D', author: '', units: 'm' },
+  metadata: { name: 'Proyecto ARKO3D', author: '', units: 'm, kN, C' },
   results: null,
   selectedId: null,
   wizardConfig: null,
@@ -51,21 +59,30 @@ export const useStructureStore = create((set, get) => ({
   updateNode: (id, data) => set((state) => ({
     nodes: state.nodes.map(n => n.id === id ? { ...n, ...data } : n)
   })),
-  deleteNode: (id) => set((state) => ({
-    nodes: state.nodes.filter(n => n.id !== id),
-    elements: state.elements.filter(e => !e.nodes.includes(id)),
-    shells: state.shells.filter(s => !s.nodes.includes(id)),
-    selectedId: state.selectedId === id ? null : state.selectedId
-  })),
+  deleteNode: (id) => set((state) => {
+    const newNodes = state.nodes.filter(n => n.id !== id);
+    const newElements = state.elements.filter(e => !e.nodes.includes(id));
+    const newShells = state.shells.filter(s => !s.nodes.includes(id));
+    return {
+      nodes: cleanupOrphans(newNodes, newElements, newShells),
+      elements: newElements,
+      shells: newShells,
+      selectedId: state.selectedId === id ? null : state.selectedId
+    };
+  }),
 
   // --- CRUD ELEMENTOS ---
   updateElement: (id, data) => set((state) => ({
     elements: state.elements.map(e => e.id === id ? { ...e, ...data } : e)
   })),
-  deleteElement: (id) => set((state) => ({
-    elements: state.elements.filter(e => e.id !== id),
-    selectedId: state.selectedId === id ? null : state.selectedId
-  })),
+  deleteElement: (id) => set((state) => {
+    const newElements = state.elements.filter(e => e.id !== id);
+    return {
+      elements: newElements,
+      nodes: cleanupOrphans(state.nodes, newElements, state.shells),
+      selectedId: state.selectedId === id ? null : state.selectedId
+    };
+  }),
 
   // --- CRUD SHELLS (LOSAS) ---
   addShell: (shell) => set((state) => ({
@@ -74,10 +91,14 @@ export const useStructureStore = create((set, get) => ({
   updateShell: (id, data) => set((state) => ({
     shells: state.shells.map(s => s.id === id ? { ...s, ...data } : s)
   })),
-  deleteShell: (id) => set((state) => ({
-    shells: state.shells.filter(s => s.id !== id),
-    selectedId: state.selectedId === id ? null : state.selectedId
-  })),
+  deleteShell: (id) => set((state) => {
+    const newShells = state.shells.filter(s => s.id !== id);
+    return {
+      shells: newShells,
+      nodes: cleanupOrphans(state.nodes, state.elements, newShells),
+      selectedId: state.selectedId === id ? null : state.selectedId
+    };
+  }),
 
   // --- CARGAS Y OTROS ---
   addLoad: (load) => set((state) => ({

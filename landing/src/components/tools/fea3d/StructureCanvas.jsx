@@ -108,7 +108,12 @@ export function StructureCanvas() {
 
   return (
     <div className="w-full h-full bg-slate-900">
-      <Canvas camera={{ position: [10, 10, 10], up: [0, 0, 1] }}>
+      <Canvas 
+        camera={{ position: [10, 10, 10], up: [0, 0, 1] }}
+        onPointerMissed={() => {
+          if (!isDrawingShell) setSelectedId(null);
+        }}
+      >
         <color attach="background" args={['#0f172a']} />
         <Grid infiniteGrid fadeDistance={40} cellColor="#334155" sectionColor="#475569" rotation={[Math.PI / 2, 0, 0]} />
         <ambientLight intensity={0.5} />
