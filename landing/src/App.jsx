@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import Hero from './components/Hero.jsx';
 import Services from './components/Services.jsx';
@@ -106,10 +106,13 @@ export default function App() {
     });
   }, []);
 
+  const location = useLocation();
+  const isAppRoute = location.pathname.startsWith('/arko3d');
+
   return (
     <SiteConfigContext.Provider value={config}>
       <Toaster position="bottom-right" toastOptions={{ className: 'font-sans text-sm shadow-xl' }} />
-      <Navbar />
+      {!isAppRoute && <Navbar />}
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/biblio" element={<BiblioPage />} />
@@ -118,7 +121,7 @@ export default function App() {
         <Route path="/herramientas/diseno-de-mezclas" element={<MixDesignCalculator />} />
         <Route path="/arko3d" element={<FEA3DContainer />} />
       </Routes>
-      <Footer />
+      {!isAppRoute && <Footer />}
     </SiteConfigContext.Provider>
   );
 }

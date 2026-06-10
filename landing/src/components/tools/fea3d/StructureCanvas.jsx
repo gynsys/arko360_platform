@@ -54,7 +54,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
   return (
     <mesh
       geometry={geometry}
-      onClick={(e) => { if(!isResultsMode && !isFaded) { e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); } }}
+      onClick={isResultsMode || isFaded ? undefined : (e) => { e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); }}
     >
       <meshStandardMaterial
         color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
@@ -82,15 +82,13 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
   return (
     <line 
       geometry={geometry} 
-      onClick={(e) => { 
-        if(!isResultsMode && !isShadow && !isFaded) { e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); } 
+      onClick={isResultsMode || isShadow || isFaded ? undefined : (e) => { 
+        e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
       }}
-      onContextMenu={(e) => {
-        if (isResultsMode && !isShadow && !isFaded) {
-          e.stopPropagation();
-          setRightClickedElementId(id);
-        }
-      }}
+      onContextMenu={isResultsMode && !isShadow && !isFaded ? (e) => {
+        e.stopPropagation();
+        setRightClickedElementId(id);
+      } : undefined}
     >
       <lineBasicMaterial 
         color={isShadow ? '#334155' : isFaded ? '#475569' : isSelected ? '#facc15' : isResultsMode ? '#38bdf8' : '#94a3b8'} 
@@ -217,7 +215,6 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint, isFaded }) 
   const hasRestraint = !!restraint;
 
   const handleClick = (e) => {
-    if (isResultsMode || isFaded) return;
     e.stopPropagation();
     if (isDrawingShell) {
       addNodeToDrawing(id);
@@ -265,7 +262,7 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint, isFaded }) 
   }
 
   return (
-    <group position={[x + dx, y + dy, z + dz]} onClick={handleClick}>
+    <group position={[x + dx, y + dy, z + dz]} onClick={isResultsMode || isFaded ? undefined : handleClick}>
       <mesh>
         <sphereGeometry args={[0.08, 8, 8]} />
         <meshStandardMaterial
