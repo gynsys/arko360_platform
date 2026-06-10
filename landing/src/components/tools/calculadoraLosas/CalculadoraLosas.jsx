@@ -9,7 +9,7 @@ import LosaColaborante from './LosaColaborante';
 import ReporteImprimible from './losamaciza/components/ReporteImprimible';
 import HistorialCorridas from './HistorialCorridas';
 import { calculadoraService } from '../../../services/calculadoraService';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
+import { FaHistory, FaCloudUploadAlt, FaFileCode } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 const CalculadoraLosas = () => {
