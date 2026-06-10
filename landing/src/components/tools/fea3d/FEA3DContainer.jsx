@@ -6,6 +6,7 @@ import { TemplateWizard } from './TemplateWizard';
 import { ShellPanel } from './ShellPanel';
 import { LoadCombosModal } from './LoadCombosModal';
 import { ResultsPanel } from './ResultsPanel';
+import { ElementResultsModal } from './ElementResultsModal';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
 import { Calculator } from 'lucide-react';
@@ -198,6 +199,7 @@ export default function FEA3DContainer() {
           )}
           <ResultsPanel />
           <StructureCanvas />
+          <ElementResultsModal />
         </div>
 
         <div className="w-[340px] border-l border-slate-800 shadow-2xl z-20 bg-slate-900">

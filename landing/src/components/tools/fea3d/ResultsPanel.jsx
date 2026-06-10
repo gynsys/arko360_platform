@@ -4,8 +4,8 @@ import { Unlock, Scaling, Layers } from 'lucide-react';
 
 export function ResultsPanel() {
   const { 
-    viewMode, results, activeResultCombo, displacementScale,
-    setActiveResultCombo, setDisplacementScale, exitResultsMode 
+    viewMode, results, activeResultCombo, activeResultType, displacementScale, diagramScale,
+    setActiveResultCombo, setActiveResultType, setDisplacementScale, setDiagramScale, exitResultsMode 
   } = useStructureStore();
 
   if (viewMode !== 'results' || !results) return null;
@@ -52,30 +52,78 @@ export function ResultsPanel() {
           </select>
         </div>
 
-        {/* Slider de Escala */}
+        {/* Selector de Tipo de Resultado */}
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
-              <Scaling size={12} /> Factor de Escala
-            </label>
-            <span className="text-xs text-indigo-300 font-mono bg-indigo-900/40 px-2 py-0.5 rounded">
-              x{displacementScale}
-            </span>
-          </div>
-          <input
-            type="range"
-            min="1"
-            max={Math.max(10000, displacementScale * 2)}
-            step="10"
-            value={displacementScale}
-            onChange={(e) => setDisplacementScale(parseInt(e.target.value))}
-            className="w-full accent-indigo-500"
-          />
-          <div className="flex justify-between text-[9px] text-slate-500 mt-1 font-mono">
-            <span>x1</span>
-            <span>x{Math.max(10000, displacementScale * 2)}</span>
-          </div>
+          <label className="text-[10px] uppercase text-slate-400 font-bold mb-1 block">
+            Tipo de Resultado
+          </label>
+          <select
+            value={activeResultType}
+            onChange={(e) => setActiveResultType(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+          >
+            <option value="deformed">Deformada</option>
+            <option value="P">Fuerza Axial (P)</option>
+            <option value="V2">Cortante (V2)</option>
+            <option value="V3">Cortante (V3)</option>
+            <option value="M2">Momento (M2)</option>
+            <option value="M3">Momento (M3)</option>
+          </select>
         </div>
+
+        {/* Slider de Escala para Deformada */}
+        {activeResultType === 'deformed' && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
+                <Scaling size={12} /> Factor de Escala (Def.)
+              </label>
+              <span className="text-xs text-indigo-300 font-mono bg-indigo-900/40 px-2 py-0.5 rounded">
+                x{displacementScale}
+              </span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max={Math.max(10000, displacementScale * 2)}
+              step="10"
+              value={displacementScale}
+              onChange={(e) => setDisplacementScale(parseInt(e.target.value))}
+              className="w-full accent-indigo-500"
+            />
+            <div className="flex justify-between text-[9px] text-slate-500 mt-1 font-mono">
+              <span>x1</span>
+              <span>x{Math.max(10000, displacementScale * 2)}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Slider de Escala para Diagramas */}
+        {activeResultType !== 'deformed' && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
+                <Scaling size={12} /> Escala del Diagrama
+              </label>
+              <span className="text-xs text-amber-300 font-mono bg-amber-900/40 px-2 py-0.5 rounded">
+                x{diagramScale.toFixed(2)}
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0.1"
+              max="5"
+              step="0.1"
+              value={diagramScale}
+              onChange={(e) => setDiagramScale(parseFloat(e.target.value))}
+              className="w-full accent-amber-500"
+            />
+            <div className="flex justify-between text-[9px] text-slate-500 mt-1 font-mono">
+              <span>x0.1</span>
+              <span>x5.0</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -59,6 +59,8 @@ class StructuralSolver:
         factor_cm = factors.get("CM", 1.0)
         factor_cv = factors.get("CV", 1.0)
         
+        element_local_loads = {elem.id: {"px": 0.0, "py": 0.0, "pz": 0.0} for elem in self.elements}
+        
         # 1. Peso Propio de Vigas/Columnas (CM)
         for elem in self.elements:
             mat = self.materials[elem.material_id]
@@ -114,13 +116,43 @@ class StructuralSolver:
                 
                 w_eq = total_load_N / total_length
                 for elem, l, en1, en2 in lengths:
-                    idx1_z, idx2_z = self.node_map[en1.id]*6+2, self.node_map[en2.id]*6+2
-                    idx1_my, idx2_my = self.node_map[en1.id]*6+4, self.node_map[en2.id]*6+4
-                    F[idx1_z] -= (w_eq * l) / 2
-                    F[idx2_z] -= (w_eq * l) / 2
-                    # Fixed end moments (wL^2/12)
-                    F[idx1_my] -= (w_eq * l**2) / 12
-                    F[idx2_my] += (w_eq * l**2) / 12
+                    p1 = np.array([en1.x, en1.y, en1.z])
+                    p2 = np.array([en2.x, en2.y, en2.z])
+                    T = get_rotation_matrix(p1, p2, elem.beta_angle)
+                    
+                    # El peso de la losa va hacia abajo en global Z (-Z).
+                    # Para una viga horizontal, Local Z o Local Y puede apuntar hacia arriba/abajo.
+                    # Mapeamos la carga global -Z a local.
+                    q_global = np.array([0, 0, -w_eq])
+                    q_local = T[0:3, 0:3] @ q_global
+                    
+                    # Guardamos la carga local para los diagramas
+                    element_local_loads[elem.id]["px"] += q_local[0]
+                    element_local_loads[elem.id]["py"] += q_local[1]
+                    element_local_loads[elem.id]["pz"] += q_local[2]
+                    
+                    f_fixed_local = np.zeros(12)
+                    # Carga distribuida local en Y
+                    f_fixed_local[1] = q_local[1] * l / 2
+                    f_fixed_local[5] = q_local[1] * l**2 / 12
+                    f_fixed_local[7] = q_local[1] * l / 2
+                    f_fixed_local[11] = -q_local[1] * l**2 / 12
+                    # Carga distribuida local en Z
+                    f_fixed_local[2] = q_local[2] * l / 2
+                    f_fixed_local[4] = -q_local[2] * l**2 / 12
+                    f_fixed_local[8] = q_local[2] * l / 2
+                    f_fixed_local[10] = q_local[2] * l**2 / 12
+                    
+                    # Carga axial
+                    f_fixed_local[0] = q_local[0] * l / 2
+                    f_fixed_local[6] = q_local[0] * l / 2
+                    
+                    f_fixed_global = T.T @ f_fixed_local
+                    
+                    idx1 = self.node_map[en1.id] * 6
+                    idx2 = self.node_map[en2.id] * 6
+                    F[idx1:idx1+6] += f_fixed_global[0:6]
+                    F[idx2:idx2+6] += f_fixed_global[6:12]
             else:
                 # Si no hay vigas, enviar a los nudos directamente
                 f_node = total_load_N / len(shell.nodes)
@@ -141,14 +173,32 @@ class StructuralSolver:
                 elem = next(e for e in self.elements if e.id == load.target_id)
                 n1 = next(n for n in self.nodes if n.id == elem.nodes[0])
                 n2 = next(n for n in self.nodes if n.id == elem.nodes[1])
-                L = np.linalg.norm(np.array([n2.x-n1.x, n2.y-n1.y, n2.z-n1.z]))
+                p1 = np.array([n1.x, n1.y, n1.z])
+                p2 = np.array([n2.x, n2.y, n2.z])
+                l = np.linalg.norm(p2 - p1)
                 w = load.magnitude * factor
-                idx1_z, idx2_z = self.node_map[n1.id]*6+2, self.node_map[n2.id]*6+2
-                idx1_my, idx2_my = self.node_map[n1.id]*6+4, self.node_map[n2.id]*6+4
-                F[idx1_z] += (w*L)/2; F[idx2_z] += (w*L)/2
-                F[idx1_my] += (w*L**2)/12; F[idx2_my] -= (w*L**2)/12
+                
+                T = get_rotation_matrix(p1, p2, elem.beta_angle)
+                q_global = np.array([0, 0, -w]) # Asumiendo carga hacia abajo
+                q_local = T[0:3, 0:3] @ q_global
+                
+                element_local_loads[elem.id]["px"] += q_local[0]
+                element_local_loads[elem.id]["py"] += q_local[1]
+                element_local_loads[elem.id]["pz"] += q_local[2]
+                
+                f_fixed_local = np.zeros(12)
+                f_fixed_local[2] = q_local[2] * l / 2
+                f_fixed_local[4] = -q_local[2] * l**2 / 12
+                f_fixed_local[8] = q_local[2] * l / 2
+                f_fixed_local[10] = q_local[2] * l**2 / 12
+                
+                f_fixed_global = T.T @ f_fixed_local
+                idx1 = self.node_map[n1.id] * 6
+                idx2 = self.node_map[n2.id] * 6
+                F[idx1:idx1+6] += f_fixed_global[0:6]
+                F[idx2:idx2+6] += f_fixed_global[6:12]
 
-        return F
+        return F, element_local_loads
 
     def solve(self):
         K = self.assemble_global_stiffness()
@@ -163,12 +213,11 @@ class StructuralSolver:
                         K[idx, idx] = 1e30
         
         K_csr = K.tocsr()
-        
         results_by_combo = {}
         
         # Iterar sobre las combinaciones de carga
         for combo in self.combinations:
-            F = self.assemble_load_vector(combo.factors)
+            F, local_loads = self.assemble_load_vector(combo.factors)
             
             # Aplicar Penalty Method en F
             for node in self.nodes:
@@ -181,6 +230,81 @@ class StructuralSolver:
             
             U = spsolve(K_csr, F)
             displacements = {n.id: U[i*6:(i+1)*6].tolist() for i, n in enumerate(self.nodes)}
-            results_by_combo[combo.id] = {"displacements": displacements}
+            
+            element_forces = {}
+            for elem in self.elements:
+                n1 = next(n for n in self.nodes if n.id == elem.nodes[0])
+                n2 = next(n for n in self.nodes if n.id == elem.nodes[1])
+                mat = self.materials[elem.material_id]
+                sec = self.sections[elem.section_id]
+                p1 = np.array([n1.x, n1.y, n1.z])
+                p2 = np.array([n2.x, n2.y, n2.z])
+                l = np.linalg.norm(p2 - p1)
+                
+                k_loc = get_3d_frame_local_stiffness(mat.E, mat.G, sec.A, sec.J, sec.Iy, sec.Ix, l)
+                T = get_rotation_matrix(p1, p2, elem.beta_angle)
+                
+                idx1 = self.node_map[n1.id] * 6
+                idx2 = self.node_map[n2.id] * 6
+                u_glob = np.zeros(12)
+                u_glob[0:6] = U[idx1:idx1+6]
+                u_glob[6:12] = U[idx2:idx2+6]
+                
+                u_loc = T @ u_glob
+                
+                qx = local_loads[elem.id]["px"]
+                qy = local_loads[elem.id]["py"]
+                qz = local_loads[elem.id]["pz"]
+                
+                f_fixed_local = np.zeros(12)
+                f_fixed_local[1] = qy * l / 2; f_fixed_local[5] = qy * l**2 / 12
+                f_fixed_local[7] = qy * l / 2; f_fixed_local[11] = -qy * l**2 / 12
+                f_fixed_local[2] = qz * l / 2; f_fixed_local[4] = -qz * l**2 / 12
+                f_fixed_local[8] = qz * l / 2; f_fixed_local[10] = qz * l**2 / 12
+                f_fixed_local[0] = qx * l / 2; f_fixed_local[6] = qx * l / 2
+                
+                f_loc_end = k_loc @ u_loc + f_fixed_local
+                
+                # 11 Estaciones
+                stations = []
+                xs = np.linspace(0, l, 11)
+                for x in xs:
+                    P = f_loc_end[0] - qx * x
+                    V2 = f_loc_end[1] - qy * x
+                    V3 = f_loc_end[2] - qz * x
+                    T_tors = f_loc_end[3]
+                    
+                    # Convención estática simplificada para momentos:
+                    M2 = -f_loc_end[4] + f_loc_end[2] * x - qz * x**2 / 2
+                    M3 = -f_loc_end[5] + f_loc_end[1] * x - qy * x**2 / 2
+                    
+                    # Deflexión local (Funciones de forma de Hermite)
+                    xi = x / l if l > 0 else 0
+                    N1 = 1 - 3*xi**2 + 2*xi**3
+                    N2 = l * (xi - 2*xi**2 + xi**3)
+                    N3 = 3*xi**2 - 2*xi**3
+                    N4 = l * (-xi**2 + xi**3)
+                    
+                    v_y = N1 * u_loc[1] + N2 * u_loc[5] + N3 * u_loc[7] + N4 * u_loc[11]
+                    v_z = N1 * u_loc[2] - N2 * u_loc[4] + N3 * u_loc[8] - N4 * u_loc[10]
+                    
+                    stations.append({
+                        "x": float(x),
+                        "P": float(P),
+                        "V2": float(V2),
+                        "V3": float(V3),
+                        "T": float(T_tors),
+                        "M2": float(M2),
+                        "M3": float(M3),
+                        "uy": float(v_y),
+                        "uz": float(v_z)
+                    })
+                
+                element_forces[elem.id] = stations
+                
+            results_by_combo[combo.id] = {
+                "displacements": displacements,
+                "element_forces": element_forces
+            }
             
         return {"results": results_by_combo, "combinations": [c.dict() for c in self.combinations]}

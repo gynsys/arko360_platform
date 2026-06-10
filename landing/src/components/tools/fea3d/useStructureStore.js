@@ -24,8 +24,11 @@ export const useStructureStore = create((set, get) => ({
   results: null,
   viewMode: 'geometry', // 'geometry' | 'results'
   activeResultCombo: null, // ID de la combinación activa en resultados
+  activeResultType: 'deformed', // 'deformed', 'P', 'V2', 'V3', 'M2', 'M3'
   displacementScale: 100, // Factor de exageración
+  diagramScale: 1.0, // Multiplicador para diagramas de esfuerzos
   selectedId: null,
+  rightClickedElementId: null, // ID para modal de diagrama de elemento
   wizardConfig: null,
 
   // Estado para dibujo de losas
@@ -34,6 +37,7 @@ export const useStructureStore = create((set, get) => ({
 
   // --- ACCIONES GENERALES ---
   setSelectedId: (id) => set({ selectedId: id }),
+  setRightClickedElementId: (id) => set({ rightClickedElementId: id }),
   setMetadata: (data) => set(state => ({ metadata: { ...state.metadata, ...data } })),
   
   setResultsMode: (resultsData) => set((state) => {
@@ -81,7 +85,9 @@ export const useStructureStore = create((set, get) => ({
   }),
   exitResultsMode: () => set({ viewMode: 'geometry', results: null }),
   setDisplacementScale: (scale) => set({ displacementScale: scale }),
+  setDiagramScale: (scale) => set({ diagramScale: scale }),
   setActiveResultCombo: (comboId) => set({ activeResultCombo: comboId }),
+  setActiveResultType: (type) => set({ activeResultType: type }),
 
   // --- MODO DIBUJO ---
   toggleDrawingShell: () => set(state => ({ 
