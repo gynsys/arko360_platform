@@ -32,7 +32,7 @@ export default function FEA3DContainer() {
   const { 
     wizardConfig, elements, shells, metadata, setMetadata,
     exportProject, importProject, isDrawingShell, toggleDrawingShell, drawingNodes,
-    viewMode,    activeResultType,
+    viewMode, activeResultType, setResultsMode,
     isSaved
   } = useStructureStore();
 
