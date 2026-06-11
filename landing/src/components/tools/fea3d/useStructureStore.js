@@ -298,6 +298,35 @@ export const useStructureStore = create((set, get) => ({
     
     return { loads: newLoads, isSaved: false };
   }),
+
+  manageFrameLoads: (elementIds, loadData, action, type) => set(state => {
+    let newLoads = [...state.loads];
+    
+    // Si la acción es reemplazar o borrar, removemos las cargas de ese tipo en esos elementos
+    if (action === 'replace' || action === 'delete') {
+      newLoads = newLoads.filter(l => !(l.type === type && elementIds.includes(l.target_id)));
+    }
+    
+    // Si la acción es agregar o reemplazar, añadimos las nuevas cargas
+    if (action === 'add' || action === 'replace') {
+      elementIds.forEach(eid => {
+        newLoads.push({
+          id: `L-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          type: type, // 'distributed' o 'point_frame'
+          target_id: eid,
+          fx: loadData.fx || 0,
+          fy: loadData.fy || 0,
+          fz: loadData.fz || 0,
+          mx: loadData.mx || 0,
+          my: loadData.my || 0,
+          mz: loadData.mz || 0,
+          offset: loadData.offset || 0.5
+        });
+      });
+    }
+    
+    return { loads: newLoads, isSaved: false };
+  }),
   
   // --- COMBINACIONES DE CARGA ---
   addLoadCombination: (combo) => set(state => ({ 

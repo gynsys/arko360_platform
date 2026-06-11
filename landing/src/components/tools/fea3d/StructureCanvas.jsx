@@ -330,9 +330,110 @@ function PointLoadArrow({ node, load }) {
             </Text>
           </group>
         );
-      })}
     </group>
   );
+}
+
+function FrameLoadGraphic({ element, load, nodes }) {
+  const { viewMode, metadata } = useStructureStore();
+  if (viewMode === 'results') return null;
+
+  const n1 = nodes.find(n => n.id === element.nodes[0]);
+  const n2 = nodes.find(n => n.id === element.nodes[1]);
+  if (!n1 || !n2) return null;
+
+  const p1 = new THREE.Vector3(n1.x, n1.y, n1.z);
+  const p2 = new THREE.Vector3(n2.x, n2.y, n2.z);
+  const dir = new THREE.Vector3().subVectors(p2, p1);
+  const length = dir.length();
+  dir.normalize();
+
+  const arrowLength = 1.0;
+  const units = metadata?.units?.split(',')[1]?.trim() || 'kN';
+  const lenUnit = metadata?.units?.split(',')[0]?.trim() || 'm';
+
+  const forces = [
+    { val: load.fx || 0, dir: new THREE.Vector3(1, 0, 0), label: 'Fx' },
+    { val: load.fy || 0, dir: new THREE.Vector3(0, 1, 0), label: 'Fy' },
+    { val: load.fz || 0, dir: new THREE.Vector3(0, 0, -1), label: 'Fz' },
+  ].filter(f => f.val !== 0);
+
+  if (forces.length === 0) return null;
+
+  if (load.type === 'point_frame') {
+    const offset = load.offset ?? 0.5;
+    const pos = p1.clone().add(dir.clone().multiplyScalar(length * offset));
+    
+    return (
+      <group>
+        {forces.map((f, i) => {
+          const fdir = f.val > 0 ? f.dir.clone() : f.dir.clone().negate();
+          const origin = pos.clone().sub(fdir.clone().multiplyScalar(arrowLength));
+          return (
+            <group key={i}>
+              <arrowHelper args={[fdir, origin, arrowLength, 0xef4444, 0.3, 0.15]} />
+              <Text
+                position={[origin.x, origin.y, origin.z + 0.25]}
+                fontSize={0.25}
+                color="#ef4444"
+                outlineColor="white"
+                outlineWidth={0.05}
+                anchorX="center"
+                rotation={[Math.PI / 2, 0, 0]}
+              >
+                {`${f.label}: ${Math.abs(f.val)} ${units}`}
+              </Text>
+            </group>
+          );
+        })}
+      </group>
+    );
+  }
+
+  if (load.type === 'distributed') {
+    const numArrows = 5;
+    return (
+      <group>
+        {forces.map((f, i) => {
+          const fdir = f.val > 0 ? f.dir.clone() : f.dir.clone().negate();
+          const topPoints = [];
+          
+          const arrows = [];
+          for (let j = 0; j <= numArrows; j++) {
+            const fraction = j / numArrows;
+            const pos = p1.clone().add(dir.clone().multiplyScalar(length * fraction));
+            const origin = pos.clone().sub(fdir.clone().multiplyScalar(arrowLength));
+            topPoints.push(origin);
+            arrows.push(<arrowHelper key={j} args={[fdir, origin, arrowLength, 0x3b82f6, 0.2, 0.1]} />);
+          }
+
+          const lineGeom = new THREE.BufferGeometry().setFromPoints(topPoints);
+          
+          return (
+            <group key={i}>
+              {arrows}
+              <line geometry={lineGeom}>
+                <lineBasicMaterial color={0x3b82f6} linewidth={2} />
+              </line>
+              <Text
+                position={[topPoints[Math.floor(numArrows/2)].x, topPoints[Math.floor(numArrows/2)].y - 0.2, topPoints[Math.floor(numArrows/2)].z]}
+                fontSize={0.25}
+                color="#3b82f6"
+                outlineColor="white"
+                outlineWidth={0.05}
+                anchorX="center"
+                rotation={[Math.PI / 2, 0, 0]}
+              >
+                {`${f.label}: ${Math.abs(f.val)} ${units}/${lenUnit}`}
+              </Text>
+            </group>
+          );
+        })}
+      </group>
+    );
+  }
+
+  return null;
 }
 
 // Controlador para animar y posicionar la cámara según la vista activa
@@ -650,12 +751,21 @@ export function StructureCanvas() {
           return <NodePoint key={n.id} {...n} dx={d[0]} dy={d[1]} dz={d[2]} restraint={n.restraint} isFaded={false} />;
         })}
 
-        {/* Cargas Puntuales */}
+        {/* Cargas */}
         {showLoads && loads.map(load => {
-          if (load.type !== 'point') return null;
-          const targetNode = nodes.find(n => n.id === load.target_id);
-          if (!targetNode || !isNodeActive(targetNode)) return null; // Ocultar cargas en nodos atenuados
-          return <PointLoadArrow key={load.id} node={targetNode} load={load} />;
+          if (load.type === 'point') {
+            const targetNode = nodes.find(n => n.id === load.target_id);
+            if (!targetNode || !isNodeActive(targetNode)) return null;
+            return <PointLoadArrow key={load.id} node={targetNode} load={load} />;
+          } else if (load.type === 'distributed' || load.type === 'point_frame') {
+            const targetElem = elements.find(e => e.id === load.target_id);
+            if (!targetElem) return null;
+            const n1 = nodes.find(n => n.id === targetElem.nodes[0]);
+            const n2 = nodes.find(n => n.id === targetElem.nodes[1]);
+            if (!n1 || !n2 || (!isNodeActive(n1) && !isNodeActive(n2))) return null;
+            return <FrameLoadGraphic key={load.id} element={targetElem} load={load} nodes={nodes} />;
+          }
+          return null;
         })}
         
         {/* Elementos y Diagramas */}

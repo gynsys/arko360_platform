@@ -180,10 +180,9 @@ class StructuralSolver:
                 p1 = np.array([n1.x, n1.y, n1.z])
                 p2 = np.array([n2.x, n2.y, n2.z])
                 l = np.linalg.norm(p2 - p1)
-                w = load.fz * factor
                 
+                q_global = np.array([load.fx * factor, load.fy * factor, load.fz * factor])
                 T = get_rotation_matrix(p1, p2, elem.beta_angle)
-                q_global = np.array([0, 0, -w]) # Asumiendo carga hacia abajo
                 q_local = T[0:3, 0:3] @ q_global
                 
                 element_local_loads[elem.id]["px"] += q_local[0]
@@ -191,10 +190,55 @@ class StructuralSolver:
                 element_local_loads[elem.id]["pz"] += q_local[2]
                 
                 f_fixed_local = np.zeros(12)
+                # Carga axial
+                f_fixed_local[0] = q_local[0] * l / 2
+                f_fixed_local[6] = q_local[0] * l / 2
+                # Carga Y local
+                f_fixed_local[1] = q_local[1] * l / 2
+                f_fixed_local[5] = q_local[1] * l**2 / 12
+                f_fixed_local[7] = q_local[1] * l / 2
+                f_fixed_local[11] = -q_local[1] * l**2 / 12
+                # Carga Z local
                 f_fixed_local[2] = q_local[2] * l / 2
                 f_fixed_local[4] = -q_local[2] * l**2 / 12
                 f_fixed_local[8] = q_local[2] * l / 2
                 f_fixed_local[10] = q_local[2] * l**2 / 12
+                
+                f_fixed_global = T.T @ f_fixed_local
+                idx1 = self.node_map[n1.id] * 6
+                idx2 = self.node_map[n2.id] * 6
+                F[idx1:idx1+6] += f_fixed_global[0:6]
+                F[idx2:idx2+6] += f_fixed_global[6:12]
+
+            elif load.type == "point_frame":
+                elem = next(e for e in self.elements if e.id == load.target_id)
+                n1 = next(n for n in self.nodes if n.id == elem.nodes[0])
+                n2 = next(n for n in self.nodes if n.id == elem.nodes[1])
+                p1 = np.array([n1.x, n1.y, n1.z])
+                p2 = np.array([n2.x, n2.y, n2.z])
+                l = np.linalg.norm(p2 - p1)
+                
+                a = l * load.offset
+                b = l - a
+                
+                q_global = np.array([load.fx * factor, load.fy * factor, load.fz * factor])
+                T = get_rotation_matrix(p1, p2, elem.beta_angle)
+                q_local = T[0:3, 0:3] @ q_global
+                
+                f_fixed_local = np.zeros(12)
+                # Axial
+                f_fixed_local[0] = q_local[0] * b / l
+                f_fixed_local[6] = q_local[0] * a / l
+                # Transverse Y
+                f_fixed_local[1] = q_local[1] * (b**2) * (3*a + b) / (l**3)
+                f_fixed_local[5] = q_local[1] * a * (b**2) / (l**2)
+                f_fixed_local[7] = q_local[1] * (a**2) * (a + 3*b) / (l**3)
+                f_fixed_local[11] = -q_local[1] * (a**2) * b / (l**2)
+                # Transverse Z
+                f_fixed_local[2] = q_local[2] * (b**2) * (3*a + b) / (l**3)
+                f_fixed_local[4] = -q_local[2] * a * (b**2) / (l**2)
+                f_fixed_local[8] = q_local[2] * (a**2) * (a + 3*b) / (l**3)
+                f_fixed_local[10] = q_local[2] * (a**2) * b / (l**2)
                 
                 f_fixed_global = T.T @ f_fixed_local
                 idx1 = self.node_map[n1.id] * 6
