@@ -4,7 +4,12 @@ import { useStructureStore } from './useStructureStore';
 import toast from 'react-hot-toast';
 
 export function AssignLoadsModal({ onClose }) {
-  const { selectedIds, nodes, manageNodeLoads, clearSelection } = useStructureStore();
+  const { selectedIds, nodes, manageNodeLoads, clearSelection, metadata, setMetadata } = useStructureStore();
+  
+  // Separar las unidades del string "m, kN, C" -> forceUnit = "kN"
+  const unitParts = (metadata?.units || 'm, kN, C').split(',');
+  const forceUnit = unitParts[1]?.trim() || 'kN';
+  const momentUnit = forceUnit === 'kip' ? 'kip·ft' : forceUnit === 'kgf' ? 'kgf·m' : 'kN·m';
   
   // Filtrar solo los nodos seleccionados
   const selectedNodeIds = selectedIds.filter(id => nodes.some(n => n.id === id));
@@ -52,7 +57,19 @@ export function AssignLoadsModal({ onClose }) {
           <div className="font-bold text-sm flex items-center gap-2">
             <ArrowDownToLine size={16} /> Assign Joint Loads (Forces)
           </div>
-          <button onClick={onClose} className="hover:text-blue-200"><X size={16} /></button>
+          <div className="flex items-center gap-3">
+            {/* Selector de unidades en el header */}
+            <select
+              value={metadata?.units || 'm, kN, C'}
+              onChange={(e) => setMetadata({ units: e.target.value })}
+              className="bg-blue-700 border border-blue-500 text-white text-xs px-2 py-0.5 rounded focus:outline-none cursor-pointer"
+            >
+              <option value="m, kgf, C">MKS (kgf)</option>
+              <option value="m, kN, C">SI (kN)</option>
+              <option value="ft, kip, F">US (kip)</option>
+            </select>
+            <button onClick={onClose} className="hover:text-blue-200"><X size={16} /></button>
+          </div>
         </div>
         
         <div className="p-4 space-y-4">
@@ -62,7 +79,7 @@ export function AssignLoadsModal({ onClose }) {
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-3">
-              <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Forces</label>
+              <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Forces [{forceUnit}]</label>
               <div>
                 <label className="text-xs text-slate-500 mb-1 block">Force Global X</label>
                 <input type="number" step="any" name="fx" value={loadData.fx} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />
@@ -78,7 +95,7 @@ export function AssignLoadsModal({ onClose }) {
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Moments</label>
+              <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Moments [{momentUnit}]</label>
               <div>
                 <label className="text-xs text-slate-500 mb-1 block">Moment Global X</label>
                 <input type="number" step="any" name="mx" value={loadData.mx} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />

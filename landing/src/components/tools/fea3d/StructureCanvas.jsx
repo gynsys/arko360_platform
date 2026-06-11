@@ -287,35 +287,43 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint, isFaded }) 
 }
 
 function PointLoadArrow({ node, load }) {
-  const { viewMode } = useStructureStore();
+  const { viewMode, metadata } = useStructureStore();
   if (viewMode === 'results') return null;
 
   const length = 1.5;
-  const color = 0xf97316; // Orange-500
+  const units = metadata?.units?.split(',')[1]?.trim() || 'kN';
 
-  // Direction logic
-  let dir = new THREE.Vector3(0, 0, -1);
-  if (load.direction === 'X') dir.set(Math.sign(load.magnitude), 0, 0);
-  else if (load.direction === 'Y') dir.set(0, Math.sign(load.magnitude), 0);
-  else if (load.direction === 'Z') dir.set(0, 0, Math.sign(load.magnitude));
-  
-  if (load.magnitude === 0) return null;
+  // Construir flechas para cada componente de fuerza no nulo
+  const forces = [
+    { val: load.fx || 0, dir: new THREE.Vector3(1, 0, 0), label: 'Fx' },
+    { val: load.fy || 0, dir: new THREE.Vector3(0, 1, 0), label: 'Fy' },
+    { val: load.fz || 0, dir: new THREE.Vector3(0, 0, -1), label: 'Fz' },
+  ].filter(f => f.val !== 0);
 
-  const origin = new THREE.Vector3(node.x, node.y, node.z).sub(dir.clone().multiplyScalar(length));
+  if (forces.length === 0) return null;
 
   return (
     <group>
-      <arrowHelper args={[dir, origin, length, color, 0.4, 0.2]} />
-      <Text 
-        position={[origin.x, origin.y, origin.z + 0.2]} 
-        fontSize={0.3} 
-        color="#f97316" 
-        outlineColor="black" 
-        outlineWidth={0.05}
-        rotation={[Math.PI / 2, 0, 0]} // Mirando hacia arriba en el grid XY
-      >
-        {Math.abs(load.magnitude)} kN
-      </Text>
+      {forces.map((f, i) => {
+        const dir = f.val > 0 ? f.dir.clone() : f.dir.clone().negate();
+        const origin = new THREE.Vector3(node.x, node.y, node.z).sub(dir.clone().multiplyScalar(length));
+        return (
+          <group key={i}>
+            <arrowHelper args={[dir, origin, length, 0xf97316, 0.4, 0.2]} />
+            <Text
+              position={[origin.x, origin.y, origin.z + 0.25]}
+              fontSize={0.28}
+              color="#f97316"
+              outlineColor="black"
+              outlineWidth={0.05}
+              anchorX="center"
+              rotation={[Math.PI / 2, 0, 0]}
+            >
+              {`${f.label}: ${Math.abs(f.val)} ${units}`}
+            </Text>
+          </group>
+        );
+      })}
     </group>
   );
 }
@@ -447,6 +455,7 @@ function SelectionHandler() {
         return;
       }
       
+      const rect = canvas.getBoundingClientRect();
       const minX = Math.min(startPos.x, endX);
       const maxX = Math.max(startPos.x, endX);
       const minY = Math.min(startPos.y, endY);
@@ -462,19 +471,20 @@ function SelectionHandler() {
         return true;
       };
 
-      const isPointInside = (nx, ny, nz) => {
+      const isPointInside = (nx, ny, nz, margin = 0) => {
         const p = new THREE.Vector3(nx, ny, nz);
         p.project(camera);
         const px = (p.x * 0.5 + 0.5) * rect.width;
         const py = (p.y * -0.5 + 0.5) * rect.height;
-        return px >= minX && px <= maxX && py >= minY && py <= maxY;
+        return px >= minX - margin && px <= maxX + margin && py >= minY - margin && py <= maxY + margin;
       };
 
       const newSelected = new Set(e.shiftKey || e.ctrlKey ? freshSelected : []);
 
       freshNodes.forEach(n => {
         if (!isActive(n)) return;
-        if (isPointInside(n.x, n.y, n.z)) {
+        // Usar margen de 4px para nodos para facilitar su selección
+        if (isPointInside(n.x, n.y, n.z, 4)) {
           newSelected.add(n.id);
         }
       });
