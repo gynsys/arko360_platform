@@ -126,36 +126,46 @@ export function TemplateWizard({ isOpen, onClose }) {
           {/* Formulario */}
           <div className="w-2/3 p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
+              {config.type !== 'beam' && (
+                <>
+                  <Input
+                    label="Número de Pisos"
+                    value={config.numFloors}
+                    onChange={v => setConfig({ ...config, numFloors: v })}
+                  />
+                  <Input
+                    label={`Altura entre pisos (${config.units?.split(',')[0] || 'm'})`}
+                    value={config.floorHeight}
+                    onChange={v => setConfig({ ...config, floorHeight: v })}
+                  />
+                </>
+              )}
+              
               <Input
-                label="Número de Pisos"
-                value={config.numFloors}
-                onChange={v => setConfig({ ...config, numFloors: v })}
-              />
-              <Input
-                label={`Altura entre pisos (${config.units?.split(',')[0] || 'm'})`}
-                value={config.floorHeight}
-                onChange={v => setConfig({ ...config, floorHeight: v })}
-              />
-              <Input
-                label="Vanos en X"
+                label={config.type === 'beam' ? "Número de Vanos" : "Vanos en X"}
                 value={config.numBaysX}
                 onChange={v => setConfig({ ...config, numBaysX: v })}
               />
               <Input
-                label={`Ancho de Vanos X (${config.units?.split(',')[0] || 'm'})`}
+                label={config.type === 'beam' ? `Longitud de Vano (${config.units?.split(',')[0] || 'm'})` : `Ancho de Vanos X (${config.units?.split(',')[0] || 'm'})`}
                 value={config.bayWidthX}
                 onChange={v => setConfig({ ...config, bayWidthX: v })}
               />
-              <Input
-                label="Vanos en Y"
-                value={config.numBaysY}
-                onChange={v => setConfig({ ...config, numBaysY: v })}
-              />
-              <Input
-                label={`Ancho de Vanos Y (${config.units?.split(',')[0] || 'm'})`}
-                value={config.bayWidthY}
-                onChange={v => setConfig({ ...config, bayWidthY: v })}
-              />
+              
+              {config.type !== 'beam' && config.type !== '2d_frame' && (
+                <>
+                  <Input
+                    label="Vanos en Y"
+                    value={config.numBaysY}
+                    onChange={v => setConfig({ ...config, numBaysY: v })}
+                  />
+                  <Input
+                    label={`Ancho de Vanos Y (${config.units?.split(',')[0] || 'm'})`}
+                    value={config.bayWidthY}
+                    onChange={v => setConfig({ ...config, bayWidthY: v })}
+                  />
+                </>
+              )}
             </div>
             
             {isFirstTime && (

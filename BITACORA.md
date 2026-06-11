@@ -2,7 +2,7 @@
 
 Este documento registra el estado actual del proyecto y los pasos pendientes para retomar el trabajo en cualquier momento.
 
-## Estado Actual (Última actualización: 2026-06-03)
+## Estado Actual (Última actualización: 2026-06-10)
 
 ### ✅ Completado
 
@@ -17,6 +17,16 @@ Este documento registra el estado actual del proyecto y los pasos pendientes par
    - **Wizard Avanzado:** Definición inicial de "Material Predominante" (Acero/Concreto) con preasignación de secciones por defecto.
    - **Tablas de Resultados Estilo ETABS:** Visor tabular que consolida Story, Element, Output Case, y las fuerzas internas ordenadas (P, V2, V3, T, M2, M3).
    - **Multi-Selección:** Soporte nativo para seleccionar múltiples elementos en R3F con tecla Shift/Ctrl.
+
+3. **ARKO3D — Sesión 2026-06-10 (Selección y Navegación 2D):**
+   - **Selección por Ventana (Window/Crossing):** Dibuja caja con clic izquierdo. Izq→Der = Window (azul, solo los que están adentro). Der→Izq = Crossing (verde punteado, los que toca). Shift/Ctrl acumula selección.
+   - **Controles estilo ETABS:** Clic derecho = orbitar cámara, rueda = panear, clic izquierdo = seleccionar/ventana. Se deshabilitó el menú contextual del navegador en el canvas.
+   - **Tip de controles:** Botón "Controles Mouse" en ViewControls con hover tooltip resumen de atajos.
+   - **Sin layout en /arko3d:** El Navbar y Footer del sitio se ocultan en la ruta `/arko3d` para pantalla completa.
+   - **Bug crítico resuelto — Vista Planta Z=3 (depth buffer):** Ver `ARKO3D_BUGS.md` para detalles completos. La causa raíz fue que los elementos transparentes de nivel Z=6 bloqueaban visualmente y para raycasting los elementos activos de Z=3 debido al depth buffer de WebGL. Solución: omitir completamente del render los elementos de otros niveles en vista 2D (igual que ETABS).
+   - **Bug de closure stale en SelectionHandler:** El useEffect del handler de selección capturaba valores de nivel/vista al montar. Ahora lee `useStructureStore.getState()` en cada evento para siempre tener el estado actual.
+   - **Bug de formato restraint:** El Wizard generaba `{ dofs: [...] }` pero NodePoint esperaba `{ ux, uy, uz, rx, ry, rz }`. Corregido en `generateStructure`.
+   - **Documentación técnica:** Creado `landing/src/components/tools/fea3d/ARKO3D_BUGS.md` con registro detallado de bugs.
 
 2. **Backend desarrollado** - Endpoints completos en `backend/app/api/v1/endpoints/arko.py`:
    - CRUD de blog (GET, POST, PUT, DELETE /api/v1/arko/admin/posts)
