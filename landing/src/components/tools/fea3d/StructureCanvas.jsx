@@ -555,6 +555,15 @@ export function StructureCanvas() {
   // Tolerancia para considerar si un elemento está en el nivel activo
   const TOLERANCE = 0.15;
 
+  // DEBUG: log de valores para diagnosticar el problema de Z=3
+  if (cameraView === 'XY') {
+    const uniqueZs = [...new Set(nodes.map(n => n.z))].sort((a,b)=>a-b);
+    console.log('[ARKO3D DEBUG] cameraView=XY, activeLevel=', activeLevel, 'uniqueZ levels=', uniqueZs);
+    // Verificar cuántos nodos están en activeLevel
+    const activeNodes = nodes.filter(n => Math.abs(n.z - activeLevel) <= TOLERANCE);
+    console.log('[ARKO3D DEBUG] Nodos activos en nivel:', activeNodes.length, '/', nodes.length);
+  }
+
   const isNodeActive = (n) => {
     if (cameraView === '3D') return true;
     if (cameraView === 'XY') return Math.abs(n.z - activeLevel) <= TOLERANCE;
@@ -567,6 +576,7 @@ export function StructureCanvas() {
     if (cameraView === '3D') return true;
     return isNodeActive(n1) && isNodeActive(n2);
   };
+
 
   // Posición de la grilla
   const gridPosition = [

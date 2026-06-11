@@ -348,7 +348,7 @@ export const useStructureStore = create((set, get) => ({
           newNodes.push({
             id: nodeCount++,
             x: x * bayWidthX, y: y * bayWidthY, z: z * floorHeight,
-            restraint: z === 0 ? { dofs: [true, true, true, true, true, true] } : null
+            restraint: z === 0 ? { ux: true, uy: true, uz: true, rx: true, ry: true, rz: true } : null
           });
         }
       }
