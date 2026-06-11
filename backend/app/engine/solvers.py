@@ -59,7 +59,7 @@ class StructuralSolver:
         factor_cm = factors.get("CM", 1.0)
         factor_cv = factors.get("CV", 1.0)
         
-        element_local_loads = {elem.id: {"px": 0.0, "py": 0.0, "pz": 0.0} for elem in self.elements}
+        element_local_loads = {elem.id: {"px": 0.0, "py": 0.0, "pz": 0.0, "f_fixed_local": np.zeros(12), "point_loads": []} for elem in self.elements}
         
         # 1. Peso Propio de Vigas/Columnas (CM)
         for elem in self.elements:
@@ -147,6 +147,8 @@ class StructuralSolver:
                     f_fixed_local[0] = q_local[0] * l / 2
                     f_fixed_local[6] = q_local[0] * l / 2
                     
+                    element_local_loads[elem.id]["f_fixed_local"] += f_fixed_local
+                    
                     f_fixed_global = T.T @ f_fixed_local
                     
                     idx1 = self.node_map[en1.id] * 6
@@ -204,6 +206,8 @@ class StructuralSolver:
                 f_fixed_local[8] = q_local[2] * l / 2
                 f_fixed_local[10] = q_local[2] * l**2 / 12
                 
+                element_local_loads[elem.id]["f_fixed_local"] += f_fixed_local
+                
                 f_fixed_global = T.T @ f_fixed_local
                 idx1 = self.node_map[n1.id] * 6
                 idx2 = self.node_map[n2.id] * 6
@@ -239,6 +243,14 @@ class StructuralSolver:
                 f_fixed_local[4] = -q_local[2] * a * (b**2) / (l**2)
                 f_fixed_local[8] = q_local[2] * (a**2) * (a + 3*b) / (l**3)
                 f_fixed_local[10] = q_local[2] * (a**2) * b / (l**2)
+                
+                element_local_loads[elem.id]["point_loads"].append({
+                    "a": a,
+                    "px": q_local[0],
+                    "py": q_local[1],
+                    "pz": q_local[2]
+                })
+                element_local_loads[elem.id]["f_fixed_local"] += f_fixed_local
                 
                 f_fixed_global = T.T @ f_fixed_local
                 idx1 = self.node_map[n1.id] * 6
@@ -305,13 +317,8 @@ class StructuralSolver:
                 qx = local_loads[elem.id]["px"]
                 qy = local_loads[elem.id]["py"]
                 qz = local_loads[elem.id]["pz"]
-                
-                f_fixed_local = np.zeros(12)
-                f_fixed_local[1] = qy * l / 2; f_fixed_local[5] = qy * l**2 / 12
-                f_fixed_local[7] = qy * l / 2; f_fixed_local[11] = -qy * l**2 / 12
-                f_fixed_local[2] = qz * l / 2; f_fixed_local[4] = -qz * l**2 / 12
-                f_fixed_local[8] = qz * l / 2; f_fixed_local[10] = qz * l**2 / 12
-                f_fixed_local[0] = qx * l / 2; f_fixed_local[6] = qx * l / 2
+                f_fixed_local = local_loads[elem.id]["f_fixed_local"]
+                point_loads = local_loads[elem.id]["point_loads"]
                 
                 f_loc_end = k_loc @ u_loc + f_fixed_local
                 
@@ -324,9 +331,17 @@ class StructuralSolver:
                     V3 = f_loc_end[2] - qz * x
                     T_tors = f_loc_end[3]
                     
-                    # Convención estática simplificada para momentos:
                     M2 = -f_loc_end[4] + f_loc_end[2] * x - qz * x**2 / 2
                     M3 = -f_loc_end[5] + f_loc_end[1] * x - qy * x**2 / 2
+                    
+                    for pt in point_loads:
+                        if x > pt["a"]:
+                            dist = x - pt["a"]
+                            P -= pt["px"]
+                            V2 -= pt["py"]
+                            V3 -= pt["pz"]
+                            M2 -= pt["pz"] * dist
+                            M3 -= pt["py"] * dist
                     
                     # Deflexión local (Funciones de forma de Hermite)
                     xi = x / l if l > 0 else 0
