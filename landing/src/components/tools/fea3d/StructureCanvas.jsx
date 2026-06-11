@@ -517,6 +517,8 @@ function SelectionHandler() {
           }
         }
       });
+      
+      console.log("[SELECTION DEBUG] Mode:", mode, "Selected count:", newSelected.size, "Selected IDs:", Array.from(newSelected));
 
       freshShells.forEach(s => {
         const shellNodes = s.nodes.map(nid => freshNodes.find(n => n.id === nid)).filter(Boolean);
