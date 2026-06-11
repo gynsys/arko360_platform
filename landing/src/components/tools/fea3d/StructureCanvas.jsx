@@ -54,7 +54,10 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
   return (
     <mesh
       geometry={geometry}
-      onClick={isResultsMode || isFaded ? undefined : (e) => { e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); }}
+      onClick={isResultsMode || isFaded ? undefined : (e) => { 
+        if (e.delta > 5) return; // Ignorar si fue un drag
+        e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
+      }}
     >
       <meshStandardMaterial
         color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
@@ -84,6 +87,7 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     <line 
       geometry={geometry} 
       onClick={isResultsMode || isShadow || isFaded ? undefined : (e) => { 
+        if (e.delta > 5) return; // Ignorar si fue un drag (ej. selección por ventana)
         e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
       }}
       onContextMenu={isResultsMode && !isShadow && !isFaded ? (e) => {
@@ -217,6 +221,7 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint, isFaded }) 
   const hasRestraint = !!restraint;
 
   const handleClick = (e) => {
+    if (e.delta > 5) return; // Ignorar si fue un drag
     e.stopPropagation();
     if (isDrawingShell) {
       addNodeToDrawing(id);

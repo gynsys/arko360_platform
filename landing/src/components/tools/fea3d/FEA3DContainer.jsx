@@ -294,7 +294,10 @@ export default function FEA3DContainer() {
           <ElementResultsModal />
 
           {/* Selector de Unidades Esquina Inferior Derecha */}
-          <div className="absolute bottom-4 right-4 z-10">
+          <div 
+            className="absolute bottom-4 z-50 transition-all duration-300"
+            style={{ right: isSidebarOpen ? '336px' : '16px' }}
+          >
             <select
               value={metadata?.units || 'm, kgf, C'}
               onChange={(e) => useStructureStore.setState(s => ({ metadata: { ...s.metadata, units: e.target.value } }))}
