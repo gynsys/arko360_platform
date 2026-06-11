@@ -144,6 +144,40 @@ export const useStructureStore = create((set, get) => ({
       }
     }));
 
+    let newResults = state.results;
+    if (newResults && newResults.results) {
+      newResults = JSON.parse(JSON.stringify(state.results)); // Deep copy
+      Object.keys(newResults.results).forEach(comboId => {
+        const r = newResults.results[comboId];
+        
+        // Displacements
+        if (r.displacements) {
+          Object.keys(r.displacements).forEach(nid => {
+            r.displacements[nid][0] *= lFactor;
+            r.displacements[nid][1] *= lFactor;
+            r.displacements[nid][2] *= lFactor;
+            // r4, r5, r6 are radians, unchanged
+          });
+        }
+        
+        // Element Forces
+        if (r.element_forces) {
+          Object.keys(r.element_forces).forEach(eid => {
+            r.element_forces[eid] = r.element_forces[eid].map(st => ({
+              ...st,
+              x: st.x * lFactor,
+              P: st.P * fFactor,
+              V2: st.V2 * fFactor,
+              V3: st.V3 * fFactor,
+              T: st.T * fFactor * lFactor,
+              M2: st.M2 * fFactor * lFactor,
+              M3: st.M3 * fFactor * lFactor
+            }));
+          });
+        }
+      });
+    }
+
     return {
       nodes: newNodes,
       loads: newLoads,
@@ -151,8 +185,7 @@ export const useStructureStore = create((set, get) => ({
       sections: newSections,
       shells: newShells,
       metadata: { ...state.metadata, units: newUnitsStr },
-      results: null,
-      viewMode: 'geometry',
+      results: newResults,
       isSaved: false
     };
   }),
