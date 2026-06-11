@@ -555,15 +555,6 @@ export function StructureCanvas() {
   // Tolerancia para considerar si un elemento está en el nivel activo
   const TOLERANCE = 0.15;
 
-  // DEBUG: log de valores para diagnosticar el problema de Z=3
-  if (cameraView === 'XY') {
-    const uniqueZs = [...new Set(nodes.map(n => n.z))].sort((a,b)=>a-b);
-    console.log('[ARKO3D DEBUG] cameraView=XY, activeLevel=', activeLevel, 'uniqueZ levels=', uniqueZs);
-    // Verificar cuántos nodos están en activeLevel
-    const activeNodes = nodes.filter(n => Math.abs(n.z - activeLevel) <= TOLERANCE);
-    console.log('[ARKO3D DEBUG] Nodos activos en nivel:', activeNodes.length, '/', nodes.length);
-  }
-
   const isNodeActive = (n) => {
     if (cameraView === '3D') return true;
     if (cameraView === 'XY') return Math.abs(n.z - activeLevel) <= TOLERANCE;
@@ -576,7 +567,6 @@ export function StructureCanvas() {
     if (cameraView === '3D') return true;
     return isNodeActive(n1) && isNodeActive(n2);
   };
-
 
   // Posición de la grilla
   const gridPosition = [
@@ -630,7 +620,9 @@ export function StructureCanvas() {
         {nodes.map(n => {
           const d = getDisplacement(n.id);
           const active = isNodeActive(n);
-          return <NodePoint key={n.id} {...n} dx={d[0]} dy={d[1]} dz={d[2]} restraint={n.restraint} isFaded={!active} />;
+          // En vista 2D: omitir completamente los nodos de otros niveles
+          if (!active && cameraView !== '3D') return null;
+          return <NodePoint key={n.id} {...n} dx={d[0]} dy={d[1]} dz={d[2]} restraint={n.restraint} isFaded={false} />;
         })}
 
         {/* Cargas Puntuales */}
@@ -650,6 +642,8 @@ export function StructureCanvas() {
           const d1 = getDisplacement(n1.id);
           const d2 = getDisplacement(n2.id);
           const active = isElementActive(n1, n2);
+          // En vista 2D: omitir completamente los elementos de otros niveles
+          if (!active && cameraView !== '3D') return null;
           
           let elementForces = null;
           if (viewMode === 'results' && activeResultCombo && activeResultType !== 'deformed') {
@@ -661,12 +655,12 @@ export function StructureCanvas() {
 
           return (
             <group key={el.id}>
-              {/* Línea del elemento */}
+              {/* Línea del elemento - siempre activo si llegamos aquí */}
               <FrameElement 
                 id={el.id} 
                 start={[n1.x+d1[0], n1.y+d1[1], n1.z+d1[2]]} 
                 end={[n2.x+d2[0], n2.y+d2[1], n2.z+d2[2]]} 
-                isFaded={!active}
+                isFaded={false}
               />
               
               {/* Diagrama de esfuerzos */}
@@ -688,7 +682,9 @@ export function StructureCanvas() {
         {shells.map(s => {
           const shellNodes = s.nodes.map(nid => nodes.find(n => n.id === nid)).filter(Boolean);
           const active = cameraView === '3D' || shellNodes.every(n => isNodeActive(n));
-          return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={!active} />;
+          // En vista 2D: omitir shells de otros niveles
+          if (!active && cameraView !== '3D') return null;
+          return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={false} />;
         })}
 
         {/* OrbitControls Mapeado al Clic Derecho (Estilo ETABS) */}
