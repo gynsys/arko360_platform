@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Settings, Play, Building2, Save, FolderOpen, Plus, MousePointer2, Layers } from 'lucide-react';
+import { Settings, Play, Building2, Save, FolderOpen, Plus, MousePointer2, Layers, Grid, ArrowDownToLine, Calculator, ChevronRight, ChevronLeft, LogIn, Cloud } from 'lucide-react';
 import { StructureCanvas } from './StructureCanvas';
 import { PropertyPanel } from './PropertyPanel';
 import { TemplateWizard } from './TemplateWizard';
@@ -12,10 +13,10 @@ import { DefineSectionsModal } from './DefineSectionsModal';
 import { ResultsTableModal } from './ResultsTableModal';
 import { SelectElementsModal } from './SelectElementsModal';
 import { AssignSectionModal } from './AssignSectionModal';
+import { AssignLoadsModal } from './AssignLoadsModal';
 import { ViewControls } from './ViewControls';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
-import { Calculator, ChevronRight, ChevronLeft, LogIn, Cloud } from 'lucide-react';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { MenuDropdown } from './MenuDropdown';
@@ -32,6 +33,7 @@ export default function FEA3DContainer() {
   const [tablesModalOpen, setTablesModalOpen] = useState(false);
   const [selectModalOpen, setSelectModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignLoadsModalOpen, setAssignLoadsModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -174,6 +176,7 @@ export default function FEA3DContainer() {
         <div className="flex items-center gap-1">
           <MenuDropdown title="File" items={[
             { label: 'Nuevo Proyecto', icon: Plus, onClick: () => setWizardOpen(true), disabled: isResultsMode },
+            { label: 'Editar Geometría', icon: Grid, onClick: () => setWizardOpen(true), disabled: isResultsMode },
             { separator: true },
             { label: 'Abrir de la Nube', icon: Cloud, onClick: () => {
                 if (!currentUser) setAuthModalOpen(true);
@@ -199,7 +202,8 @@ export default function FEA3DContainer() {
 
           <MenuDropdown title="Assign" items={[
             { label: 'Seleccionar (Select)', icon: MousePointer2, onClick: () => setSelectModalOpen(true), disabled: isResultsMode },
-            { label: 'Asignar Propiedades', icon: Settings, onClick: () => setAssignModalOpen(true), disabled: isResultsMode }
+            { label: 'Asignar Secciones (Frame)', icon: Settings, onClick: () => setAssignModalOpen(true), disabled: isResultsMode },
+            { label: 'Cargas en Nudos', icon: ArrowDownToLine, onClick: () => setAssignLoadsModalOpen(true), disabled: isResultsMode }
           ]} />
 
           <MenuDropdown title="Analyze" items={[
@@ -258,7 +262,7 @@ export default function FEA3DContainer() {
         {/* Render Canvas ocupando flex-1 */}
         <div 
           className="flex-1 relative"
-          onContextMenu={(e) => e.preventDefault()} // Deshabilitar menú contextual (clic derecho) para usar OrbitControls
+          onContextMenu={(e) => e.preventDefault()}
         >
           {/* Overlay de Selección 2D */}
           {selectionBox.isSelecting && (
@@ -269,7 +273,7 @@ export default function FEA3DContainer() {
                 top: Math.min(selectionBox.startY, selectionBox.endY),
                 width: Math.abs(selectionBox.endX - selectionBox.startX),
                 height: Math.abs(selectionBox.endY - selectionBox.startY),
-                backgroundColor: selectionBox.mode === 'window' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(34, 197, 94, 0.2)', // Azul o Verde
+                backgroundColor: selectionBox.mode === 'window' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(34, 197, 94, 0.2)',
                 border: `1px ${selectionBox.mode === 'window' ? 'solid' : 'dashed'} ${selectionBox.mode === 'window' ? 'rgba(59, 130, 246, 0.8)' : 'rgba(34, 197, 94, 0.8)'}`,
                 pointerEvents: 'none',
                 zIndex: 50
@@ -289,6 +293,19 @@ export default function FEA3DContainer() {
             </div>
           )}
           <ElementResultsModal />
+
+          {/* Selector de Unidades Esquina Inferior Derecha */}
+          <div className="absolute bottom-4 right-4 z-10">
+            <select
+              value={metadata?.units || 'm, kgf, C'}
+              onChange={(e) => useStructureStore.setState(s => ({ metadata: { ...s.metadata, units: e.target.value } }))}
+              className="bg-slate-800/80 backdrop-blur-md border border-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg focus:outline-none hover:bg-slate-700 shadow-lg cursor-pointer transition-colors"
+            >
+              <option value="m, kgf, C">MKS (m, kgf, C)</option>
+              <option value="m, kN, C">SI (m, kN, C)</option>
+              <option value="ft, kip, F">US Customary (ft, kip, F)</option>
+            </select>
+          </div>
         </div>
 
         {/* Botón Abatible del Sidebar */}
@@ -319,6 +336,7 @@ export default function FEA3DContainer() {
       {tablesModalOpen && <ResultsTableModal onClose={() => setTablesModalOpen(false)} />}
       {selectModalOpen && <SelectElementsModal onClose={() => setSelectModalOpen(false)} />}
       {assignModalOpen && <AssignSectionModal onClose={() => setAssignModalOpen(false)} />}
+      {assignLoadsModalOpen && <AssignLoadsModal onClose={() => setAssignLoadsModalOpen(false)} />}
       
       {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} onLoginSuccess={(u) => { setCurrentUser(u); setAuthModalOpen(false); }} />}
       {projectsModalOpen && <ProjectsDashboardModal onClose={() => setProjectsModalOpen(false)} />}

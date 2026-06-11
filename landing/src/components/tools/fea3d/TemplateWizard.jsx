@@ -204,6 +204,7 @@ export function TemplateWizard({ isOpen, onClose }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mt-4">
+                  {config.type !== 'beam' && (
                   <div>
                     <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Sección de Columnas</label>
                     <select 
@@ -221,7 +222,8 @@ export function TemplateWizard({ isOpen, onClose }) {
                       )}
                     </select>
                   </div>
-                  <div>
+                  )}
+                  <div className={config.type === 'beam' ? 'col-span-2' : ''}>
                     <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Sección de Vigas</label>
                     <select 
                       value={config.beamSectionId || (config.systemMaterial === 'Steel' ? 'W14X90' : 'BEAM_DEF')} 

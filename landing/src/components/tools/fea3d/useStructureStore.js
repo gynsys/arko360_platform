@@ -270,6 +270,34 @@ export const useStructureStore = create((set, get) => ({
     loads: [...state.loads, { ...load, id: `L-${Date.now()}` }],
     isSaved: false
   })),
+
+  manageNodeLoads: (nodeIds, loadData, action) => set(state => {
+    let newLoads = [...state.loads];
+    
+    // Si la acción es reemplazar o borrar, removemos las cargas puntuales existentes en esos nodos
+    if (action === 'replace' || action === 'delete') {
+      newLoads = newLoads.filter(l => !(l.type === 'point' && nodeIds.includes(l.target_id)));
+    }
+    
+    // Si la acción es agregar o reemplazar, añadimos las nuevas cargas
+    if (action === 'add' || action === 'replace') {
+      nodeIds.forEach(nid => {
+        newLoads.push({
+          id: `L-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          type: 'point',
+          target_id: nid,
+          fx: loadData.fx || 0,
+          fy: loadData.fy || 0,
+          fz: loadData.fz || 0,
+          mx: loadData.mx || 0,
+          my: loadData.my || 0,
+          mz: loadData.mz || 0
+        });
+      });
+    }
+    
+    return { loads: newLoads, isSaved: false };
+  }),
   
   // --- COMBINACIONES DE CARGA ---
   addLoadCombination: (combo) => set(state => ({ 
@@ -443,6 +471,8 @@ export const useStructureStore = create((set, get) => ({
       nodes: newNodes,
       elements: newElements,
       shells: [], // Limpiar losas viejas al regenerar
+      loads: [], // Limpiar cargas viejas
+      combinations: [], // Limpiar combinaciones
       metadata: { ...get().metadata, units: config.units || 'm, kgf, C' },
       sections: defaultSections,
       materials: defaultMaterials,

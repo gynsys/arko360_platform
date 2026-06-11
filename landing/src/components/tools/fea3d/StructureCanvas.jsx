@@ -392,6 +392,8 @@ function SelectionHandler() {
     let startPos = { x: 0, y: 0 };
 
     const onPointerDown = (e) => {
+      // Ignorar si el clic no es directamente en el canvas (ej. paneles superpuestos)
+      if (e.target !== canvas) return;
       if (e.button !== 0) return;
       isDragging = true;
       const rect = canvas.getBoundingClientRect();
