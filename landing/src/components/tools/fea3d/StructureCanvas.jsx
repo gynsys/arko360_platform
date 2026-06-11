@@ -330,6 +330,7 @@ function PointLoadArrow({ node, load }) {
             </Text>
           </group>
         );
+      })}
     </group>
   );
 }
