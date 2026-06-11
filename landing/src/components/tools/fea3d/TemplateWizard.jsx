@@ -70,14 +70,19 @@ export function TemplateWizard({ isOpen, onClose }) {
                 : 'Modifica los parámetros y regenera la estructura'}
             </p>
           </div>
-          {!isFirstTime && (
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800"
-            >
-              <X size={22} />
-            </button>
-          )}
+          <button
+            onClick={() => {
+              if (isFirstTime) {
+                window.location.href = '/';
+              } else {
+                onClose();
+              }
+            }}
+            className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800"
+            title={isFirstTime ? "Volver a Inicio" : "Cerrar"}
+          >
+            <X size={22} />
+          </button>
         </div>
 
         <div className="flex">

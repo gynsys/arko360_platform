@@ -164,19 +164,23 @@ class StructuralSolver:
             # Asumimos que las cargas manuales son CM para este prototipo (o leer load.load_case)
             factor = factor_cm if load.load_case.upper() == "CM" or load.load_case.upper() == "DEAD" else factor_cv
             
-            if load.type == LoadType.POINT:
+            if load.type == "point":
                 node_idx = self.node_map[load.target_id]
-                dof_offset = {"X": 0, "Y": 1, "Z": 2}[load.direction]
-                F[node_idx * 6 + dof_offset] += load.magnitude * factor
+                F[node_idx * 6 + 0] += load.fx * factor
+                F[node_idx * 6 + 1] += load.fy * factor
+                F[node_idx * 6 + 2] += load.fz * factor
+                F[node_idx * 6 + 3] += load.mx * factor
+                F[node_idx * 6 + 4] += load.my * factor
+                F[node_idx * 6 + 5] += load.mz * factor
             
-            elif load.type == LoadType.DISTRIBUTED:
+            elif load.type == "distributed":
                 elem = next(e for e in self.elements if e.id == load.target_id)
                 n1 = next(n for n in self.nodes if n.id == elem.nodes[0])
                 n2 = next(n for n in self.nodes if n.id == elem.nodes[1])
                 p1 = np.array([n1.x, n1.y, n1.z])
                 p2 = np.array([n2.x, n2.y, n2.z])
                 l = np.linalg.norm(p2 - p1)
-                w = load.magnitude * factor
+                w = load.fz * factor
                 
                 T = get_rotation_matrix(p1, p2, elem.beta_angle)
                 q_global = np.array([0, 0, -w]) # Asumiendo carga hacia abajo
@@ -207,7 +211,8 @@ class StructuralSolver:
         for node in self.nodes:
             if node.restraint:
                 node_idx = self.node_map[node.id]
-                for d, is_fixed in enumerate(node.restraint.dofs):
+                dofs = [node.restraint.ux, node.restraint.uy, node.restraint.uz, node.restraint.rx, node.restraint.ry, node.restraint.rz]
+                for d, is_fixed in enumerate(dofs):
                     if is_fixed:
                         idx = node_idx * 6 + d
                         K[idx, idx] = 1e30
@@ -223,7 +228,8 @@ class StructuralSolver:
             for node in self.nodes:
                 if node.restraint:
                     node_idx = self.node_map[node.id]
-                    for d, is_fixed in enumerate(node.restraint.dofs):
+                    dofs = [node.restraint.ux, node.restraint.uy, node.restraint.uz, node.restraint.rx, node.restraint.ry, node.restraint.rz]
+                    for d, is_fixed in enumerate(dofs):
                         if is_fixed:
                             idx = node_idx * 6 + d
                             F[idx] = 0

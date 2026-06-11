@@ -8,19 +8,24 @@ class LoadType(str, Enum):
     AREA = "area"
 
 class Restraint(BaseModel):
-    dofs: List[bool] = Field(default_factory=lambda: [False] * 6)
+    ux: bool = False
+    uy: bool = False
+    uz: bool = False
+    rx: bool = False
+    ry: bool = False
+    rz: bool = False
 
 class Node(BaseModel):
-    id: int
+    id: str
     x: float
     y: float
     z: float
     restraint: Optional[Restraint] = None
 
 class Element(BaseModel):
-    id: int
+    id: str
     type: str # "frame"
-    nodes: List[int]
+    nodes: List[str]
     section_id: str
     material_id: str
     beta_angle: float = 0.0
@@ -32,7 +37,7 @@ class ShellLoads(BaseModel):
 class Shell(BaseModel):
     id: str
     type: str = "shell"
-    nodes: List[int]
+    nodes: List[str]
     thickness: float
     material_id: str
     loads: ShellLoads
@@ -44,10 +49,14 @@ class LoadCombination(BaseModel):
 
 class LoadAssignment(BaseModel):
     id: str
-    type: LoadType
-    target_id: int # ID del nudo o elemento
-    direction: str # "X", "Y", "Z"
-    magnitude: float
+    type: str
+    target_id: str # ID del nudo o elemento
+    fx: float = 0.0
+    fy: float = 0.0
+    fz: float = 0.0
+    mx: float = 0.0
+    my: float = 0.0
+    mz: float = 0.0
     load_case: str = "Dead"
     offset: float = 0.5 # Para cargas puntuales en elementos (0 a 1)
 
@@ -76,6 +85,6 @@ class Topology(BaseModel):
     combinations: List[LoadCombination] = []
 
 class ProjectResults(BaseModel):
-    displacements: Dict[int, List[float]]
-    element_forces: Dict[int, Dict]
-    design_checks: Dict[int, Dict]
+    displacements: Dict[str, List[float]]
+    element_forces: Dict[str, Dict]
+    design_checks: Dict[str, Dict]
