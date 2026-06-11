@@ -304,7 +304,7 @@ export default function FEA3DContainer() {
           >
             <select
               value={metadata?.units || 'm, kgf, C'}
-              onChange={(e) => useStructureStore.setState(s => ({ metadata: { ...s.metadata, units: e.target.value } }))}
+              onChange={(e) => useStructureStore.getState().convertUnits(e.target.value)}
               className="bg-slate-800/80 backdrop-blur-md border border-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg focus:outline-none hover:bg-slate-700 shadow-lg cursor-pointer transition-colors"
             >
               <option value="m, kgf, C">MKS (m, kgf, C)</option>

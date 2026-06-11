@@ -317,13 +317,14 @@ function PointLoadArrow({ node, load }) {
         return (
           <group key={i}>
             <arrowHelper args={[dir, origin, length, 0xf97316, 0.4, 0.2]} />
-            <Text
-              position={[origin.x, origin.y, origin.z + 0.25]}
-              fontSize={0.28}
-              color="#f97316"
-              outlineColor="black"
-              outlineWidth={0.05}
-              anchorX="center"
+              <Text
+                position={[origin.x, origin.y, origin.z + 0.25]}
+                fontSize={0.28}
+                color="#fdba74"
+                outlineColor="#0f172a"
+                outlineWidth={0.03}
+                font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
+                anchorX="center"
               rotation={[Math.PI / 2, 0, 0]}
             >
               {`${f.label}: ${Math.abs(f.val)} ${units}`}
@@ -376,9 +377,10 @@ function FrameLoadGraphic({ element, load, nodes }) {
               <Text
                 position={[origin.x, origin.y, origin.z + 0.25]}
                 fontSize={0.25}
-                color="#ef4444"
-                outlineColor="white"
-                outlineWidth={0.05}
+                color="#fca5a5"
+                outlineColor="#0f172a"
+                outlineWidth={0.03}
+                font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
                 anchorX="center"
                 rotation={[Math.PI / 2, 0, 0]}
               >
@@ -419,9 +421,10 @@ function FrameLoadGraphic({ element, load, nodes }) {
               <Text
                 position={[topPoints[Math.floor(numArrows/2)].x, topPoints[Math.floor(numArrows/2)].y - 0.2, topPoints[Math.floor(numArrows/2)].z]}
                 fontSize={0.25}
-                color="#3b82f6"
-                outlineColor="white"
-                outlineWidth={0.05}
+                color="#93c5fd"
+                outlineColor="#0f172a"
+                outlineWidth={0.03}
+                font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
                 anchorX="center"
                 rotation={[Math.PI / 2, 0, 0]}
               >

@@ -62,6 +62,100 @@ export const useStructureStore = create((set, get) => ({
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   setRightClickedElementId: (id) => set({ rightClickedElementId: id }),
   setMetadata: (data) => set(state => ({ metadata: { ...state.metadata, ...data } })),
+  
+  convertUnits: (newUnitsStr) => set(state => {
+    const oldUnitsStr = state.metadata?.units || 'm, kgf, C';
+    if (oldUnitsStr === newUnitsStr) return {};
+
+    const getSystem = (str) => {
+      if (str.includes('kgf')) return 'mks';
+      if (str.includes('kN')) return 'si';
+      if (str.includes('kip')) return 'us';
+      return 'mks';
+    };
+
+    const oldSys = getSystem(oldUnitsStr);
+    const newSys = getSystem(newUnitsStr);
+
+    let lFactor = 1.0;
+    let fFactor = 1.0;
+
+    // Length conversion
+    let oldLengthToMeters = 1.0;
+    if (oldSys === 'us') oldLengthToMeters = 0.3048;
+
+    let targetMetersToLength = 1.0;
+    if (newSys === 'us') targetMetersToLength = 1 / 0.3048;
+
+    lFactor = oldLengthToMeters * targetMetersToLength;
+
+    // Force conversion
+    let oldForceToKgf = 1.0;
+    if (oldSys === 'si') oldForceToKgf = 101.97162;
+    if (oldSys === 'us') oldForceToKgf = 453.59237;
+
+    let targetKgfToForce = 1.0;
+    if (newSys === 'si') targetKgfToForce = 1 / 101.97162;
+    if (newSys === 'us') targetKgfToForce = 1 / 453.59237;
+
+    fFactor = oldForceToKgf * targetKgfToForce;
+
+    const round = (val) => Math.round(val * 1e6) / 1e6;
+
+    const newNodes = state.nodes.map(n => ({
+      ...n,
+      x: round(n.x * lFactor),
+      y: round(n.y * lFactor),
+      z: round(n.z * lFactor)
+    }));
+
+    const newLoads = state.loads.map(l => ({
+      ...l,
+      fx: round(l.fx * fFactor),
+      fy: round(l.fy * fFactor),
+      fz: round(l.fz * fFactor),
+      mx: round(l.mx * fFactor * lFactor),
+      my: round(l.my * fFactor * lFactor),
+      mz: round(l.mz * fFactor * lFactor),
+    }));
+
+    const newMaterials = state.materials.map(m => ({
+      ...m,
+      E: round(m.E * fFactor / (lFactor * lFactor)),
+      G: round(m.G * fFactor / (lFactor * lFactor)),
+      density: round(m.density * fFactor / (lFactor * lFactor * lFactor))
+    }));
+
+    const newSections = state.sections.map(s => ({
+      ...s,
+      A: round(s.A * lFactor * lFactor),
+      Iy: round(s.Iy * Math.pow(lFactor, 4)),
+      Ix: round(s.Ix * Math.pow(lFactor, 4)),
+      J: round(s.J * Math.pow(lFactor, 4))
+    }));
+
+    const newShells = state.shells.map(s => ({
+      ...s,
+      thickness: round(s.thickness * lFactor),
+      loads: {
+        ...s.loads,
+        CM: round(s.loads.CM * fFactor / (lFactor * lFactor)),
+        CV: round(s.loads.CV * fFactor / (lFactor * lFactor)),
+      }
+    }));
+
+    return {
+      nodes: newNodes,
+      loads: newLoads,
+      materials: newMaterials,
+      sections: newSections,
+      shells: newShells,
+      metadata: { ...state.metadata, units: newUnitsStr },
+      results: null,
+      viewMode: 'geometry',
+      isSaved: false
+    };
+  }),
   setCurrentUser: (user) => set({ currentUser: user }),
   toggleShowLoads: () => set(state => ({ showLoads: !state.showLoads })),
 
