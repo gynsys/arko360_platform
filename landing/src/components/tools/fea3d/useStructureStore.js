@@ -374,7 +374,7 @@ export const useStructureStore = create((set, get) => ({
       // Viga continua: a lo largo del eje X, z=0, y=0.
       for (let x = 0; x <= numBaysX; x++) {
         newNodes.push({
-          id: nodeCount++,
+          id: `N${nodeCount++}`,
           x: x * bayWidthX, y: 0, z: 0,
           // Apoyo Fijo (Pinned) en el primer nodo, Patín (Roller) en los demás
           restraint: x === 0 ? { ux: true, uy: true, uz: true, rx: true, ry: false, rz: false } : { ux: false, uy: true, uz: true, rx: true, ry: false, rz: false }
@@ -386,7 +386,7 @@ export const useStructureStore = create((set, get) => ({
         for (let x = 0; x <= numBaysX; x++) {
           for (let y = 0; y <= numBaysY; y++) {
             newNodes.push({
-              id: nodeCount++,
+              id: `N${nodeCount++}`,
               x: x * bayWidthX, y: y * bayWidthY, z: z * floorHeight,
               restraint: z === 0 ? { ux: true, uy: true, uz: true, rx: true, ry: true, rz: true } : null
             });
@@ -434,7 +434,7 @@ export const useStructureStore = create((set, get) => ({
       for (let x = 0; x < numBaysX; x++) {
         const n1 = newNodes.find(n => n.x === x * bayWidthX);
         const n2 = newNodes.find(n => n.x === (x + 1) * bayWidthX);
-        newElements.push({ id: elemCount++, type: 'frame', nodes: [n1.id, n2.id], section_id: finalBeamSectionId, material_id: baseMatId });
+        newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [n1.id, n2.id], section_id: finalBeamSectionId, material_id: baseMatId });
       }
     } else {
       // Columnas Edificio 3D
@@ -443,7 +443,7 @@ export const useStructureStore = create((set, get) => ({
           for (let y = 0; y <= numBaysY; y++) {
             const n1 = newNodes.find(n => n.x === x*bayWidthX && n.y === y*bayWidthY && n.z === z*floorHeight);
             const n2 = newNodes.find(n => n.x === x*bayWidthX && n.y === y*bayWidthY && n.z === (z+1)*floorHeight);
-            newElements.push({ id: elemCount++, type: 'frame', nodes: [n1.id, n2.id], section_id: finalColSectionId, material_id: baseMatId });
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [n1.id, n2.id], section_id: finalColSectionId, material_id: baseMatId });
           }
         }
       }
@@ -455,12 +455,12 @@ export const useStructureStore = create((set, get) => ({
             if (x < numBaysX) {
               const n1 = newNodes.find(n => n.x === x*bayWidthX && n.y === y*bayWidthY && n.z === z*floorHeight);
               const n2 = newNodes.find(n => n.x === (x+1)*bayWidthX && n.y === y*bayWidthY && n.z === z*floorHeight);
-              newElements.push({ id: elemCount++, type: 'frame', nodes: [n1.id, n2.id], section_id: finalBeamSectionId, material_id: baseMatId });
+              newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [n1.id, n2.id], section_id: finalBeamSectionId, material_id: baseMatId });
             }
             if (y < numBaysY) {
               const n1 = newNodes.find(n => n.x === x*bayWidthX && n.y === y*bayWidthY && n.z === z*floorHeight);
               const n2 = newNodes.find(n => n.x === x*bayWidthX && n.y === (y+1)*bayWidthY && n.z === z*floorHeight);
-              newElements.push({ id: elemCount++, type: 'frame', nodes: [n1.id, n2.id], section_id: finalBeamSectionId, material_id: baseMatId });
+              newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [n1.id, n2.id], section_id: finalBeamSectionId, material_id: baseMatId });
             }
           }
         }
