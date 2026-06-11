@@ -116,7 +116,18 @@ export function ResultsTableModal({ onClose }) {
           <div className="font-bold text-sm flex items-center gap-2">
             <TableIcon size={16} /> Result Tables
           </div>
-          <button onClick={onClose} className="hover:text-blue-200"><X size={16} /></button>
+          <div className="flex items-center gap-4">
+            <select
+              value={useStructureStore.getState().metadata?.units || 'm, kgf, C'}
+              onChange={(e) => useStructureStore.getState().convertUnits(e.target.value)}
+              className="bg-blue-700/80 border border-blue-500 text-white text-xs px-2 py-1 rounded focus:outline-none hover:bg-blue-800 cursor-pointer transition-colors"
+            >
+              <option value="m, kgf, C">MKS (m, kgf, C)</option>
+              <option value="m, kN, C">SI (m, kN, C)</option>
+              <option value="ft, kip, F">US Customary (ft, kip, F)</option>
+            </select>
+            <button onClick={onClose} className="hover:text-blue-200"><X size={16} /></button>
+          </div>
         </div>
         
         <div className="p-4 bg-slate-100 border-b border-slate-300 flex items-center justify-between">

@@ -110,10 +110,12 @@ export function ElementResultsModal() {
             <div><span className="text-slate-500 uppercase font-bold mr-1">Longitud:</span> {elementForces[elementForces.length-1].x.toFixed(2)} m</div>
           </div>
           
-          {renderChart(elementForces, 'M3', '#ef4444', 'Momento Flector (M3)', 'kgf·m', true)}
-          {renderChart(elementForces, 'V2', '#3b82f6', 'Fuerza Cortante (V2)', 'kgf')}
-          {renderChart(elementForces, 'P', '#22c55e', 'Fuerza Axial (P)', 'kgf')}
-          {renderChart(elementForces, 'uy', '#a855f7', 'Deflexión Local (uy)', 'm')}
+          {elementForces.some(d => Math.abs(d.M3) > 1e-4) && renderChart(elementForces, 'M3', '#ef4444', 'Momento Flector (M3)', 'F·L', true)}
+          {elementForces.some(d => Math.abs(d.M2) > 1e-4) && renderChart(elementForces, 'M2', '#f97316', 'Momento Flector (M2)', 'F·L', true)}
+          {elementForces.some(d => Math.abs(d.V2) > 1e-4) && renderChart(elementForces, 'V2', '#3b82f6', 'Fuerza Cortante (V2)', 'F')}
+          {elementForces.some(d => Math.abs(d.V3) > 1e-4) && renderChart(elementForces, 'V3', '#06b6d4', 'Fuerza Cortante (V3)', 'F')}
+          {renderChart(elementForces, 'P', '#22c55e', 'Fuerza Axial (P)', 'F')}
+          {renderChart(elementForces, 'uy', '#a855f7', 'Deflexión Local (uy)', 'L')}
         </div>
       </div>
     </div>
