@@ -3,7 +3,7 @@ import { useStructureStore } from './useStructureStore';
 import { Trash2, Info, Layers } from 'lucide-react';
 
 export function PropertyPanel() {
-  const { selectedIds, nodes, elements, shells, updateNode, updateShell, addLoad, deleteNode, deleteElement, deleteShell } = useStructureStore();
+  const { selectedIds, nodes, elements, shells, loads, updateNode, updateShell, addLoad, deleteNode, deleteElement, deleteShell } = useStructureStore();
   
   if (selectedIds.length === 0) {
     return (
@@ -34,6 +34,8 @@ export function PropertyPanel() {
   const node = nodes.find(n => n.id === selectedId);
   const element = elements.find(e => e.id === selectedId);
   const shell = shells.find(s => s.id === selectedId);
+
+  const elementLoads = loads.filter(l => l.target_id === selectedId);
 
   if (!node && !element && !shell) return null;
 
@@ -140,6 +142,29 @@ export function PropertyPanel() {
           <div className="space-y-2">
             <p className="text-sm text-slate-400">Nudos: {element.nodes.join(' → ')}</p>
             <p className="text-sm text-slate-400">Sección: <span className="text-white font-mono">{element.section_id}</span></p>
+          </div>
+          
+          <div className="pt-4 border-t border-slate-800">
+            <label className="text-xs font-bold text-slate-400 block mb-2">Cargas Asignadas</label>
+            {elementLoads.length === 0 ? (
+              <p className="text-xs text-slate-500 italic bg-slate-800/50 p-2 rounded">No hay cargas asignadas a este elemento.</p>
+            ) : (
+              <div className="space-y-2">
+                {elementLoads.map((l, idx) => (
+                  <div key={idx} className="bg-slate-800 border border-slate-700 rounded-md p-2 text-xs">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-blue-400 uppercase">{l.type === 'distributed' ? 'Distribuida' : 'Puntual'}</span>
+                      {l.type === 'point_frame' && <span className="text-slate-500 text-[10px]">Posición Rel: {l.offset}</span>}
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 text-slate-300 text-[11px] bg-slate-900 p-1 rounded">
+                      {Math.abs(l.fx) > 1e-6 && <div><span className="text-slate-500">Fx:</span> {l.fx}</div>}
+                      {Math.abs(l.fy) > 1e-6 && <div><span className="text-slate-500">Fy:</span> {l.fy}</div>}
+                      {Math.abs(l.fz) > 1e-6 && <div><span className="text-slate-500">Fz:</span> {l.fz}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

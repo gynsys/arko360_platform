@@ -13,14 +13,20 @@ export function AssignFrameLoadsModal({ onClose }) {
   const selectedElementIds = selectedIds.filter(id => elements.some(e => e.id === id));
   
   const [loadType, setLoadType] = useState('distributed'); // 'distributed', 'point_frame'
-  const [loadData, setLoadData] = useState({
-    fx: 0, fy: 0, fz: 0, offset: 0.5
+  const [loadDataStr, setLoadDataStr] = useState({
+    fx: '0', fy: '0', fz: '0', offset: '0.5'
   });
   
   const [action, setAction] = useState('add'); // 'add', 'replace', 'delete'
 
   const handleAssign = () => {
-    manageFrameLoads(selectedElementIds, loadData, action, loadType);
+    const loadDataNum = {
+      fx: parseFloat(loadDataStr.fx) || 0,
+      fy: parseFloat(loadDataStr.fy) || 0,
+      fz: parseFloat(loadDataStr.fz) || 0,
+      offset: parseFloat(loadDataStr.offset) || 0.5
+    };
+    manageFrameLoads(selectedElementIds, loadDataNum, action, loadType);
     
     if (action === 'delete') {
       toast.success(`Cargas eliminadas en ${selectedElementIds.length} elementos`);
@@ -33,7 +39,7 @@ export function AssignFrameLoadsModal({ onClose }) {
   };
 
   const handleChange = (e) => {
-    setLoadData({ ...loadData, [e.target.name]: parseFloat(e.target.value) || 0 });
+    setLoadDataStr({ ...loadDataStr, [e.target.name]: e.target.value });
   };
 
   if (selectedElementIds.length === 0) {
@@ -96,16 +102,16 @@ export function AssignFrameLoadsModal({ onClose }) {
             </label>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="text-[10px] text-slate-500 mb-1 block">Global X</label>
-                <input type="number" step="any" name="fx" value={loadData.fx} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />
+                <label className="text-[10px] text-slate-500 mb-1 block font-bold">Global X</label>
+                <input type="text" name="fx" value={loadDataStr.fx} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-slate-50 border-2 border-slate-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 mb-1 block">Global Y</label>
-                <input type="number" step="any" name="fy" value={loadData.fy} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />
+                <label className="text-[10px] text-slate-500 mb-1 block font-bold">Global Y</label>
+                <input type="text" name="fy" value={loadDataStr.fy} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-slate-50 border-2 border-slate-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 mb-1 block">Global Z</label>
-                <input type="number" step="any" name="fz" value={loadData.fz} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />
+                <label className="text-[10px] text-slate-500 mb-1 block font-bold">Global Z</label>
+                <input type="text" name="fz" value={loadDataStr.fz} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-slate-50 border-2 border-slate-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
               </div>
             </div>
 
@@ -114,8 +120,8 @@ export function AssignFrameLoadsModal({ onClose }) {
                 <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Location</label>
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
-                    <label className="text-[10px] text-slate-500 mb-1 block">Relative Distance (0 to 1)</label>
-                    <input type="number" step="0.1" min="0" max="1" name="offset" value={loadData.offset} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />
+                    <label className="text-[10px] text-slate-500 mb-1 block font-bold">Relative Distance (0 to 1)</label>
+                    <input type="text" name="offset" value={loadDataStr.offset} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-slate-50 border-2 border-slate-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
                   </div>
                   <div className="flex-1 text-xs text-slate-400 bg-slate-50 p-2 rounded border border-slate-100 flex items-start gap-1">
                     <Info size={14} className="shrink-0 mt-0.5" />

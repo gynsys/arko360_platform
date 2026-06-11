@@ -14,14 +14,22 @@ export function AssignLoadsModal({ onClose }) {
   // Filtrar solo los nodos seleccionados
   const selectedNodeIds = selectedIds.filter(id => nodes.some(n => n.id === id));
   
-  const [loadData, setLoadData] = useState({
-    fx: 0, fy: 0, fz: 0, mx: 0, my: 0, mz: 0
+  const [loadDataStr, setLoadDataStr] = useState({
+    fx: '0', fy: '0', fz: '0', mx: '0', my: '0', mz: '0'
   });
   
   const [action, setAction] = useState('add'); // 'add', 'replace', 'delete'
 
   const handleAssign = () => {
-    manageNodeLoads(selectedNodeIds, loadData, action);
+    const loadDataNum = {
+      fx: parseFloat(loadDataStr.fx) || 0,
+      fy: parseFloat(loadDataStr.fy) || 0,
+      fz: parseFloat(loadDataStr.fz) || 0,
+      mx: parseFloat(loadDataStr.mx) || 0,
+      my: parseFloat(loadDataStr.my) || 0,
+      mz: parseFloat(loadDataStr.mz) || 0
+    };
+    manageNodeLoads(selectedNodeIds, loadDataNum, action);
     
     if (action === 'delete') {
       toast.success(`Cargas eliminadas en ${selectedNodeIds.length} nudos`);
@@ -34,7 +42,7 @@ export function AssignLoadsModal({ onClose }) {
   };
 
   const handleChange = (e) => {
-    setLoadData({ ...loadData, [e.target.name]: parseFloat(e.target.value) || 0 });
+    setLoadDataStr({ ...loadDataStr, [e.target.name]: e.target.value });
   };
 
   if (selectedNodeIds.length === 0) {
@@ -81,32 +89,32 @@ export function AssignLoadsModal({ onClose }) {
             <div className="space-y-3">
               <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Forces [{forceUnit}]</label>
               <div>
-                <label className="text-xs text-slate-500 mb-1 block">Force Global X</label>
-                <input type="number" step="any" name="fx" value={loadData.fx} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block">Force Global X</label>
+                <input type="text" name="fx" value={loadDataStr.fx} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border-2 border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
               </div>
               <div>
-                <label className="text-xs text-slate-500 mb-1 block">Force Global Y</label>
-                <input type="number" step="any" name="fy" value={loadData.fy} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block">Force Global Y</label>
+                <input type="text" name="fy" value={loadDataStr.fy} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border-2 border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
               </div>
               <div>
-                <label className="text-xs text-slate-500 mb-1 block">Force Global Z</label>
-                <input type="number" step="any" name="fz" value={loadData.fz} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block">Force Global Z</label>
+                <input type="text" name="fz" value={loadDataStr.fz} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border-2 border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
               </div>
             </div>
 
             <div className="space-y-3">
               <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Moments [{momentUnit}]</label>
               <div>
-                <label className="text-xs text-slate-500 mb-1 block">Moment Global X</label>
-                <input type="number" step="any" name="mx" value={loadData.mx} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block">Moment Global X</label>
+                <input type="text" name="mx" value={loadDataStr.mx} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border-2 border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
               </div>
               <div>
-                <label className="text-xs text-slate-500 mb-1 block">Moment Global Y</label>
-                <input type="number" step="any" name="my" value={loadData.my} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block">Moment Global Y</label>
+                <input type="text" name="my" value={loadDataStr.my} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border-2 border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
               </div>
               <div>
-                <label className="text-xs text-slate-500 mb-1 block">Moment Global Z</label>
-                <input type="number" step="any" name="mz" value={loadData.mz} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm focus:outline-blue-500" />
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block">Moment Global Z</label>
+                <input type="text" name="mz" value={loadDataStr.mz} onChange={handleChange} disabled={action === 'delete'} className="w-full bg-white border-2 border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
               </div>
             </div>
           </div>
