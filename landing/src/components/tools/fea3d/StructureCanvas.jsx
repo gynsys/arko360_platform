@@ -304,7 +304,7 @@ function PointLoadArrow({ node, load }) {
   const forces = [
     { val: load.fx || 0, dir: new THREE.Vector3(1, 0, 0), label: 'Fx' },
     { val: load.fy || 0, dir: new THREE.Vector3(0, 1, 0), label: 'Fy' },
-    { val: load.fz || 0, dir: new THREE.Vector3(0, 0, -1), label: 'Fz' },
+    { val: load.fz || 0, dir: new THREE.Vector3(0, 0, 1), label: 'Fz' },
   ].filter(f => f.val !== 0);
 
   if (forces.length === 0) return null;
@@ -357,7 +357,7 @@ function FrameLoadGraphic({ element, load, nodes }) {
   const forces = [
     { val: load.fx || 0, dir: new THREE.Vector3(1, 0, 0), label: 'Fx' },
     { val: load.fy || 0, dir: new THREE.Vector3(0, 1, 0), label: 'Fy' },
-    { val: load.fz || 0, dir: new THREE.Vector3(0, 0, -1), label: 'Fz' },
+    { val: load.fz || 0, dir: new THREE.Vector3(0, 0, 1), label: 'Fz' },
   ].filter(f => f.val !== 0);
 
   if (forces.length === 0) return null;
