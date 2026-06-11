@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { Settings, Play, Building2, Save, FolderOpen, Plus, MousePointer2, Layers } from 'lucide-react';
 import { Settings, Play, Building2, Save, FolderOpen, Plus, MousePointer2, Layers, Grid, ArrowDownToLine, Calculator, ChevronRight, ChevronLeft, LogIn, Cloud } from 'lucide-react';
 import { StructureCanvas } from './StructureCanvas';
 import { PropertyPanel } from './PropertyPanel';

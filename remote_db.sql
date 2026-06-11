@@ -1,0 +1,1 @@
+ALTER TABLE arko_projects_3d ADD COLUMN IF NOT EXISTS user_id INTEGER;
