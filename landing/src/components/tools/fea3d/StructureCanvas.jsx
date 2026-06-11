@@ -455,7 +455,6 @@ function SelectionHandler() {
         return;
       }
       
-      const rect = canvas.getBoundingClientRect();
       const minX = Math.min(startPos.x, endX);
       const maxX = Math.max(startPos.x, endX);
       const minY = Math.min(startPos.y, endY);
