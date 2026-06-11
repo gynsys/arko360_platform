@@ -270,6 +270,13 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint, isFaded }) 
 
   return (
     <group position={[x + dx, y + dy, z + dz]} onClick={isResultsMode || isFaded ? undefined : handleClick}>
+      {/* Hitbox invisible para atrapar clics más fácilmente que la viga */}
+      <mesh visible={false}>
+        <sphereGeometry args={[0.25, 8, 8]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      
+      {/* Geometría visual del nodo */}
       <mesh>
         <sphereGeometry args={[0.08, 8, 8]} />
         <meshStandardMaterial
