@@ -419,17 +419,19 @@ export default function FEA3DContainer() {
       {assignFrameLoadsModalOpen && <AssignFrameLoadsModal onClose={() => setAssignFrameLoadsModalOpen(false)} />}
       {assignRestraintsModalOpen && <AssignRestraintsModal onClose={() => setAssignRestraintsModalOpen(false)} />}
       
-      <AuthModal 
-        isOpen={authModalOpen} 
-        onClose={() => setAuthModalOpen(false)} 
-        onSuccess={() => setAuthModalOpen(false)}
-      />
+      {authModalOpen && (
+        <AuthModal 
+          onClose={() => setAuthModalOpen(false)} 
+          onLoginSuccess={(u) => { setCurrentUser(u); setAuthModalOpen(false); }}
+        />
+      )}
 
-      <ProjectsDashboardModal 
-        isOpen={projectsModalOpen} 
-        onClose={() => setProjectsModalOpen(false)} 
-        onProjectSelect={handleProjectSelect}
-      />
+      {projectsModalOpen && (
+        <ProjectsDashboardModal 
+          onClose={() => setProjectsModalOpen(false)} 
+          onProjectSelect={handleProjectSelect}
+        />
+      )}
 
       <HelpDocsModal
         isOpen={docsModalOpen}
