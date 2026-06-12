@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Lock, Check } from 'lucide-react';
 import { useStructureStore } from './useStructureStore';
 import toast from 'react-hot-toast';
+import { FixedIcon, PinnedIcon, RollerIcon, FreeIcon } from './RestraintIcons';
 
 export function AssignRestraintsModal({ onClose }) {
   const { selectedIds, nodes, updateNode, clearSelection } = useStructureStore();
@@ -59,30 +60,30 @@ export function AssignRestraintsModal({ onClose }) {
             Aplicar apoyo a <span className="font-bold text-blue-600">{selectedNodeIds.length}</span> nudos.
           </p>
 
-          <div className="flex gap-2 justify-center py-2">
+          <div className="flex gap-3 justify-center py-4 bg-slate-100 rounded-lg border border-slate-200">
             <button 
               onClick={() => setRestraints({ ux: true, uy: true, uz: true, rx: true, ry: true, rz: true })}
-              className="p-2 border border-slate-300 hover:bg-slate-200 rounded tooltip-trigger relative group" title="Empotrado"
+              className="p-3 border-2 border-slate-300 hover:border-blue-500 hover:bg-blue-50 bg-white rounded-lg flex flex-col items-center gap-1 transition-all" title="Empotrado"
             >
-              <div className="w-8 h-8 flex items-center justify-center bg-slate-800 text-white font-bold text-xs rounded">Emp</div>
+              <FixedIcon className="w-8 h-8 text-slate-700" />
             </button>
             <button 
               onClick={() => setRestraints({ ux: true, uy: true, uz: true, rx: false, ry: false, rz: false })}
-              className="p-2 border border-slate-300 hover:bg-slate-200 rounded tooltip-trigger relative group" title="Articulado"
+              className="p-3 border-2 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 bg-white rounded-lg flex flex-col items-center gap-1 transition-all" title="Articulado"
             >
-              <div className="w-8 h-8 flex items-center justify-center bg-slate-800 text-white font-bold text-xs rounded-full">Art</div>
+              <PinnedIcon className="w-8 h-8 text-slate-700" />
             </button>
             <button 
               onClick={() => setRestraints({ ux: false, uy: false, uz: true, rx: false, ry: false, rz: false })}
-              className="p-2 border border-slate-300 hover:bg-slate-200 rounded tooltip-trigger relative group" title="Rodillo"
+              className="p-3 border-2 border-slate-300 hover:border-orange-500 hover:bg-orange-50 bg-white rounded-lg flex flex-col items-center gap-1 transition-all" title="Rodillo"
             >
-              <div className="w-8 h-8 flex items-center justify-center border-b-4 border-slate-800 font-bold text-xs">Rod</div>
+              <RollerIcon className="w-8 h-8 text-slate-700" />
             </button>
             <button 
               onClick={() => setRestraints({ ux: false, uy: false, uz: false, rx: false, ry: false, rz: false })}
-              className="p-2 border border-slate-300 hover:bg-slate-200 rounded tooltip-trigger relative group" title="Libre"
+              className="p-3 border-2 border-slate-300 hover:border-red-500 hover:bg-red-50 bg-white rounded-lg flex flex-col items-center gap-1 transition-all" title="Libre"
             >
-              <div className="w-8 h-8 flex items-center justify-center border border-dashed border-slate-400 font-bold text-xs text-slate-500 rounded-full">Lib</div>
+              <FreeIcon className="w-8 h-8 text-slate-700" />
             </button>
           </div>
           

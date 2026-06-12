@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStructureStore } from './useStructureStore';
 import { Trash2, Info, Layers } from 'lucide-react';
+import { FixedIcon, PinnedIcon, RollerIcon, FreeIcon } from './RestraintIcons';
 
 export function PropertyPanel() {
   const { selectedIds, nodes, elements, shells, loads, updateNode, updateShell, addLoad, updateLoad, deleteLoad, deleteNode, deleteElement, deleteShell } = useStructureStore();
@@ -79,56 +80,81 @@ export function PropertyPanel() {
 
           <div className="pt-4 border-t border-slate-800">
             <label className="text-xs font-bold text-slate-400 block mb-2">Asignar Apoyo (Restraints)</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex gap-2 justify-center py-2 bg-slate-900 rounded-lg border border-slate-700">
               <button 
                 onClick={() => updateNode(node.id, { restraint: { ux: true, uy: true, uz: true, rx: true, ry: true, rz: true }})}
-                className="bg-slate-800 hover:bg-blue-600/30 hover:text-blue-400 border border-slate-700 p-2 rounded-lg text-xs font-bold transition-all"
+                className="p-2 border border-slate-600 hover:border-blue-500 hover:bg-blue-900/30 bg-slate-800 rounded-lg flex flex-col items-center gap-1 transition-all" title="Empotrado"
               >
-                Empotrado
+                <FixedIcon className="w-6 h-6 text-slate-300" />
               </button>
               <button 
                 onClick={() => updateNode(node.id, { restraint: { ux: true, uy: true, uz: true, rx: false, ry: false, rz: false }})}
-                className="bg-slate-800 hover:bg-emerald-600/30 hover:text-emerald-400 border border-slate-700 p-2 rounded-lg text-xs font-bold transition-all"
+                className="p-2 border border-slate-600 hover:border-emerald-500 hover:bg-emerald-900/30 bg-slate-800 rounded-lg flex flex-col items-center gap-1 transition-all" title="Articulado"
               >
-                Articulado
+                <PinnedIcon className="w-6 h-6 text-slate-300" />
               </button>
               <button 
                 onClick={() => updateNode(node.id, { restraint: { ux: false, uy: false, uz: true, rx: false, ry: false, rz: false }})}
-                className="bg-slate-800 hover:bg-orange-600/30 hover:text-orange-400 border border-slate-700 p-2 rounded-lg text-xs font-bold transition-all"
+                className="p-2 border border-slate-600 hover:border-orange-500 hover:bg-orange-900/30 bg-slate-800 rounded-lg flex flex-col items-center gap-1 transition-all" title="Rodillo"
               >
-                Rodillo (Z)
+                <RollerIcon className="w-6 h-6 text-slate-300" />
               </button>
               <button 
                 onClick={() => updateNode(node.id, { restraint: null })}
-                className="bg-slate-800 hover:bg-red-600/30 hover:text-red-400 border border-slate-700 p-2 rounded-lg text-xs font-bold transition-all"
+                className="p-2 border border-slate-600 hover:border-red-500 hover:bg-red-900/30 bg-slate-800 rounded-lg flex flex-col items-center gap-1 transition-all" title="Libre"
               >
-                Libre
+                <FreeIcon className="w-6 h-6 text-slate-300" />
               </button>
             </div>
           </div>
 
           <div className="pt-4 border-t border-slate-800">
-            <label className="text-xs font-bold text-slate-400 block mb-2">Asignar Carga Puntual (kN)</label>
-            <div className="flex gap-2 mb-2">
-              <select id="q_dir" className="bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
-                <option value="X">Eje Global X</option>
-                <option value="Y">Eje Global Y</option>
-                <option value="Z">Eje Global Z</option>
-              </select>
-              <input id="q_mag" type="number" placeholder="Magnitud" defaultValue="-10" className="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white"/>
-            </div>
-            <button 
-              className="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-colors"
-              onClick={() => {
-                const mag = parseFloat(document.getElementById('q_mag').value);
-                const dir = document.getElementById('q_dir').value;
-                if (!isNaN(mag)) {
-                  addLoad({ target_id: node.id, type: 'point', direction: dir, magnitude: mag, load_case: 'CV' });
-                }
-              }}
-            >
-              Asignar Carga al Nudo
-            </button>
+            <label className="text-xs font-bold text-slate-400 block mb-2">Cargas Asignadas</label>
+            {elementLoads.length === 0 ? (
+              <p className="text-xs text-slate-500 italic bg-slate-800/50 p-2 rounded">No hay cargas asignadas a este nudo.</p>
+            ) : (
+              <div className="space-y-2">
+                {elementLoads.map((l, idx) => (
+                  <div key={idx} className="bg-slate-800 border border-slate-700 rounded-md p-2 text-xs">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-blue-400 uppercase flex items-center gap-1">
+                        PUNTUAL (NODO)
+                        <button onClick={() => deleteLoad(l.id)} className="text-red-400 hover:text-red-300 ml-2" title="Eliminar Carga"><Trash2 size={12} /></button>
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 text-slate-300 text-[11px] bg-slate-900 p-1 rounded">
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-500">Fx:</span>
+                        <input 
+                          type="text" 
+                          className="w-full bg-slate-800 border border-slate-700 rounded px-1 py-0.5" 
+                          value={l.fx !== undefined ? l.fx : (l.direction === 'X' ? l.magnitude : 0)} 
+                          onChange={(e) => updateLoad(l.id, { fx: parseFloat(e.target.value) || 0, direction: undefined, magnitude: undefined })} 
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-500">Fy:</span>
+                        <input 
+                          type="text" 
+                          className="w-full bg-slate-800 border border-slate-700 rounded px-1 py-0.5" 
+                          value={l.fy !== undefined ? l.fy : (l.direction === 'Y' ? l.magnitude : 0)} 
+                          onChange={(e) => updateLoad(l.id, { fy: parseFloat(e.target.value) || 0, direction: undefined, magnitude: undefined })} 
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-500">Fz:</span>
+                        <input 
+                          type="text" 
+                          className="w-full bg-slate-800 border border-slate-700 rounded px-1 py-0.5" 
+                          value={l.fz !== undefined ? l.fz : (l.direction === 'Z' ? l.magnitude : 0)} 
+                          onChange={(e) => updateLoad(l.id, { fz: parseFloat(e.target.value) || 0, direction: undefined, magnitude: undefined })} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
