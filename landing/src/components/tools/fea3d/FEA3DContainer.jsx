@@ -97,8 +97,16 @@ export default function FEA3DContainer() {
       return;
     }
     
+    let finalName = metadata.name;
+    if (!currentProjectId) {
+      const inputName = window.prompt("Ingrese un nombre para su proyecto:", metadata.name || "Nuevo Proyecto ARKO3D");
+      if (inputName === null) return; // Cancelado por el usuario
+      finalName = inputName.trim() || "Sin Título";
+      setMetadata({ ...metadata, name: finalName });
+    }
+    
     const projectData = {
-      name: metadata.name || 'Sin Título',
+      name: finalName,
       topology: {
         nodes: useStructureStore.getState().nodes,
         elements: useStructureStore.getState().elements,
