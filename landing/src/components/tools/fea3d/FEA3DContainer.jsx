@@ -76,25 +76,6 @@ export default function FEA3DContainer() {
     initAuth();
   }, [currentUser]);
 
-  const handleProjectSelect = (project) => {
-    setCurrentProjectId(project.id);
-    const { nodes, elements, shells, materials, sections, loads, combinations } = project.topology;
-    useStructureStore.setState({
-      nodes: nodes || [],
-      elements: elements || [],
-      shells: shells || [],
-      materials: materials || [],
-      sections: sections || [],
-      loads: loads || [],
-      loadCombinations: combinations || [],
-      metadata: { name: project.name, author: '', units: 'm, kgf, C' },
-      isSaved: true
-    });
-    toast.success(`Proyecto "${project.name}" cargado`);
-    setProjectsModalOpen(false);
-    setWizardOpen(false);
-  };
-
   // Prevenir cierre de pestaña si hay cambios sin guardar
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -209,6 +190,7 @@ export default function FEA3DContainer() {
   const handleProjectSelect = (project) => {
     setCurrentProjectId(project.id);
     setProjectsModalOpen(false);
+    setWizardOpen(false);
     if (project.topology) {
        // Cargar la topología del proyecto al Zustand store
        useStructureStore.setState({
