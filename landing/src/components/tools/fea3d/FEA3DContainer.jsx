@@ -106,6 +106,24 @@ export default function FEA3DContainer() {
   const { solveMutation } = useSolver('project-001');
   const [isSolving, setIsSolving] = useState(false);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        const state = useStructureStore.getState();
+        if (state.isDrawingShell || state.isQuickDrawingShell || state.selectedIds.length > 0) {
+          useStructureStore.setState({
+            isDrawingShell: false,
+            isQuickDrawingShell: false,
+            drawingNodes: [],
+            selectedIds: []
+          });
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleSaveToCloud = async () => {
     if (!currentUser) {
       setAuthModalOpen(true);

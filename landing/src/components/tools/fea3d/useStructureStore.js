@@ -198,7 +198,12 @@ export const useStructureStore = create((set, get) => ({
   
   // --- NAVEGACIÓN 2D/3D ---
   setCameraView: (view) => set(state => {
-    if (view === '3D') return { cameraView: view };
+    if (view === '3D') return { 
+      cameraView: view,
+      isQuickDrawingShell: false,
+      isDrawingShell: false,
+      drawingNodes: []
+    };
     
     // Al cambiar a un plano 2D, encontrar el nivel más cercano al 0 o el menor posible
     let levels = [];
@@ -207,7 +212,13 @@ export const useStructureStore = create((set, get) => ({
     else if (view === 'YZ') levels = [...new Set(state.nodes.map(n => n.x))].sort((a,b)=>a-b);
     
     const defaultLevel = levels.length > 0 ? levels[0] : 0;
-    return { cameraView: view, activeLevel: defaultLevel };
+    return { 
+      cameraView: view, 
+      activeLevel: defaultLevel,
+      isQuickDrawingShell: false,
+      isDrawingShell: false,
+      drawingNodes: []
+    };
   }),
 
   levelUp: () => set(state => {
