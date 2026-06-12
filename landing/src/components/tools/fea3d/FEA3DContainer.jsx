@@ -178,7 +178,7 @@ export default function FEA3DContainer() {
         
         <div className="flex items-center gap-1">
           <div className="mr-4 flex items-center">
-            <img src="/images/logo_aeko360.png" alt="Arko360" className="h-6" />
+            <img src="/images/logo_arko360_light.png" alt="Arko360" className="h-6" />
           </div>
           <MenuDropdown title="File" items={[
             { label: 'Nuevo Proyecto', icon: Plus, onClick: () => setWizardOpen(true), disabled: isResultsMode },
