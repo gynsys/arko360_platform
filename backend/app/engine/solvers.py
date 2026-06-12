@@ -384,6 +384,15 @@ class StructuralSolver:
             "ndof": self.ndof,
             "combinations": [c.dict() for c in self.combinations],
             "solver_info": "ARKO3D Stiffness Matrix Method",
+            "formulas_aplicadas": {
+                "matriz_rigidez_local": "[k_loc] = f(E, G, A, J, Iy, Ix, L)",
+                "transformacion_coordenadas": "[K_global] = [T]^T * [k_loc] * [T]",
+                "ensamblaje_global": "Sumatoria de [K_global_elem] para todos los elementos",
+                "ecuacion_principal": "[K] * {U} = {F}",
+                "penalty_method": "Multiplicación de la diagonal de [K] por 1e30 en los Grados de Libertad restringidos",
+                "recuperacion_fuerzas_locales": "{f_local} = [k_loc] * {u_local} + {f_fixed_local}",
+                "teoria_aplicada": "Flexión 3D de Euler-Bernoulli"
+            },
             "results_summary": {
                 combo_id: {
                     "max_displacement": max([max(abs(np.array(u))) for u in res["displacements"].values()]) if res["displacements"] else 0

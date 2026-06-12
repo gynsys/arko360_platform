@@ -24,6 +24,7 @@ import { MenuDropdown } from './MenuDropdown';
 import { AuthModal } from './AuthModal';
 import { ProjectsDashboardModal } from './ProjectsDashboardModal';
 import { createProject, updateProject, loadTokenFromStorage } from './api';
+import { HelpDocsModal } from './HelpDocsModal';
 
 export default function FEA3DContainer() {
   const [wizardOpen, setWizardOpen] = useState(true);
@@ -39,6 +40,8 @@ export default function FEA3DContainer() {
   const [assignRestraintsModalOpen, setAssignRestraintsModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
+  const [docsModalOpen, setDocsModalOpen] = useState(false);
+  const [docsInitialTab, setDocsInitialTab] = useState('manual');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [currentProjectId, setCurrentProjectId] = useState(null); // ID en base de datos
   
@@ -175,6 +178,15 @@ export default function FEA3DContainer() {
     const auditData = {
       timestamp: new Date().toISOString(),
       metadata: state.metadata,
+      formulas_aplicadas: {
+        "matriz_rigidez_local": "[k_loc] = f(E, G, A, J, Iy, Ix, L)",
+        "transformacion_coordenadas": "[K_global] = [T]^T * [k_loc] * [T]",
+        "ensamblaje_global": "Sumatoria de [K_global_elem] para todos los elementos",
+        "ecuacion_principal": "[K] * {U} = {F}",
+        "penalty_method": "Multiplicación de la diagonal de [K] por 1e30 en los Grados de Libertad restringidos",
+        "recuperacion_fuerzas_locales": "{f_local} = [k_loc] * {u_local} + {f_fixed_local}",
+        "teoria_aplicada": "Flexión 3D de Euler-Bernoulli"
+      },
       nodes: state.nodes,
       elements: state.elements,
       shells: state.shells,
@@ -249,8 +261,8 @@ export default function FEA3DContainer() {
           ]} />
 
           <MenuDropdown title="Help" items={[
-            { label: 'Manual de Usuario', icon: BookOpen, onClick: () => window.open('https://github.com/gynsys/arko360_platform/blob/main/docs/ARKO3D_DOCUMENTATION.md', '_blank') },
-            { label: 'Soporte Teórico', icon: FileText, onClick: () => window.open('https://github.com/gynsys/arko360_platform/blob/main/docs/ARKO3D_DOCUMENTATION.md', '_blank') },
+            { label: 'Manual de Usuario', icon: BookOpen, onClick: () => { setDocsInitialTab('manual'); setDocsModalOpen(true); } },
+            { label: 'Soporte Teórico', icon: FileText, onClick: () => { setDocsInitialTab('theory'); setDocsModalOpen(true); } },
             { separator: true },
             { label: 'Descargar Auditoría JSON (Dev)', icon: Download, onClick: handleDownloadAudit }
           ]} />
@@ -383,8 +395,23 @@ export default function FEA3DContainer() {
       {assignFrameLoadsModalOpen && <AssignFrameLoadsModal onClose={() => setAssignFrameLoadsModalOpen(false)} />}
       {assignRestraintsModalOpen && <AssignRestraintsModal onClose={() => setAssignRestraintsModalOpen(false)} />}
       
-      {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} onLoginSuccess={(u) => { setCurrentUser(u); setAuthModalOpen(false); }} />}
-      {projectsModalOpen && <ProjectsDashboardModal onClose={() => setProjectsModalOpen(false)} />}
+      <AuthModal 
+        isOpen={authModalOpen} 
+        onClose={() => setAuthModalOpen(false)} 
+        onSuccess={() => setAuthModalOpen(false)}
+      />
+
+      <ProjectsDashboardModal 
+        isOpen={projectsModalOpen} 
+        onClose={() => setProjectsModalOpen(false)} 
+        onProjectSelect={handleProjectSelect}
+      />
+
+      <HelpDocsModal
+        isOpen={docsModalOpen}
+        onClose={() => setDocsModalOpen(false)}
+        initialTab={docsInitialTab}
+      />
     </div>
   );
 }
