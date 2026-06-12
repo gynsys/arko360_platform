@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStructureStore } from './useStructureStore';
-import { Unlock, Scaling, Layers } from 'lucide-react';
+import { Lock, Scaling, Layers } from 'lucide-react';
 
 export function ResultsPanel() {
   const { 
@@ -28,7 +28,7 @@ export function ResultsPanel() {
           className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-slate-300 hover:text-white text-xs font-bold transition-all shadow-sm group"
           title="Desbloquear modelo y volver a geometría"
         >
-          <Unlock size={14} className="group-hover:text-green-400 transition-colors" />
+          <Lock size={14} className="group-hover:text-green-400 transition-colors" />
           DESBLOQUEAR
         </button>
       </div>
