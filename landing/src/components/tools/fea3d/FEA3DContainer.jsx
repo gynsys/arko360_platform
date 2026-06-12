@@ -27,7 +27,7 @@ import { createProject, updateProject, loadTokenFromStorage } from './api';
 import { HelpDocsModal } from './HelpDocsModal';
 
 export default function FEA3DContainer() {
-  const [wizardOpen, setWizardOpen] = useState(true);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [shellPanelOpen, setShellPanelOpen] = useState(false);
   const [combosModalOpen, setCombosModalOpen] = useState(false);
   const [materialsModalOpen, setMaterialsModalOpen] = useState(false);
@@ -56,11 +56,44 @@ export default function FEA3DContainer() {
   } = useStructureStore();
 
   useEffect(() => {
-    // Intentar cargar token de sesión al iniciar
-    loadTokenFromStorage();
-    // En un app real, harías fetch del /me para obtener el usuario.
-    // Por ahora confiaremos en que el token está si loadTokenFromStorage no lanza error (simplificado).
-  }, []);
+    const initAuth = async () => {
+      const token = loadTokenFromStorage();
+      if (token) {
+        // Asumimos que si hay token está logueado por ahora (idealmente apiGetMe)
+        // Para no bloquear la UI si no hay endpoint /me, validamos existencia de currentUser 
+        // o esperamos que el token sea válido.
+        // Si no está el user, forzamos login.
+        if (!currentUser) {
+          setAuthModalOpen(true);
+        } else {
+          setAuthModalOpen(false);
+          setWizardOpen(true);
+        }
+      } else {
+        setAuthModalOpen(true);
+      }
+    };
+    initAuth();
+  }, [currentUser]);
+
+  const handleProjectSelect = (project) => {
+    setCurrentProjectId(project.id);
+    const { nodes, elements, shells, materials, sections, loads, combinations } = project.topology;
+    useStructureStore.setState({
+      nodes: nodes || [],
+      elements: elements || [],
+      shells: shells || [],
+      materials: materials || [],
+      sections: sections || [],
+      loads: loads || [],
+      loadCombinations: combinations || [],
+      metadata: { name: project.name, author: '', units: 'm, kgf, C' },
+      isSaved: true
+    });
+    toast.success(`Proyecto "${project.name}" cargado`);
+    setProjectsModalOpen(false);
+    setWizardOpen(false);
+  };
 
   // Prevenir cierre de pestaña si hay cambios sin guardar
   useEffect(() => {
@@ -424,7 +457,11 @@ export default function FEA3DContainer() {
         </div>
       </div>
 
-      <TemplateWizard isOpen={wizardOpen} onClose={() => setWizardOpen(false)} />
+      <TemplateWizard 
+        isOpen={wizardOpen} 
+        onClose={() => setWizardOpen(false)} 
+        onProjectSelect={handleProjectSelect}
+      />
       <ShellPanel isOpen={shellPanelOpen} onClose={() => setShellPanelOpen(false)} />
       <LoadCombosModal isOpen={combosModalOpen} onClose={() => setCombosModalOpen(false)} />
       {materialsModalOpen && <DefineMaterialsModal onClose={() => setMaterialsModalOpen(false)} />}

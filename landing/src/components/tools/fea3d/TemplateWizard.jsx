@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useStructureStore } from './useStructureStore';
-import { Box, Columns, Rows, Layers, X, FolderOpen } from 'lucide-react';
+import { Box, Columns, Rows, Layers, X, FolderOpen, Cloud } from 'lucide-react';
+import { getProjects } from './api';
+import toast from 'react-hot-toast';
 
 const DEFAULT_CONFIG = {
   type: '3d_frame',
@@ -16,9 +18,10 @@ const DEFAULT_CONFIG = {
   beamSectionId: ''
 };
 
-export function TemplateWizard({ isOpen, onClose }) {
+export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
   const { generateStructure, wizardConfig, sections, materials, addMaterial, addSection } = useStructureStore();
   const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [recentProjects, setRecentProjects] = useState([]);
 
   // Sincronizar estado local con el store cuando se abre el modal
   useEffect(() => {
@@ -27,6 +30,19 @@ export function TemplateWizard({ isOpen, onClose }) {
         setConfig(wizardConfig);
       } else {
         setConfig(DEFAULT_CONFIG);
+      }
+      
+      // Fetch recent projects if it's the first time and user might have them
+      if (wizardConfig === null && localStorage.getItem('arko_token')) {
+        getProjects()
+          .then(data => {
+            // sort by updated_at descending and get top 5
+            const sorted = data.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+            setRecentProjects(sorted.slice(0, 5));
+          })
+          .catch(err => {
+            console.error("Error fetching recent projects", err);
+          });
       }
     }
   }, [isOpen, wizardConfig]);
@@ -113,16 +129,41 @@ export function TemplateWizard({ isOpen, onClose }) {
               label="Muro/Cimentación"
             />
 
-            {/* Abrir Proyecto Existente */}
+            {/* Proyectos Recientes en Nube y Local */}
             {isFirstTime && (
               <div className="mt-8 pt-6 border-t border-slate-800">
+                <h3 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-1">
+                  <Cloud size={14} /> Tus Proyectos Recientes
+                </h3>
+                
+                {recentProjects.length > 0 ? (
+                  <div className="space-y-2 mb-4">
+                    {recentProjects.map(proj => (
+                      <button
+                        key={proj.id}
+                        onClick={() => onProjectSelect && onProjectSelect(proj)}
+                        className="w-full text-left px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 hover:border-blue-500/50 border border-transparent transition-all group"
+                      >
+                        <div className="text-sm font-medium text-slate-300 group-hover:text-blue-400 truncate">
+                          {proj.name}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">
+                          {new Date(proj.updated_at).toLocaleDateString()}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-500 mb-4 px-2">No hay proyectos en la nube.</div>
+                )}
+
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".arko3d,.json" />
                 <button 
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all font-medium"
+                  className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-slate-300 transition-all font-medium text-sm"
                 >
-                  <FolderOpen size={18} />
-                  Abrir Proyecto
+                  <FolderOpen size={16} />
+                  Abrir Proyecto Local
                 </button>
               </div>
             )}
