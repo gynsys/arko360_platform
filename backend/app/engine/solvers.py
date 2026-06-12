@@ -325,9 +325,19 @@ class StructuralSolver:
                 
                 f_loc_end = k_loc @ u_loc - f_fixed_local
                 
-                # 11 Estaciones
+                # Estaciones base
+                xs_base = list(np.linspace(0, l, 21))
+                
+                # Añadir estaciones exactamente antes y después de cada carga puntual para dibujar caídas verticales
+                for pt in point_loads:
+                    a = pt["a"]
+                    if 0 < a < l:
+                        xs_base.append(a - 1e-5)
+                        xs_base.append(a + 1e-5)
+                
+                xs = sorted(list(set(xs_base)))
+                
                 stations = []
-                xs = np.linspace(0, l, 11)
                 for x in xs:
                     P = f_loc_end[0] + qx * x
                     V2 = f_loc_end[1] + qy * x
