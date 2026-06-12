@@ -3,7 +3,7 @@ import { useStructureStore } from './useStructureStore';
 import { Trash2, Info, Layers } from 'lucide-react';
 
 export function PropertyPanel() {
-  const { selectedIds, nodes, elements, shells, loads, updateNode, updateShell, addLoad, deleteNode, deleteElement, deleteShell } = useStructureStore();
+  const { selectedIds, nodes, elements, shells, loads, updateNode, updateShell, addLoad, updateLoad, deleteLoad, deleteNode, deleteElement, deleteShell } = useStructureStore();
   
   if (selectedIds.length === 0) {
     return (
@@ -153,13 +153,50 @@ export function PropertyPanel() {
                 {elementLoads.map((l, idx) => (
                   <div key={idx} className="bg-slate-800 border border-slate-700 rounded-md p-2 text-xs">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-blue-400 uppercase">{l.type === 'distributed' ? 'Distribuida' : 'Puntual'}</span>
-                      {l.type === 'point_frame' && <span className="text-slate-500 text-[10px]">Posición Rel: {l.offset}</span>}
+                      <span className="font-bold text-blue-400 uppercase flex items-center gap-1">
+                        {l.type === 'distributed' ? 'Distribuida' : 'Puntual'}
+                        <button onClick={() => deleteLoad(l.id)} className="text-red-400 hover:text-red-300 ml-2" title="Eliminar Carga"><Trash2 size={12} /></button>
+                      </span>
+                      {l.type === 'point_frame' && (
+                        <div className="flex items-center gap-1 text-slate-500 text-[10px]">
+                          <span>Pos:</span>
+                          <input 
+                            type="text" 
+                            className="w-10 bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-white" 
+                            value={l.offset} 
+                            onChange={(e) => updateLoad(l.id, { offset: parseFloat(e.target.value) || 0 })} 
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="grid grid-cols-3 gap-1 text-slate-300 text-[11px] bg-slate-900 p-1 rounded">
-                      {Math.abs(l.fx) > 1e-6 && <div><span className="text-slate-500">Fx:</span> {l.fx}</div>}
-                      {Math.abs(l.fy) > 1e-6 && <div><span className="text-slate-500">Fy:</span> {l.fy}</div>}
-                      {Math.abs(l.fz) > 1e-6 && <div><span className="text-slate-500">Fz:</span> {l.fz}</div>}
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-500">Fx:</span>
+                        <input 
+                          type="text" 
+                          className="w-full bg-slate-800 border border-slate-700 rounded px-1 py-0.5" 
+                          value={l.fx} 
+                          onChange={(e) => updateLoad(l.id, { fx: parseFloat(e.target.value) || 0 })} 
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-500">Fy:</span>
+                        <input 
+                          type="text" 
+                          className="w-full bg-slate-800 border border-slate-700 rounded px-1 py-0.5" 
+                          value={l.fy} 
+                          onChange={(e) => updateLoad(l.id, { fy: parseFloat(e.target.value) || 0 })} 
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-500">Fz:</span>
+                        <input 
+                          type="text" 
+                          className="w-full bg-slate-800 border border-slate-700 rounded px-1 py-0.5" 
+                          value={l.fz} 
+                          onChange={(e) => updateLoad(l.id, { fz: parseFloat(e.target.value) || 0 })} 
+                        />
+                      </div>
                     </div>
                   </div>
                 ))}

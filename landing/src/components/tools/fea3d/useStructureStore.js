@@ -397,6 +397,14 @@ export const useStructureStore = create((set, get) => ({
     loads: [...state.loads, { ...load, id: `L-${Date.now()}` }],
     isSaved: false
   })),
+  updateLoad: (id, updates) => set(state => ({
+    loads: state.loads.map(l => l.id === id ? { ...l, ...updates } : l),
+    isSaved: false
+  })),
+  deleteLoad: (id) => set(state => ({
+    loads: state.loads.filter(l => l.id !== id),
+    isSaved: false
+  })),
 
   manageNodeLoads: (nodeIds, loadData, action) => set(state => {
     let newLoads = [...state.loads];

@@ -14,6 +14,7 @@ import { SelectElementsModal } from './SelectElementsModal';
 import { AssignSectionModal } from './AssignSectionModal';
 import { AssignLoadsModal } from './AssignLoadsModal';
 import { AssignFrameLoadsModal } from './AssignFrameLoadsModal';
+import { AssignRestraintsModal } from './AssignRestraintsModal';
 import { ViewControls } from './ViewControls';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
@@ -35,6 +36,7 @@ export default function FEA3DContainer() {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignLoadsModalOpen, setAssignLoadsModalOpen] = useState(false);
   const [assignFrameLoadsModalOpen, setAssignFrameLoadsModalOpen] = useState(false);
+  const [assignRestraintsModalOpen, setAssignRestraintsModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -205,6 +207,7 @@ export default function FEA3DContainer() {
             { label: 'Seleccionar (Select)', icon: MousePointer2, onClick: () => setSelectModalOpen(true), disabled: isResultsMode },
             { label: 'Asignar Secciones (Frame)', icon: Settings, onClick: () => setAssignModalOpen(true), disabled: isResultsMode },
             { separator: true },
+            { label: 'Restricciones / Apoyos', icon: Settings, onClick: () => setAssignRestraintsModalOpen(true), disabled: isResultsMode },
             { label: 'Cargas en Nudos (Joint)', icon: ArrowDownToLine, onClick: () => setAssignLoadsModalOpen(true), disabled: isResultsMode },
             { label: 'Cargas en Vigas (Frame)', icon: ArrowDownToLine, onClick: () => setAssignFrameLoadsModalOpen(true), disabled: isResultsMode }
           ]} />
@@ -344,6 +347,7 @@ export default function FEA3DContainer() {
       {assignModalOpen && <AssignSectionModal onClose={() => setAssignModalOpen(false)} />}
       {assignLoadsModalOpen && <AssignLoadsModal onClose={() => setAssignLoadsModalOpen(false)} />}
       {assignFrameLoadsModalOpen && <AssignFrameLoadsModal onClose={() => setAssignFrameLoadsModalOpen(false)} />}
+      {assignRestraintsModalOpen && <AssignRestraintsModal onClose={() => setAssignRestraintsModalOpen(false)} />}
       
       {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} onLoginSuccess={(u) => { setCurrentUser(u); setAuthModalOpen(false); }} />}
       {projectsModalOpen && <ProjectsDashboardModal onClose={() => setProjectsModalOpen(false)} />}
