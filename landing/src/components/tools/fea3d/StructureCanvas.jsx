@@ -318,11 +318,9 @@ function PointLoadArrow({ node, load }) {
           <group key={i}>
             <arrowHelper args={[dir, origin, length, 0xf97316, 0.4, 0.2]} />
               <Text
-                position={[origin.x + dir.x * (length / 2), origin.y + dir.y * (length / 2), origin.z + dir.z * (length / 2)]}
+                position={[origin.x + dir.x * (length / 2) + 0.15, origin.y + dir.y * (length / 2) + 0.15, origin.z + dir.z * (length / 2) + 0.15]}
                 fontSize={0.28}
                 color="#fdba74"
-                outlineColor="#0f172a"
-                outlineWidth={0.06}
                 font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
                 anchorX="center"
                 rotation={[Math.PI / 2, 0, 0]}
@@ -375,11 +373,9 @@ function FrameLoadGraphic({ element, load, nodes }) {
             <group key={i}>
               <arrowHelper args={[fdir, origin, arrowLength, 0xef4444, 0.3, 0.15]} />
               <Text
-                position={[origin.x + fdir.x * (arrowLength / 2), origin.y + fdir.y * (arrowLength / 2), origin.z + fdir.z * (arrowLength / 2)]}
+                position={[origin.x + fdir.x * (arrowLength / 2) + 0.15, origin.y + fdir.y * (arrowLength / 2) + 0.15, origin.z + fdir.z * (arrowLength / 2) + 0.15]}
                 fontSize={0.25}
                 color="#fca5a5"
-                outlineColor="#0f172a"
-                outlineWidth={0.06}
                 font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
                 anchorX="center"
                 rotation={[Math.PI / 2, 0, 0]}
@@ -419,11 +415,9 @@ function FrameLoadGraphic({ element, load, nodes }) {
                 <lineBasicMaterial color={0x3b82f6} linewidth={2} />
               </line>
               <Text
-                position={[topPoints[Math.floor(numArrows/2)].x + fdir.x * (arrowLength / 2), topPoints[Math.floor(numArrows/2)].y + fdir.y * (arrowLength / 2), topPoints[Math.floor(numArrows/2)].z + fdir.z * (arrowLength / 2)]}
+                position={[topPoints[Math.floor(numArrows/2)].x + fdir.x * (arrowLength / 2) + 0.15, topPoints[Math.floor(numArrows/2)].y + fdir.y * (arrowLength / 2) + 0.15, topPoints[Math.floor(numArrows/2)].z + fdir.z * (arrowLength / 2) + 0.15]}
                 fontSize={0.25}
                 color="#93c5fd"
-                outlineColor="#0f172a"
-                outlineWidth={0.06}
                 font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
                 anchorX="center"
                 rotation={[Math.PI / 2, 0, 0]}
