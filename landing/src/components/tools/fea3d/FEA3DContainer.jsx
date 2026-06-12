@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Settings, Play, Building2, Save, FolderOpen, Plus, MousePointer2, Layers, Grid, ArrowDownToLine, Calculator, ChevronRight, ChevronLeft, LogIn, Cloud } from 'lucide-react';
+import { Settings, Play, Building2, Save, FolderOpen, Plus, MousePointer2, Layers, Grid, ArrowDownToLine, Calculator, ChevronRight, ChevronLeft, LogIn, Cloud, BookOpen, FileText, Download, HelpCircle } from 'lucide-react';
 import { StructureCanvas } from './StructureCanvas';
 import { PropertyPanel } from './PropertyPanel';
 import { TemplateWizard } from './TemplateWizard';
@@ -170,6 +170,30 @@ export default function FEA3DContainer() {
     }
   };
 
+  const handleDownloadAudit = () => {
+    const state = useStructureStore.getState();
+    const auditData = {
+      timestamp: new Date().toISOString(),
+      metadata: state.metadata,
+      nodes: state.nodes,
+      elements: state.elements,
+      shells: state.shells,
+      materials: state.materials,
+      sections: state.sections,
+      loads: state.loads,
+      loadCombinations: state.loadCombinations,
+      results: state.results
+    };
+    const blob = new Blob([JSON.stringify(auditData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `arko3d_frontend_audit_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Archivo de auditoría descargado");
+  };
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-900 font-sans">
       
@@ -222,6 +246,13 @@ export default function FEA3DContainer() {
           <MenuDropdown title="Display" items={[
             { label: showLoads ? 'Ocultar Cargas' : 'Mostrar Cargas', icon: Settings, onClick: toggleShowLoads, disabled: isResultsMode },
             { label: 'Tablas de Resultados', icon: Settings, onClick: () => setTablesModalOpen(true), disabled: !isResultsMode }
+          ]} />
+
+          <MenuDropdown title="Help" items={[
+            { label: 'Manual de Usuario', icon: BookOpen, onClick: () => window.open('https://github.com/gynsys/arko360_platform/blob/main/docs/ARKO3D_DOCUMENTATION.md', '_blank') },
+            { label: 'Soporte Teórico', icon: FileText, onClick: () => window.open('https://github.com/gynsys/arko360_platform/blob/main/docs/ARKO3D_DOCUMENTATION.md', '_blank') },
+            { separator: true },
+            { label: 'Descargar Auditoría JSON (Dev)', icon: Download, onClick: handleDownloadAudit }
           ]} />
           
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".arko3d,.json" />
