@@ -97,16 +97,8 @@ export default function FEA3DContainer() {
       return;
     }
     
-    let finalName = metadata.name;
-    if (!currentProjectId) {
-      const inputName = window.prompt("Ingrese un nombre para su proyecto:", metadata.name || "Nuevo Proyecto ARKO3D");
-      if (inputName === null) return; // Cancelado por el usuario
-      finalName = inputName.trim() || "Sin Título";
-      setMetadata({ ...metadata, name: finalName });
-    }
-    
     const projectData = {
-      name: finalName,
+      name: metadata.name || 'Sin Título',
       topology: {
         nodes: useStructureStore.getState().nodes,
         elements: useStructureStore.getState().elements,
@@ -303,6 +295,23 @@ export default function FEA3DContainer() {
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden h-8">
+            <input 
+              type="text" 
+              value={metadata.name || ''} 
+              onChange={(e) => setMetadata({ ...metadata, name: e.target.value })}
+              placeholder="Nombre del proyecto..."
+              className="bg-transparent text-white text-xs px-3 outline-none w-48"
+            />
+            <button 
+              onClick={handleSaveToCloud}
+              className="p-1.5 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors border-l border-slate-700"
+              title="Guardar en la Nube"
+            >
+              <Save size={14} />
+            </button>
+          </div>
+          
           {currentUser ? (
             <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
               <span className="bg-blue-600/20 text-blue-400 px-3 py-1.5 rounded-lg border border-blue-500/30">
@@ -319,24 +328,24 @@ export default function FEA3DContainer() {
             </button>
           )}
           
-          <button
-            onClick={handleRunAnalysis}
-            disabled={isSolving || totalElements === 0}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold shadow-lg transition-all ${
-              isSolving || totalElements === 0 
-                ? 'bg-slate-600 text-slate-400 cursor-not-allowed' 
-                : isResultsMode 
-                  ? 'bg-orange-600 hover:bg-orange-500 text-white animate-pulse'
+          {!isResultsMode && (
+            <button
+              onClick={handleRunAnalysis}
+              disabled={isSolving || totalElements === 0}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold shadow-lg transition-all ${
+                isSolving || totalElements === 0 
+                  ? 'bg-slate-600 text-slate-400 cursor-not-allowed' 
                   : 'bg-green-600 hover:bg-green-500 text-white'
-            }`}
-          >
-            {isSolving ? (
-              <span className="animate-spin">⌛</span>
-            ) : (
-              <Play size={16} className={isResultsMode ? 'fill-current' : ''} />
-            )}
-            {isSolving ? 'CALCULANDO...' : isResultsMode ? 'ACTUALIZAR RESULTADOS' : 'RUN'}
-          </button>
+              }`}
+            >
+              {isSolving ? (
+                <span className="animate-spin">⌛</span>
+              ) : (
+                <Play size={16} />
+              )}
+              {isSolving ? 'CALCULANDO...' : 'RUN'}
+            </button>
+          )}
         </div>
       </div>
 
