@@ -923,16 +923,15 @@ export function StructureCanvas() {
         {/* Plano invisible para capturar clics en Quick Draw Area */}
         {isQuickDrawingShell && (
           <mesh 
-            rotation={gridRotation} 
-            position={gridPosition} 
-            visible={false}
+            rotation={[0, 0, 0]} 
+            position={[0, 0, activeLevel]} 
             onPointerDown={(e) => {
               e.stopPropagation();
               handleQuickDrawClick(e.point);
             }}
           >
             <planeGeometry args={[1000, 1000]} />
-            <meshBasicMaterial side={THREE.DoubleSide} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
           </mesh>
         )}
 
