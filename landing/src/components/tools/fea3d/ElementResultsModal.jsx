@@ -11,17 +11,84 @@ export function ElementResultsModal() {
     elements
   } = useStructureStore();
 
-  const element = elements.find(e => e.id === rightClickedElementId);
-  const elementForces = useMemo(() => {
-    if (!rightClickedElementId || !results || !activeResultCombo) return null;
-    const comboResults = results.results[activeResultCombo];
-    if (comboResults && comboResults.element_forces) {
-      return comboResults.element_forces[rightClickedElementId];
-    }
-    return null;
-  }, [rightClickedElementId, results, activeResultCombo]);
+  const { selectedIds, rightClickedElementId, setRightClickedElementId, results, activeResultCombo, elements } = useStructureStore();
 
-  if (!rightClickedElementId || !element || !elementForces) return null;
+  const isMulti = selectedIds.includes(rightClickedElementId) && selectedIds.length > 1;
+  
+  const targetElements = useMemo(() => {
+    if (!rightClickedElementId) return [];
+    if (isMulti) {
+      return selectedIds.map(id => elements.find(e => e.id === id)).filter(Boolean);
+    }
+    const single = elements.find(e => e.id === rightClickedElementId);
+    return single ? [single] : [];
+  }, [rightClickedElementId, selectedIds, elements, isMulti]);
+
+  const elementForces = useMemo(() => {
+    if (targetElements.length === 0 || !results || !activeResultCombo) return null;
+    const comboResults = results.results[activeResultCombo];
+    if (!comboResults || !comboResults.element_forces) return null;
+
+    if (targetElements.length === 1) {
+      return comboResults.element_forces[targetElements[0].id] || null;
+    }
+
+    // Topological sort for continuous beam
+    const nodeToElems = {};
+    targetElements.forEach(f => {
+      f.nodes.forEach(nid => {
+        if (!nodeToElems[nid]) nodeToElems[nid] = [];
+        nodeToElems[nid].push(f.id);
+      });
+    });
+
+    let startElem = targetElements[0];
+    for (let f of targetElements) {
+      if (f.nodes.some(nid => nodeToElems[nid].length === 1)) {
+        startElem = f;
+        break;
+      }
+    }
+
+    const ordered = [];
+    const visited = new Set();
+    let current = startElem;
+
+    while (current) {
+      ordered.push(current);
+      visited.add(current.id);
+      let next = null;
+      for (let nid of current.nodes) {
+        let neighbors = nodeToElems[nid];
+        for (let neighborId of neighbors) {
+          if (!visited.has(neighborId)) {
+            next = targetElements.find(f => f.id === neighborId);
+            break;
+          }
+        }
+        if (next) break;
+      }
+      current = next;
+    }
+    
+    targetElements.forEach(f => { if (!visited.has(f.id)) ordered.push(f); });
+
+    let combined = [];
+    let totalL = 0;
+    ordered.forEach(f => {
+      let forces = comboResults.element_forces[f.id];
+      if (!forces) return;
+      let elLength = forces[forces.length - 1].x;
+      forces.forEach(st => {
+        combined.push({ ...st, x: totalL + st.x });
+      });
+      totalL += elLength;
+    });
+
+    return combined.length > 0 ? combined : null;
+  }, [targetElements, results, activeResultCombo]);
+
+  if (!rightClickedElementId || targetElements.length === 0 || !elementForces) return null;
 
   const handleClose = () => setRightClickedElementId(null);
 
@@ -51,8 +118,10 @@ export function ElementResultsModal() {
     const range = max - min;
     const zeroY = h - marginY - ((0 - min) / range) * (h - 2 * marginY);
     
-    const points = data.map((d, i) => {
-      const x = marginX + (i / (data.length - 1)) * (w - 2 * marginX);
+    const totalL = data[data.length - 1].x;
+    
+    const points = data.map((d) => {
+      const x = marginX + (totalL > 0 ? (d.x / totalL) : 0) * (w - 2 * marginX);
       let val = d[key];
       if (reverse) val = -val;
       const y = h - marginY - ((val - min) / range) * (h - 2 * marginY);
@@ -61,6 +130,27 @@ export function ElementResultsModal() {
 
     const zeroLine = `${marginX},${zeroY} ${w - marginX},${zeroY}`;
     
+    // Find absolute extremes for markers
+    let maxObj = data[0], minObj = data[0];
+    data.forEach(d => {
+      if (d[key] > maxObj[key]) maxObj = d;
+      if (d[key] < minObj[key]) minObj = d;
+    });
+
+    const renderMarker = (d) => {
+      let v = d[key];
+      let displayV = v;
+      if (reverse) v = -v;
+      const px = marginX + (totalL > 0 ? (d.x / totalL) : 0) * (w - 2 * marginX);
+      const py = h - marginY - ((v - min) / range) * (h - 2 * marginY);
+      return (
+        <g key={d.x + '_' + v}>
+          <circle cx={px} cy={py} r="3" fill={color} />
+          <text x={px} y={v >= 0 ? 10 : h - 2} fill="#94a3b8" fontSize="10" textAnchor="middle">{Math.abs(displayV) < 1e-4 ? '0.00' : displayV.toFixed(2)}</text>
+        </g>
+      );
+    };
+
     return (
       <div className="mb-4">
         <div className="flex justify-between text-xs text-slate-400 font-bold mb-1 px-1">
@@ -76,15 +166,9 @@ export function ElementResultsModal() {
             {/* Línea principal */}
             <polyline points={points} fill="none" stroke={color} strokeWidth="2" />
             
-            {/* Puntos y textos extremos y medio */}
-            <circle cx={marginX} cy={h - marginY - (((reverse ? -values[0] : values[0]) - min) / range) * (h - 2 * marginY)} r="3" fill={color} />
-            <text x={marginX} y={values[0] >= 0 ? 10 : h - 2} fill="#94a3b8" fontSize="10">{Math.abs(values[0]) < 1e-4 ? '0.00' : values[0].toFixed(2)}</text>
-            
-            <circle cx={w/2} cy={h - marginY - (((reverse ? -values[5] : values[5]) - min) / range) * (h - 2 * marginY)} r="3" fill={color} />
-            <text x={w/2} y={values[5] >= 0 ? 10 : h - 2} fill="#94a3b8" fontSize="10" textAnchor="middle">{Math.abs(values[5]) < 1e-4 ? '0.00' : values[5].toFixed(2)}</text>
-            
-            <circle cx={w-marginX} cy={h - marginY - (((reverse ? -values[values.length-1] : values[values.length-1]) - min) / range) * (h - 2 * marginY)} r="3" fill={color} />
-            <text x={w-marginX} y={values[values.length-1] >= 0 ? 10 : h - 2} fill="#94a3b8" fontSize="10" textAnchor="end">{Math.abs(values[values.length-1]) < 1e-4 ? '0.00' : values[values.length-1].toFixed(2)}</text>
+            {/* Puntos máximos y mínimos */}
+            {renderMarker(maxObj)}
+            {Math.abs(maxObj[key] - minObj[key]) > 1e-4 && renderMarker(minObj)}
           </svg>
         </div>
       </div>
@@ -97,7 +181,9 @@ export function ElementResultsModal() {
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700 bg-slate-800/50">
           <div className="flex items-center gap-2">
             <Activity className="text-indigo-400" size={18} />
-            <h3 className="text-white font-bold">Detalles del Elemento {element.id}</h3>
+            <h3 className="text-white font-bold">
+              {isMulti ? `Viga Continua (${targetElements.length} elementos)` : `Detalles del Elemento ${targetElements[0].id}`}
+            </h3>
           </div>
           <button onClick={handleClose} className="text-slate-400 hover:text-white transition-colors"><X size={18} /></button>
         </div>
