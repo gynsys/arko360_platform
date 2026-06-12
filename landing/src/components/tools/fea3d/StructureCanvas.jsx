@@ -451,20 +451,21 @@ function FrameLoadGraphic({ element, load, nodes }) {
   return null;
 }
 
-// Controlador para animar y posicionar la cámara según la vista activa
 function CameraController() {
-  const { cameraView, activeLevel, nodes } = useStructureStore();
-  const { camera, controls } = useThree();
+  const { camera } = useThree();
+  const { cameraView, activeLevel, nodes, projectLoadedTrigger } = useStructureStore();
+  const controls = useThree(state => state.controls);
 
   useEffect(() => {
     if (!controls) return;
 
     // Calcular el centro geométrico de la estructura
     let cx = 0, cy = 0, cz = 0;
+    let minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0;
     if (nodes.length > 0) {
-      let minX = Infinity, maxX = -Infinity;
-      let minY = Infinity, maxY = -Infinity;
-      let minZ = Infinity, maxZ = -Infinity;
+      minX = Infinity; maxX = -Infinity;
+      minY = Infinity; maxY = -Infinity;
+      minZ = Infinity; maxZ = -Infinity;
       nodes.forEach(n => {
         if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
         if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
@@ -473,6 +474,15 @@ function CameraController() {
       cx = (minX + maxX) / 2;
       cy = (minY + maxY) / 2;
       cz = (minZ + maxZ) / 2;
+    }
+
+    // Effect for centering camera when a new project loads
+    if (projectLoadedTrigger > 0 && cameraView === '3D') {
+      const span = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 10);
+      camera.position.set(cx - span * 1.5, cy - span * 1.5, cz + span * 1.2);
+      controls.target.set(cx, cy, cz);
+      controls.update();
+      return;
     }
 
     if (cameraView === '3D') {
@@ -703,7 +713,7 @@ function GridAxes() {
 
   const uniqueY = useMemo(() => {
     const ys = [...new Set(nodes.map(n => Math.round(n.y * 10) / 10))];
-    return ys.sort((a, b) => b - a); // Letras de arriba hacia abajo (Y descendente)
+    return ys.sort((a, b) => a - b); // Ascendente para que A parta de Y menor (hacia arriba)
   }, [nodes]);
 
   if (uniqueX.length === 0 || uniqueY.length === 0 || viewMode === 'results') return null;
@@ -724,7 +734,7 @@ function GridAxes() {
         return (
           <group key={`gx-${i}`}>
             <line geometry={geo}>
-              <lineBasicMaterial color="#334155" transparent opacity={0.5} />
+              <lineBasicMaterial color="#0891b2" transparent opacity={0.6} />
             </line>
             {/* Burbuja inferior */}
             <mesh position={[x, minY - 0.6, 0]}>
@@ -746,7 +756,7 @@ function GridAxes() {
         return (
           <group key={`gy-${i}`}>
             <line geometry={geo}>
-              <lineBasicMaterial color="#334155" transparent opacity={0.5} />
+              <lineBasicMaterial color="#0891b2" transparent opacity={0.6} />
             </line>
             {/* Burbuja izquierda */}
             <mesh position={[minX - 0.6, y, 0]}>

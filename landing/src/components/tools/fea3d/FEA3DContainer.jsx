@@ -203,7 +203,8 @@ export default function FEA3DContainer() {
          loadCombinations: project.topology.combinations || [],
          results: project.results || null,
          viewMode: project.results ? 'results' : 'model',
-         isSaved: true
+         isSaved: true,
+         projectLoadedTrigger: useStructureStore.getState().projectLoadedTrigger + 1
        });
        setMetadata({ name: project.name || 'Sin Título' });
        toast.success(`Proyecto ${project.name} cargado`);

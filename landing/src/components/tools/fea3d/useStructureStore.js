@@ -35,6 +35,7 @@ export const useStructureStore = create((set, get) => ({
   wizardConfig: null,
   isSaved: true,
   currentUser: null, // Guardará { id, email, name }
+  projectLoadedTrigger: 0, // Increments when a new project is loaded to trigger camera reset
 
   // Estado para dibujo de losas
   isDrawingShell: false,
@@ -644,7 +645,8 @@ export const useStructureStore = create((set, get) => ({
       results: null,
       isSaved: false,
       cameraView: type === 'beam' ? 'XZ' : '3D',
-      activeLevel: 0
+      activeLevel: 0,
+      projectLoadedTrigger: get().projectLoadedTrigger + 1
     });
   }
 }));
