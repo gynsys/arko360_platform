@@ -39,6 +39,7 @@ export const useStructureStore = create((set, get) => ({
 
   // Estado para dibujo de losas
   isDrawingShell: false,
+  isQuickDrawingShell: false,
   drawingNodes: [], // IDs de los nudos seleccionados para la losa actual
 
   // Estado para selección por ventana
@@ -274,6 +275,7 @@ export const useStructureStore = create((set, get) => ({
     return {
       results: resultsData,
       viewMode: 'results',
+      cameraView: state.cameraView === '3D' ? 'XZ' : state.cameraView,
       displacementScale: autoScale,
       activeResultCombo: defaultComboId,
       selectedIds: [],
@@ -288,9 +290,16 @@ export const useStructureStore = create((set, get) => ({
 
   // --- MODO DIBUJO ---
   toggleDrawingShell: () => set(state => ({ 
-    isDrawingShell: !state.isDrawingShell, 
+    isDrawingShell: !state.isDrawingShell,
+    isQuickDrawingShell: false,
     drawingNodes: [],
     selectedIds: [] 
+  })),
+  toggleQuickDrawingShell: () => set(state => ({
+    isQuickDrawingShell: !state.isQuickDrawingShell,
+    isDrawingShell: false,
+    drawingNodes: [],
+    selectedIds: []
   })),
 
   addNodeToDrawing: (nodeId) => {

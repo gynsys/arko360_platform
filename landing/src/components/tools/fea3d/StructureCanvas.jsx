@@ -154,8 +154,9 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
 
       const addQuad = (A, B) => {
         const v0 = A.base, v1 = A.offset, v2 = B.offset, v3 = B.base;
-        const cA = A.val >= 0 ? [0.93, 0.26, 0.26] : [0.22, 0.51, 0.96];
-        const cB = B.val >= 0 ? [0.93, 0.26, 0.26] : [0.22, 0.51, 0.96];
+        // ETABS Colors: Red for positive array values (usually supports), Yellow for negative (usually center span)
+        const cA = A.val >= 0 ? [0.93, 0.26, 0.26] : [0.98, 0.80, 0.08]; // Red : Yellow
+        const cB = B.val >= 0 ? [0.93, 0.26, 0.26] : [0.98, 0.80, 0.08]; // Red : Yellow
 
         positions.push(v0.x, v0.y, v0.z, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
         colors.push(...cA, ...cA, ...cB);
@@ -197,7 +198,13 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
   return (
     <group>
       <mesh geometry={geometry.geo}>
-        <meshBasicMaterial vertexColors transparent opacity={0.6} side={THREE.DoubleSide} />
+        <meshBasicMaterial 
+          vertexColors 
+          side={THREE.DoubleSide} 
+          polygonOffset={true}
+          polygonOffsetFactor={-2}
+          polygonOffsetUnits={-2}
+        />
       </mesh>
       
       {/* Textos de Picos */}
@@ -777,7 +784,7 @@ function GridAxes() {
 
 export function StructureCanvas() {
   const { 
-    nodes, elements, shells, loads, isDrawingShell, clearSelection,
+    nodes, elements, shells, loads, isDrawingShell, isQuickDrawingShell, clearSelection,
     viewMode, results, activeResultCombo, activeResultType, displacementScale, diagramScale, showLoads,
     cameraView, activeLevel
   } = useStructureStore();
@@ -825,6 +832,77 @@ export function StructureCanvas() {
     gridRotation[0] = 0; // XZ plano frontal
   }
 
+  const handleQuickDrawClick = (point) => {
+    if (!isQuickDrawingShell) return;
+    
+    // We only support drawing on the active XY plane for now
+    if (cameraView !== '3D' && cameraView !== 'XY') return;
+    
+    const px = point.x;
+    const py = point.y;
+    const pz = activeLevel;
+
+    // Find bounding uniqueX and uniqueY
+    const uniqueX = [...new Set(nodes.map(n => Math.round(n.x * 10) / 10))].sort((a,b) => a - b);
+    const uniqueY = [...new Set(nodes.map(n => Math.round(n.y * 10) / 10))].sort((a,b) => a - b);
+
+    let xLeft = null, xRight = null;
+    for(let i=0; i<uniqueX.length - 1; i++) {
+      if (px >= uniqueX[i] && px <= uniqueX[i+1]) {
+        xLeft = uniqueX[i]; xRight = uniqueX[i+1]; break;
+      }
+    }
+
+    let yBottom = null, yTop = null;
+    for(let i=0; i<uniqueY.length - 1; i++) {
+      if (py >= uniqueY[i] && py <= uniqueY[i+1]) {
+        yBottom = uniqueY[i]; yTop = uniqueY[i+1]; break;
+      }
+    }
+
+    if (xLeft === null || xRight === null || yBottom === null || yTop === null) {
+      return; // Clic fuera de la cuadrícula válida
+    }
+
+    const corners = [
+      {x: xLeft, y: yBottom, z: pz},
+      {x: xRight, y: yBottom, z: pz},
+      {x: xRight, y: yTop, z: pz},
+      {x: xLeft, y: yTop, z: pz}
+    ];
+
+    const currentState = useStructureStore.getState();
+    const newNodes = [...currentState.nodes];
+    const shellNodeIds = [];
+
+    corners.forEach(c => {
+      const existing = newNodes.find(n => Math.abs(n.x - c.x) < 0.1 && Math.abs(n.y - c.y) < 0.1 && Math.abs(n.z - c.z) < 0.1);
+      if (existing) {
+        shellNodeIds.push(existing.id);
+      } else {
+        const newId = `N${Date.now()}_${Math.floor(Math.random()*10000)}`;
+        newNodes.push({ id: newId, x: c.x, y: c.y, z: c.z, restraint: null });
+        shellNodeIds.push(newId);
+      }
+    });
+
+    const shellId = `S${Date.now()}_${Math.floor(Math.random()*1000)}`;
+    const newShell = {
+      id: shellId,
+      type: 'shell',
+      nodes: shellNodeIds,
+      thickness: 0.15,
+      material_id: currentState.materials[0]?.id || 'conc',
+      loads: { CM: 0, CV: 0 }
+    };
+
+    useStructureStore.setState({
+      nodes: newNodes,
+      shells: [...currentState.shells, newShell],
+      isSaved: false
+    });
+  };
+
   return (
     <div className="w-full h-screen bg-slate-900">
       <Canvas 
@@ -841,6 +919,23 @@ export function StructureCanvas() {
         
         <color attach="background" args={['#0f172a']} />
         <Grid infiniteGrid fadeDistance={cameraView === '3D' ? 40 : 100} cellColor="#1e293b" sectionColor="#334155" rotation={gridRotation} position={gridPosition} />
+        
+        {/* Plano invisible para capturar clics en Quick Draw Area */}
+        {isQuickDrawingShell && (
+          <mesh 
+            rotation={gridRotation} 
+            position={gridPosition} 
+            visible={false}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              handleQuickDrawClick(e.point);
+            }}
+          >
+            <planeGeometry args={[1000, 1000]} />
+            <meshBasicMaterial side={THREE.DoubleSide} />
+          </mesh>
+        )}
+
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 10]} intensity={1} />
         

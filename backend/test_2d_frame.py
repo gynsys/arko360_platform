@@ -9,10 +9,10 @@ import numpy as np
 def run_test():
     # 1 bay of 5m width, 1 floor of 3m height
     nodes = [
-        Node(id=1, x=0, y=0, z=0, restraint=Restraint(dofs=[True, True, True, True, True, True])),
-        Node(id=2, x=5, y=0, z=0, restraint=Restraint(dofs=[True, True, True, True, True, True])),
-        Node(id=3, x=0, y=0, z=3, restraint=None),
-        Node(id=4, x=5, y=0, z=3, restraint=None)
+        Node(id="1", x=0, y=0, z=0, restraint=Restraint(ux=True, uy=True, uz=True, rx=True, ry=True, rz=True)),
+        Node(id="2", x=5, y=0, z=0, restraint=Restraint(ux=True, uy=True, uz=True, rx=True, ry=True, rz=True)),
+        Node(id="3", x=0, y=0, z=3, restraint=None),
+        Node(id="4", x=5, y=0, z=3, restraint=None)
     ]
     
     # Material E=25 GPa
@@ -28,15 +28,15 @@ def run_test():
     ]
     
     elements = [
-        Element(id=1, type="frame", nodes=[1, 3], material_id="conc", section_id="col"),
-        Element(id=2, type="frame", nodes=[2, 4], material_id="conc", section_id="col"),
-        Element(id=3, type="frame", nodes=[3, 4], material_id="conc", section_id="beam")
+        Element(id="1", type="frame", nodes=["1", "3"], material_id="conc", section_id="col"),
+        Element(id="2", type="frame", nodes=["2", "4"], material_id="conc", section_id="col"),
+        Element(id="3", type="frame", nodes=["3", "4"], material_id="conc", section_id="beam")
     ]
     
     # 100 kN (100000 N) lateral force at node 3 in +X direction
     # We will use "CV" and combination 1.0 CV
     loads = [
-        LoadAssignment(id="L1", target_id=3, type=LoadType.POINT, direction="X", magnitude=100000, load_case="CV")
+        LoadAssignment(id="L1", target_id="3", type=LoadType.POINT, direction="X", magnitude=100000, fx=100000, load_case="CV")
     ]
     
     combos = [

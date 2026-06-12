@@ -50,6 +50,7 @@ export default function FEA3DContainer() {
   const { 
     wizardConfig, elements, shells, metadata, setMetadata,
     exportProject, importProject, isDrawingShell, toggleDrawingShell, drawingNodes,
+    isQuickDrawingShell, toggleQuickDrawingShell,
     viewMode, activeResultType, setResultsMode,
     isSaved, currentUser, setCurrentUser, showLoads, toggleShowLoads,
     selectionBox
@@ -201,11 +202,14 @@ export default function FEA3DContainer() {
          sections: project.topology.sections || [],
          loads: project.topology.loads || [],
          loadCombinations: project.topology.combinations || [],
-         results: project.results || null,
-         viewMode: project.results ? 'results' : 'model',
          isSaved: true,
          projectLoadedTrigger: useStructureStore.getState().projectLoadedTrigger + 1
        });
+       if (project.results) {
+         useStructureStore.getState().setResultsMode(project.results);
+       } else {
+         useStructureStore.setState({ viewMode: 'model', results: null });
+       }
        setMetadata({ name: project.name || 'Sin Título' });
        toast.success(`Proyecto ${project.name} cargado`);
     } else {
