@@ -151,17 +151,28 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
     for (let i = 0; i < points.length - 1; i++) {
       const pA = points[i];
       const pB = points[i+1];
-      
-      const v0 = pA.base, v1 = pA.offset, v2 = pB.offset, v3 = pB.base;
 
-      // Colores: Rojo (+) , Azul (-)
-      const cA = pA.val >= 0 ? [0.93, 0.26, 0.26] : [0.22, 0.51, 0.96];
-      const cB = pB.val >= 0 ? [0.93, 0.26, 0.26] : [0.22, 0.51, 0.96];
+      const addQuad = (A, B) => {
+        const v0 = A.base, v1 = A.offset, v2 = B.offset, v3 = B.base;
+        const cA = A.val >= 0 ? [0.93, 0.26, 0.26] : [0.22, 0.51, 0.96];
+        const cB = B.val >= 0 ? [0.93, 0.26, 0.26] : [0.22, 0.51, 0.96];
 
-      positions.push(v0.x, v0.y, v0.z, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
-      colors.push(...cA, ...cA, ...cB);
-      positions.push(v0.x, v0.y, v0.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z);
-      colors.push(...cA, ...cB, ...cB);
+        positions.push(v0.x, v0.y, v0.z, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
+        colors.push(...cA, ...cA, ...cB);
+        positions.push(v0.x, v0.y, v0.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z);
+        colors.push(...cA, ...cB, ...cB);
+      };
+
+      if ((pA.val >= 0 && pB.val >= 0) || (pA.val <= 0 && pB.val <= 0)) {
+        addQuad(pA, pB);
+      } else {
+        // Sign change: calculate zero-crossing point
+        const t = Math.abs(pA.val) / (Math.abs(pA.val) + Math.abs(pB.val));
+        const zBase = new THREE.Vector3().lerpVectors(pA.base, pB.base, t);
+        const pZ = { base: zBase, offset: zBase, val: 0 };
+        addQuad(pA, pZ);
+        addQuad(pZ, pB);
+      }
     }
 
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
@@ -193,7 +204,7 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
       {geometry.maxPoint && Math.abs(geometry.maxVal) > 1e-4 && (
         <Text 
           position={[geometry.maxPoint.x, geometry.maxPoint.y, geometry.maxPoint.z + 0.2]} 
-          fontSize={0.25} color="white" outlineColor="black" outlineWidth={0.05}
+          fontSize={0.25} color="white"
           rotation={[Math.PI / 2, 0, 0]}
         >
           {geometry.maxVal.toFixed(2)}
@@ -202,7 +213,7 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
       {geometry.minPoint && Math.abs(geometry.minVal) > 1e-4 && geometry.maxVal !== geometry.minVal && (
         <Text 
           position={[geometry.minPoint.x, geometry.minPoint.y, geometry.minPoint.z + 0.2]} 
-          fontSize={0.25} color="white" outlineColor="black" outlineWidth={0.05}
+          fontSize={0.25} color="white"
           rotation={[Math.PI / 2, 0, 0]}
         >
           {geometry.minVal.toFixed(2)}
