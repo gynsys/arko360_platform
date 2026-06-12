@@ -173,6 +173,30 @@ export default function FEA3DContainer() {
     }
   };
 
+  const handleProjectSelect = (project) => {
+    setCurrentProjectId(project.id);
+    setProjectsModalOpen(false);
+    if (project.topology) {
+       // Cargar la topología del proyecto al Zustand store
+       useStructureStore.setState({
+         nodes: project.topology.nodes || [],
+         elements: project.topology.elements || [],
+         shells: project.topology.shells || [],
+         materials: project.topology.materials || [],
+         sections: project.topology.sections || [],
+         loads: project.topology.loads || [],
+         loadCombinations: project.topology.combinations || [],
+         results: project.results || null,
+         viewMode: project.results ? 'results' : 'model',
+         isSaved: true
+       });
+       setMetadata({ name: project.name || 'Sin Título' });
+       toast.success(`Proyecto ${project.name} cargado`);
+    } else {
+       toast.error("El proyecto no tiene topología válida");
+    }
+  };
+
   const handleDownloadAudit = () => {
     const state = useStructureStore.getState();
     const auditData = {
