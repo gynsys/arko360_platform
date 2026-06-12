@@ -250,10 +250,16 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint, isFaded }) 
 
     if (isFixed) {
       supportMesh = (
-        <mesh position={[0, 0, -0.15]}>
-          <boxGeometry args={[0.3, 0.3, 0.3]} />
-          <meshStandardMaterial color="#3b82f6" opacity={0.8} transparent />
-        </mesh>
+        <group position={[0, 0, -0.05]}>
+          <mesh>
+            <boxGeometry args={[0.4, 0.1, 0.1]} />
+            <meshStandardMaterial color="#3b82f6" opacity={0.8} transparent />
+          </mesh>
+          <mesh>
+            <boxGeometry args={[0.1, 0.4, 0.1]} />
+            <meshStandardMaterial color="#3b82f6" opacity={0.8} transparent />
+          </mesh>
+        </group>
       );
     } else if (isPinned) {
       supportMesh = (
@@ -669,6 +675,96 @@ function SelectionHandler() {
   return null;
 }
 
+function GlobalAxes() {
+  const origin = useMemo(() => new THREE.Vector3(0, 0, 0), []);
+  const dirX = useMemo(() => new THREE.Vector3(1, 0, 0), []);
+  const dirY = useMemo(() => new THREE.Vector3(0, 1, 0), []);
+  const dirZ = useMemo(() => new THREE.Vector3(0, 0, 1), []);
+  
+  return (
+    <group position={[0, 0, 0]}>
+      <arrowHelper args={[dirX, origin, 1.5, 0xef4444, 0.3, 0.2]} />
+      <arrowHelper args={[dirY, origin, 1.5, 0x22c55e, 0.3, 0.2]} />
+      <arrowHelper args={[dirZ, origin, 1.5, 0x3b82f6, 0.3, 0.2]} />
+      <Text position={[1.8, 0, 0]} fontSize={0.25} color="#ef4444">X</Text>
+      <Text position={[0, 1.8, 0]} fontSize={0.25} color="#22c55e">Y</Text>
+      <Text position={[0, 0, 1.8]} fontSize={0.25} color="#3b82f6">Z</Text>
+    </group>
+  );
+}
+
+function GridAxes() {
+  const { nodes, viewMode } = useStructureStore();
+  
+  const uniqueX = useMemo(() => {
+    const xs = [...new Set(nodes.map(n => Math.round(n.x * 10) / 10))];
+    return xs.sort((a, b) => a - b);
+  }, [nodes]);
+
+  const uniqueY = useMemo(() => {
+    const ys = [...new Set(nodes.map(n => Math.round(n.y * 10) / 10))];
+    return ys.sort((a, b) => b - a); // Letras de arriba hacia abajo (Y descendente)
+  }, [nodes]);
+
+  if (uniqueX.length === 0 || uniqueY.length === 0 || viewMode === 'results') return null;
+
+  const minX = uniqueX[0] - 2;
+  const maxX = uniqueX[uniqueX.length - 1] + 2;
+  const maxY = uniqueY[0] + 2;
+  const minY = uniqueY[uniqueY.length - 1] - 2;
+
+  // Dibujar al nivel de la base
+  const minZ = nodes.reduce((min, n) => Math.min(min, n.z), 0);
+
+  return (
+    <group position={[0, 0, minZ - 0.05]}>
+      {uniqueX.map((x, i) => {
+        const pts = [new THREE.Vector3(x, minY, 0), new THREE.Vector3(x, maxY, 0)];
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        return (
+          <group key={`gx-${i}`}>
+            <line geometry={geo}>
+              <lineBasicMaterial color="#334155" transparent opacity={0.5} />
+            </line>
+            {/* Burbuja inferior */}
+            <mesh position={[x, minY - 0.6, 0]}>
+              <circleGeometry args={[0.4, 32]} />
+              <meshBasicMaterial color="#1e293b" />
+              <mesh position={[0, 0, -0.01]}>
+                 <circleGeometry args={[0.45, 32]} />
+                 <meshBasicMaterial color="#475569" />
+              </mesh>
+              <Text position={[0, 0, 0.01]} fontSize={0.4} color="#94a3b8">{i + 1}</Text>
+            </mesh>
+          </group>
+        );
+      })}
+
+      {uniqueY.map((y, i) => {
+        const pts = [new THREE.Vector3(minX, y, 0), new THREE.Vector3(maxX, y, 0)];
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        return (
+          <group key={`gy-${i}`}>
+            <line geometry={geo}>
+              <lineBasicMaterial color="#334155" transparent opacity={0.5} />
+            </line>
+            {/* Burbuja izquierda */}
+            <mesh position={[minX - 0.6, y, 0]}>
+              <circleGeometry args={[0.4, 32]} />
+              <meshBasicMaterial color="#1e293b" />
+              <mesh position={[0, 0, -0.01]}>
+                 <circleGeometry args={[0.45, 32]} />
+                 <meshBasicMaterial color="#475569" />
+              </mesh>
+              <Text position={[0, 0, 0.01]} fontSize={0.4} color="#94a3b8">{String.fromCharCode(65 + i)}</Text>
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
 export function StructureCanvas() {
   const { 
     nodes, elements, shells, loads, isDrawingShell, clearSelection,
@@ -734,9 +830,12 @@ export function StructureCanvas() {
         <CameraController />
         
         <color attach="background" args={['#0f172a']} />
-        <Grid infiniteGrid fadeDistance={cameraView === '3D' ? 40 : 100} cellColor="#334155" sectionColor="#475569" rotation={gridRotation} position={gridPosition} />
+        <Grid infiniteGrid fadeDistance={cameraView === '3D' ? 40 : 100} cellColor="#1e293b" sectionColor="#334155" rotation={gridRotation} position={gridPosition} />
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 10]} intensity={1} />
+        
+        <GlobalAxes />
+        <GridAxes />
 
         {/* Sombra (Wireframe original) - Solo en modo resultados */}
         {viewMode === 'results' && (
@@ -843,9 +942,6 @@ export function StructureCanvas() {
         
         <SelectionHandler />
         
-        <GizmoHelper alignment="bottom-left" margin={[80, 80]}>
-          <GizmoViewport axisColors={['#ef4444', '#22c55e', '#3b82f6']} labelColor="white" />
-        </GizmoHelper>
       </Canvas>
     </div>
   );
