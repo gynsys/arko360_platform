@@ -156,8 +156,8 @@ class StructuralSolver:
                     
                     idx1 = self.node_map[en1.id] * 6
                     idx2 = self.node_map[en2.id] * 6
-                    F[idx1:idx1+6] += f_fixed_global[0:6]
-                    F[idx2:idx2+6] += f_fixed_global[6:12]
+                    F[idx1:idx1+6] -= f_fixed_global[0:6]
+                    F[idx2:idx2+6] -= f_fixed_global[6:12]
             else:
                 # Si no hay vigas, enviar a los nudos directamente
                 f_node = total_load_N / len(shell.nodes)
@@ -214,8 +214,8 @@ class StructuralSolver:
                 f_fixed_global = T.T @ f_fixed_local
                 idx1 = self.node_map[n1.id] * 6
                 idx2 = self.node_map[n2.id] * 6
-                F[idx1:idx1+6] += f_fixed_global[0:6]
-                F[idx2:idx2+6] += f_fixed_global[6:12]
+                F[idx1:idx1+6] -= f_fixed_global[0:6]
+                F[idx2:idx2+6] -= f_fixed_global[6:12]
 
             elif load.type == "point_frame":
                 elem = next(e for e in self.elements if e.id == load.target_id)
@@ -258,8 +258,8 @@ class StructuralSolver:
                 f_fixed_global = T.T @ f_fixed_local
                 idx1 = self.node_map[n1.id] * 6
                 idx2 = self.node_map[n2.id] * 6
-                F[idx1:idx1+6] += f_fixed_global[0:6]
-                F[idx2:idx2+6] += f_fixed_global[6:12]
+                F[idx1:idx1+6] -= f_fixed_global[0:6]
+                F[idx2:idx2+6] -= f_fixed_global[6:12]
 
         return F, element_local_loads
 
@@ -323,7 +323,7 @@ class StructuralSolver:
                 f_fixed_local = local_loads[elem.id]["f_fixed_local"]
                 point_loads = local_loads[elem.id]["point_loads"]
                 
-                f_loc_end = k_loc @ u_loc - f_fixed_local
+                f_loc_end = k_loc @ u_loc + f_fixed_local
                 
                 # Estaciones base
                 xs_base = list(np.linspace(0, l, 21))
@@ -339,13 +339,13 @@ class StructuralSolver:
                 
                 stations = []
                 for x in xs:
-                    P = f_loc_end[0] + qx * x
-                    V2 = f_loc_end[1] + qy * x
-                    V3 = f_loc_end[2] + qz * x
-                    T_tors = f_loc_end[3]
+                    P = -f_loc_end[0] + qx * x
+                    V2 = -f_loc_end[1] + qy * x
+                    V3 = -f_loc_end[2] + qz * x
+                    T_tors = -f_loc_end[3]
                     
-                    M2 = f_loc_end[4] + f_loc_end[2] * x + qz * (x**2) / 2
-                    M3 = f_loc_end[5] - f_loc_end[1] * x - qy * (x**2) / 2
+                    M2 = -f_loc_end[4] + f_loc_end[2] * x - qz * (x**2) / 2
+                    M3 = -f_loc_end[5] - f_loc_end[1] * x + qy * (x**2) / 2
                     
                     for pt in point_loads:
                         if x > pt["a"]:
@@ -353,8 +353,8 @@ class StructuralSolver:
                             P += pt["px"]
                             V2 += pt["py"]
                             V3 += pt["pz"]
-                            M2 += pt["pz"] * dist
-                            M3 -= pt["py"] * dist
+                            M2 -= pt["pz"] * dist
+                            M3 += pt["py"] * dist
                     
                     # Deflexión local (Funciones de forma de Hermite)
                     xi = x / l if l > 0 else 0
