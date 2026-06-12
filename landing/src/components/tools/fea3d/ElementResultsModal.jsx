@@ -182,10 +182,20 @@ export function ElementResultsModal() {
         
         <div className="p-5 overflow-y-auto max-h-[80vh] custom-scrollbar">
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-slate-300 mb-5 bg-slate-900 p-3 rounded-lg border border-slate-700">
-            <div><span className="text-slate-500 uppercase font-bold mr-1">Sección:</span> {element.section_id}</div>
-            <div><span className="text-slate-500 uppercase font-bold mr-1">Material:</span> {element.material_id}</div>
-            <div><span className="text-slate-500 uppercase font-bold mr-1">Nodos:</span> {element.nodes[0]} a {element.nodes[1]}</div>
-            <div><span className="text-slate-500 uppercase font-bold mr-1">Longitud:</span> {elementForces[elementForces.length-1].x.toFixed(2)} m</div>
+            {isMulti ? (
+              <>
+                <div><span className="text-slate-500 uppercase font-bold mr-1">Elementos:</span> {targetElements.length}</div>
+                <div><span className="text-slate-500 uppercase font-bold mr-1">Secciones:</span> Varias</div>
+                <div><span className="text-slate-500 uppercase font-bold mr-1">Tramo:</span> Continua</div>
+              </>
+            ) : (
+              <>
+                <div><span className="text-slate-500 uppercase font-bold mr-1">Sección:</span> {targetElements[0].section_id}</div>
+                <div><span className="text-slate-500 uppercase font-bold mr-1">Material:</span> {targetElements[0].material_id}</div>
+                <div><span className="text-slate-500 uppercase font-bold mr-1">Nodos:</span> {targetElements[0].nodes[0]} a {targetElements[0].nodes[1]}</div>
+              </>
+            )}
+            <div><span className="text-slate-500 uppercase font-bold mr-1">Longitud Total:</span> {elementForces[elementForces.length-1].x.toFixed(2)} m</div>
           </div>
           
           {elementForces.some(d => Math.abs(d.M3) > 1e-4) && renderChart(elementForces, 'M3', '#ef4444', 'Momento Flector (M3)', 'F·L', true)}
