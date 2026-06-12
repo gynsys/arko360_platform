@@ -720,8 +720,8 @@ function GridAxes() {
 
   const minX = uniqueX[0] - 2;
   const maxX = uniqueX[uniqueX.length - 1] + 2;
-  const maxY = uniqueY[0] + 2;
-  const minY = uniqueY[uniqueY.length - 1] - 2;
+  const minY = uniqueY[0] - 2;
+  const maxY = uniqueY[uniqueY.length - 1] + 2;
 
   // Dibujar al nivel de la base
   const minZ = nodes.reduce((min, n) => Math.min(min, n.z), 0);
