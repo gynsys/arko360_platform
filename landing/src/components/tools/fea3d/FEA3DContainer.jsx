@@ -282,7 +282,8 @@ export default function FEA3DContainer() {
           ]} />
 
           <MenuDropdown title="Draw" items={[
-            { label: isDrawingShell ? `Seleccione Nudos (${drawingNodes.length}/4)` : 'Dibujar Losa', icon: MousePointer2, onClick: toggleDrawingShell, disabled: isResultsMode },
+            { label: isDrawingShell ? `Seleccione Nudos (${drawingNodes.length}/4)` : 'Losa (Nodo a Nodo)', icon: MousePointer2, onClick: toggleDrawingShell, disabled: isResultsMode },
+            { label: isQuickDrawingShell ? 'Losa Rápida Activa' : 'Losa Rápida', icon: Grid, onClick: toggleQuickDrawingShell, disabled: isResultsMode },
             { label: 'Losa (Formulario)', icon: Layers, onClick: () => setShellPanelOpen(true), disabled: isResultsMode }
           ]} />
 
