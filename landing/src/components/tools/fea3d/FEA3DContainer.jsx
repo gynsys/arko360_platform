@@ -177,6 +177,9 @@ export default function FEA3DContainer() {
       <div className="flex items-center justify-between px-4 h-14 min-h-[56px] bg-slate-800 border-b border-slate-700 z-50">
         
         <div className="flex items-center gap-1">
+          <div className="mr-4 flex items-center">
+            <img src="/images/logo_aeko360.png" alt="Arko360" className="h-6" />
+          </div>
           <MenuDropdown title="File" items={[
             { label: 'Nuevo Proyecto', icon: Plus, onClick: () => setWizardOpen(true), disabled: isResultsMode },
             { label: 'Editar Geometría', icon: Grid, onClick: () => setWizardOpen(true), disabled: isResultsMode },
