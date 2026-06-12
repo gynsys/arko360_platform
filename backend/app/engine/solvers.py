@@ -3,6 +3,9 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from app.engine.fem_frame import get_3d_frame_local_stiffness, get_rotation_matrix
 from app.schemas.fea3d import LoadType, Topology
+import time
+import json
+import os
 
 class StructuralSolver:
     def __init__(self, topology: "Topology"):
@@ -372,4 +375,25 @@ class StructuralSolver:
                 "element_forces": element_forces
             }
             
-        return {"results": results_by_combo, "combinations": [c.dict() for c in self.combinations]}
+        # Generar archivo de auditoría
+        audit_data = {
+            "timestamp": time.time(),
+            "nodes_count": self.num_nodes,
+            "elements_count": len(self.elements),
+            "shells_count": len(self.shells),
+            "ndof": self.ndof,
+            "combinations": [c.dict() for c in self.combinations],
+            "solver_info": "ARKO3D Stiffness Matrix Method",
+            "results_summary": {
+                combo_id: {
+                    "max_displacement": max([max(abs(np.array(u))) for u in res["displacements"].values()]) if res["displacements"] else 0
+                }
+                for combo_id, res in results_by_combo.items()
+            }
+        }
+        
+        audit_filename = f"auditoria_arko3d_{int(time.time()*1000)}.json"
+        with open(audit_filename, "w") as f:
+            json.dump(audit_data, f, indent=2)
+            
+        return {"results": results_by_combo, "combinations": [c.dict() for c in self.combinations], "audit_file": audit_filename}
