@@ -3,14 +3,6 @@ import { X, Activity } from 'lucide-react';
 import { useStructureStore } from './useStructureStore';
 
 export function ElementResultsModal() {
-  const { 
-    rightClickedElementId, 
-    setRightClickedElementId,
-    results, 
-    activeResultCombo,
-    elements
-  } = useStructureStore();
-
   const { selectedIds, rightClickedElementId, setRightClickedElementId, results, activeResultCombo, elements } = useStructureStore();
 
   const isMulti = selectedIds.includes(rightClickedElementId) && selectedIds.length > 1;
