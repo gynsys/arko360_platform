@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Settings, Play, Building2, Save, FolderOpen, Plus, MousePointer2, Layers, Grid, ArrowDownToLine, Calculator, ChevronRight, ChevronLeft, LogIn, Cloud, BookOpen, FileText, Download, HelpCircle } from 'lucide-react';
+import { Settings, Play, Building2, Save, FolderOpen, Plus, MousePointer2, Layers, Grid, ArrowDownToLine, Calculator, ChevronRight, ChevronLeft, LogIn, Cloud, BookOpen, FileText, Download, HelpCircle, LogOut, X } from 'lucide-react';
 import { StructureCanvas } from './StructureCanvas';
 import { PropertyPanel } from './PropertyPanel';
 import { TemplateWizard } from './TemplateWizard';
@@ -300,7 +300,9 @@ export default function FEA3DContainer() {
             { label: 'Guardar en la Nube', icon: Save, onClick: handleSaveToCloud },
             { separator: true },
             { label: 'Abrir Local (.arko3d)', icon: FolderOpen, onClick: () => fileInputRef.current?.click() },
-            { label: 'Guardar Copia Local', icon: Save, onClick: exportProject }
+            { label: 'Guardar Copia Local', icon: Save, onClick: exportProject },
+            { separator: true },
+            { label: 'Salir', icon: LogOut, onClick: () => window.location.href = '/' }
           ]} />
 
           <MenuDropdown title="Define" items={[
@@ -395,6 +397,16 @@ export default function FEA3DContainer() {
               {isSolving ? 'CALCULANDO...' : 'RUN'}
             </button>
           )}
+
+          <div className="w-px h-6 bg-slate-700 mx-1"></div>
+          
+          <button 
+            onClick={() => window.location.href = '/'}
+            className="p-1.5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded transition-colors"
+            title="Salir al Home"
+          >
+            <X size={20} />
+          </button>
         </div>
       </div>
 
