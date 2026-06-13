@@ -1157,7 +1157,6 @@ export function StructureCanvas() {
         />
         
         <SelectionHandler />
-        <OpeningGhostUI />
         
       </Canvas>
     </div>
