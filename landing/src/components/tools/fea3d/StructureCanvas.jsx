@@ -20,7 +20,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
       key += `|${disp}`;
     }
     if (slabOpenings.length > 0) {
-      key += `|ops=${slabOpenings.length}-${JSON.stringify(slabOpenings.map(o => o.id))}`;
+      key += `|ops=${slabOpenings.length}-${JSON.stringify(slabOpenings)}`;
     }
     return key;
   }, [nodeIds, nodes, getDisplacement, slabOpenings]);
