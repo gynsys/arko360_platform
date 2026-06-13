@@ -1,10 +1,11 @@
 import React from 'react';
 import { useStructureStore } from './useStructureStore';
-import { Trash2, Info, Layers } from 'lucide-react';
+import { Trash2, Info, Layers, Plus } from 'lucide-react';
 import { FixedIcon, PinnedIcon, RollerIcon, FreeIcon } from './RestraintIcons';
+import { OpeningType } from './SlabOpeningGenerator';
 
 export function PropertyPanel() {
-  const { selectedIds, nodes, elements, shells, loads, updateNode, updateShell, addLoad, updateLoad, deleteLoad, deleteNode, deleteElement, deleteShell } = useStructureStore();
+  const { selectedIds, nodes, elements, shells, loads, openings, updateNode, updateShell, addLoad, updateLoad, deleteLoad, deleteNode, deleteElement, deleteShell, addOpening, updateOpening, removeOpening } = useStructureStore();
   
   if (selectedIds.length === 0) {
     return (
@@ -37,6 +38,7 @@ export function PropertyPanel() {
   const shell = shells.find(s => s.id === selectedId);
 
   const elementLoads = loads.filter(l => l.target_id === selectedId);
+  const shellOpenings = shell ? openings.filter(o => o.hostSlabId === selectedId) : [];
 
   if (!node && !element && !shell) return null;
 
@@ -268,6 +270,109 @@ export function PropertyPanel() {
                 onChange={(e) => updateShell(shell.id, { loads: { ...shell.loads, CV: parseFloat(e.target.value) || 0 } })}
               />
             </div>
+          </div>
+
+          {/* Sección de Aberturas */}
+          <div className="pt-4 border-t border-slate-800">
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-xs font-bold text-slate-400 uppercase">Aberturas</label>
+              <button 
+                onClick={() => addOpening({
+                  hostSlabId: shell.id,
+                  offsetX: 0,
+                  offsetY: 0,
+                  type: OpeningType.LINEAR,
+                  params: { width: 1, length: 3 }
+                })}
+                className="text-indigo-400 hover:text-white bg-indigo-900/30 hover:bg-indigo-600 p-1 rounded transition-colors"
+                title="Añadir Abertura por defecto"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+            
+            {shellOpenings.length === 0 ? (
+              <p className="text-xs text-slate-500 italic bg-slate-800/50 p-2 rounded">No hay aberturas en esta losa.</p>
+            ) : (
+              <div className="space-y-3">
+                {shellOpenings.map(o => (
+                  <div key={o.id} className="bg-slate-800 border border-slate-700 rounded-md p-3 text-xs">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="font-bold text-indigo-400 flex items-center gap-1">
+                        HUECO {o.type}
+                        <button onClick={() => removeOpening(o.id)} className="text-red-400 hover:text-red-300 ml-2" title="Eliminar Abertura"><Trash2 size={12} /></button>
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <span className="text-[10px] text-slate-500 block mb-1">Offset X (min X)</span>
+                        <input 
+                          type="text" 
+                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white" 
+                          value={o.offsetX} 
+                          onChange={(e) => updateOpening(o.id, { offsetX: parseFloat(e.target.value) || 0 })} 
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block mb-1">Offset Y (min Y)</span>
+                        <input 
+                          type="text" 
+                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white" 
+                          value={o.offsetY} 
+                          onChange={(e) => updateOpening(o.id, { offsetY: parseFloat(e.target.value) || 0 })} 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mb-2">
+                      <span className="text-[10px] text-slate-500 block mb-1">Forma</span>
+                      <select
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white"
+                        value={o.type}
+                        onChange={(e) => {
+                          const newType = e.target.value;
+                          let newParams = { width: 1, length: 1 };
+                          if (newType === OpeningType.L_SHAPE) newParams = { width1: 1, width2: 1, length1: 3, length2: 3 };
+                          if (newType === OpeningType.U_SHAPE) newParams = { width1: 1, width2: 1, length1: 3, length2: 3, landingWidth: 1 };
+                          updateOpening(o.id, { type: newType, params: newParams });
+                        }}
+                      >
+                        <option value={OpeningType.LINEAR}>Rectangular</option>
+                        <option value={OpeningType.L_SHAPE}>Forma "L"</option>
+                        <option value={OpeningType.U_SHAPE}>Forma "U"</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {(o.type === OpeningType.LINEAR || o.type === OpeningType.DUCT || o.type === OpeningType.ELEVATOR) && (
+                        <>
+                          <div><span className="text-[10px] text-slate-500 block mb-1">Ancho (X)</span><input type="text" className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value={o.params.width} onChange={e => updateOpening(o.id, { params: { ...o.params, width: parseFloat(e.target.value) || 0 }})} /></div>
+                          <div><span className="text-[10px] text-slate-500 block mb-1">Largo (Y)</span><input type="text" className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value={o.params.length} onChange={e => updateOpening(o.id, { params: { ...o.params, length: parseFloat(e.target.value) || 0 }})} /></div>
+                        </>
+                      )}
+                      {o.type === OpeningType.L_SHAPE && (
+                        <>
+                          <div><span className="text-[10px] text-slate-500 block mb-1">Ancho V(X)</span><input type="text" className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value={o.params.width1} onChange={e => updateOpening(o.id, { params: { ...o.params, width1: parseFloat(e.target.value) || 0 }})} /></div>
+                          <div><span className="text-[10px] text-slate-500 block mb-1">Ancho H(Y)</span><input type="text" className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value={o.params.width2} onChange={e => updateOpening(o.id, { params: { ...o.params, width2: parseFloat(e.target.value) || 0 }})} /></div>
+                          <div><span className="text-[10px] text-slate-500 block mb-1">Largo T(X)</span><input type="text" className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value={o.params.length1} onChange={e => updateOpening(o.id, { params: { ...o.params, length1: parseFloat(e.target.value) || 0 }})} /></div>
+                          <div><span className="text-[10px] text-slate-500 block mb-1">Largo T(Y)</span><input type="text" className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value={o.params.length2} onChange={e => updateOpening(o.id, { params: { ...o.params, length2: parseFloat(e.target.value) || 0 }})} /></div>
+                        </>
+                      )}
+                      {o.type === OpeningType.U_SHAPE && (
+                        <>
+                          <div><span className="text-[10px] text-slate-500 block mb-1">Rama Izq</span><input type="text" className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value={o.params.width1} onChange={e => updateOpening(o.id, { params: { ...o.params, width1: parseFloat(e.target.value) || 0 }})} /></div>
+                          <div><span className="text-[10px] text-slate-500 block mb-1">Rama Der</span><input type="text" className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value={o.params.width2} onChange={e => updateOpening(o.id, { params: { ...o.params, width2: parseFloat(e.target.value) || 0 }})} /></div>
+                          <div><span className="text-[10px] text-slate-500 block mb-1">Descanso(Y)</span><input type="text" className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value={o.params.landingWidth} onChange={e => updateOpening(o.id, { params: { ...o.params, landingWidth: parseFloat(e.target.value) || 0 }})} /></div>
+                          <div><span className="text-[10px] text-slate-500 block mb-1">Ancho(X)</span><input type="text" className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value={o.params.length1} onChange={e => updateOpening(o.id, { params: { ...o.params, length1: parseFloat(e.target.value) || 0 }})} /></div>
+                          <div className="col-span-2"><span className="text-[10px] text-slate-500 block mb-1">Largo T(Y)</span><input type="text" className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value={o.params.length2} onChange={e => updateOpening(o.id, { params: { ...o.params, length2: parseFloat(e.target.value) || 0 }})} /></div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

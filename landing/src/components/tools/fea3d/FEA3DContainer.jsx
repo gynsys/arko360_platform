@@ -4,7 +4,6 @@ import { StructureCanvas } from './StructureCanvas';
 import { PropertyPanel } from './PropertyPanel';
 import { TemplateWizard } from './TemplateWizard';
 import { ShellPanel } from './ShellPanel';
-import { OpeningPanel } from './OpeningPanel';
 import { LoadCombosModal } from './LoadCombosModal';
 import { ResultsPanel } from './ResultsPanel';
 import { ElementResultsModal } from './ElementResultsModal';
@@ -30,7 +29,6 @@ import { HelpDocsModal } from './HelpDocsModal';
 export default function FEA3DContainer() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [shellPanelOpen, setShellPanelOpen] = useState(false);
-  const [openingPanelOpen, setOpeningPanelOpen] = useState(false);
   const [combosModalOpen, setCombosModalOpen] = useState(false);
   const [materialsModalOpen, setMaterialsModalOpen] = useState(false);
   const [sectionsModalOpen, setSectionsModalOpen] = useState(false);
@@ -317,8 +315,26 @@ export default function FEA3DContainer() {
             { label: isDrawingShell ? `Seleccione Nudos (${drawingNodes.length}/4)` : 'Losa (Nodo a Nodo)', icon: MousePointer2, onClick: toggleDrawingShell, disabled: isResultsMode },
             { label: isQuickDrawingShell ? 'Losa Rápida Activa' : 'Losa Rápida', icon: Grid, onClick: toggleQuickDrawingShell, disabled: isResultsMode },
             { label: 'Losa (Formulario)', icon: Layers, onClick: () => setShellPanelOpen(true), disabled: isResultsMode },
-            { separator: true },
-            { label: 'Abertura (Formulario)', icon: Layers, onClick: () => setOpeningPanelOpen(true), disabled: isResultsMode }
+            { 
+              label: 'Abertura', 
+              icon: Layers, 
+              onClick: () => {
+                const state = useStructureStore.getState();
+                const selectedSlabId = state.selectedIds.find(id => state.shells.some(s => s.id === id));
+                if (selectedSlabId) {
+                  state.addOpening({
+                    hostSlabId: selectedSlabId,
+                    offsetX: 0,
+                    offsetY: 0,
+                    type: 'LINEAR',
+                    params: { width: 1, length: 3 }
+                  });
+                } else {
+                  alert("Selecciona primero una losa en el modelo para añadirle una abertura desde el Panel de Propiedades.");
+                }
+              }, 
+              disabled: isResultsMode 
+            }
           ]} />
 
           <MenuDropdown title="Assign" items={[
@@ -495,7 +511,6 @@ export default function FEA3DContainer() {
         onProjectSelect={handleProjectSelect}
       />
       <ShellPanel isOpen={shellPanelOpen} onClose={() => setShellPanelOpen(false)} />
-      <OpeningPanel isOpen={openingPanelOpen} onClose={() => setOpeningPanelOpen(false)} />
       <LoadCombosModal isOpen={combosModalOpen} onClose={() => setCombosModalOpen(false)} />
       {materialsModalOpen && <DefineMaterialsModal onClose={() => setMaterialsModalOpen(false)} />}
       {sectionsModalOpen && <DefineSectionsModal onClose={() => setSectionsModalOpen(false)} />}

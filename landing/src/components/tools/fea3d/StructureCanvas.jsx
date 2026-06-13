@@ -50,9 +50,11 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
 
       // Añadir huecos
       slabOpenings.forEach(o => {
-        // Coordenada base del hueco: coords[0] + offsets
-        const baseX = coords[0].x + o.offsetX;
-        const baseY = coords[0].y + o.offsetY;
+        // Coordenada base del hueco: bounding box mínimo de la losa
+        const minX = Math.min(...coords.map(c => c.x));
+        const minY = Math.min(...coords.map(c => c.y));
+        const baseX = minX + o.offsetX;
+        const baseY = minY + o.offsetY;
 
         // Generamos el polígono 2D local
         const localVertices = SlabOpeningGenerator.generatePolygon(o.type, o.params);

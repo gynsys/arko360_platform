@@ -382,6 +382,10 @@ export const useStructureStore = create((set, get) => ({
     openings: [...state.openings, { ...opening, id: `O-${Date.now()}` }],
     isSaved: false
   })),
+  updateOpening: (id, updates) => set((state) => ({
+    openings: state.openings.map(o => o.id === id ? { ...o, ...updates } : o),
+    isSaved: false
+  })),
   removeOpening: (id) => set((state) => ({
     openings: state.openings.filter(o => o.id !== id),
     isSaved: false
