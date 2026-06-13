@@ -580,25 +580,61 @@ export const useStructureStore = create((set, get) => ({
       }
     }
 
-    // Default Material & Section Definitions if the user hasn't created any
-    const isUS = config.units?.includes('ft');
-    
-    // Concrete Default
-    const matConcrete = { 
+    // Concrete 4000 Psi = f'c 28 MPa
+    // All properties in active unit system (isUS=ft,kip  |  isSI=m,kN  |  default=m,kgf)
+    const isSI  = config.units?.includes('kN');
+
+    const matConcrete = isUS ? { 
       id: '4000Psi', name: '4000Psi', type: 'Concrete', color: '#ff00ff',
-      density: isUS ? 2402.77 : 2400, 
-      weightVol: isUS ? 23.56 : 2400,
-      E: isUS ? 24855580 : 25000000000, 
-      U: 0.2, A: 0.0000099, G: 10356490, fc: isUS ? 28000 : 28000000 
+      density: 0.000145,   // kip/ft³ (unit weight ~150 pcf)
+      weightVol: 0.150,    // kip/ft³
+      E: 3604.996,         // kip/ft²  (E = 57000*sqrt(4000) psi = 3604996 psf)
+      U: 0.2, A: 0.0000099, 
+      G: 1501.831,         // kip/ft²
+      fc: 0.576            // kip/in² → 83 kip/ft²
+    } : isSI ? {
+      id: '4000Psi', name: '4000Psi', type: 'Concrete', color: '#ff00ff',
+      density: 23.544,     // kN/m³
+      weightVol: 23.544,   // kN/m³
+      E: 24855.578,        // MPa → kN/m² = 24855578
+      U: 0.2, A: 0.0000099, 
+      G: 10356.491,        // kN/m² * 1000
+      fc: 28000            // kPa
+    } : {
+      id: '4000Psi', name: '4000Psi', type: 'Concrete', color: '#ff00ff',
+      density: 2400,       // kgf/m³
+      weightVol: 2400,     // kgf/m³
+      E: 2535600000,       // kgf/m²  (E≈25356 MPa → *101.97 kgf/cm² per MPa * 10000 cm²/m²)
+      U: 0.2, A: 0.0000099, 
+      G: 1056500000,       // kgf/m²
+      fc: 285504000        // kgf/m² (28 MPa)
     };
     
-    // Steel Default
-    const matSteel = { 
+    // Steel A992 Fy=50ksi
+    const matSteel = isUS ? {
       id: 'A992Fy50', name: 'A992Fy50', type: 'Steel', color: '#00ffff',
-      density: 7849.047, weightVol: isUS ? 76.97 : 7850,
-      E: isUS ? 200000000 : 200000000000, 
-      U: 0.3, A: 0.0000117, G: 76923000,
-      Fy: isUS ? 345000 : 345000000, Fu: isUS ? 450000 : 450000000 
+      density: 0.000490,   // kip/ft³
+      weightVol: 0.490,    // kip/ft³
+      E: 27888.011,        // kip/ft² (29000 ksi = 29000*144 ksf)
+      U: 0.3, A: 0.0000117, 
+      G: 10726.158,        // kip/ft²
+      Fy: 7.200, Fu: 9.360 // kip/ft²
+    } : isSI ? {
+      id: 'A992Fy50', name: 'A992Fy50', type: 'Steel', color: '#00ffff',
+      density: 76.981,     // kN/m³
+      weightVol: 76.981,   // kN/m³
+      E: 200000000,        // kN/m² = 200 GPa
+      U: 0.3, A: 0.0000117,
+      G: 76923077,         // kN/m²
+      Fy: 345000, Fu: 450000 // kN/m²
+    } : {
+      id: 'A992Fy50', name: 'A992Fy50', type: 'Steel', color: '#00ffff',
+      density: 7850,       // kgf/m³
+      weightVol: 7850,     // kgf/m³
+      E: 20389324,        // kgf/m² per kg/cm²*10000/98.0665 = 2e9 Pa → ~20,389,000 kgf/m²
+      U: 0.3, A: 0.0000117,
+      G: 7842047,          // kgf/m²
+      Fy: 35182, Fu: 45872 // kgf/m² (345 MPa → 351.8 kgf/cm² * 10000)
     };
 
     // Determine default base materials depending on selected system
