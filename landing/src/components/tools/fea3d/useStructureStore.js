@@ -582,7 +582,8 @@ export const useStructureStore = create((set, get) => ({
 
     // Concrete 4000 Psi = f'c 28 MPa
     // All properties in active unit system (isUS=ft,kip  |  isSI=m,kN  |  default=m,kgf)
-    const isSI  = config.units?.includes('kN');
+    const isUS = config.units?.includes('ft');
+    const isSI = config.units?.includes('kN');
 
     const matConcrete = isUS ? { 
       id: '4000Psi', name: '4000Psi', type: 'Concrete', color: '#ff00ff',
