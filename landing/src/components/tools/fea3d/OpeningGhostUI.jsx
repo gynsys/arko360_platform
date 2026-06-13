@@ -11,6 +11,8 @@ export function OpeningGhostUI() {
   
   const [ghostPos, setGhostPos] = useState(new THREE.Vector3(0, 0, 0));
   const [frozen, setFrozen] = useState(false);
+  const [valW, setValW] = useState("2");
+  const [valL, setValL] = useState("3");
   const [params, setParams] = useState({ w: 2, l: 3 });
   const [openingType, setOpeningType] = useState(OpeningType.LINEAR);
   const [closestSlab, setClosestSlab] = useState(null);
@@ -112,7 +114,13 @@ export function OpeningGhostUI() {
       {/* UI Flotante si está congelado */}
       {frozen && (
         <Html position={[0, 0, 0]} center zIndexRange={[100, 0]}>
-          <div className="bg-slate-800 p-3 rounded-lg border border-slate-600 shadow-xl flex flex-col gap-2 w-48 pointer-events-auto">
+          <div 
+            className="bg-slate-800 p-3 rounded-lg border border-slate-600 shadow-xl flex flex-col gap-2 w-48 pointer-events-auto"
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="text-xs text-slate-300 font-bold mb-1">Configurar Abertura</div>
             
             <select 
@@ -128,20 +136,28 @@ export function OpeningGhostUI() {
             <div className="flex justify-between items-center">
               <label className="text-xs text-slate-400">Ancho (X)</label>
               <input 
-                type="number" 
-                className="w-16 bg-slate-900 border border-slate-700 text-white text-xs p-1 rounded text-right"
-                value={params.w}
-                onChange={(e) => setParams(p => ({...p, w: parseFloat(e.target.value) || 0}))}
+                type="text" 
+                className="w-16 bg-slate-900 border border-slate-700 text-white text-xs p-1 rounded text-right focus:outline-none focus:border-blue-500"
+                value={valW}
+                onChange={(e) => {
+                  setValW(e.target.value);
+                  const num = parseFloat(e.target.value);
+                  if (!isNaN(num)) setParams(p => ({...p, w: num}));
+                }}
                 autoFocus
               />
             </div>
             <div className="flex justify-between items-center">
               <label className="text-xs text-slate-400">Largo (Y)</label>
               <input 
-                type="number" 
-                className="w-16 bg-slate-900 border border-slate-700 text-white text-xs p-1 rounded text-right"
-                value={params.l}
-                onChange={(e) => setParams(p => ({...p, l: parseFloat(e.target.value) || 0}))}
+                type="text" 
+                className="w-16 bg-slate-900 border border-slate-700 text-white text-xs p-1 rounded text-right focus:outline-none focus:border-blue-500"
+                value={valL}
+                onChange={(e) => {
+                  setValL(e.target.value);
+                  const num = parseFloat(e.target.value);
+                  if (!isNaN(num)) setParams(p => ({...p, l: num}));
+                }}
               />
             </div>
             
