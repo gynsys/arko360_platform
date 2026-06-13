@@ -61,9 +61,9 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
     >
       <meshStandardMaterial
         color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
-        transparent={isFaded}
+        transparent={true}
         depthWrite={!isFaded}
-        opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? 0.8 : 0.25}
+        opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? 0.15 : 0.25}
         side={THREE.DoubleSide}
         wireframe={isFaded}
       />
@@ -201,6 +201,9 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
         <meshBasicMaterial 
           vertexColors 
           side={THREE.DoubleSide} 
+          transparent={true}
+          opacity={0.85}
+          depthWrite={false}
           polygonOffset={true}
           polygonOffsetFactor={-2}
           polygonOffsetUnits={-2}
