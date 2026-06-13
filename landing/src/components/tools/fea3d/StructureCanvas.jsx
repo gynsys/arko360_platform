@@ -86,13 +86,28 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
         // Generamos el polígono 2D local
         const localVertices = SlabOpeningGenerator.generatePolygon(o.type, o.params);
         
+        // Encontrar el centroide del hueco local
+        let cx = 0, cy = 0;
+        localVertices.forEach(v => { cx += v.x; cy += v.y; });
+        cx /= localVertices.length;
+        cy /= localVertices.length;
+
+        // Reducir microscópicamente el hueco (0.9999) hacia el centroide.
+        // Esto previene que los bordes del hueco colisionen matemáticamente con los bordes
+        // de la losa (provocando que la triangulación de Three.js / Earcut falle y la malla desaparezca).
+        const scale = 0.9999;
+        const shrunkenVertices = localVertices.map(v => ({
+          x: cx + (v.x - cx) * scale,
+          y: cy + (v.y - cy) * scale
+        }));
+        
         // Creamos la trayectoria negativa (hueco)
         const holePath = new THREE.Path();
-        const startPoint = localVertices[0];
+        const startPoint = shrunkenVertices[0];
         holePath.moveTo(baseX + startPoint.x, baseY + startPoint.y);
         
-        for (let i = 1; i < localVertices.length; i++) {
-          holePath.lineTo(baseX + localVertices[i].x, baseY + localVertices[i].y);
+        for (let i = 1; i < shrunkenVertices.length; i++) {
+          holePath.lineTo(baseX + shrunkenVertices[i].x, baseY + shrunkenVertices[i].y);
         }
         holePath.lineTo(baseX + startPoint.x, baseY + startPoint.y); // Cerrar polígono
 

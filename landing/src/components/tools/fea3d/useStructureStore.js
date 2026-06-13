@@ -203,6 +203,7 @@ export const useStructureStore = create((set, get) => ({
       openings: newOpenings,
       metadata: { ...state.metadata, units: newUnitsStr },
       results: newResults,
+      activeLevel: round(state.activeLevel * lFactor),
       isSaved: false
     };
   }),
