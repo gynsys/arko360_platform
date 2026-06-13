@@ -3,23 +3,27 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, GizmoHelper, GizmoViewport, Text, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStructureStore } from './useStructureStore';
-import { OpeningGhostUI } from './OpeningGhostUI';
+import { SlabOpeningGenerator } from './SlabOpeningGenerator';
 
 function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
-  const { nodes, selectedIds, toggleSelection, viewMode } = useStructureStore();
+  const { nodes, selectedIds, toggleSelection, viewMode, openings } = useStructureStore();
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
 
-  // Triangular el cuadrilátero en 2 triángulos: [0,1,2] y [0,2,3]
-  // Se usa BufferGeometry imperativa para evitar el error de <float32Array> en JSX
+  // Obtener las aberturas de esta losa
+  const slabOpenings = useMemo(() => openings.filter(o => o.hostSlabId === id), [openings, id]);
+
   const coordKey = useMemo(() => {
     let key = nodeIds.map(nid => { const n = nodes.find(nd => nd.id === nid); return n ? `${n.x},${n.y},${n.z}` : 'x'; }).join('|');
     if (getDisplacement) {
       const disp = nodeIds.map(nid => getDisplacement(nid).join(',')).join('|');
       key += `|${disp}`;
     }
+    if (slabOpenings.length > 0) {
+      key += `|ops=${slabOpenings.length}-${JSON.stringify(slabOpenings.map(o => o.id))}`;
+    }
     return key;
-  }, [nodeIds, nodes, getDisplacement]);
+  }, [nodeIds, nodes, getDisplacement, slabOpenings]);
 
   const geometry = useMemo(() => {
     const coords = nodeIds.map(nid => {
@@ -31,10 +35,51 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
     
     if (coords.length < 3) return null;
 
+    // Verificar si es una losa plana en Z
+    const isFlatZ = coords.every(c => Math.abs(c.z - coords[0].z) < 1e-4);
+
+    if (isFlatZ) {
+      // Dibujar con ShapeGeometry para soportar huecos (Booleanos Visuales)
+      const shape = new THREE.Shape();
+      shape.moveTo(coords[0].x, coords[0].y);
+      for (let i = 1; i < coords.length; i++) {
+        shape.lineTo(coords[i].x, coords[i].y);
+      }
+      // Cerrar el polígono
+      shape.lineTo(coords[0].x, coords[0].y);
+
+      // Añadir huecos
+      slabOpenings.forEach(o => {
+        // Coordenada base del hueco: coords[0] + offsets
+        const baseX = coords[0].x + o.offsetX;
+        const baseY = coords[0].y + o.offsetY;
+
+        // Generamos el polígono 2D local
+        const localVertices = SlabOpeningGenerator.generatePolygon(o.type, o.params);
+        
+        // Creamos la trayectoria negativa (hueco)
+        const holePath = new THREE.Path();
+        const startPoint = localVertices[0];
+        holePath.moveTo(baseX + startPoint.x, baseY + startPoint.y);
+        
+        for (let i = 1; i < localVertices.length; i++) {
+          holePath.lineTo(baseX + localVertices[i].x, baseY + localVertices[i].y);
+        }
+        holePath.lineTo(baseX + startPoint.x, baseY + startPoint.y); // Cerrar polígono
+
+        shape.holes.push(holePath);
+      });
+
+      const shapeGeo = new THREE.ShapeGeometry(shape);
+      shapeGeo.translate(0, 0, coords[0].z); // Mover al Z de la losa
+      return shapeGeo;
+    }
+
+    // Fallback: Losa no plana (BufferGeometry simple, sin huecos)
     const n0 = coords[0];
     const n1 = coords[1];
     const n2 = coords[2];
-    const n3 = coords[3] ?? coords[0]; // Fallback al primero si solo hay 3 nodos
+    const n3 = coords[3] ?? coords[0];
 
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array([

@@ -43,9 +43,6 @@ export const useStructureStore = create((set, get) => ({
   isQuickDrawingShell: false,
   drawingNodes: [], // IDs de los nudos seleccionados para la losa actual
 
-  // Estado para herramienta de aberturas
-  isDrawingOpening: false,
-
   // Estado para selección por ventana
   selectionBox: {
     isSelecting: false,
@@ -383,14 +380,12 @@ export const useStructureStore = create((set, get) => ({
   // --- CRUD ABERTURAS (OPENINGS) ---
   addOpening: (opening) => set((state) => ({
     openings: [...state.openings, { ...opening, id: `O-${Date.now()}` }],
-    isSaved: false,
-    isDrawingOpening: false // apaga la herramienta tras insertar
+    isSaved: false
   })),
   removeOpening: (id) => set((state) => ({
     openings: state.openings.filter(o => o.id !== id),
     isSaved: false
   })),
-  setDrawingOpening: (val) => set({ isDrawingOpening: val }),
 
   deleteShell: (id) => set((state) => {
     const newShells = state.shells.filter(s => s.id !== id);

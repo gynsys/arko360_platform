@@ -4,6 +4,7 @@ import { StructureCanvas } from './StructureCanvas';
 import { PropertyPanel } from './PropertyPanel';
 import { TemplateWizard } from './TemplateWizard';
 import { ShellPanel } from './ShellPanel';
+import { OpeningPanel } from './OpeningPanel';
 import { LoadCombosModal } from './LoadCombosModal';
 import { ResultsPanel } from './ResultsPanel';
 import { ElementResultsModal } from './ElementResultsModal';
@@ -29,6 +30,7 @@ import { HelpDocsModal } from './HelpDocsModal';
 export default function FEA3DContainer() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [shellPanelOpen, setShellPanelOpen] = useState(false);
+  const [openingPanelOpen, setOpeningPanelOpen] = useState(false);
   const [combosModalOpen, setCombosModalOpen] = useState(false);
   const [materialsModalOpen, setMaterialsModalOpen] = useState(false);
   const [sectionsModalOpen, setSectionsModalOpen] = useState(false);
@@ -51,7 +53,6 @@ export default function FEA3DContainer() {
     wizardConfig, elements, shells, metadata, setMetadata,
     exportProject, importProject, isDrawingShell, toggleDrawingShell, drawingNodes,
     isQuickDrawingShell, toggleQuickDrawingShell,
-    isDrawingOpening, setDrawingOpening,
     viewMode, activeResultType, setResultsMode,
     isSaved, currentUser, setCurrentUser, showLoads, toggleShowLoads,
     selectionBox
@@ -317,7 +318,7 @@ export default function FEA3DContainer() {
             { label: isQuickDrawingShell ? 'Losa Rápida Activa' : 'Losa Rápida', icon: Grid, onClick: toggleQuickDrawingShell, disabled: isResultsMode },
             { label: 'Losa (Formulario)', icon: Layers, onClick: () => setShellPanelOpen(true), disabled: isResultsMode },
             { separator: true },
-            { label: isDrawingOpening ? 'Abertura (Esc para salir)' : 'Crear Abertura', icon: Layers, onClick: () => setDrawingOpening(!isDrawingOpening), disabled: isResultsMode }
+            { label: 'Abertura (Formulario)', icon: Layers, onClick: () => setOpeningPanelOpen(true), disabled: isResultsMode }
           ]} />
 
           <MenuDropdown title="Assign" items={[
@@ -494,6 +495,7 @@ export default function FEA3DContainer() {
         onProjectSelect={handleProjectSelect}
       />
       <ShellPanel isOpen={shellPanelOpen} onClose={() => setShellPanelOpen(false)} />
+      <OpeningPanel isOpen={openingPanelOpen} onClose={() => setOpeningPanelOpen(false)} />
       <LoadCombosModal isOpen={combosModalOpen} onClose={() => setCombosModalOpen(false)} />
       {materialsModalOpen && <DefineMaterialsModal onClose={() => setMaterialsModalOpen(false)} />}
       {sectionsModalOpen && <DefineSectionsModal onClose={() => setSectionsModalOpen(false)} />}

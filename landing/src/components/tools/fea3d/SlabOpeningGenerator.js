@@ -31,48 +31,52 @@ export class SlabOpeningGenerator {
   }
 
   static _generateLinear({ width = 2, length = 3 }) {
-    const hw = width / 2;
-    const hl = length / 2;
+    // Origen (0,0) en esquina inferior izquierda
     return [
-      { x: -hw, y: -hl },
-      { x: hw, y: -hl },
-      { x: hw, y: hl },
-      { x: -hw, y: hl },
+      { x: 0, y: 0 },
+      { x: width, y: 0 },
+      { x: width, y: length },
+      { x: 0, y: length },
     ];
   }
 
-  static _generateLShape({ width = 1, length1 = 3, length2 = 3 }) {
-    // Escuadra "L". El centro (0,0) es el centro de masa del área total abarcada.
-    // Asumimos un "box" de (length1 x length2)
-    const hl1 = length1 / 2;
-    const hl2 = length2 / 2;
+  static _generateLShape({ width1 = 1, width2 = 1, length1 = 3, length2 = 3 }) {
+    // Escuadra "L". Origen (0,0) en esquina inferior izquierda de la L.
+    // length1: longitud total en X (base)
+    // length2: longitud total en Y (altura)
+    // width1: ancho de la rama vertical (Y)
+    // width2: ancho de la rama horizontal (X)
     
     return [
-      { x: -hl1, y: -hl2 },           // Esquina exterior inf izq
-      { x: hl1, y: -hl2 },            // Esquina inf der
-      { x: hl1, y: -hl2 + width },    // Sube el ancho de la L
-      { x: -hl1 + width, y: -hl2 + width }, // Esquina interior
-      { x: -hl1 + width, y: hl2 },    // Sube al tope
-      { x: -hl1, y: hl2 }             // Esquina superior izq
+      { x: 0, y: 0 },                                // Esquina exterior inf izq
+      { x: length1, y: 0 },                          // Esquina exterior inf der
+      { x: length1, y: width2 },                     // Sube el ancho horizontal
+      { x: width1, y: width2 },                      // Esquina interior
+      { x: width1, y: length2 },                     // Sube al tope
+      { x: 0, y: length2 }                           // Esquina superior izq
     ];
   }
 
-  static _generateUShape({ width1 = 1, width2 = 1, eyeSpace = 0.5, totalLength = 3, landingLength = 1.5 }) {
-    // Forma de Herradura (U)
-    // Las ramas (width1 y width2) van hacia arriba.
-    // El descanso (landingLength) une abajo.
-    const hw = (width1 + eyeSpace + width2) / 2;
-    const hl = totalLength / 2;
+  static _generateUShape({ width1 = 1, width2 = 1, length1 = 3, length2 = 3, landingWidth = 1 }) {
+    // Forma de Herradura (U). Origen (0,0) en esquina inferior izquierda.
+    // length1: Ancho total en X (incluye width1, hueco central, y width2)
+    // length2: Largo total en Y (ramas hacia arriba)
+    // width1: Ancho rama izquierda
+    // width2: Ancho rama derecha
+    // landingWidth: Espesor del descanso horizontal inferior
+
+    // Calculamos el espacio del "ojo" (hueco interior)
+    const eyeSpace = length1 - width1 - width2;
 
     return [
-      { x: -hw, y: -hl },                                // Inf izq
-      { x: hw, y: -hl },                                 // Inf der
-      { x: hw, y: hl },                                  // Sup der
-      { x: hw - width2, y: hl },                         // Interior rama der sup
-      { x: hw - width2, y: -hl + landingLength },        // Ojo inf der
-      { x: -hw + width1, y: -hl + landingLength },       // Ojo inf izq
-      { x: -hw + width1, y: hl },                        // Interior rama izq sup
-      { x: -hw, y: hl }                                  // Sup izq
+      { x: 0, y: 0 },                                       // Inf izq
+      { x: length1, y: 0 },                                 // Inf der
+      { x: length1, y: length2 },                           // Sup der
+      { x: length1 - width2, y: length2 },                  // Interior rama der sup
+      { x: length1 - width2, y: landingWidth },             // Ojo inf der
+      { x: width1, y: landingWidth },                       // Ojo inf izq
+      { x: width1, y: length2 },                            // Interior rama izq sup
+      { x: 0, y: length2 }                                  // Sup izq
     ];
   }
 }
