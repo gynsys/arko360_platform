@@ -828,6 +828,35 @@ export function StructureCanvas() {
     return true;
   };
 
+  // Auto-scale para diagramas (asegura que siempre sean visibles sin importar las unidades)
+  const autoDiagramScale = useMemo(() => {
+    if (viewMode !== 'results' || !results || !activeResultCombo || activeResultType === 'deformed') return 0.0001;
+    
+    const comboResults = results.results[activeResultCombo];
+    if (!comboResults || !comboResults.element_forces) return 0.0001;
+
+    let maxAbsVal = 0;
+    Object.values(comboResults.element_forces).forEach(stations => {
+      stations.forEach(st => {
+        const val = Math.abs(st[activeResultType] || 0);
+        if (val > maxAbsVal) maxAbsVal = val;
+      });
+    });
+
+    if (maxAbsVal < 1e-8) return 0.0001;
+
+    let minZ = Infinity, maxZ = -Infinity, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    nodes.forEach(n => {
+      if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
+      if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
+      if (n.z < minZ) minZ = n.z; if (n.z > maxZ) maxZ = n.z;
+    });
+    
+    const maxDim = Math.max(maxX - minX, maxY - minY, maxZ - minZ) || 10;
+    const targetHeight = maxDim * 0.15; // 15% de la dimensión máxima de la estructura
+    return targetHeight / maxAbsVal;
+  }, [results, activeResultCombo, activeResultType, viewMode, nodes]);
+
   const isElementActive = (n1, n2) => {
     if (cameraView === '3D') return true;
     return isNodeActive(n1) && isNodeActive(n2);
@@ -1035,7 +1064,7 @@ export function StructureCanvas() {
                   end={[n2.x, n2.y, n2.z]}
                   stations={elementForces}
                   resultType={activeResultType}
-                  scale={diagramScale * 0.0001} // Escala base arbitraria para convertir valores a metros visuales
+                  scale={diagramScale * autoDiagramScale} // Escala calculada dinámicamente + factor del usuario
                 />
               )}
             </group>
