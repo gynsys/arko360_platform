@@ -1128,23 +1128,6 @@ export function StructureCanvas() {
           return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={false} />;
         })}
 
-        {/* Openings (Aberturas) */}
-        {openings.map(o => {
-          // Simplificado: Dibujamos el polígono en su posición global
-          const pts = [...o.polygon.vertices, o.polygon.vertices[0]].map(p => new THREE.Vector3(p.x, p.y, 0));
-          return (
-            <group key={o.id} position={[o.globalPosition.x, o.globalPosition.y, o.globalPosition.z]}>
-              <line>
-                <bufferGeometry attach="geometry" {...new THREE.BufferGeometry().setFromPoints(pts)} />
-                <lineBasicMaterial attach="material" color="red" linewidth={2} />
-              </line>
-              <mesh>
-                <shapeGeometry args={[new THREE.Shape(o.polygon.vertices.map(p => new THREE.Vector2(p.x, p.y)))]} />
-                <meshBasicMaterial color="red" opacity={0.5} transparent side={THREE.DoubleSide} depthTest={false} />
-              </mesh>
-            </group>
-          );
-        })}
 
         {/* OrbitControls Mapeado al Clic Derecho (Estilo ETABS) */}
         <OrbitControls 
