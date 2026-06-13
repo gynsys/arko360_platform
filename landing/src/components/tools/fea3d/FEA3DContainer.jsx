@@ -468,6 +468,14 @@ export default function FEA3DContainer() {
           )}
           <ElementResultsModal />
 
+          {/* Indicador de Coordenadas (Bottom Left) */}
+          <div 
+            id="coord-indicator"
+            className="absolute bottom-4 left-4 z-50 bg-slate-800/80 backdrop-blur-md border border-slate-700 text-slate-400 hover:text-slate-200 transition-colors text-xs px-3 py-1.5 rounded-lg shadow-lg font-mono min-w-[150px] text-center"
+          >
+            X: 0.000, Y: 0.000, Z: 0.000
+          </div>
+
           {/* Selector de Unidades Esquina Inferior Derecha */}
           <div 
             className="absolute bottom-4 z-50 transition-all duration-300"

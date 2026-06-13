@@ -1,9 +1,36 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid, GizmoHelper, GizmoViewport, Text, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStructureStore } from './useStructureStore';
 import { SlabOpeningGenerator } from './SlabOpeningGenerator';
+
+function CoordinateTracker() {
+  const { camera, pointer, raycaster } = useThree();
+  const { cameraView, activeLevel } = useStructureStore();
+
+  const plane = useMemo(() => {
+    if (cameraView === 'XY' || cameraView === '3D') return new THREE.Plane(new THREE.Vector3(0, 0, 1), -activeLevel);
+    if (cameraView === 'XZ') return new THREE.Plane(new THREE.Vector3(0, 1, 0), -activeLevel);
+    if (cameraView === 'YZ') return new THREE.Plane(new THREE.Vector3(1, 0, 0), -activeLevel);
+    return new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  }, [cameraView, activeLevel]);
+
+  useFrame(() => {
+    raycaster.setFromCamera(pointer, camera);
+    const intersectPoint = new THREE.Vector3();
+    raycaster.ray.intersectPlane(plane, intersectPoint);
+    
+    if (intersectPoint) {
+      const el = document.getElementById('coord-indicator');
+      if (el) {
+        el.innerText = `X: ${intersectPoint.x.toFixed(3)}, Y: ${intersectPoint.y.toFixed(3)}, Z: ${intersectPoint.z.toFixed(3)}`;
+      }
+    }
+  });
+
+  return null;
+}
 
 function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
   const { nodes, selectedIds, toggleSelection, viewMode, openings } = useStructureStore();
@@ -1028,6 +1055,7 @@ export function StructureCanvas() {
           <OrthographicCamera makeDefault zoom={20} up={cameraView === 'XY' ? [0, 1, 0] : [0, 0, 1]} />
         )}
         <CameraController />
+        <CoordinateTracker />
         
         <color attach="background" args={['#0f172a']} />
         <Grid infiniteGrid fadeDistance={cameraView === '3D' ? 40 : 100} cellColor="#1e293b" sectionColor="#334155" rotation={gridRotation} position={gridPosition} />
