@@ -155,8 +155,8 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
       const addQuad = (A, B) => {
         const v0 = A.base, v1 = A.offset, v2 = B.offset, v3 = B.base;
         // ETABS Colors: Red for positive array values (usually supports), Yellow for negative (usually center span)
-        const cA = A.val >= 0 ? [0.93, 0.26, 0.26] : [0.98, 0.80, 0.08]; // Red : Yellow
-        const cB = B.val >= 0 ? [0.93, 0.26, 0.26] : [0.98, 0.80, 0.08]; // Red : Yellow
+        const cA = A.val >= 0 ? [1, 0.1, 0.1] : [1, 0.9, 0]; // Bright Red : Bright Yellow
+        const cB = B.val >= 0 ? [1, 0.1, 0.1] : [1, 0.9, 0]; // Bright Red : Bright Yellow
 
         positions.push(v0.x, v0.y, v0.z, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
         colors.push(...cA, ...cA, ...cB);
@@ -184,15 +184,17 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
     let maxAbsVal = 0;
     let maxPoint = null;
     let minPoint = null;
+    let maxBase = null;
+    let minBase = null;
     let minVal = Infinity;
     let maxVal = -Infinity;
 
     points.forEach(p => {
-      if (p.val > maxVal) { maxVal = p.val; maxPoint = p.offset; }
-      if (p.val < minVal) { minVal = p.val; minPoint = p.offset; }
+      if (p.val > maxVal) { maxVal = p.val; maxPoint = p.offset; maxBase = p.base; }
+      if (p.val < minVal) { minVal = p.val; minPoint = p.offset; minBase = p.base; }
     });
 
-    return { geo, maxPoint, minPoint, maxVal, minVal };
+    return { geo, maxPoint, minPoint, maxBase, minBase, maxVal, minVal };
   }, [stations, scale, resultType, start, end]);
 
   return (
@@ -211,24 +213,36 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
       </mesh>
       
       {/* Textos de Picos */}
-      {geometry.maxPoint && Math.abs(geometry.maxVal) > 1e-4 && (
-        <Text 
-          position={[geometry.maxPoint.x, geometry.maxPoint.y, geometry.maxPoint.z + 0.2]} 
-          fontSize={0.25} color="white"
-          rotation={[Math.PI / 2, 0, 0]}
-        >
-          {geometry.maxVal.toFixed(2)}
-        </Text>
-      )}
-      {geometry.minPoint && Math.abs(geometry.minVal) > 1e-4 && geometry.maxVal !== geometry.minVal && (
-        <Text 
-          position={[geometry.minPoint.x, geometry.minPoint.y, geometry.minPoint.z + 0.2]} 
-          fontSize={0.25} color="white"
-          rotation={[Math.PI / 2, 0, 0]}
-        >
-          {geometry.minVal.toFixed(2)}
-        </Text>
-      )}
+      {geometry.maxPoint && Math.abs(geometry.maxVal) > 1e-4 && (() => {
+        const dir = new THREE.Vector3().subVectors(geometry.maxPoint, geometry.maxBase);
+        if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1);
+        else dir.normalize();
+        const pos = geometry.maxPoint.clone().add(dir.multiplyScalar(0.4));
+        return (
+          <Text 
+            position={[pos.x, pos.y, pos.z]} 
+            fontSize={0.25} color="white"
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            {geometry.maxVal.toFixed(2)}
+          </Text>
+        );
+      })()}
+      {geometry.minPoint && Math.abs(geometry.minVal) > 1e-4 && geometry.maxVal !== geometry.minVal && (() => {
+        const dir = new THREE.Vector3().subVectors(geometry.minPoint, geometry.minBase);
+        if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1);
+        else dir.normalize();
+        const pos = geometry.minPoint.clone().add(dir.multiplyScalar(0.4));
+        return (
+          <Text 
+            position={[pos.x, pos.y, pos.z]} 
+            fontSize={0.25} color="white"
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            {geometry.minVal.toFixed(2)}
+          </Text>
+        );
+      })()}
     </group>
   );
 }

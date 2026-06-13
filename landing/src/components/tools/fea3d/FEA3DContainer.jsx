@@ -130,8 +130,18 @@ export default function FEA3DContainer() {
       return;
     }
     
+    let projectName = metadata.name || 'Sin Título';
+    
+    // Si es un proyecto nuevo, pedir el nombre
+    if (!currentProjectId) {
+      const inputName = window.prompt("Ingrese el nombre del proyecto:", projectName === 'Sin Título' ? "Nuevo Proyecto" : projectName);
+      if (inputName === null) return; // Usuario canceló
+      projectName = inputName.trim() || 'Sin Título';
+      setMetadata({ ...metadata, name: projectName });
+    }
+    
     const projectData = {
-      name: metadata.name || 'Sin Título',
+      name: projectName,
       topology: {
         nodes: useStructureStore.getState().nodes,
         elements: useStructureStore.getState().elements,
