@@ -55,6 +55,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
   return (
     <mesh
       geometry={geometry}
+      userData={{ shellId: id }}
       onClick={isResultsMode || isFaded ? undefined : (e) => { 
         if (e.delta > 5) return; // Ignorar si fue un drag
         e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
