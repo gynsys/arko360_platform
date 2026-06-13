@@ -8,10 +8,12 @@ function OpeningEditor({ opening, updateOpening, removeOpening }) {
   // Estado local para permitir decimales sin lag
   const [local, setLocal] = useState(opening);
 
-  // Sincronizar si cambia desde afuera
+  // Sincronizar si cambia desde afuera, comparando en profundidad para evitar loops y forzar refresco
   useEffect(() => {
-    setLocal(opening);
-  }, [opening]);
+    if (JSON.stringify(local.params) !== JSON.stringify(opening.params) || local.offsetX !== opening.offsetX || local.offsetY !== opening.offsetY || local.type !== opening.type) {
+      setLocal(opening);
+    }
+  }, [opening, local]);
 
   const setField = (field, value) => {
     setLocal(prev => ({ ...prev, [field]: value }));

@@ -149,13 +149,19 @@ export const useStructureStore = create((set, get) => ({
 
     const newOpenings = state.openings.map(o => {
       const scaledParams = {};
-      for (const k in o.params) {
-        scaledParams[k] = round(o.params[k] * lFactor);
+      const safeParams = o.params || {};
+      for (const k in safeParams) {
+        const val = parseFloat(safeParams[k]);
+        if (!isNaN(val)) {
+          scaledParams[k] = round(val * lFactor);
+        } else {
+          scaledParams[k] = safeParams[k]; // Conservar strings no numericos
+        }
       }
       return {
         ...o,
-        offsetX: round(o.offsetX * lFactor),
-        offsetY: round(o.offsetY * lFactor),
+        offsetX: round(parseFloat(o.offsetX || 0) * lFactor),
+        offsetY: round(parseFloat(o.offsetY || 0) * lFactor),
         params: scaledParams
       };
     });
