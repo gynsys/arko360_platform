@@ -51,6 +51,7 @@ export default function FEA3DContainer() {
     wizardConfig, elements, shells, metadata, setMetadata,
     exportProject, importProject, isDrawingShell, toggleDrawingShell, drawingNodes,
     isQuickDrawingShell, toggleQuickDrawingShell,
+    isDrawingOpening, setDrawingOpening,
     viewMode, activeResultType, setResultsMode,
     isSaved, currentUser, setCurrentUser, showLoads, toggleShowLoads,
     selectionBox
@@ -314,7 +315,9 @@ export default function FEA3DContainer() {
           <MenuDropdown title="Draw" items={[
             { label: isDrawingShell ? `Seleccione Nudos (${drawingNodes.length}/4)` : 'Losa (Nodo a Nodo)', icon: MousePointer2, onClick: toggleDrawingShell, disabled: isResultsMode },
             { label: isQuickDrawingShell ? 'Losa Rápida Activa' : 'Losa Rápida', icon: Grid, onClick: toggleQuickDrawingShell, disabled: isResultsMode },
-            { label: 'Losa (Formulario)', icon: Layers, onClick: () => setShellPanelOpen(true), disabled: isResultsMode }
+            { label: 'Losa (Formulario)', icon: Layers, onClick: () => setShellPanelOpen(true), disabled: isResultsMode },
+            { separator: true },
+            { label: isDrawingOpening ? 'Abertura (Esc para salir)' : 'Crear Abertura', icon: Layers, onClick: () => setDrawingOpening(!isDrawingOpening), disabled: isResultsMode }
           ]} />
 
           <MenuDropdown title="Assign" items={[
