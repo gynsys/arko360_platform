@@ -111,10 +111,13 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
       <meshStandardMaterial
         color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
         transparent={true}
-        depthWrite={!isFaded}
+        depthWrite={false}
         opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? 0.15 : 0.25}
         side={THREE.DoubleSide}
         wireframe={isFaded}
+        polygonOffset={true}
+        polygonOffsetFactor={-1}
+        polygonOffsetUnits={-1}
       />
     </mesh>
   );
@@ -981,6 +984,16 @@ export function StructureCanvas() {
         shellNodeIds.push(newId);
       }
     });
+
+    // Prevenir losas duplicadas (overlapping exacto)
+    const sortedNewNodes = [...shellNodeIds].sort();
+    const isDuplicate = currentState.shells.some(s => {
+      if (s.nodes.length !== sortedNewNodes.length) return false;
+      const sortedExisting = [...s.nodes].sort();
+      return sortedNewNodes.every((val, index) => val === sortedExisting[index]);
+    });
+
+    if (isDuplicate) return;
 
     const shellId = `S${Date.now()}_${Math.floor(Math.random()*1000)}`;
     const newShell = {
