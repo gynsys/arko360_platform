@@ -993,7 +993,10 @@ export function StructureCanvas() {
       return sortedNewNodes.every((val, index) => val === sortedExisting[index]);
     });
 
-    if (isDuplicate) return;
+    if (isDuplicate) {
+      alert("No es posible dibujar una losa sobre otra existente en el mismo espacio exacto.");
+      return;
+    }
 
     const shellId = `S${Date.now()}_${Math.floor(Math.random()*1000)}`;
     const newShell = {

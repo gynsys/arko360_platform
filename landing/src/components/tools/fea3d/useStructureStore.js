@@ -147,6 +147,19 @@ export const useStructureStore = create((set, get) => ({
       }
     }));
 
+    const newOpenings = state.openings.map(o => {
+      const scaledParams = {};
+      for (const k in o.params) {
+        scaledParams[k] = round(o.params[k] * lFactor);
+      }
+      return {
+        ...o,
+        offsetX: round(o.offsetX * lFactor),
+        offsetY: round(o.offsetY * lFactor),
+        params: scaledParams
+      };
+    });
+
     let newResults = state.results;
     if (newResults && newResults.results) {
       newResults = JSON.parse(JSON.stringify(state.results)); // Deep copy
@@ -187,6 +200,7 @@ export const useStructureStore = create((set, get) => ({
       materials: newMaterials,
       sections: newSections,
       shells: newShells,
+      openings: newOpenings,
       metadata: { ...state.metadata, units: newUnitsStr },
       results: newResults,
       isSaved: false
