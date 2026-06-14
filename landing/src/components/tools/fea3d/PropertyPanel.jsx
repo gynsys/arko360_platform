@@ -341,18 +341,19 @@ export function PropertyPanel() {
 
       {shell && (
         <div className="space-y-6">
-          <div className="bg-indigo-600/10 border border-indigo-500/20 p-3 rounded-xl">
-            <p className="text-indigo-400 text-xs font-bold uppercase tracking-wider">LOSA (SHELL)</p>
-            <p className="text-2xl font-mono">ID: {shell.id}</p>
+          <div className="bg-indigo-600/10 border border-indigo-500/20 p-2.5 rounded-lg flex items-center justify-between">
+            <span className="text-indigo-400 text-xs font-bold uppercase tracking-wider">Losa (Shell)</span>
+            <span className="text-sm font-mono text-indigo-200">{shell.id}</span>
           </div>
 
           <div>
             <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">Espesor (m)</label>
             <input 
               type="number" 
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm"
+              step="any"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               value={shell.thickness}
-              onChange={(e) => updateShell(shell.id, { thickness: parseFloat(e.target.value) || 0.1 })}
+              onChange={(e) => updateShell(shell.id, { thickness: parseFloat(e.target.value) || 0 })}
             />
           </div>
 
@@ -361,7 +362,8 @@ export function PropertyPanel() {
               <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">CM (kN/m²)</label>
               <input 
                 type="number" 
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm"
+                step="any"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 value={shell.loads.CM}
                 onChange={(e) => updateShell(shell.id, { loads: { ...shell.loads, CM: parseFloat(e.target.value) || 0 } })}
               />
@@ -370,7 +372,8 @@ export function PropertyPanel() {
               <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">CV (kN/m²)</label>
               <input 
                 type="number" 
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm"
+                step="any"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 value={shell.loads.CV}
                 onChange={(e) => updateShell(shell.id, { loads: { ...shell.loads, CV: parseFloat(e.target.value) || 0 } })}
               />
