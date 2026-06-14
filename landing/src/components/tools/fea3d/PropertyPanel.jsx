@@ -73,7 +73,6 @@ function OpeningEditor({ opening, updateOpening, removeOpening, addOpening }) {
       <div className="flex justify-between items-center mb-3">
         <span className="font-bold text-indigo-400 flex items-center gap-1">
           HUECO {local.type}
-          <button onClick={() => window.dispatchEvent(new Event('open-replicate-modal'))} className="text-blue-400 hover:text-blue-300 ml-2" title="Replicar Elemento(s)"><Copy size={12} /></button>
           <button onClick={() => removeOpening(local.id)} className="text-red-400 hover:text-red-300 ml-1" title="Eliminar Abertura"><Trash2 size={12} /></button>
         </span>
         <button onClick={handleApply} className="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded flex items-center gap-1" title="Aplicar Cambios a este hueco">
@@ -186,17 +185,26 @@ export function PropertyPanel() {
     <div className="bg-slate-900 h-full p-4 text-white overflow-y-auto">
       <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
         <h2 className="text-lg font-bold">Propiedades</h2>
-        <button 
-          onClick={() => {
-            if (node) deleteNode(node.id);
-            if (element) deleteElement(element.id);
-            if (shell) deleteShell(shell.id);
-          }}
-          className="p-2 bg-red-900/30 text-red-400 hover:bg-red-600 hover:text-white rounded-lg transition-all"
-          title="Eliminar Objeto"
-        >
-          <Trash2 size={18} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => window.dispatchEvent(new Event('open-replicate-modal'))}
+            className="p-2 bg-blue-900/30 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg transition-all"
+            title="Replicar Elemento(s)"
+          >
+            <Copy size={18} />
+          </button>
+          <button 
+            onClick={() => {
+              if (node) deleteNode(node.id);
+              if (element) deleteElement(element.id);
+              if (shell) deleteShell(shell.id);
+            }}
+            className="p-2 bg-red-900/30 text-red-400 hover:bg-red-600 hover:text-white rounded-lg transition-all"
+            title="Eliminar Objeto"
+          >
+            <Trash2 size={18} />
+          </button>
+        </div>
       </div>
 
       {node && (
