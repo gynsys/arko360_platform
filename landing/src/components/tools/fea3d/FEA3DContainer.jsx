@@ -40,6 +40,12 @@ export default function FEA3DContainer() {
   const [assignFrameLoadsModalOpen, setAssignFrameLoadsModalOpen] = useState(false);
   const [assignRestraintsModalOpen, setAssignRestraintsModalOpen] = useState(false);
   const [replicateModalOpen, setReplicateModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenReplicate = () => setReplicateModalOpen(true);
+    window.addEventListener('open-replicate-modal', handleOpenReplicate);
+    return () => window.removeEventListener('open-replicate-modal', handleOpenReplicate);
+  }, []);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
   const [docsModalOpen, setDocsModalOpen] = useState(false);

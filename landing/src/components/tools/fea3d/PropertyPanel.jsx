@@ -73,7 +73,7 @@ function OpeningEditor({ opening, updateOpening, removeOpening, addOpening }) {
       <div className="flex justify-between items-center mb-3">
         <span className="font-bold text-indigo-400 flex items-center gap-1">
           HUECO {local.type}
-          <button onClick={() => addOpening({ ...local, id: undefined })} className="text-blue-400 hover:text-blue-300 ml-2" title="Duplicar Abertura"><Copy size={12} /></button>
+          <button onClick={() => window.dispatchEvent(new Event('open-replicate-modal'))} className="text-blue-400 hover:text-blue-300 ml-2" title="Replicar Elemento(s)"><Copy size={12} /></button>
           <button onClick={() => removeOpening(local.id)} className="text-red-400 hover:text-red-300 ml-1" title="Eliminar Abertura"><Trash2 size={12} /></button>
         </span>
         <button onClick={handleApply} className="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded flex items-center gap-1" title="Aplicar Cambios a este hueco">
