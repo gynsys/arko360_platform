@@ -618,26 +618,49 @@ export const useStructureStore = create((set, get) => ({
     for (let c = 1; c <= numCopies; c++) {
       const nodeIdMap = {}; // Mapea old_id -> new_id en esta iteración
 
-      // Clonar nudos
+      // Crear mapa de coordenadas espaciales para búsqueda O(1) de nudos existentes
+      const nodeMapByCoord = new Map();
+      newNodes.forEach(n => {
+        const key = `${round(n.x)}|${round(n.y)}|${round(n.z)}`;
+        nodeMapByCoord.set(key, n);
+      });
+
+      // Clonar o fusionar nudos
       selectedNodesMap.forEach((node, oldId) => {
-        maxNodeId++;
-        const newId = `N${maxNodeId}`;
-        nodeIdMap[oldId] = newId;
+        const targetX = round(node.x + (dx * c));
+        const targetY = round(node.y + (dy * c));
+        const targetZ = round(node.z + (dz * c));
+        const coordKey = `${targetX}|${targetY}|${targetZ}`;
 
-        const newNode = {
-          ...node,
-          id: newId,
-          x: node.x + (dx * c),
-          y: node.y + (dy * c),
-          z: node.z + (dz * c)
-        };
-        // Limpiar restricciones si no se pide copiarlas
-        if (!copyRestraints) {
-          newNode.restraint = null;
+        let newId;
+        const existingNode = nodeMapByCoord.get(coordKey);
+
+        if (existingNode) {
+          // El nudo ya existe en esta coordenada (fusión automática)
+          newId = existingNode.id;
+          nodeIdMap[oldId] = newId;
+        } else {
+          // El nudo no existe, lo creamos
+          maxNodeId++;
+          newId = `N${maxNodeId}`;
+          nodeIdMap[oldId] = newId;
+
+          const newNode = {
+            ...node,
+            id: newId,
+            x: targetX,
+            y: targetY,
+            z: targetZ
+          };
+          // Limpiar restricciones si no se pide copiarlas
+          if (!copyRestraints) {
+            newNode.restraint = null;
+          }
+          newNodes.push(newNode);
+          nodeMapByCoord.set(coordKey, newNode); // Añadirlo al mapa para futuras búsquedas
         }
-        newNodes.push(newNode);
 
-        // Clonar cargas asociadas a este nudo
+        // Clonar cargas asociadas a este nudo original (aplican al nudo clonado/fusionado)
         const nodeLoads = loads.filter(l => l.targetId === oldId && l.type === 'point');
         nodeLoads.forEach(l => {
           newLoads.push({ ...l, id: Date.now() + Math.random(), targetId: newId });
