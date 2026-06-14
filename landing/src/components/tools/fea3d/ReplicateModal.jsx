@@ -4,7 +4,7 @@ import { useStructureStore } from './useStructureStore';
 import toast from 'react-hot-toast';
 
 export function ReplicateModal({ isOpen, onClose }) {
-  const { selectedIds, metadata, replicateElements } = useStructureStore();
+  const { selectedIds, metadata, shells, replicateElements } = useStructureStore();
 
   const [dx, setDx] = useState(0);
   const [dy, setDy] = useState(0);
@@ -35,14 +35,27 @@ export function ReplicateModal({ isOpen, onClose }) {
       return;
     }
 
-    if (dx === 0 && dy === 0 && dz === 0) {
+    if (parseFloat(dx) === 0 && parseFloat(dy) === 0 && parseFloat(dz) === 0) {
       toast.error('Debe especificar un vector de traslación (dx, dy o dz) distinto de cero.');
       return;
     }
 
+    // Advertir si alguna losa seleccionada no tiene cargas asignadas
+    const selectedShells = shells.filter(s => selectedIds.includes(s.id));
+    const shellsWithoutLoads = selectedShells.filter(s => 
+      (!s.loads || ((!s.loads.CM || s.loads.CM === 0) && (!s.loads.CV || s.loads.CV === 0)))
+    );
+    if (shellsWithoutLoads.length > 0) {
+      const names = shellsWithoutLoads.map(s => s.id).join(', ');
+      toast('⚠️ Replicando sin cargas: Se recomienda asignar CM y CV antes de replicar para que todas las copias las hereden automáticamente.', {
+        duration: 6000,
+        style: { background: '#78350f', color: '#fde68a', border: '1px solid #d97706', maxWidth: '380px' }
+      });
+    }
+
     replicateElements(parseFloat(dx) || 0, parseFloat(dy) || 0, parseFloat(dz) || 0, parseInt(numCopies) || 1, copyRestraints);
     
-    toast.success(`Se replicaron ${selectedIds.length} elementos (${numCopies} copias).`);
+    toast.success(`Replicación completada: ${parseInt(numCopies)} copia(s) de ${selectedIds.length} elemento(s).`);
     onClose();
   };
 
@@ -52,6 +65,7 @@ export function ReplicateModal({ isOpen, onClose }) {
   const nodeCount = selectedIds.filter(id => id.startsWith('N')).length;
   const frameCount = selectedIds.filter(id => id.startsWith('E')).length;
   const shellCount = selectedIds.filter(id => id.startsWith('S')).length;
+
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

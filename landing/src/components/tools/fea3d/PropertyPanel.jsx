@@ -1,19 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStructureStore } from './useStructureStore';
 import { Trash2, Info, Layers, Plus, Save } from 'lucide-react';
 import { FixedIcon, PinnedIcon, RollerIcon, FreeIcon } from './RestraintIcons';
 import { OpeningType } from './SlabOpeningGenerator';
 
+// Helper: obtiene etiquetas de unidades desde la cadena de unidades global
+function getUnitLabels(unitsStr) {
+  const u = (unitsStr || 'm, kgf, C').toLowerCase();
+  const isUS = u.includes('ft');
+  const isSI = u.includes('kn');
+  return {
+    length: isUS ? 'ft' : 'm',
+    force:  isUS ? 'kip' : (isSI ? 'kN' : 'kgf'),
+    distLoad: isUS ? 'kip/ft²' : (isSI ? 'kN/m²' : 'kgf/m²'),
+  };
+}
+
 function OpeningEditor({ opening, updateOpening, removeOpening }) {
   // Estado local para permitir decimales sin lag
   const [local, setLocal] = useState(opening);
 
-  // Sincronizar si cambia desde afuera, comparando en profundidad para evitar loops y forzar refresco
+  // Solo resetear si el opening llega desde afuera con una identidad distinta
+  // (no incluir `local` en deps para no cancelar ediciones del usuario)
+  const prevIdRef = useRef(opening.id);
   useEffect(() => {
-    if (JSON.stringify(local.params) !== JSON.stringify(opening.params) || local.offsetX !== opening.offsetX || local.offsetY !== opening.offsetY || local.type !== opening.type) {
+    if (opening.id !== prevIdRef.current) {
+      prevIdRef.current = opening.id;
       setLocal(opening);
     }
-  }, [opening, local]);
+  }, [opening.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setField = (field, value) => {
     setLocal(prev => ({ ...prev, [field]: value }));
@@ -110,7 +125,8 @@ function OpeningEditor({ opening, updateOpening, removeOpening }) {
 }
 
 export function PropertyPanel() {
-  const { selectedIds, nodes, elements, shells, loads, openings, updateNode, updateShell, addLoad, updateLoad, deleteLoad, deleteNode, deleteElement, deleteShell, addOpening, updateOpening, removeOpening } = useStructureStore();
+  const { selectedIds, nodes, elements, shells, loads, openings, metadata, updateNode, updateShell, addLoad, updateLoad, deleteLoad, deleteNode, deleteElement, deleteShell, addOpening, updateOpening, removeOpening } = useStructureStore();
+  const units = getUnitLabels(metadata?.units);
   
   if (selectedIds.length === 0) {
     return (
@@ -347,7 +363,7 @@ export function PropertyPanel() {
           </div>
 
           <div>
-            <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">Espesor (m)</label>
+            <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">Espesor ({units.length})</label>
             <input 
               type="number" 
               step="any"
@@ -359,7 +375,7 @@ export function PropertyPanel() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">CM (kN/m²)</label>
+              <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">CM ({units.distLoad})</label>
               <input 
                 type="number" 
                 step="any"
@@ -369,7 +385,7 @@ export function PropertyPanel() {
               />
             </div>
             <div>
-              <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">CV (kN/m²)</label>
+              <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">CV ({units.distLoad})</label>
               <input 
                 type="number" 
                 step="any"
