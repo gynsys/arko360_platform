@@ -16,6 +16,32 @@ function getUnitLabels(unitsStr) {
   };
 }
 
+function getLoadConversionFactor(unitsStr) {
+  const u = (unitsStr || 'm, kgf, C').toLowerCase();
+  if (u.includes('ft')) return (1 / 453.59237) * (0.3048 * 0.3048);
+  if (u.includes('kn')) return 1 / 101.97162;
+  return 1;
+}
+
+const STANDARD_USAGES = [
+  { id: 'residencial', name: 'Residencial', cm: 250, cv: 200 },
+  { id: 'oficinas', name: 'Oficinas', cm: 250, cv: 250 },
+  { id: 'comercial', name: 'Comercial', cm: 300, cv: 500 },
+  { id: 'estacionamiento', name: 'Estacionamiento', cm: 300, cv: 250 },
+  { id: 'techo', name: 'Techo / Cubierta', cm: 200, cv: 100 },
+];
+
+function determineUsage(cm, cv, factor) {
+  const round4 = (v) => Math.round(v * 10000) / 10000;
+  for (const usage of STANDARD_USAGES) {
+    if (round4(cm) === round4(usage.cm * factor) && round4(cv) === round4(usage.cv * factor)) {
+      return usage.id;
+    }
+  }
+  return 'otra';
+}
+
+
 function OpeningEditor({ opening, updateOpening, removeOpening }) {
   // Estado local independiente: key={o.id} en el padre fuerza remount al cambiar abertura
   const [local, setLocal] = useState(opening);
@@ -117,6 +143,8 @@ function OpeningEditor({ opening, updateOpening, removeOpening }) {
 export function PropertyPanel() {
   const { selectedIds, nodes, elements, shells, loads, openings, metadata, updateNode, updateShell, addLoad, updateLoad, deleteLoad, deleteNode, deleteElement, deleteShell, addOpening, updateOpening, removeOpening } = useStructureStore();
   const units = getUnitLabels(metadata?.units);
+  const loadFactor = getLoadConversionFactor(metadata?.units);
+
   
   if (selectedIds.length === 0) {
     return (
@@ -352,15 +380,44 @@ export function PropertyPanel() {
             <span className="text-sm font-mono text-indigo-200">{shell.id}</span>
           </div>
 
-          <div>
-            <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">Espesor ({units.length})</label>
-            <input 
-              type="number" 
-              step="any"
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-              value={shell.thickness}
-              onChange={(e) => updateShell(shell.id, { thickness: parseFloat(e.target.value) || 0 })}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">Espesor ({units.length})</label>
+              <input 
+                type="number" 
+                step="any"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                value={shell.thickness}
+                onChange={(e) => updateShell(shell.id, { thickness: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">Uso</label>
+              <select
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white"
+                value={determineUsage(shell.loads.CM, shell.loads.CV, loadFactor)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val !== 'otra') {
+                    const usage = STANDARD_USAGES.find(u => u.id === val);
+                    if (usage) {
+                      updateShell(shell.id, {
+                        loads: {
+                          ...shell.loads,
+                          CM: parseFloat((usage.cm * loadFactor).toFixed(4)),
+                          CV: parseFloat((usage.cv * loadFactor).toFixed(4))
+                        }
+                      });
+                    }
+                  }
+                }}
+              >
+                {STANDARD_USAGES.map(u => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+                <option value="otra">Personalizado (Otra)</option>
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
