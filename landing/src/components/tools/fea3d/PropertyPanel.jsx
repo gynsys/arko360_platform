@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useStructureStore } from './useStructureStore';
-import { Trash2, Info, Layers, Plus, Save } from 'lucide-react';
+import { Trash2, Info, Layers, Plus, Save, Copy } from 'lucide-react';
 import { FixedIcon, PinnedIcon, RollerIcon, FreeIcon } from './RestraintIcons';
 import { OpeningType } from './SlabOpeningGenerator';
 
@@ -38,11 +38,11 @@ function determineUsage(cm, cv, factor) {
       return usage.id;
     }
   }
-  return 'otra';
+  return 'personalizado';
 }
 
 
-function OpeningEditor({ opening, updateOpening, removeOpening }) {
+function OpeningEditor({ opening, updateOpening, removeOpening, addOpening }) {
   // Estado local independiente: key={o.id} en el padre fuerza remount al cambiar abertura
   const [local, setLocal] = useState(opening);
 
@@ -73,7 +73,8 @@ function OpeningEditor({ opening, updateOpening, removeOpening }) {
       <div className="flex justify-between items-center mb-3">
         <span className="font-bold text-indigo-400 flex items-center gap-1">
           HUECO {local.type}
-          <button onClick={() => removeOpening(local.id)} className="text-red-400 hover:text-red-300 ml-2" title="Eliminar Abertura"><Trash2 size={12} /></button>
+          <button onClick={() => addOpening({ ...local, id: undefined })} className="text-blue-400 hover:text-blue-300 ml-2" title="Duplicar Abertura"><Copy size={12} /></button>
+          <button onClick={() => removeOpening(local.id)} className="text-red-400 hover:text-red-300 ml-1" title="Eliminar Abertura"><Trash2 size={12} /></button>
         </span>
         <button onClick={handleApply} className="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded flex items-center gap-1" title="Aplicar Cambios a este hueco">
           <Save size={12} /> Aplicar
@@ -398,7 +399,7 @@ export function PropertyPanel() {
                 value={determineUsage(shell.loads.CM, shell.loads.CV, loadFactor)}
                 onChange={(e) => {
                   const val = e.target.value;
-                  if (val !== 'otra') {
+                  if (val !== 'personalizado') {
                     const usage = STANDARD_USAGES.find(u => u.id === val);
                     if (usage) {
                       updateShell(shell.id, {
@@ -415,7 +416,7 @@ export function PropertyPanel() {
                 {STANDARD_USAGES.map(u => (
                   <option key={u.id} value={u.id}>{u.name}</option>
                 ))}
-                <option value="otra">Personalizado (Otra)</option>
+                <option value="personalizado">Personalizado</option>
               </select>
             </div>
           </div>
@@ -467,7 +468,7 @@ export function PropertyPanel() {
             ) : (
               <div className="space-y-3">
                 {shellOpenings.map(o => (
-                  <OpeningEditor key={o.id} opening={o} updateOpening={updateOpening} removeOpening={removeOpening} />
+                  <OpeningEditor key={o.id} opening={o} updateOpening={updateOpening} removeOpening={removeOpening} addOpening={addOpening} />
                 ))}
               </div>
             )}
