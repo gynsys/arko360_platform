@@ -15,6 +15,7 @@ import { AssignSectionModal } from './AssignSectionModal';
 import { AssignLoadsModal } from './AssignLoadsModal';
 import { AssignFrameLoadsModal } from './AssignFrameLoadsModal';
 import { AssignRestraintsModal } from './AssignRestraintsModal';
+import { ReplicateModal } from './ReplicateModal';
 import { ViewControls } from './ViewControls';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
@@ -38,6 +39,7 @@ export default function FEA3DContainer() {
   const [assignLoadsModalOpen, setAssignLoadsModalOpen] = useState(false);
   const [assignFrameLoadsModalOpen, setAssignFrameLoadsModalOpen] = useState(false);
   const [assignRestraintsModalOpen, setAssignRestraintsModalOpen] = useState(false);
+  const [replicateModalOpen, setReplicateModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
   const [docsModalOpen, setDocsModalOpen] = useState(false);
@@ -60,10 +62,6 @@ export default function FEA3DContainer() {
     const initAuth = async () => {
       const token = loadTokenFromStorage();
       if (token) {
-        // Asumimos que si hay token está logueado por ahora (idealmente apiGetMe)
-        // Para no bloquear la UI si no hay endpoint /me, validamos existencia de currentUser 
-        // o esperamos que el token sea válido.
-        // Si no está el user, forzamos login.
         if (!currentUser) {
           setAuthModalOpen(true);
         } else {
@@ -77,12 +75,11 @@ export default function FEA3DContainer() {
     initAuth();
   }, [currentUser]);
 
-  // Prevenir cierre de pestaña si hay cambios sin guardar
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (elements.length > 0 && !isSaved) {
         e.preventDefault();
-        e.returnValue = ''; // Requerido por navegadores modernos para mostrar el prompt
+        e.returnValue = ''; 
       }
     };
     
@@ -132,10 +129,9 @@ export default function FEA3DContainer() {
     
     let projectName = metadata.name || 'Sin Título';
     
-    // Si es un proyecto nuevo, pedir el nombre
     if (!currentProjectId) {
       const inputName = window.prompt("Ingrese el nombre del proyecto:", projectName === 'Sin Título' ? "Nuevo Proyecto" : projectName);
-      if (inputName === null) return; // Usuario canceló
+      if (inputName === null) return;
       projectName = inputName.trim() || 'Sin Título';
       setMetadata({ ...metadata, name: projectName });
     }
@@ -221,7 +217,6 @@ export default function FEA3DContainer() {
     setProjectsModalOpen(false);
     setWizardOpen(false);
     if (project.topology) {
-       // Cargar la topología del proyecto al Zustand store
        useStructureStore.setState({
          nodes: project.topology.nodes || [],
          elements: project.topology.elements || [],
@@ -281,7 +276,6 @@ export default function FEA3DContainer() {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-900 font-sans">
       
-      {/* ── Toolbar Superior ── */}
       <div className="flex items-center justify-between px-4 h-14 min-h-[56px] bg-slate-800 border-b border-slate-700 z-50">
         
         <div className="flex items-center gap-1">
@@ -303,6 +297,10 @@ export default function FEA3DContainer() {
             { label: 'Guardar Copia Local', icon: Save, onClick: exportProject },
             { separator: true },
             { label: 'Salir', icon: LogOut, onClick: () => window.location.href = '/' }
+          ]} />
+
+          <MenuDropdown title="Edit" items={[
+            { label: 'Replicar', icon: Copy, onClick: () => setReplicateModalOpen(true), disabled: isResultsMode }
           ]} />
 
           <MenuDropdown title="Define" items={[
@@ -430,15 +428,12 @@ export default function FEA3DContainer() {
         </div>
       </div>
 
-      {/* ── Area Principal (Canvas + Sidebar) ── */}
       <div className="flex flex-1 relative overflow-hidden">
         
-        {/* Render Canvas ocupando flex-1 */}
         <div 
           className="flex-1 relative"
           onContextMenu={(e) => e.preventDefault()}
         >
-          {/* Overlay de Selección 2D */}
           {selectionBox.isSelecting && (
             <div
               style={{
@@ -468,7 +463,6 @@ export default function FEA3DContainer() {
           )}
           <ElementResultsModal />
 
-          {/* Indicador de Coordenadas (Bottom Left) */}
           <div 
             id="coord-indicator"
             className="absolute bottom-4 left-4 z-50 bg-slate-800/80 backdrop-blur-md border border-slate-700 text-slate-400 hover:text-slate-200 transition-colors text-xs px-3 py-1.5 rounded-lg shadow-lg font-mono min-w-[150px] text-center"
@@ -476,7 +470,6 @@ export default function FEA3DContainer() {
             X: 0.000, Y: 0.000, Z: 0.000
           </div>
 
-          {/* Selector de Unidades Esquina Inferior Derecha */}
           <div 
             className="absolute bottom-4 z-50 transition-all duration-300"
             style={{ right: isSidebarOpen ? '336px' : '16px' }}
@@ -493,7 +486,6 @@ export default function FEA3DContainer() {
           </div>
         </div>
 
-        {/* Botón Abatible del Sidebar */}
         <div className="absolute right-0 top-1/2 -translate-y-1/2 z-40" style={{ transform: isSidebarOpen ? 'translateX(-320px) translateY(-50%)' : 'translateY(-50%)' }}>
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -504,7 +496,6 @@ export default function FEA3DContainer() {
           </button>
         </div>
 
-        {/* Panel Lateral (Property / Results) */}
         <div 
           className="bg-slate-800 border-l border-slate-700 flex flex-col h-full shadow-2xl transition-all duration-300 absolute right-0 top-0 bottom-0 z-30"
           style={{ width: '320px', transform: isSidebarOpen ? 'translateX(0)' : 'translateX(100%)' }}
@@ -520,6 +511,7 @@ export default function FEA3DContainer() {
       />
       <ShellPanel isOpen={shellPanelOpen} onClose={() => setShellPanelOpen(false)} />
       <LoadCombosModal isOpen={combosModalOpen} onClose={() => setCombosModalOpen(false)} />
+      <ReplicateModal isOpen={replicateModalOpen} onClose={() => setReplicateModalOpen(false)} />
       {materialsModalOpen && <DefineMaterialsModal onClose={() => setMaterialsModalOpen(false)} />}
       {sectionsModalOpen && <DefineSectionsModal onClose={() => setSectionsModalOpen(false)} />}
       {tablesModalOpen && <ResultsTableModal onClose={() => setTablesModalOpen(false)} />}

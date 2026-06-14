@@ -582,6 +582,121 @@ export const useStructureStore = create((set, get) => ({
     }
   },
 
+  // --- REPLICAR ELEMENTOS ---
+  replicateElements: (dx, dy, dz, numCopies, copyRestraints) => set(state => {
+    let { nodes, elements, shells, openings, loads } = state;
+    const newNodes = [...nodes];
+    const newElements = [...elements];
+    const newShells = [...shells];
+    const newOpenings = [...openings];
+    const newLoads = [...loads];
+
+    const selectedIds = state.selectedIds;
+    if (selectedIds.length === 0 || numCopies <= 0) return {};
+
+    // 1. Identificar todos los nudos explícitos o implícitos (pertenecientes a elementos/losas seleccionadas)
+    const selectedNodesMap = new Map();
+    const explicitNodeIds = new Set(selectedIds.filter(id => id.startsWith('N')));
+    const selectedElements = elements.filter(e => selectedIds.includes(e.id));
+    const selectedShells = shells.filter(s => selectedIds.includes(s.id));
+
+    // Añadir nudos de frames seleccionados
+    selectedElements.forEach(e => { e.nodes.forEach(nid => explicitNodeIds.add(nid)); });
+    // Añadir nudos de shells seleccionadas
+    selectedShells.forEach(s => { s.nodes.forEach(nid => explicitNodeIds.add(nid)); });
+
+    explicitNodeIds.forEach(nid => {
+      const node = nodes.find(n => n.id === nid);
+      if (node) selectedNodesMap.set(nid, node);
+    });
+
+    // Encontrar IDs máximos actuales para autoincrementar
+    let maxNodeId = nodes.reduce((max, n) => Math.max(max, parseInt(n.id.replace('N', '')) || 0), 0);
+    let maxElemId = elements.reduce((max, e) => Math.max(max, parseInt(e.id.replace('E', '')) || 0), 0);
+    let maxShellId = shells.reduce((max, s) => Math.max(max, parseInt(s.id.replace('S', '')) || 0), 0);
+
+    for (let c = 1; c <= numCopies; c++) {
+      const nodeIdMap = {}; // Mapea old_id -> new_id en esta iteración
+
+      // Clonar nudos
+      selectedNodesMap.forEach((node, oldId) => {
+        maxNodeId++;
+        const newId = `N${maxNodeId}`;
+        nodeIdMap[oldId] = newId;
+
+        const newNode = {
+          ...node,
+          id: newId,
+          x: node.x + (dx * c),
+          y: node.y + (dy * c),
+          z: node.z + (dz * c)
+        };
+        // Limpiar restricciones si no se pide copiarlas
+        if (!copyRestraints) {
+          newNode.restraint = null;
+        }
+        newNodes.push(newNode);
+
+        // Clonar cargas asociadas a este nudo
+        const nodeLoads = loads.filter(l => l.targetId === oldId && l.type === 'point');
+        nodeLoads.forEach(l => {
+          newLoads.push({ ...l, id: Date.now() + Math.random(), targetId: newId });
+        });
+      });
+
+      // Clonar Frames
+      selectedElements.forEach(elem => {
+        maxElemId++;
+        const newId = `E${maxElemId}`;
+        const clonedNodes = elem.nodes.map(nid => nodeIdMap[nid] || nid);
+        
+        newElements.push({
+          ...elem,
+          id: newId,
+          nodes: clonedNodes
+        });
+
+        // Clonar cargas asociadas a este frame
+        const elemLoads = loads.filter(l => l.targetId === elem.id);
+        elemLoads.forEach(l => {
+          newLoads.push({ ...l, id: Date.now() + Math.random(), targetId: newId });
+        });
+      });
+
+      // Clonar Shells y Openings
+      selectedShells.forEach(shell => {
+        maxShellId++;
+        const newId = `S${maxShellId}`;
+        const clonedNodes = shell.nodes.map(nid => nodeIdMap[nid] || nid);
+        
+        newShells.push({
+          ...shell,
+          id: newId,
+          nodes: clonedNodes
+        });
+
+        // Clonar Aberturas asociadas a esta losa
+        const shellOpenings = openings.filter(o => o.hostSlabId === shell.id);
+        shellOpenings.forEach(opening => {
+          newOpenings.push({
+            ...opening,
+            id: Date.now() + Math.random().toString(36).substr(2, 9),
+            hostSlabId: newId
+          });
+        });
+      });
+    }
+
+    return {
+      nodes: newNodes,
+      elements: newElements,
+      shells: newShells,
+      openings: newOpenings,
+      loads: newLoads,
+      isSaved: false
+    };
+  }),
+
   // --- GENERACIÓN WIZARD ---
   generateStructure: (config) => {
     // ... (Mantenemos la lógica de nudos y elementos de la sesión anterior)
