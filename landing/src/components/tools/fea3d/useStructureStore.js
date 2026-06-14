@@ -8,6 +8,8 @@ const cleanupOrphans = (nodes, elements, shells) => {
   return nodes.filter(n => connectedNodeIds.has(n.id));
 };
 
+const round = (val) => Math.round(val * 1e6) / 1e6;
+
 export const useStructureStore = create((set, get) => ({
   // --- ESTADO ---
   nodes: [],
@@ -102,8 +104,6 @@ export const useStructureStore = create((set, get) => ({
     if (newSys === 'us') targetKgfToForce = 1 / 453.59237;
 
     fFactor = oldForceToKgf * targetKgfToForce;
-
-    const round = (val) => Math.round(val * 1e6) / 1e6;
 
     const newNodes = state.nodes.map(n => ({
       ...n,
