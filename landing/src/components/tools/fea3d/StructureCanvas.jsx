@@ -4,6 +4,7 @@ import { OrbitControls, Grid, GizmoHelper, GizmoViewport, Text, OrthographicCame
 import * as THREE from 'three';
 import { useStructureStore } from './useStructureStore';
 import { SlabOpeningGenerator } from './SlabOpeningGenerator';
+import toast from 'react-hot-toast';
 
 function CoordinateTracker() {
   const { camera, pointer, raycaster } = useThree();
@@ -1036,7 +1037,7 @@ export function StructureCanvas() {
     });
 
     if (isDuplicate) {
-      alert("No es posible dibujar una losa sobre otra existente en el mismo espacio exacto.");
+      toast.error('No es posible dibujar una losa sobre otra existente en el mismo espacio exacto.', { duration: 4000 });
       return;
     }
 

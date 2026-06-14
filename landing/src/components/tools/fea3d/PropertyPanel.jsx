@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useStructureStore } from './useStructureStore';
 import { Trash2, Info, Layers, Plus, Save } from 'lucide-react';
 import { FixedIcon, PinnedIcon, RollerIcon, FreeIcon } from './RestraintIcons';
@@ -17,18 +17,8 @@ function getUnitLabels(unitsStr) {
 }
 
 function OpeningEditor({ opening, updateOpening, removeOpening }) {
-  // Estado local para permitir decimales sin lag
+  // Estado local independiente: key={o.id} en el padre fuerza remount al cambiar abertura
   const [local, setLocal] = useState(opening);
-
-  // Solo resetear si el opening llega desde afuera con una identidad distinta
-  // (no incluir `local` en deps para no cancelar ediciones del usuario)
-  const prevIdRef = useRef(opening.id);
-  useEffect(() => {
-    if (opening.id !== prevIdRef.current) {
-      prevIdRef.current = opening.id;
-      setLocal(opening);
-    }
-  }, [opening.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setField = (field, value) => {
     setLocal(prev => ({ ...prev, [field]: value }));

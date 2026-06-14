@@ -328,7 +328,7 @@ export default function FEA3DContainer() {
                     params: { width: 1, length: 3 }
                   });
                 } else {
-                  alert("Selecciona primero una losa en el modelo para añadirle una abertura desde el Panel de Propiedades.");
+                  toast.error('Selecciona primero una losa en el modelo para añadirle una abertura.', { duration: 4000 });
                 }
               }, 
               disabled: isResultsMode 
