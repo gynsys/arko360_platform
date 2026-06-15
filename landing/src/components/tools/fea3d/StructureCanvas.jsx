@@ -1187,18 +1187,13 @@ export function StructureCanvas() {
             const shell = shells.find(s => s.id === load.target_id);
             if (!shell) return null;
             
-            // Calc absolute position from offsets
             const shellNodes = shell.nodes.map(nid => nodes.find(n => n.id === nid)).filter(Boolean);
             if (shellNodes.length === 0) return null;
-            const minX = Math.min(...shellNodes.map(n => n.x));
-            const maxX = Math.max(...shellNodes.map(n => n.x));
-            const minY = Math.min(...shellNodes.map(n => n.y));
-            const maxY = Math.max(...shellNodes.map(n => n.y));
             const z = shellNodes[0].z;
             
             const pos = {
-              x: minX + (maxX - minX) * (load.offset_x || 0.5),
-              y: minY + (maxY - minY) * (load.offset_y || 0.5),
+              x: load.offset_x || 0,
+              y: load.offset_y || 0,
               z: z,
               id: `virtual_${load.id}`
             };

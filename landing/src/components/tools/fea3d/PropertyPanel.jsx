@@ -457,12 +457,12 @@ export function PropertyPanel() {
             <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Cargas Puntuales (Pz)</label>
             <div className="flex gap-2 items-end mb-2">
               <div className="flex-1">
-                <label className="text-[10px] uppercase text-slate-500 mb-1 block">Pos X (0-1)</label>
-                <input type="number" step="0.1" min="0" max="1" id="shell_px" defaultValue="0.5" className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white" />
+                <label className="text-[10px] uppercase text-slate-500 mb-1 block">Pos X ({units.length})</label>
+                <input type="number" step="0.1" id="shell_px" defaultValue="0" className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white" />
               </div>
               <div className="flex-1">
-                <label className="text-[10px] uppercase text-slate-500 mb-1 block">Pos Y (0-1)</label>
-                <input type="number" step="0.1" min="0" max="1" id="shell_py" defaultValue="0.5" className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white" />
+                <label className="text-[10px] uppercase text-slate-500 mb-1 block">Pos Y ({units.length})</label>
+                <input type="number" step="0.1" id="shell_py" defaultValue="0" className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white" />
               </div>
               <div className="flex-1">
                 <label className="text-[10px] uppercase text-slate-500 mb-1 block">Fz ({units.force})</label>
@@ -470,8 +470,8 @@ export function PropertyPanel() {
               </div>
               <button 
                 onClick={() => {
-                  const px = parseFloat(document.getElementById('shell_px').value) || 0.5;
-                  const py = parseFloat(document.getElementById('shell_py').value) || 0.5;
+                  const px = parseFloat(document.getElementById('shell_px').value) || 0;
+                  const py = parseFloat(document.getElementById('shell_py').value) || 0;
                   const fz = parseFloat(document.getElementById('shell_fz').value) || 0;
                   addLoad({
                     id: 'L-' + Math.random().toString(36).substr(2, 5),

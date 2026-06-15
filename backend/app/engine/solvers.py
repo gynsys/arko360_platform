@@ -312,15 +312,8 @@ class StructuralSolver:
                 shell = next(s for s in self.shells if s.id == load.target_id)
                 if not shell.mesh or not shell.mesh.elements:
                     continue
-                # Determine absolute coordinates from offsets
-                n_coords = [next(n for n in self.nodes if n.id == nid) for nid in shell.nodes]
-                minX = min(n.x for n in n_coords)
-                maxX = max(n.x for n in n_coords)
-                minY = min(n.y for n in n_coords)
-                maxY = max(n.y for n in n_coords)
-                
-                px = minX + (maxX - minX) * load.offset_x
-                py = minY + (maxY - minY) * load.offset_y
+                px = load.offset_x
+                py = load.offset_y
                 
                 # Find which element contains (px, py)
                 # Using a simple bounding box check per quad
