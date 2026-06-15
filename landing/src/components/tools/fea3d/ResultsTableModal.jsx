@@ -72,7 +72,7 @@ export function ResultsTableModal({ onClose }) {
           4: { halign: 'center' }
         }
       });
-    } else {
+    } else if (activeTab === 'displacements') {
       const rows = [];
       nodes.forEach(node => {
         availableCombos.forEach((combo, i) => {
