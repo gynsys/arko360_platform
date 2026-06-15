@@ -214,8 +214,34 @@ export function generateMesh(boundaryNodes, openingsNodes = [], meshSize = 1.0) 
 
   let currentNewId = 1;
 
-  for (let x = minX + meshSize/2; x < maxX; x += meshSize) {
-    for (let y = minY + meshSize/2; y < maxY; y += meshSize) {
+  // 1. Seed nodes along edges to ensure boundaries have points every meshSize
+  const seedEdge = (p1, p2) => {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    const n = Math.ceil(len / meshSize);
+    for (let i = 1; i < n; i++) {
+      const x = p1.x + (dx * i) / n;
+      const y = p1.y + (dy * i) / n;
+      addVertex({ id: `ME-${currentNewId++}`, x, y, z: avgZ });
+    }
+  };
+
+  // Seed boundary edges
+  for (let i = 0; i < boundaryNodes.length; i++) {
+    seedEdge(boundaryNodes[i], boundaryNodes[(i + 1) % boundaryNodes.length]);
+  }
+  
+  // Seed hole edges
+  for (let hole of openingsNodes) {
+    for (let i = 0; i < hole.length; i++) {
+      seedEdge(hole[i], hole[(i + 1) % hole.length]);
+    }
+  }
+
+  // 2. Generate internal grid aligned to the bounding box (minX, minY)
+  for (let x = minX + meshSize; x < maxX - 1e-4; x += meshSize) {
+    for (let y = minY + meshSize; y < maxY - 1e-4; y += meshSize) {
       const pt = { x, y, z: avgZ };
       
       if (!isPointInPolygon(pt, boundaryNodes)) continue;
@@ -230,7 +256,7 @@ export function generateMesh(boundaryNodes, openingsNodes = [], meshSize = 1.0) 
       if (inHole) continue;
 
       let tooClose = false;
-      const minDistanceSq = (meshSize * 0.3)**2; 
+      const minDistanceSq = (meshSize * 0.25)**2; // 25% tolerance
       
       for (let v of allVertices) {
         if (distSq(pt, v) < minDistanceSq) {
