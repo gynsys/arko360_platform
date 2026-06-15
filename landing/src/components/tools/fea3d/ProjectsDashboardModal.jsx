@@ -24,21 +24,31 @@ export function ProjectsDashboardModal({ onClose }) {
   };
 
   const handleOpen = (project) => {
-    const { nodes, elements, shells, materials, sections, loads, combinations } = project.topology;
-    useStructureStore.setState({
-      nodes: nodes || [],
-      elements: elements || [],
-      shells: shells || [],
-      materials: materials || [],
-      sections: sections || [],
-      loads: loads || [],
-      loadCombinations: combinations || [],
-      metadata: { name: project.name, author: '', units: 'm, kgf, C' },
-      isSaved: true
-    });
-    // Si hay resultados guardados, podríamos cargarlos también
-    // if (project.results) useStructureStore.getState().setResultsMode(project.results);
-    
+    const topo = project.topology || {};
+    const newState = {
+      nodes: topo.nodes || [],
+      elements: topo.elements || [],
+      shells: topo.shells || [],
+      openings: topo.openings || [],
+      materials: topo.materials || [],
+      sections: topo.sections || [],
+      loads: topo.loads || [],
+      loadCombinations: topo.combinations || [],
+      isSaved: true,
+      viewMode: 'model',
+      results: null,
+      selectedIds: [],
+      projectLoadedTrigger: useStructureStore.getState().projectLoadedTrigger + 1,
+    };
+    if (topo.metadata) {
+      newState.metadata = topo.metadata;
+    } else {
+      newState.metadata = { name: project.name, author: '', units: 'm, kgf, C' };
+    }
+    useStructureStore.setState(newState);
+    if (project.results) {
+      useStructureStore.getState().setResultsMode(project.results);
+    }
     toast.success(`Proyecto "${project.name}" cargado`);
     onClose();
   };

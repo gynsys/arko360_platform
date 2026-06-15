@@ -110,12 +110,16 @@ def get_quad_shell_local_stiffness(nodes_local, E, nu, thickness):
             dN_dx = dN_dx_dy[0, :]
             dN_dy = dN_dx_dy[1, :]
             
+            # Kirchhoff-Mindlin bending B-matrix
+            # kappa_x = d(theta_y)/dx  => M11 row uses ry (DOF index 2 in local bending)
+            # kappa_y = -d(theta_x)/dy => M22 row uses rx (DOF index 1 in local bending)
+            # Local bending DOF order per node: [w(0), rx(1), ry(2)]
             B_b = np.zeros((3, 12))
             for i in range(4):
-                B_b[0, 3*i+1] = dN_dx[i]   # rx
-                B_b[1, 3*i+2] = dN_dy[i]   # ry
-                B_b[2, 3*i+1] = dN_dy[i]
-                B_b[2, 3*i+2] = dN_dx[i]
+                B_b[0, 3*i+2] = dN_dx[i]   # M11: d(theta_y)/dx  (ry)
+                B_b[1, 3*i+1] = -dN_dy[i]  # M22: -d(theta_x)/dy (rx)
+                B_b[2, 3*i+1] = -dN_dx[i]  # M12: -d(theta_x)/dx (rx)
+                B_b[2, 3*i+2] = dN_dy[i]   # M12: +d(theta_y)/dy (ry)
                 
             K_b = B_b.T @ D_b @ B_b * detJ
             
@@ -144,10 +148,10 @@ def get_quad_shell_local_stiffness(nodes_local, E, nu, thickness):
             
             B_s = np.zeros((2, 12))
             for i in range(4):
-                B_s[0, 3*i] = dN_dx[i]     # dw/dx
-                B_s[0, 3*i+1] = N[i]       # rx
-                B_s[1, 3*i] = dN_dy[i]     # dw/dy
-                B_s[1, 3*i+2] = N[i]       # ry
+                B_s[0, 3*i+0] = dN_dx[i]   # dw/dx
+                B_s[0, 3*i+2] = N[i]        # +theta_y (ry) → gamma_xz = dw/dx + theta_y
+                B_s[1, 3*i+0] = dN_dy[i]   # dw/dy
+                B_s[1, 3*i+1] = -N[i]       # -theta_x (rx) → gamma_yz = dw/dy - theta_x
                 
             # Note: The area weight for 1x1 is 2*2 = 4
             K_s = B_s.T @ D_s @ B_s * detJ * 4.0
@@ -204,10 +208,10 @@ def recover_shell_stresses(nodes_local, u_local, E, nu, thickness):
     
     B_b = np.zeros((3, 12))
     for i in range(4):
-        B_b[0, 3*i+1] = dN_dx[i]   # rx
-        B_b[1, 3*i+2] = dN_dy[i]   # ry
-        B_b[2, 3*i+1] = dN_dy[i]
-        B_b[2, 3*i+2] = dN_dx[i]
+        B_b[0, 3*i+2] = dN_dx[i]   # M11: d(theta_y)/dx  (ry)
+        B_b[1, 3*i+1] = -dN_dy[i]  # M22: -d(theta_x)/dy (rx)
+        B_b[2, 3*i+1] = -dN_dx[i]  # M12: -d(theta_x)/dx (rx)
+        B_b[2, 3*i+2] = dN_dy[i]   # M12: +d(theta_y)/dy (ry)
         
     # Extract bending DOFs (w, rx, ry) from u_local (24x1)
     u_b = np.zeros(12)

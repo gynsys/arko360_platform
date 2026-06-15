@@ -4,9 +4,20 @@ import { useStructureStore } from './useStructureStore';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Returns a story label based on Z height
+function getStoryLabel(z) {
+  if (z === undefined || z === null) return 'Base';
+  const zRounded = Math.round(z * 100) / 100;
+  if (zRounded === 0) return 'Base';
+  return `Nivel Z=${zRounded}`;
+}
+
 export function ResultsTableModal({ onClose }) {
   const { results, loadCombinations, nodes, elements } = useStructureStore();
   const [activeTab, setActiveTab] = useState('forces'); // 'displacements', 'forces'
+
+  // Only structural nodes (no mesh G- nodes)
+  const structuralNodes = nodes.filter(n => !n.id.startsWith('G-'));
 
   if (!results || !results.results) {
     return (
@@ -36,12 +47,15 @@ export function ResultsTableModal({ onClose }) {
     if (activeTab === 'forces') {
       const rows = [];
       elements.forEach(el => {
+        // Get Z of element start node for story label
+        const n1node = nodes.find(n => n.id === el.nodes?.[0]);
+        const storyLabel = n1node ? getStoryLabel(n1node.z) : 'Base';
         availableCombos.forEach(combo => {
           const comboData = results.results[combo.id];
           const stations = comboData?.element_forces[el.id] || [];
           stations.forEach((st, i) => {
             rows.push([
-              'Base',
+              storyLabel,
               i === 0 ? el.id.toString() : '',
               i === 0 ? combo.name : '',
               'Max',
@@ -74,12 +88,13 @@ export function ResultsTableModal({ onClose }) {
       });
     } else if (activeTab === 'displacements') {
       const rows = [];
-      nodes.forEach(node => {
+      structuralNodes.forEach(node => {
+        const storyLabel = getStoryLabel(node.z);
         availableCombos.forEach((combo, i) => {
           const comboData = results.results[combo.id];
           const disp = comboData?.displacements[node.id] || [0,0,0,0,0,0];
           rows.push([
-            'Base',
+            storyLabel,
             i === 0 ? node.id.toString() : '',
             combo.name,
             disp[0].toExponential(3),
@@ -213,12 +228,14 @@ export function ResultsTableModal({ onClose }) {
               </thead>
               <tbody>
                 {elements.map(el => {
+                  const n1node = nodes.find(n => n.id === el.nodes?.[0]);
+                  const storyLabel = n1node ? getStoryLabel(n1node.z) : 'Base';
                   return availableCombos.map(combo => {
                     const comboData = results.results[combo.id];
                     const stations = comboData?.element_forces[el.id] || [];
                     return stations.map((st, i) => (
                       <tr key={`${el.id}-${combo.id}-${i}`} className="hover:bg-slate-50 border-b border-slate-100">
-                        <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-500">Base</td>
+                        <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-500">{storyLabel}</td>
                         <td className="border-r border-slate-200 px-2 py-1 text-center font-bold text-slate-700">{i === 0 ? el.id : ''}</td>
                         <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-600">{i === 0 ? combo.name : ''}</td>
                         <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-400">Max</td>
@@ -297,13 +314,14 @@ export function ResultsTableModal({ onClose }) {
                 </tr>
               </thead>
               <tbody>
-                {nodes.map(node => {
+                {structuralNodes.map(node => {
+                  const storyLabel = getStoryLabel(node.z);
                   return availableCombos.map((combo, i) => {
                     const comboData = results.results[combo.id];
                     const disp = comboData?.displacements[node.id] || [0,0,0,0,0,0];
                     return (
                       <tr key={`${node.id}-${combo.id}`} className="hover:bg-slate-50 border-b border-slate-100">
-                        <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-500">Base</td>
+                        <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-500">{storyLabel}</td>
                         <td className="border-r border-slate-200 px-2 py-1 text-center font-bold text-slate-700">{i === 0 ? node.id : ''}</td>
                         <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-600">{combo.name}</td>
                         <td className="border-r border-slate-200 px-2 py-1 font-mono">{disp[0].toExponential(3)}</td>
