@@ -1,312 +1,166 @@
-// mesher.js
-// Auto Meshing Algorithm for Arko3D
-// Generates a finite element mesh (Quads + Triangles) for a slab with openings.
+// mesher.js - Structured Quad Mesh Generator for Arko3D
+// Strategy: Direct structured grid -> 100% Quads for regular shapes.
+// Triangles only appear at boundary transition cells, NEVER in the interior.
 
-// --- Helper Math Functions ---
+// --- Geometry Helpers ---
 
-function isPointInPolygon(point, vs) {
-  let x = point.x, y = point.y;
+function isPointInPolygon(pt, vs) {
   let inside = false;
   for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-    let xi = vs[i].x, yi = vs[i].y;
-    let xj = vs[j].x, yj = vs[j].y;
-    let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-    if (intersect) inside = !inside;
+    const xi = vs[i].x, yi = vs[i].y;
+    const xj = vs[j].x, yj = vs[j].y;
+    if (((yi > pt.y) !== (yj > pt.y)) && (pt.x < (xj - xi) * (pt.y - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
   }
   return inside;
 }
 
-function distSq(p1, p2) {
-  return (p1.x - p2.x)**2 + (p1.y - p2.y)**2;
+function isPointInAnyHole(pt, holes) {
+  return holes.some(h => isPointInPolygon(pt, h));
 }
 
-// Circumcircle of a triangle (p1, p2, p3)
-function getCircumcircle(p1, p2, p3) {
-  const d = 2 * (p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y));
-  if (Math.abs(d) < 1e-9) return null; // collinear
-  
-  const ux = ((p1.x**2 + p1.y**2) * (p2.y - p3.y) + (p2.x**2 + p2.y**2) * (p3.y - p1.y) + (p3.x**2 + p3.y**2) * (p1.y - p2.y)) / d;
-  const uy = ((p1.x**2 + p1.y**2) * (p3.x - p2.x) + (p2.x**2 + p2.y**2) * (p1.x - p3.x) + (p3.x**2 + p3.y**2) * (p2.x - p1.x)) / d;
-  
-  const rSq = (ux - p1.x)**2 + (uy - p1.y)**2;
-  return { x: ux, y: uy, rSq };
+function isPointValid(pt, boundary, holes) {
+  return isPointInPolygon(pt, boundary) && !isPointInAnyHole(pt, holes);
 }
 
-// Bowyer-Watson Delaunay Triangulation
-function delaunayTriangulate(vertices) {
-  if (vertices.length < 3) return [];
-
-  // Super triangle
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  vertices.forEach(v => {
-    if (v.x < minX) minX = v.x;
-    if (v.y < minY) minY = v.y;
-    if (v.x > maxX) maxX = v.x;
-    if (v.y > maxY) maxY = v.y;
-  });
-
-  const dx = maxX - minX;
-  const dy = maxY - minY;
-  const deltaMax = Math.max(dx, dy);
-  const midX = (minX + maxX) / 2;
-  const midY = (minY + maxY) / 2;
-
-  const st1 = { id: 'ST1', x: midX - 20 * deltaMax, y: midY - deltaMax, z: 0 };
-  const st2 = { id: 'ST2', x: midX, y: midY + 20 * deltaMax, z: 0 };
-  const st3 = { id: 'ST3', x: midX + 20 * deltaMax, y: midY - deltaMax, z: 0 };
-
-  let triangles = [
-    { p1: st1, p2: st2, p3: st3, circle: getCircumcircle(st1, st2, st3) }
-  ];
-
-  for (let i = 0; i < vertices.length; i++) {
-    const pt = vertices[i];
-    const badTriangles = [];
-    
-    for (let t of triangles) {
-      if (!t.circle) continue;
-      if (distSq(pt, t.circle) <= t.circle.rSq + 1e-9) {
-        badTriangles.push(t);
-      }
-    }
-
-    const polygon = [];
-    for (let t of badTriangles) {
-      const edges = [
-        { a: t.p1, b: t.p2 },
-        { a: t.p2, b: t.p3 },
-        { a: t.p3, b: t.p1 }
-      ];
-      for (let edge of edges) {
-        let isShared = false;
-        for (let other of badTriangles) {
-          if (other === t) continue;
-          if ((other.p1 === edge.a || other.p2 === edge.a || other.p3 === edge.a) &&
-              (other.p1 === edge.b || other.p2 === edge.b || other.p3 === edge.b)) {
-            isShared = true;
-            break;
-          }
-        }
-        if (!isShared) polygon.push(edge);
-      }
-    }
-
-    triangles = triangles.filter(t => !badTriangles.includes(t));
-
-    for (let edge of polygon) {
-      triangles.push({
-        p1: edge.a,
-        p2: edge.b,
-        p3: pt,
-        circle: getCircumcircle(edge.a, edge.b, pt)
-      });
-    }
-  }
-
-  triangles = triangles.filter(t => {
-    return t.p1.id !== 'ST1' && t.p1.id !== 'ST2' && t.p1.id !== 'ST3' &&
-           t.p2.id !== 'ST1' && t.p2.id !== 'ST2' && t.p2.id !== 'ST3' &&
-           t.p3.id !== 'ST1' && t.p3.id !== 'ST2' && t.p3.id !== 'ST3';
-  });
-
-  return triangles;
-}
-
-function getTriangleArea(p1, p2, p3) {
-  return Math.abs((p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y) + p3.x*(p1.y-p2.y))/2);
-}
-
-function getCentroid(p1, p2, p3) {
-  return {
-    x: (p1.x + p2.x + p3.x) / 3,
-    y: (p1.y + p2.y + p3.y) / 3
-  };
+// Signed area for convexity check
+function cross2D(o, a, b) {
+  return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
 }
 
 function isConvexQuad(p1, p2, p3, p4) {
-  const cross = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-  const cp1 = cross(p1, p2, p3);
-  const cp2 = cross(p2, p3, p4);
-  const cp3 = cross(p3, p4, p1);
-  const cp4 = cross(p4, p1, p2);
-  return (cp1 > 0 && cp2 > 0 && cp3 > 0 && cp4 > 0) || (cp1 < 0 && cp2 < 0 && cp3 < 0 && cp4 < 0);
-}
-
-function mergeIntoQuads(triangles) {
-  const elements = [];
-  const used = new Set();
-
-  for (let i = 0; i < triangles.length; i++) {
-    if (used.has(i)) continue;
-    let t1 = triangles[i];
-    let merged = false;
-
-    for (let j = i + 1; j < triangles.length; j++) {
-      if (used.has(j)) continue;
-      let t2 = triangles[j];
-
-      const n1 = [t1.p1, t1.p2, t1.p3];
-      const n2 = [t2.p1, t2.p2, t2.p3];
-      
-      const shared = n1.filter(n => n2.includes(n));
-      
-      if (shared.length === 2) {
-        const unshared1 = n1.find(n => !shared.includes(n));
-        const unshared2 = n2.find(n => !shared.includes(n));
-
-        const quadNodes = [unshared1, shared[0], unshared2, shared[1]];
-
-        if (isConvexQuad(quadNodes[0], quadNodes[1], quadNodes[2], quadNodes[3])) {
-          elements.push({
-            type: 'quad',
-            nodes: quadNodes
-          });
-          used.add(i);
-          used.add(j);
-          merged = true;
-          break;
-        }
-      }
-    }
-
-    if (!merged) {
-      elements.push({
-        type: 'triangle',
-        nodes: [t1.p1, t1.p2, t1.p3]
-      });
-    }
+  const pts = [p1, p2, p3, p4];
+  let sign = 0;
+  for (let i = 0; i < 4; i++) {
+    const c = cross2D(pts[i], pts[(i + 1) % 4], pts[(i + 2) % 4]);
+    if (Math.abs(c) < 1e-10) return false; // collinear
+    if (sign === 0) sign = c > 0 ? 1 : -1;
+    else if ((c > 0 ? 1 : -1) !== sign) return false;
   }
-
-  return elements;
+  return true;
 }
 
 /**
  * Main API: generateMesh
+ * Uses a structured grid approach: 100% Quads inside, triangles only at boundaries.
  * @param {Array} boundaryNodes - [{id, x, y, z}] ordered perimeter
  * @param {Array} openingsNodes - Array of arrays [[{id, x, y, z}], ...]
- * @param {Number} meshSize - Target size for elements
+ * @param {Number} meshSize - Target element size
  */
 export function generateMesh(boundaryNodes, openingsNodes = [], meshSize = 1.0) {
   if (!boundaryNodes || boundaryNodes.length < 3) return null;
 
+  const avgZ = boundaryNodes.reduce((s, n) => s + n.z, 0) / boundaryNodes.length;
+
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  const avgZ = boundaryNodes.reduce((sum, n) => sum + n.z, 0) / boundaryNodes.length;
-
-  boundaryNodes.forEach(v => {
-    if (v.x < minX) minX = v.x;
-    if (v.y < minY) minY = v.y;
-    if (v.x > maxX) maxX = v.x;
-    if (v.y > maxY) maxY = v.y;
+  boundaryNodes.forEach(n => {
+    if (n.x < minX) minX = n.x;
+    if (n.y < minY) minY = n.y;
+    if (n.x > maxX) maxX = n.x;
+    if (n.y > maxY) maxY = n.y;
   });
 
-  const allVertices = [];
-  const existingIds = new Set();
+  // --- Step 1: Build structured grid of candidate nodes ---
+  // Snap grid to boundary corners for perfect alignment
+  const cols = Math.round((maxX - minX) / meshSize);
+  const rows = Math.round((maxY - minY) / meshSize);
+  const dx = (maxX - minX) / Math.max(cols, 1);
+  const dy = (maxY - minY) / Math.max(rows, 1);
 
-  const addVertex = (n) => {
-    if (!existingIds.has(n.id)) {
-      allVertices.push(n);
-      existingIds.add(n.id);
-    }
-  };
+  let idCounter = 0;
+  const makeId = (prefix) => `${prefix}-${++idCounter}`;
 
-  boundaryNodes.forEach(addVertex);
-  openingsNodes.forEach(hole => hole.forEach(addVertex));
-
-  let currentNewId = 1;
-
-  // 1. Seed nodes along edges to ensure boundaries have points every meshSize
-  const seedEdge = (p1, p2) => {
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    const len = Math.sqrt(dx*dx + dy*dy);
-    const n = Math.ceil(len / meshSize);
-    for (let i = 1; i < n; i++) {
-      const x = p1.x + (dx * i) / n;
-      const y = p1.y + (dy * i) / n;
-      addVertex({ id: `ME-${currentNewId++}`, x, y, z: avgZ });
-    }
-  };
-
-  // Seed boundary edges
-  for (let i = 0; i < boundaryNodes.length; i++) {
-    seedEdge(boundaryNodes[i], boundaryNodes[(i + 1) % boundaryNodes.length]);
-  }
-  
-  // Seed hole edges
-  for (let hole of openingsNodes) {
-    for (let i = 0; i < hole.length; i++) {
-      seedEdge(hole[i], hole[(i + 1) % hole.length]);
+  // grid[row][col] = node or null
+  const grid = [];
+  for (let r = 0; r <= rows; r++) {
+    grid[r] = [];
+    for (let c = 0; c <= cols; c++) {
+      const x = minX + c * dx;
+      const y = minY + r * dy;
+      const pt = { id: makeId('G'), x, y, z: avgZ };
+      // Keep node if it's inside boundary AND not inside a hole
+      grid[r][c] = isPointValid(pt, boundaryNodes, openingsNodes) ? pt : null;
     }
   }
 
-  // 2. Generate internal grid aligned to the bounding box (minX, minY)
-  for (let x = minX + meshSize; x < maxX - 1e-4; x += meshSize) {
-    for (let y = minY + meshSize; y < maxY - 1e-4; y += meshSize) {
-      const pt = { x, y, z: avgZ };
-      
-      if (!isPointInPolygon(pt, boundaryNodes)) continue;
-      
-      let inHole = false;
-      for (let hole of openingsNodes) {
-        if (isPointInPolygon(pt, hole)) {
-          inHole = true;
-          break;
-        }
-      }
-      if (inHole) continue;
-
-      let tooClose = false;
-      const minDistanceSq = (meshSize * 0.25)**2; // 25% tolerance
-      
-      for (let v of allVertices) {
-        if (distSq(pt, v) < minDistanceSq) {
-          tooClose = true;
-          break;
-        }
-      }
-      if (tooClose) continue;
-
-      pt.id = `M-${Date.now().toString(36)}-${currentNewId++}`;
-      allVertices.push(pt);
+  // --- Step 2: Force boundary corner nodes into the grid ---
+  // Find nearest grid position for each boundary node and snap it in
+  boundaryNodes.forEach(bn => {
+    const cIdx = Math.round((bn.x - minX) / dx);
+    const rIdx = Math.round((bn.y - minY) / dy);
+    const ci = Math.max(0, Math.min(cols, cIdx));
+    const ri = Math.max(0, Math.min(rows, rIdx));
+    if (!grid[ri][ci]) {
+      grid[ri][ci] = { id: bn.id, x: bn.x, y: bn.y, z: bn.z };
     }
-  }
-
-  const rawTriangles = delaunayTriangulate(allVertices);
-
-  let validTriangles = [];
-  for (let t of rawTriangles) {
-    if (getTriangleArea(t.p1, t.p2, t.p3) < 1e-6) continue;
-    
-    const centroid = getCentroid(t.p1, t.p2, t.p3);
-    
-    if (!isPointInPolygon(centroid, boundaryNodes)) continue;
-    
-    let inHole = false;
-    for (let hole of openingsNodes) {
-      if (isPointInPolygon(centroid, hole)) {
-        inHole = true;
-        break;
-      }
-    }
-    if (inHole) continue;
-
-    validTriangles.push(t);
-  }
-
-  const feElements = mergeIntoQuads(validTriangles);
-
-  const usedVertexIds = new Set();
-  feElements.forEach(el => {
-    el.nodes.forEach(n => usedVertexIds.add(n.id));
   });
 
-  const finalNodes = allVertices.filter(v => usedVertexIds.has(v.id));
+  // --- Step 3: Generate Quad elements from valid grid cells ---
+  const elements = [];
+  const usedNodeIds = new Set();
 
-  feElements.forEach((el, index) => {
-    el.id = `FE-${Date.now().toString(36)}-${index}`;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const p00 = grid[r][c];        // bottom-left
+      const p10 = grid[r][c + 1];    // bottom-right
+      const p11 = grid[r + 1][c + 1]; // top-right
+      const p01 = grid[r + 1][c];    // top-left
+
+      const valid = [p00, p10, p11, p01].filter(Boolean);
+
+      if (valid.length === 4) {
+        // Check cell centroid is inside (handles non-axis-aligned boundaries)
+        const cx = (p00.x + p10.x + p11.x + p01.x) / 4;
+        const cy = (p00.y + p10.y + p11.y + p01.y) / 4;
+        if (!isPointValid({ x: cx, y: cy }, boundaryNodes, openingsNodes)) continue;
+
+        if (isConvexQuad(p00, p10, p11, p01)) {
+          elements.push({ type: 'quad', nodes: [p00, p10, p11, p01] });
+          [p00, p10, p11, p01].forEach(n => usedNodeIds.add(n.id));
+        } else {
+          // Degenerate quad: split into 2 triangles
+          const t1cent = { x: (p00.x + p10.x + p11.x) / 3, y: (p00.y + p10.y + p11.y) / 3 };
+          const t2cent = { x: (p00.x + p11.x + p01.x) / 3, y: (p00.y + p11.y + p01.y) / 3 };
+          if (isPointValid(t1cent, boundaryNodes, openingsNodes)) {
+            elements.push({ type: 'triangle', nodes: [p00, p10, p11] });
+            [p00, p10, p11].forEach(n => usedNodeIds.add(n.id));
+          }
+          if (isPointValid(t2cent, boundaryNodes, openingsNodes)) {
+            elements.push({ type: 'triangle', nodes: [p00, p11, p01] });
+            [p00, p11, p01].forEach(n => usedNodeIds.add(n.id));
+          }
+        }
+      } else if (valid.length === 3) {
+        // Boundary triangle
+        const cent = { x: valid.reduce((s, n) => s + n.x, 0) / 3, y: valid.reduce((s, n) => s + n.y, 0) / 3 };
+        if (!isPointValid(cent, boundaryNodes, openingsNodes)) continue;
+        elements.push({ type: 'triangle', nodes: valid });
+        valid.forEach(n => usedNodeIds.add(n.id));
+      }
+      // 0, 1, or 2 valid corners = outside the shape, skip
+    }
+  }
+
+  // --- Step 4: Build final node list (only used nodes) ---
+  const finalNodes = [];
+  const seenIds = new Set();
+  for (let r = 0; r <= rows; r++) {
+    for (let c = 0; c <= cols; c++) {
+      const n = grid[r][c];
+      if (n && usedNodeIds.has(n.id) && !seenIds.has(n.id)) {
+        finalNodes.push(n);
+        seenIds.add(n.id);
+      }
+    }
+  }
+
+  // --- Step 5: Serialize elements ---
+  elements.forEach((el, idx) => {
+    el.id = `FE-${idx}`;
     el.nodeIds = el.nodes.map(n => n.id);
-    delete el.nodes; // remove reference to keep serializable
+    delete el.nodes;
   });
 
-  return { nodes: finalNodes, elements: feElements };
+  return { nodes: finalNodes, elements };
 }
