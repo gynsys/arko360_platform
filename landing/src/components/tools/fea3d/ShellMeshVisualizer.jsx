@@ -34,8 +34,10 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap })
         const forces = results.shell_forces[el.id];
         if (forces && forces[activeResultMap] !== undefined) {
           const v = forces[activeResultMap];
-          if (v < valMin) valMin = v;
-          if (v > valMax) valMax = v;
+          if (!isNaN(v)) {
+            if (v < valMin) valMin = v;
+            if (v > valMax) valMax = v;
+          }
         }
       });
     }
@@ -47,9 +49,9 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap })
       const p4 = el.nodeIds.length === 4 ? nodeMap.get(el.nodeIds[3]) : null;
       
       let elColor = new THREE.Color('#1f2937'); // Default gray/dark for face
-      if (results && results.shell_forces && activeResultMap && activeResultMap !== 'None') {
+      if (results && results.shell_forces && activeResultMap && activeResultMap !== 'None' && valMin !== Infinity) {
         const forces = results.shell_forces[el.id];
-        if (forces && forces[activeResultMap] !== undefined) {
+        if (forces && forces[activeResultMap] !== undefined && !isNaN(forces[activeResultMap])) {
            elColor = getColor(forces[activeResultMap], valMin, valMax);
         }
       }
