@@ -1199,6 +1199,41 @@ export function StructureCanvas() {
             };
             
             return <PointLoadArrow key={load.id} node={pos} load={load} />;
+          } else if (load.type === 'area_shell') {
+            const shell = shells.find(s => s.id === load.target_id);
+            if (!shell) return null;
+            
+            const shellNodes = shell.nodes.map(nid => nodes.find(n => n.id === nid)).filter(Boolean);
+            if (shellNodes.length === 0) return null;
+            const z = shellNodes[0].z;
+            
+            const minX = Math.min(load.offset_x, load.end_x);
+            const maxX = Math.max(load.offset_x, load.end_x);
+            const minY = Math.min(load.offset_y, load.end_y);
+            const maxY = Math.max(load.offset_y, load.end_y);
+            
+            const w = maxX - minX;
+            const h = maxY - minY;
+            const cx = minX + w / 2;
+            const cy = minY + h / 2;
+            
+            return (
+              <group key={load.id} position={[cx, cy, z + 0.05]}>
+                <mesh>
+                  <planeGeometry args={[w, h]} />
+                  <meshBasicMaterial color="#f97316" transparent opacity={0.4} side={THREE.DoubleSide} />
+                </mesh>
+                <mesh position={[0, 0, 0.01]}>
+                  <planeGeometry args={[w, h]} />
+                  <meshBasicMaterial color="#ea580c" wireframe />
+                </mesh>
+                <Html position={[0, 0, 0]} center zIndexRange={[100, 0]}>
+                  <div className="bg-orange-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm pointer-events-none whitespace-nowrap">
+                    Qz: {load.fz}
+                  </div>
+                </Html>
+              </group>
+            );
           }
           return null;
         })}

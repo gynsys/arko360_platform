@@ -217,6 +217,8 @@ class StructuralSolver:
             factor = factor_cm if load.load_case.upper() == "CM" or load.load_case.upper() == "DEAD" else factor_cv
             
             if load.type == "point":
+                if load.target_id not in self.node_map:
+                    continue
                 node_idx = self.node_map[load.target_id]
                 F[node_idx * 6 + 0] += load.fx * factor
                 F[node_idx * 6 + 1] += load.fy * factor
@@ -226,9 +228,11 @@ class StructuralSolver:
                 F[node_idx * 6 + 5] += load.mz * factor
             
             elif load.type == "distributed":
-                elem = next(e for e in self.elements if e.id == load.target_id)
-                n1 = next(n for n in self.nodes if n.id == elem.nodes[0])
-                n2 = next(n for n in self.nodes if n.id == elem.nodes[1])
+                elem = next((e for e in self.elements if e.id == load.target_id), None)
+                if not elem: continue
+                n1 = next((n for n in self.nodes if n.id == elem.nodes[0]), None)
+                n2 = next((n for n in self.nodes if n.id == elem.nodes[1]), None)
+                if not n1 or not n2: continue
                 p1 = np.array([n1.x, n1.y, n1.z])
                 p2 = np.array([n2.x, n2.y, n2.z])
                 l = np.linalg.norm(p2 - p1)
@@ -265,9 +269,11 @@ class StructuralSolver:
                 F[idx2:idx2+6] -= f_fixed_global[6:12]
 
             elif load.type == "point_frame":
-                elem = next(e for e in self.elements if e.id == load.target_id)
-                n1 = next(n for n in self.nodes if n.id == elem.nodes[0])
-                n2 = next(n for n in self.nodes if n.id == elem.nodes[1])
+                elem = next((e for e in self.elements if e.id == load.target_id), None)
+                if not elem: continue
+                n1 = next((n for n in self.nodes if n.id == elem.nodes[0]), None)
+                n2 = next((n for n in self.nodes if n.id == elem.nodes[1]), None)
+                if not n1 or not n2: continue
                 p1 = np.array([n1.x, n1.y, n1.z])
                 p2 = np.array([n2.x, n2.y, n2.z])
                 l = np.linalg.norm(p2 - p1)
@@ -319,10 +325,11 @@ class StructuralSolver:
                 # Using a simple bounding box check per quad
                 for fe in shell.mesh.elements:
                     if fe.type == "quad" and len(fe.nodeIds) == 4:
-                        n1 = next(n for n in self.nodes if n.id == fe.nodeIds[0])
-                        n2 = next(n for n in self.nodes if n.id == fe.nodeIds[1])
-                        n3 = next(n for n in self.nodes if n.id == fe.nodeIds[2])
-                        n4 = next(n for n in self.nodes if n.id == fe.nodeIds[3])
+                        n1 = next((n for n in self.nodes if n.id == fe.nodeIds[0]), None)
+                        n2 = next((n for n in self.nodes if n.id == fe.nodeIds[1]), None)
+                        n3 = next((n for n in self.nodes if n.id == fe.nodeIds[2]), None)
+                        n4 = next((n for n in self.nodes if n.id == fe.nodeIds[3]), None)
+                        if not n1 or not n2 or not n3 or not n4: continue
                         
                         fminX = min(n1.x, n2.x, n3.x, n4.x)
                         fmaxX = max(n1.x, n2.x, n3.x, n4.x)
@@ -356,7 +363,87 @@ class StructuralSolver:
                                 F[n_idx * 6 + 1] += load.fy * factor * N[i]
                                 F[n_idx * 6 + 2] += load.fz * factor * N[i]
                             break
-                            break
+
+            elif load.type == "area_shell":
+                shell = next((s for s in self.shells if s.id == load.target_id), None)
+                if not shell or not shell.mesh or not shell.mesh.elements:
+                    continue
+                
+                # Coordenadas absolutas del parche
+                minX = min(load.offset_x, load.end_x)
+                maxX = max(load.offset_x, load.end_x)
+                minY = min(load.offset_y, load.end_y)
+                maxY = max(load.offset_y, load.end_y)
+                
+                Lx = maxX - minX
+                Ly = maxY - minY
+                if Lx <= 0 or Ly <= 0:
+                    continue
+                
+                # Densidad de carga (por m2)
+                q_x = load.fx * factor
+                q_y = load.fy * factor
+                q_z = load.fz * factor
+                
+                # Parámetros de discretización (Grid Integration)
+                # Vamos a crear una rejilla de sub-puntos cada 10 cm, o al menos 3x3 puntos si es muy pequeña
+                grid_size = 0.10 # 10 cm
+                nx = max(3, int(np.ceil(Lx / grid_size)))
+                ny = max(3, int(np.ceil(Ly / grid_size)))
+                
+                dx = Lx / nx
+                dy = Ly / ny
+                sub_area = dx * dy
+                
+                # Fuerza tributaria de cada sub-punto
+                F_sub_x = q_x * sub_area
+                F_sub_y = q_y * sub_area
+                F_sub_z = q_z * sub_area
+                
+                # Iterar sobre cada sub-punto en el centro de cada celda de la rejilla
+                for i_grid in range(nx):
+                    for j_grid in range(ny):
+                        px = minX + dx/2 + i_grid * dx
+                        py = minY + dy/2 + j_grid * dy
+                        
+                        # Buscar en qué elemento finito cae este sub-punto
+                        for fe in shell.mesh.elements:
+                            if fe.type == "quad" and len(fe.nodeIds) == 4:
+                                n1 = next((n for n in self.nodes if n.id == fe.nodeIds[0]), None)
+                                n2 = next((n for n in self.nodes if n.id == fe.nodeIds[1]), None)
+                                n3 = next((n for n in self.nodes if n.id == fe.nodeIds[2]), None)
+                                n4 = next((n for n in self.nodes if n.id == fe.nodeIds[3]), None)
+                                if not n1 or not n2 or not n3 or not n4: continue
+                                
+                                fminX = min(n1.x, n2.x, n3.x, n4.x)
+                                fmaxX = max(n1.x, n2.x, n3.x, n4.x)
+                                fminY = min(n1.y, n2.y, n3.y, n4.y)
+                                fmaxY = max(n1.y, n2.y, n3.y, n4.y)
+                                
+                                if fminX - 1e-4 <= px <= fmaxX + 1e-4 and fminY - 1e-4 <= py <= fmaxY + 1e-4:
+                                    # Encontrado! Distribuir la mini-carga a los 4 nudos
+                                    L_fe_x = fmaxX - fminX
+                                    L_fe_y = fmaxY - fminY
+                                    if L_fe_x == 0 or L_fe_y == 0: continue
+                                    
+                                    xi = (px - fminX) / L_fe_x
+                                    eta = (py - fminY) / L_fe_y
+                                    
+                                    N = [
+                                        (1 - xi) * (1 - eta),
+                                        xi * (1 - eta),
+                                        xi * eta,
+                                        (1 - xi) * eta
+                                    ]
+                                    
+                                    mapped_ids = [self.mesh_node_mapping.get(nid, nid) for nid in [fe.nodeIds[0], fe.nodeIds[1], fe.nodeIds[2], fe.nodeIds[3]]]
+                                    nodes_idx = [self.node_map[nid] for nid in mapped_ids]
+                                    
+                                    for i, n_idx in enumerate(nodes_idx):
+                                        F[n_idx * 6 + 0] += F_sub_x * N[i]
+                                        F[n_idx * 6 + 1] += F_sub_y * N[i]
+                                        F[n_idx * 6 + 2] += F_sub_z * N[i]
+                                    break # Romper loop de elementos para este sub-punto
 
         return F, element_local_loads
 

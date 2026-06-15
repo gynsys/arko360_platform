@@ -75,8 +75,10 @@ class LoadAssignment(BaseModel):
     mz: float = 0.0
     load_case: str = "Dead"
     offset: float = 0.5 # Para cargas puntuales en elementos (0 a 1)
-    offset_x: float = 0.5 # Coordenada relativa X para shells (0 a 1)
-    offset_y: float = 0.5 # Coordenada relativa Y para shells (0 a 1)
+    offset_x: float = 0.0 # Posición absoluta X para shells
+    offset_y: float = 0.0 # Posición absoluta Y para shells
+    end_x: float = 0.0 # Coordenada fin X para cargas de área en shells
+    end_y: float = 0.0 # Coordenada fin Y para cargas de área en shells
 
 class Material(BaseModel):
     id: str
