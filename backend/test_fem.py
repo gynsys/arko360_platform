@@ -68,9 +68,18 @@ for name, eid in [('E-6  (near-center)', 'E-6'), ('E-11 (center)', 'E-11'), ('E-
     print(f"  {name}: M11={m11:.1f}  M22={m22:.1f}  M_max={mmax:.1f}")
 
 disp = results['results']['C1']['displacements']
-# G-13 is node at i=2, j=2 (center of 5x5 grid): index=2*5+2=12 -> nc=13 -> G-13
+# G-13 is node at i=2, j=2 (center of 5x5 grid)
 ctr_uz = disp.get('G-13', [0]*6)[2]
-print(f"\nCenter node G-13 uz (deflection) = {ctr_uz:.6f} m")
+print(f"\nCenter node G-13 uz = {ctr_uz:.6f} m")
+
+# G-12 is at i=1, j=2 (x=1, y=2) -> should have positive theta_y (ry)
+g12 = disp.get('G-12', [0]*6)
+print(f"Node G-12 (x=1, y=2): uz={g12[2]:.6f}, rx={g12[3]:.6f}, ry={g12[4]:.6f}")
+
+# G-14 is at i=3, j=2 (x=3, y=2) -> should have negative theta_y (ry)
+g14 = disp.get('G-14', [0]*6)
+print(f"Node G-14 (x=3, y=2): uz={g14[2]:.6f}, rx={g14[3]:.6f}, ry={g14[4]:.6f}")
+
 print("  Negative uz = plate deflects DOWN (correct for downward load)")
 print("  Positive M11/M22 at center = SAGGING moment (correct)")
 print("  Negative M11/M22 at center = algorithm still WRONG")

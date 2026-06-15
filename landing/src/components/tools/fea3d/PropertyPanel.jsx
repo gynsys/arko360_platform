@@ -520,7 +520,7 @@ export function PropertyPanel() {
                   <span className="text-[10px] text-slate-300">
                     ({l.offset_x}, {l.offset_y}) ➔ Fz: {l.fz}
                   </span>
-                  <button onClick={() => removeLoad(l.id)} className="text-red-400 hover:text-red-300"><Trash2 size={12}/></button>
+                  <button onClick={() => deleteLoad(l.id)} className="text-red-400 hover:text-red-300"><Trash2 size={12}/></button>
                 </div>
               ))}
             </div>
@@ -585,7 +585,7 @@ export function PropertyPanel() {
                   <span className="text-[10px] text-slate-300 truncate">
                     [{l.offset_x}, {l.offset_y}] a [{l.end_x}, {l.end_y}] ➔ Qz: {l.fz}
                   </span>
-                  <button onClick={() => removeLoad(l.id)} className="text-red-400 hover:text-red-300 ml-2"><Trash2 size={12}/></button>
+                  <button onClick={() => deleteLoad(l.id)} className="text-red-400 hover:text-red-300 ml-2"><Trash2 size={12}/></button>
                 </div>
               ))}
             </div>

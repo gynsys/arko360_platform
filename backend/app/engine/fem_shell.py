@@ -221,7 +221,7 @@ def recover_shell_stresses(nodes_local, u_local, E, nu, thickness):
         u_b[3*i+2] = u_local[i*6+4]
         
     curvature = B_b @ u_b
-    moments = D_b @ curvature  # [M11, M22, M12]
+    moments = -D_b @ curvature  # [M11, M22, M12] Invert sign so sagging (tension at bottom) is positive
     
     # Evaluate principal moments
     M11, M22, M12 = moments[0], moments[1], moments[2]
