@@ -1,9 +1,13 @@
-// mesher.js - Structured Quad Mesh Generator for Arko3D
-// Strategy: Direct structured grid -> 100% Quads for regular shapes.
-// Cell inclusion is decided by CENTROID, never by corner nodes.
-// This avoids boundary node ambiguity (points exactly on edge of polygon).
+// mesher.js - Conforming Structured Quad Mesh Generator for Arko3D
+//
+// STRATEGY (SAP2000/ETABS style):
+//   1. Build base grid lines from meshSize.
+//   2. ADD extra grid lines passing through every opening corner (x and y coords).
+//      This makes the mesh "conform" to openings of ANY shape (rect, L, U, etc.)
+//   3. Every cell centroid is tested: inside boundary & NOT in a hole → Quad element.
+//   4. 100% quads for axis-aligned geometry. Openings get perfectly aligned border cells.
 
-// --- Geometry Helpers ---
+// ─── Geometry Helpers ────────────────────────────────────────────────────────
 
 function isPointInPolygon(pt, vs) {
   let inside = false;
@@ -17,36 +21,23 @@ function isPointInPolygon(pt, vs) {
   return inside;
 }
 
-function isPointInAnyHole(pt, holes) {
-  return holes.some(h => isPointInPolygon(pt, h));
-}
-
 function isCellValid(cx, cy, boundary, holes) {
   const pt = { x: cx, y: cy };
-  return isPointInPolygon(pt, boundary) && !isPointInAnyHole(pt, holes);
-}
-
-function cross2D(o, a, b) {
-  return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-}
-
-function isConvexQuad(p1, p2, p3, p4) {
-  const pts = [p1, p2, p3, p4];
-  let sign = 0;
-  for (let i = 0; i < 4; i++) {
-    const c = cross2D(pts[i], pts[(i + 1) % 4], pts[(i + 2) % 4]);
-    if (Math.abs(c) < 1e-10) return false;
-    if (sign === 0) sign = c > 0 ? 1 : -1;
-    else if ((c > 0 ? 1 : -1) !== sign) return false;
+  if (!isPointInPolygon(pt, boundary)) return false;
+  for (const h of holes) {
+    if (isPointInPolygon(pt, h)) return false;
   }
   return true;
 }
 
+// ─── Main API ─────────────────────────────────────────────────────────────────
+
 /**
- * Main API: generateMesh
- * @param {Array} boundaryNodes - [{id, x, y, z}] ordered perimeter
- * @param {Array} openingsNodes - Array of arrays [[{id, x, y, z}], ...]
- * @param {Number} meshSize - Target element size
+ * generateMesh
+ * @param {Array}  boundaryNodes  [{id, x, y, z}] - ordered slab perimeter
+ * @param {Array}  openingsNodes  [[{id, x, y, z}], ...] - array of hole polygons
+ * @param {Number} meshSize       Target element size (in project length units)
+ * @returns {{ nodes: Array, elements: Array } | null}
  */
 export function generateMesh(boundaryNodes, openingsNodes = [], meshSize = 1.0) {
   if (!boundaryNodes || boundaryNodes.length < 3) return null;
@@ -61,56 +52,76 @@ export function generateMesh(boundaryNodes, openingsNodes = [], meshSize = 1.0) 
     if (n.y > maxY) maxY = n.y;
   });
 
-  // --- Step 1: Build structured grid (ALL nodes, no filtering) ---
   const cols = Math.round((maxX - minX) / meshSize);
   const rows = Math.round((maxY - minY) / meshSize);
   const dx = (maxX - minX) / Math.max(cols, 1);
   const dy = (maxY - minY) / Math.max(rows, 1);
 
+  // ── Step 1: Collect X grid line positions ─────────────────────────────────
+  // Base lines + one line through every opening corner's X coordinate
+  const PREC = 6; // decimal places for deduplication
+  const fmt = (v) => parseFloat(v.toFixed(PREC));
+
+  const xSet = new Set();
+  for (let c = 0; c <= cols; c++) xSet.add(fmt(minX + c * dx));
+
+  openingsNodes.forEach(hole => {
+    hole.forEach(n => {
+      const x = fmt(n.x);
+      // Only add if it falls within the slab bounding box
+      if (x >= fmt(minX) && x <= fmt(maxX)) xSet.add(x);
+    });
+  });
+
+  const sortedX = [...xSet].sort((a, b) => a - b);
+
+  // ── Step 2: Collect Y grid line positions ─────────────────────────────────
+  const ySet = new Set();
+  for (let r = 0; r <= rows; r++) ySet.add(fmt(minY + r * dy));
+
+  openingsNodes.forEach(hole => {
+    hole.forEach(n => {
+      const y = fmt(n.y);
+      if (y >= fmt(minY) && y <= fmt(maxY)) ySet.add(y);
+    });
+  });
+
+  const sortedY = [...ySet].sort((a, b) => a - b);
+
+  // ── Step 3: Build 2D node grid ────────────────────────────────────────────
   let idCounter = 0;
+  // grid[rowIdx][colIdx] → node object
+  const grid = sortedY.map(y =>
+    sortedX.map(x => ({ id: `G-${++idCounter}`, x, y, z: avgZ }))
+  );
 
-  // grid[r][c] always exists - all boundary nodes included
-  const grid = [];
-  for (let r = 0; r <= rows; r++) {
-    grid[r] = [];
-    for (let c = 0; c <= cols; c++) {
-      grid[r][c] = {
-        id: `G-${++idCounter}`,
-        x: minX + c * dx,
-        y: minY + r * dy,
-        z: avgZ
-      };
-    }
-  }
-
-  // --- Step 2: Decide which CELLS are active using centroid test ---
+  // ── Step 4: Generate Quad elements (centroid test) ────────────────────────
   const elements = [];
   const usedNodeIds = new Set();
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const p00 = grid[r][c];         // bottom-left
-      const p10 = grid[r][c + 1];     // bottom-right
-      const p11 = grid[r + 1][c + 1]; // top-right
-      const p01 = grid[r + 1][c];     // top-left
-
-      // Test centroid of this cell
-      const cx = (p00.x + p10.x + p11.x + p01.x) / 4;
-      const cy = (p00.y + p10.y + p11.y + p01.y) / 4;
+  for (let r = 0; r < sortedY.length - 1; r++) {
+    for (let c = 0; c < sortedX.length - 1; c++) {
+      // Cell centroid
+      const cx = (sortedX[c] + sortedX[c + 1]) / 2;
+      const cy = (sortedY[r] + sortedY[r + 1]) / 2;
 
       if (!isCellValid(cx, cy, boundaryNodes, openingsNodes)) continue;
 
-      // Full quad cell - add as Quad element
+      const p00 = grid[r][c];          // bottom-left
+      const p10 = grid[r][c + 1];      // bottom-right
+      const p11 = grid[r + 1][c + 1];  // top-right
+      const p01 = grid[r + 1][c];      // top-left
+
       elements.push({ type: 'quad', nodes: [p00, p10, p11, p01] });
       [p00, p10, p11, p01].forEach(n => usedNodeIds.add(n.id));
     }
   }
 
-  // --- Step 3: Only keep nodes that are actually referenced by elements ---
+  // ── Step 5: Collect only referenced nodes ─────────────────────────────────
   const finalNodes = [];
   const seenIds = new Set();
-  for (let r = 0; r <= rows; r++) {
-    for (let c = 0; c <= cols; c++) {
+  for (let r = 0; r < sortedY.length; r++) {
+    for (let c = 0; c < sortedX.length; c++) {
       const n = grid[r][c];
       if (usedNodeIds.has(n.id) && !seenIds.has(n.id)) {
         finalNodes.push(n);
@@ -119,7 +130,7 @@ export function generateMesh(boundaryNodes, openingsNodes = [], meshSize = 1.0) 
     }
   }
 
-  // --- Step 4: Serialize elements ---
+  // ── Step 6: Serialize elements (remove node refs, keep nodeIds) ───────────
   elements.forEach((el, idx) => {
     el.id = `FE-${idx}`;
     el.nodeIds = el.nodes.map(n => n.id);
