@@ -34,7 +34,7 @@ function CoordinateTracker() {
   return null;
 }
 
-function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activeResultType }) {
+function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activeResultType, globalRange }) {
   const { nodes, selectedIds, toggleSelection, viewMode, openings, activeResultCombo } = useStructureStore();
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
@@ -173,6 +173,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
         shellId={id} 
         results={results?.results?.[activeResultCombo]} 
         activeResultMap={activeResultType?.startsWith('Shell_') ? activeResultType.replace('Shell_', '') : 'None'} 
+        globalRange={globalRange}
       />
     </group>
   );
@@ -1079,8 +1080,35 @@ export function StructureCanvas() {
     });
   };
 
+  const shellHeatmapRange = useMemo(() => {
+    if (viewMode !== 'results' || !activeResultCombo || !activeResultType?.startsWith('Shell_')) return null;
+    const comboResults = results?.results?.[activeResultCombo];
+    if (!comboResults || !comboResults.shell_forces) return null;
+
+    const prop = activeResultType.replace('Shell_', '');
+    let vMin = Infinity;
+    let vMax = -Infinity;
+    
+    shells.forEach(shell => {
+      const meshElems = shell.mesh?.elements || [];
+      meshElems.forEach(el => {
+        const forces = comboResults.shell_forces[el.id];
+        if (forces && forces[prop] !== undefined) {
+          const v = forces[prop];
+          if (isFinite(v)) {
+            if (v < vMin) vMin = v;
+            if (v > vMax) vMax = v;
+          }
+        }
+      });
+    });
+
+    if (!isFinite(vMin) || !isFinite(vMax)) return null;
+    return { min: vMin, max: vMax, prop };
+  }, [viewMode, activeResultCombo, activeResultType, results, shells]);
+
   return (
-    <div className="w-full h-screen bg-slate-900">
+    <div className="w-full h-screen bg-slate-900 relative">
       <Canvas 
         onPointerMissed={() => {
           if (!isDrawingShell && viewMode !== 'results') clearSelection();
@@ -1209,7 +1237,7 @@ export function StructureCanvas() {
           const active = cameraView === '3D' || shellNodes.every(n => isNodeActive(n));
           // En vista 2D: omitir shells de otros niveles
           if (!active && cameraView !== '3D') return null;
-          return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={false} mesh={s.mesh} results={results} activeResultType={activeResultType} />;
+          return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={false} mesh={s.mesh} results={results} activeResultType={activeResultType} globalRange={shellHeatmapRange} />;
         })}
 
 
@@ -1226,6 +1254,22 @@ export function StructureCanvas() {
         <SelectionHandler />
         
       </Canvas>
+
+      {/* Heatmap Legend */}
+      {shellHeatmapRange && (
+        <div className="absolute bottom-6 left-6 bg-slate-900/80 border border-slate-700 backdrop-blur-md rounded-md p-4 shadow-xl z-10 flex flex-col items-center pointer-events-none">
+          <div className="text-slate-300 text-xs font-bold mb-3 tracking-wider border-b border-slate-600 pb-1 w-full text-center">
+            {activeResultCombo} / {shellHeatmapRange.prop}
+          </div>
+          <div className="w-6 h-48 rounded-sm mb-2 relative shadow-inner" style={{
+            background: 'linear-gradient(to top, #3b82f6 0%, #a855f7 50%, #ef4444 100%)' // Blue to Red
+          }}>
+            <div className="absolute -right-20 top-0 text-red-400 text-xs font-mono font-bold whitespace-nowrap">{shellHeatmapRange.max.toExponential(3)}</div>
+            <div className="absolute -right-20 bottom-0 text-blue-400 text-xs font-mono font-bold whitespace-nowrap">{shellHeatmapRange.min.toExponential(3)}</div>
+            <div className="absolute -right-20 top-1/2 -translate-y-1/2 text-purple-400 text-xs font-mono font-bold whitespace-nowrap">{((shellHeatmapRange.max + shellHeatmapRange.min) / 2).toExponential(3)}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

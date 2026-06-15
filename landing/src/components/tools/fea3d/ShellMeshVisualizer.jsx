@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import * as THREE from 'three';
+import { Html } from '@react-three/drei';
 
 // Color map from blue (min) to red (max)
 function getColor(value, min, max) {
@@ -22,7 +23,9 @@ function isValidNode(n) {
     isFinite(n.z) && !isNaN(n.z);
 }
 
-export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap }) {
+export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, globalRange }) {
+  const [hovered, setHovered] = useState(null);
+
   const { lineGeometry, faceGeometry, hasFaces } = useMemo(() => {
     const EMPTY = {
       lineGeometry: new THREE.BufferGeometry(),
@@ -55,16 +58,21 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap })
       activeResultMap !== 'None';
 
     if (showHeatmap) {
-      mesh.elements.forEach(el => {
-        const forces = results.shell_forces[el.id];
-        if (forces) {
-          const v = forces[activeResultMap];
-          if (v !== undefined && isFinite(v)) {
-            if (v < valMin) valMin = v;
-            if (v > valMax) valMax = v;
+      if (globalRange) {
+        valMin = globalRange.min;
+        valMax = globalRange.max;
+      } else {
+        mesh.elements.forEach(el => {
+          const forces = results.shell_forces[el.id];
+          if (forces) {
+            const v = forces[activeResultMap];
+            if (v !== undefined && isFinite(v)) {
+              if (v < valMin) valMin = v;
+              if (v > valMax) valMax = v;
+            }
           }
-        }
-      });
+        });
+      }
     }
 
     const hasRange = isFinite(valMin) && isFinite(valMax);
@@ -73,6 +81,7 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap })
     const linePositions = [];
     const facePositions = [];
     const faceColors    = [];
+    const faceToElement = [];
 
     mesh.elements.forEach(el => {
       const ids = el.nodeIds || [];
@@ -102,6 +111,7 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap })
         );
         facePositions.push(a.x, a.y, a.z, c1.x, c1.y, c1.z, c2.x, c2.y, c2.z);
         faceColors.push(r, g, b, r, g, b, r, g, b);
+        faceToElement.push(el.id);
 
       } else if (el.type === 'quad' && p.length >= 4 &&
           isValidNode(p[0]) && isValidNode(p[1]) &&
@@ -116,9 +126,11 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap })
         // Triangle 1: a, b2, c
         facePositions.push(a.x, a.y, a.z, b2.x, b2.y, b2.z, c.x, c.y, c.z);
         faceColors.push(r, g, b, r, g, b, r, g, b);
+        faceToElement.push(el.id);
         // Triangle 2: a, c, d
         facePositions.push(a.x, a.y, a.z, c.x, c.y, c.z, d.x, d.y, d.z);
         faceColors.push(r, g, b, r, g, b, r, g, b);
+        faceToElement.push(el.id);
       }
     });
 
@@ -133,6 +145,7 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap })
       fGeo.setAttribute('position', new THREE.Float32BufferAttribute(facePositions, 3));
       fGeo.setAttribute('color',    new THREE.Float32BufferAttribute(faceColors, 3));
       fGeo.computeVertexNormals();
+      fGeo.userData = { faceToElement };
     }
 
     return {
@@ -140,15 +153,38 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap })
       faceGeometry: fGeo,
       hasFaces: facePositions.length > 0,
     };
-  }, [mesh, results, activeResultMap]);
+  }, [mesh, results, activeResultMap, globalRange]);
 
   return (
     <group>
       {/* Solid Faces with Heatmap */}
       {hasFaces && showingHeatmap(results, activeResultMap) && (
-        <mesh geometry={faceGeometry}>
+        <mesh 
+          geometry={faceGeometry}
+          onPointerMove={(e) => {
+            if (e.faceIndex !== undefined) {
+              e.stopPropagation();
+              const elId = faceGeometry.userData.faceToElement[e.faceIndex];
+              if (elId) {
+                const forces = results.shell_forces[elId];
+                const val = forces && forces[activeResultMap] !== undefined ? forces[activeResultMap] : 0;
+                setHovered({ x: e.point.x, y: e.point.y, z: e.point.z, id: elId, val });
+              }
+            }
+          }}
+          onPointerOut={() => setHovered(null)}
+        >
           <meshBasicMaterial vertexColors side={THREE.DoubleSide} opacity={0.85} transparent depthWrite={false} />
         </mesh>
+      )}
+
+      {hovered && (
+        <Html position={[hovered.x, hovered.y, hovered.z]} style={{ pointerEvents: 'none' }} zIndexRange={[100, 0]}>
+          <div className="bg-slate-900/90 text-white text-xs px-2 py-1.5 rounded-md shadow-lg pointer-events-none whitespace-nowrap transform -translate-x-1/2 -translate-y-[150%] border border-slate-700 backdrop-blur-sm flex flex-col gap-1 items-center">
+            <span className="text-slate-400 font-medium">Element {hovered.id}</span>
+            <span className="font-bold text-blue-400">{activeResultMap} = {hovered.val.toExponential(3)}</span>
+          </div>
+        </Html>
       )}
 
       {/* Wireframe overlay — only render if geometry has vertices */}
