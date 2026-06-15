@@ -59,7 +59,10 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
       const n = nodes.find(nd => nd.id === nid);
       if (!n) return null;
       const d = getDisplacement ? getDisplacement(n.id) : [0, 0, 0];
-      return { x: n.x + d[0], y: n.y + d[1], z: n.z + d[2] };
+      const dx = isFinite(d[0]) ? d[0] : 0;
+      const dy = isFinite(d[1]) ? d[1] : 0;
+      const dz = isFinite(d[2]) ? d[2] : 0;
+      return { x: n.x + dx, y: n.y + dy, z: n.z + dz };
     }).filter(Boolean);
     
     if (coords.length < 3) return null;
@@ -182,7 +185,14 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
 
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array([...start, ...end]);
+    const sx = isFinite(start[0]) ? start[0] : 0;
+    const sy = isFinite(start[1]) ? start[1] : 0;
+    const sz = isFinite(start[2]) ? start[2] : 0;
+    const ex = isFinite(end[0]) ? end[0] : 0;
+    const ey = isFinite(end[1]) ? end[1] : 0;
+    const ez = isFinite(end[2]) ? end[2] : 0;
+    
+    const positions = new Float32Array([sx, sy, sz, ex, ey, ez]);
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     return geo;
   }, [start[0], start[1], start[2], end[0], end[1], end[2]]);

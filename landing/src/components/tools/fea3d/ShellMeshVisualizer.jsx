@@ -3,38 +3,63 @@ import * as THREE from 'three';
 
 // Color map from blue (min) to red (max)
 function getColor(value, min, max) {
-  if (min === max) return new THREE.Color('#3b82f6'); // default blue if no variation
-  const ratio = (value - min) / (max - min);
-  // HSL: Blue (240) to Red (0)
-  const hue = (1 - ratio) * 240 / 360; 
+  if (!isFinite(min) || !isFinite(max) || min === max) {
+    return new THREE.Color('#3b82f6'); // default blue
+  }
+  const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  // HSL: Blue (240°) → Red (0°)
+  const hue = (1 - ratio) * 240 / 360;
   const color = new THREE.Color();
   color.setHSL(hue, 1.0, 0.5);
   return color;
 }
 
+// Safely check if a node object has valid finite coordinates
+function isValidNode(n) {
+  return n != null &&
+    isFinite(n.x) && !isNaN(n.x) &&
+    isFinite(n.y) && !isNaN(n.y) &&
+    isFinite(n.z) && !isNaN(n.z);
+}
+
 export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap }) {
-  if (!mesh || !mesh.elements || !mesh.nodes) return null;
+  const { lineGeometry, faceGeometry, hasFaces } = useMemo(() => {
+    const EMPTY = {
+      lineGeometry: new THREE.BufferGeometry(),
+      faceGeometry: new THREE.BufferGeometry(),
+      hasFaces: false,
+    };
 
-  // Render both Wireframe and Solid Faces
-  const { lineGeometry, faceGeometry } = useMemo(() => {
-    const linePoints = [];
-    const facePositions = [];
-    const faceColors = [];
-    
-    // Map node IDs to coordinates for quick lookup
+    if (!mesh || !Array.isArray(mesh.elements) || !Array.isArray(mesh.nodes)) {
+      return EMPTY;
+    }
+    if (mesh.elements.length === 0 || mesh.nodes.length === 0) {
+      return EMPTY;
+    }
+
+    // Build node lookup map
     const nodeMap = new Map();
-    mesh.nodes.forEach(n => nodeMap.set(n.id, n));
+    mesh.nodes.forEach(n => {
+      if (isValidNode(n)) nodeMap.set(n.id, n);
+    });
 
-    // Get Min/Max values for heatmap
+    if (nodeMap.size === 0) return EMPTY;
+
+    // --- Compute heatmap range ---
     let valMin = Infinity;
     let valMax = -Infinity;
-    
-    if (results && results.shell_forces && activeResultMap && activeResultMap !== 'None') {
+    const showHeatmap =
+      results &&
+      results.shell_forces &&
+      activeResultMap &&
+      activeResultMap !== 'None';
+
+    if (showHeatmap) {
       mesh.elements.forEach(el => {
         const forces = results.shell_forces[el.id];
-        if (forces && forces[activeResultMap] !== undefined) {
+        if (forces) {
           const v = forces[activeResultMap];
-          if (!isNaN(v)) {
+          if (v !== undefined && isFinite(v)) {
             if (v < valMin) valMin = v;
             if (v > valMax) valMax = v;
           }
@@ -42,72 +67,100 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap })
       });
     }
 
+    const hasRange = isFinite(valMin) && isFinite(valMax);
+
+    // --- Build geometry buffers ---
+    const linePositions = [];
+    const facePositions = [];
+    const faceColors    = [];
+
     mesh.elements.forEach(el => {
-      const p1 = nodeMap.get(el.nodeIds[0]);
-      const p2 = nodeMap.get(el.nodeIds[1]);
-      const p3 = nodeMap.get(el.nodeIds[2]);
-      const p4 = el.nodeIds.length === 4 ? nodeMap.get(el.nodeIds[3]) : null;
-      
-      let elColor = new THREE.Color('#1f2937'); // Default gray/dark for face
-      if (results && results.shell_forces && activeResultMap && activeResultMap !== 'None' && valMin !== Infinity) {
+      const ids = el.nodeIds || [];
+      const p = ids.map(id => nodeMap.get(id));
+
+      // Resolve element color
+      let elColor = new THREE.Color(0x1f2937);
+      if (showHeatmap && hasRange) {
         const forces = results.shell_forces[el.id];
-        if (forces && forces[activeResultMap] !== undefined && !isNaN(forces[activeResultMap])) {
-           elColor = getColor(forces[activeResultMap], valMin, valMax);
+        if (forces) {
+          const v = forces[activeResultMap];
+          if (v !== undefined && isFinite(v)) {
+            elColor = getColor(v, valMin, valMax);
+          }
         }
       }
 
-      if (el.type === 'triangle' && p1 && p2 && p3) {
-        // Lines
-        linePoints.push(
-          new THREE.Vector3(p1.x, p1.y, p1.z), new THREE.Vector3(p2.x, p2.y, p2.z),
-          new THREE.Vector3(p2.x, p2.y, p2.z), new THREE.Vector3(p3.x, p3.y, p3.z),
-          new THREE.Vector3(p3.x, p3.y, p3.z), new THREE.Vector3(p1.x, p1.y, p1.z)
+      const { r, g, b } = elColor;
+
+      if (el.type === 'triangle' && p.length >= 3 &&
+          isValidNode(p[0]) && isValidNode(p[1]) && isValidNode(p[2])) {
+        const [a, c1, c2] = p;
+        linePositions.push(
+          a.x, a.y, a.z,  c1.x, c1.y, c1.z,
+          c1.x, c1.y, c1.z, c2.x, c2.y, c2.z,
+          c2.x, c2.y, c2.z,  a.x,  a.y,  a.z,
         );
-        // Faces
-        facePositions.push(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, p3.x, p3.y, p3.z);
-        faceColors.push(elColor.r, elColor.g, elColor.b, elColor.r, elColor.g, elColor.b, elColor.r, elColor.g, elColor.b);
-        
-      } else if (el.type === 'quad' && p1 && p2 && p3 && p4) {
-        // Lines
-        linePoints.push(
-          new THREE.Vector3(p1.x, p1.y, p1.z), new THREE.Vector3(p2.x, p2.y, p2.z),
-          new THREE.Vector3(p2.x, p2.y, p2.z), new THREE.Vector3(p3.x, p3.y, p3.z),
-          new THREE.Vector3(p3.x, p3.y, p3.z), new THREE.Vector3(p4.x, p4.y, p4.z),
-          new THREE.Vector3(p4.x, p4.y, p4.z), new THREE.Vector3(p1.x, p1.y, p1.z)
+        facePositions.push(a.x, a.y, a.z, c1.x, c1.y, c1.z, c2.x, c2.y, c2.z);
+        faceColors.push(r, g, b, r, g, b, r, g, b);
+
+      } else if (el.type === 'quad' && p.length >= 4 &&
+          isValidNode(p[0]) && isValidNode(p[1]) &&
+          isValidNode(p[2]) && isValidNode(p[3])) {
+        const [a, b2, c, d] = p;
+        linePositions.push(
+          a.x, a.y, a.z,  b2.x, b2.y, b2.z,
+          b2.x, b2.y, b2.z, c.x,  c.y,  c.z,
+          c.x,  c.y,  c.z,  d.x,  d.y,  d.z,
+          d.x,  d.y,  d.z,  a.x,  a.y,  a.z,
         );
-        // Faces (2 triangles for WebGL)
-        // Tri 1: 1, 2, 3
-        facePositions.push(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, p3.x, p3.y, p3.z);
-        faceColors.push(elColor.r, elColor.g, elColor.b, elColor.r, elColor.g, elColor.b, elColor.r, elColor.g, elColor.b);
-        // Tri 2: 1, 3, 4
-        facePositions.push(p1.x, p1.y, p1.z, p3.x, p3.y, p3.z, p4.x, p4.y, p4.z);
-        faceColors.push(elColor.r, elColor.g, elColor.b, elColor.r, elColor.g, elColor.b, elColor.r, elColor.g, elColor.b);
+        // Triangle 1: a, b2, c
+        facePositions.push(a.x, a.y, a.z, b2.x, b2.y, b2.z, c.x, c.y, c.z);
+        faceColors.push(r, g, b, r, g, b, r, g, b);
+        // Triangle 2: a, c, d
+        facePositions.push(a.x, a.y, a.z, c.x, c.y, c.z, d.x, d.y, d.z);
+        faceColors.push(r, g, b, r, g, b, r, g, b);
       }
     });
 
-    const lGeo = new THREE.BufferGeometry().setFromPoints(linePoints);
-    
-    const fGeo = new THREE.BufferGeometry();
-    fGeo.setAttribute('position', new THREE.Float32BufferAttribute(facePositions, 3));
-    fGeo.setAttribute('color', new THREE.Float32BufferAttribute(faceColors, 3));
-    fGeo.computeVertexNormals();
+    // Guard: if no valid geometry was produced, return empty
+    if (linePositions.length === 0) return EMPTY;
 
-    return { lineGeometry: lGeo, faceGeometry: fGeo };
+    const lGeo = new THREE.BufferGeometry();
+    lGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+
+    const fGeo = new THREE.BufferGeometry();
+    if (facePositions.length > 0) {
+      fGeo.setAttribute('position', new THREE.Float32BufferAttribute(facePositions, 3));
+      fGeo.setAttribute('color',    new THREE.Float32BufferAttribute(faceColors, 3));
+      fGeo.computeVertexNormals();
+    }
+
+    return {
+      lineGeometry: lGeo,
+      faceGeometry: fGeo,
+      hasFaces: facePositions.length > 0,
+    };
   }, [mesh, results, activeResultMap]);
 
   return (
     <group>
       {/* Solid Faces with Heatmap */}
-      {(results && activeResultMap && activeResultMap !== 'None') ? (
-         <mesh geometry={faceGeometry}>
-           <meshBasicMaterial vertexColors={true} side={THREE.DoubleSide} opacity={0.8} transparent />
-         </mesh>
-      ) : null}
-      
-      {/* Wireframe overlay */}
-      <lineSegments geometry={lineGeometry}>
-        <lineBasicMaterial color="#10b981" opacity={0.5} transparent depthTest={false} />
-      </lineSegments>
+      {hasFaces && showingHeatmap(results, activeResultMap) && (
+        <mesh geometry={faceGeometry}>
+          <meshBasicMaterial vertexColors side={THREE.DoubleSide} opacity={0.85} transparent depthWrite={false} />
+        </mesh>
+      )}
+
+      {/* Wireframe overlay — only render if geometry has vertices */}
+      {lineGeometry && lineGeometry.attributes.position && (
+        <lineSegments geometry={lineGeometry}>
+          <lineBasicMaterial color="#10b981" opacity={0.6} transparent depthTest={false} />
+        </lineSegments>
+      )}
     </group>
   );
+}
+
+function showingHeatmap(results, activeResultMap) {
+  return results && results.shell_forces && activeResultMap && activeResultMap !== 'None';
 }
