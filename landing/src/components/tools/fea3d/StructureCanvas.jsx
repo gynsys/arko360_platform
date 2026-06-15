@@ -144,26 +144,29 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh }) {
   if (!geometry) return null;
 
   return (
-    <mesh
-      geometry={geometry}
-      userData={{ shellId: id }}
-      onClick={isResultsMode || isFaded ? undefined : (e) => { 
-        if (e.delta > 5) return; // Ignorar si fue un drag
-        e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
-      }}
-    >
-      <meshStandardMaterial
-        color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
-        transparent={true}
-        depthWrite={false}
-        opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? 0.15 : 0.25}
-        side={THREE.DoubleSide}
-        wireframe={isFaded}
-        polygonOffset={true}
-        polygonOffsetFactor={-1}
-        polygonOffsetUnits={-1}
-      />
-    </mesh>
+    <group>
+      <mesh
+        geometry={geometry}
+        userData={{ shellId: id }}
+        onClick={isResultsMode || isFaded ? undefined : (e) => { 
+          if (e.delta > 5) return; // Ignorar si fue un drag
+          e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
+        }}
+      >
+        <meshStandardMaterial
+          color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
+          transparent={true}
+          depthWrite={false}
+          opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? 0.15 : 0.25}
+          side={THREE.DoubleSide}
+          wireframe={isFaded}
+          polygonOffset={true}
+          polygonOffsetFactor={-1}
+          polygonOffsetUnits={-1}
+        />
+      </mesh>
+      <ShellMeshVisualizer mesh={mesh} />
+    </group>
   );
 }
 
@@ -339,7 +342,6 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
           </Text>
         );
       })()}
-      <ShellMeshVisualizer mesh={mesh} />
     </group>
   );
 }
