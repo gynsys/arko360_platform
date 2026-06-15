@@ -1314,12 +1314,22 @@ export function StructureCanvas() {
           <div className="text-slate-300 text-xs font-bold mb-3 tracking-wider border-b border-slate-600 pb-1 w-full text-center">
             {activeResultCombo} / {shellHeatmapRange.prop}
           </div>
-          <div className="w-5 h-48 rounded border border-slate-700 mb-2 relative shadow-inner" style={{
-            background: 'linear-gradient(to top, hsl(240,100%,50%), hsl(180,100%,50%), hsl(120,100%,50%), hsl(60,100%,50%), hsl(0,100%,50%))'
-          }}>
-            <div className="absolute -right-2 top-0 translate-x-full text-slate-200 text-xs font-mono font-bold whitespace-nowrap bg-slate-800/80 px-1 rounded">{shellHeatmapRange.max.toExponential(2)}</div>
-            <div className="absolute -right-2 bottom-0 translate-x-full text-slate-200 text-xs font-mono font-bold whitespace-nowrap bg-slate-800/80 px-1 rounded">{shellHeatmapRange.min.toExponential(2)}</div>
-            <div className="absolute -right-2 top-1/2 -translate-y-1/2 translate-x-full text-slate-200 text-xs font-mono font-bold whitespace-nowrap bg-slate-800/80 px-1 rounded">{((shellHeatmapRange.max + shellHeatmapRange.min) / 2).toExponential(2)}</div>
+          <div className="flex flex-col-reverse items-start shadow-inner border border-slate-700 bg-slate-800">
+            {Array.from({ length: 11 }).map((_, i) => {
+              const numBands = 11;
+              const discreteRatio = i / (numBands - 1);
+              const hue = (1 - discreteRatio) * 240;
+              const bgColor = `hsl(${hue}, 100%, 50%)`;
+              const value = shellHeatmapRange.min + discreteRatio * (shellHeatmapRange.max - shellHeatmapRange.min);
+              return (
+                <div key={i} className="flex items-center w-full">
+                  <div className="w-6 h-5" style={{ background: bgColor }} />
+                  <div className="ml-2 text-slate-200 text-[10px] font-mono font-bold whitespace-nowrap pr-2">
+                    {value.toExponential(2)}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

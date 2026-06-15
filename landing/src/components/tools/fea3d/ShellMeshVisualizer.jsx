@@ -2,14 +2,19 @@ import React, { useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 
-// Color map from blue (min) to red (max)
+// Color map from blue (min) to red (max) using discrete ETABS-style bands
 function getColor(value, min, max) {
   if (!isFinite(min) || !isFinite(max) || min === max) {
     return new THREE.Color('#3b82f6'); // default blue
   }
   const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  
+  const numBands = 11;
+  const band = Math.floor(ratio * 0.99999 * numBands);
+  const discreteRatio = band / (numBands - 1);
+  
   // HSL: Blue (240°) → Red (0°)
-  const hue = (1 - ratio) * 240 / 360;
+  const hue = (1 - discreteRatio) * 240 / 360;
   const color = new THREE.Color();
   color.setHSL(hue, 1.0, 0.5);
   return color;

@@ -78,31 +78,29 @@ export function ResultsPanel() {
         </div>
 
         {/* Slider de Escala para Deformada */}
-        {activeResultType === 'deformed' && (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
-                <Scaling size={12} /> Factor de Escala (Def.)
-              </label>
-              <span className="text-xs text-indigo-300 font-mono bg-indigo-900/40 px-2 py-0.5 rounded">
-                x{displacementScale}
-              </span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max={Math.max(10000, displacementScale * 2)}
-              step="10"
-              value={displacementScale}
-              onChange={(e) => setDisplacementScale(parseInt(e.target.value))}
-              className="w-full accent-indigo-500"
-            />
-            <div className="flex justify-between text-[9px] text-slate-500 mt-1 font-mono">
-              <span>x1</span>
-              <span>x{Math.max(10000, displacementScale * 2)}</span>
-            </div>
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
+              <Scaling size={12} /> Factor de Escala (Def.)
+            </label>
+            <span className="text-xs text-indigo-300 font-mono bg-indigo-900/40 px-2 py-0.5 rounded">
+              x{displacementScale}
+            </span>
           </div>
-        )}
+          <input
+            type="range"
+            min="1"
+            max={Math.max(10000, displacementScale * 2)}
+            step="10"
+            value={displacementScale}
+            onChange={(e) => setDisplacementScale(parseInt(e.target.value))}
+            className="w-full accent-indigo-500"
+          />
+          <div className="flex justify-between text-[9px] text-slate-500 mt-1 font-mono">
+            <span>x1</span>
+            <span>x{Math.max(10000, displacementScale * 2)}</span>
+          </div>
+        </div>
 
         {/* Slider de Escala para Diagramas */}
         {activeResultType !== 'deformed' && (

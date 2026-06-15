@@ -254,9 +254,40 @@ export default function FEA3DContainer() {
 
   const handleDownloadAudit = () => {
     const state = useStructureStore.getState();
+    // Generar un resumen legible para auditoría de unidades y dimensiones
+    const verificacion_fisica = {
+      notas_unidades: "Las propiedades geométricas y de materiales se listan tal como el solver las interpreta (típicamente MKS: m, kgf).",
+      elementos_tipo_frame: state.elements.map(el => {
+        const n1 = state.nodes.find(n => n.id === el.nodes[0]);
+        const n2 = state.nodes.find(n => n.id === el.nodes[1]);
+        const dx = n2.x - n1.x; const dy = n2.y - n1.y; const dz = n2.z - n1.z;
+        const L = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        const sec = state.sections.find(s => s.id === el.section_id);
+        const mat = sec ? state.materials.find(m => m.id === sec.material_id) : null;
+        return {
+          id: el.id,
+          longitud_calculada: L,
+          seccion: sec ? { nombre: sec.name, params: sec.params, area: sec.A, inercias: [sec.Ix, sec.Iy, sec.J] } : "No asignada",
+          material: mat ? { nombre: mat.name, E: mat.E, fc: mat.fc, G: mat.G } : "No asignado"
+        };
+      }),
+      elementos_tipo_losa: state.shells.map(sh => {
+        const mat = state.materials.find(m => m.id === sh.material_id);
+        return {
+          id: sh.id,
+          espesor_m: sh.thickness,
+          material: mat ? { nombre: mat.name, E: mat.E, fc: mat.fc, peso: mat.weightVol } : "No asignado",
+          nodos_asignados: sh.nodes
+        };
+      }),
+      materiales_registrados: state.materials,
+      secciones_registradas: state.sections
+    };
+
     const auditData = {
       timestamp: new Date().toISOString(),
       metadata: state.metadata,
+      verificacion_fisica: verificacion_fisica,
       formulas_aplicadas: {
         "matriz_rigidez_local": "[k_loc] = f(E, G, A, J, Iy, Ix, L)",
         "transformacion_coordenadas": "[K_global] = [T]^T * [k_loc] * [T]",
@@ -264,7 +295,7 @@ export default function FEA3DContainer() {
         "ecuacion_principal": "[K] * {U} = {F}",
         "penalty_method": "Multiplicación de la diagonal de [K] por 1e30 en los Grados de Libertad restringidos",
         "recuperacion_fuerzas_locales": "{f_local} = [k_loc] * {u_local} + {f_fixed_local}",
-        "teoria_aplicada": "Flexión 3D de Euler-Bernoulli"
+        "teoria_aplicada": "Flexión 3D de Euler-Bernoulli y Kirchhoff-Mindlin para Placas"
       },
       nodes: state.nodes,
       elements: state.elements,
