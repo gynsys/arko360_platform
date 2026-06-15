@@ -363,6 +363,7 @@ class StructuralSolver:
                                 F[n_idx * 6 + 1] += load.fy * factor * N[i]
                                 F[n_idx * 6 + 2] += load.fz * factor * N[i]
                             break
+                            break
 
         return F, element_local_loads
 

@@ -23,7 +23,7 @@ function isValidNode(n) {
     isFinite(n.z) && !isNaN(n.z);
 }
 
-export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, globalRange }) {
+export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, globalRange, unit }) {
   const [hovered, setHovered] = useState(null);
 
   const { lineGeometry, faceGeometry, hasFaces } = useMemo(() => {
@@ -182,7 +182,7 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, g
         <Html position={[hovered.x, hovered.y, hovered.z]} style={{ pointerEvents: 'none' }} zIndexRange={[100, 0]}>
           <div className="bg-slate-900/90 text-white text-xs px-2 py-1.5 rounded-md shadow-lg pointer-events-none whitespace-nowrap transform -translate-x-1/2 -translate-y-[150%] border border-slate-700 backdrop-blur-sm flex flex-col gap-1 items-center">
             <span className="text-slate-400 font-medium">Element {hovered.id}</span>
-            <span className="font-bold text-blue-400">{activeResultMap} = {hovered.val.toExponential(3)}</span>
+            <span className="font-bold text-blue-400">{activeResultMap} = {hovered.val.toExponential(3)} {unit}</span>
           </div>
         </Html>
       )}

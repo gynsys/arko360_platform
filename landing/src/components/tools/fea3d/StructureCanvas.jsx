@@ -35,7 +35,8 @@ function CoordinateTracker() {
 }
 
 function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activeResultType, globalRange }) {
-  const { nodes, selectedIds, toggleSelection, viewMode, openings, activeResultCombo } = useStructureStore();
+  const { nodes, selectedIds, toggleSelection, viewMode, openings, activeResultCombo, metadata } = useStructureStore();
+  const units = metadata?.units || { force: 'kgf', length: 'm', moment: 'kgf-m' };
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
 
@@ -174,6 +175,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
         results={results?.results?.[activeResultCombo]} 
         activeResultMap={activeResultType?.startsWith('Shell_') ? activeResultType.replace('Shell_', '') : 'None'} 
         globalRange={globalRange}
+        unit={units.moment}
       />
     </group>
   );
@@ -1181,6 +1183,27 @@ export function StructureCanvas() {
             const n2 = nodes.find(n => n.id === targetElem.nodes[1]);
             if (!n1 || !n2 || (!isNodeActive(n1) && !isNodeActive(n2))) return null;
             return <FrameLoadGraphic key={load.id} element={targetElem} load={load} nodes={nodes} />;
+          } else if (load.type === 'point_shell') {
+            const shell = shells.find(s => s.id === load.target_id);
+            if (!shell) return null;
+            
+            // Calc absolute position from offsets
+            const shellNodes = shell.nodes.map(nid => nodes.find(n => n.id === nid)).filter(Boolean);
+            if (shellNodes.length === 0) return null;
+            const minX = Math.min(...shellNodes.map(n => n.x));
+            const maxX = Math.max(...shellNodes.map(n => n.x));
+            const minY = Math.min(...shellNodes.map(n => n.y));
+            const maxY = Math.max(...shellNodes.map(n => n.y));
+            const z = shellNodes[0].z;
+            
+            const pos = {
+              x: minX + (maxX - minX) * (load.offset_x || 0.5),
+              y: minY + (maxY - minY) * (load.offset_y || 0.5),
+              z: z,
+              id: `virtual_${load.id}`
+            };
+            
+            return <PointLoadArrow key={load.id} node={pos} load={load} />;
           }
           return null;
         })}
@@ -1261,12 +1284,12 @@ export function StructureCanvas() {
           <div className="text-slate-300 text-xs font-bold mb-3 tracking-wider border-b border-slate-600 pb-1 w-full text-center">
             {activeResultCombo} / {shellHeatmapRange.prop}
           </div>
-          <div className="w-6 h-48 rounded-sm mb-2 relative shadow-inner" style={{
-            background: 'linear-gradient(to top, #3b82f6 0%, #a855f7 50%, #ef4444 100%)' // Blue to Red
+          <div className="w-5 h-48 rounded border border-slate-700 mb-2 relative shadow-inner" style={{
+            background: 'linear-gradient(to top, hsl(240,100%,50%), hsl(180,100%,50%), hsl(120,100%,50%), hsl(60,100%,50%), hsl(0,100%,50%))'
           }}>
-            <div className="absolute -right-20 top-0 text-red-400 text-xs font-mono font-bold whitespace-nowrap">{shellHeatmapRange.max.toExponential(3)}</div>
-            <div className="absolute -right-20 bottom-0 text-blue-400 text-xs font-mono font-bold whitespace-nowrap">{shellHeatmapRange.min.toExponential(3)}</div>
-            <div className="absolute -right-20 top-1/2 -translate-y-1/2 text-purple-400 text-xs font-mono font-bold whitespace-nowrap">{((shellHeatmapRange.max + shellHeatmapRange.min) / 2).toExponential(3)}</div>
+            <div className="absolute -right-2 top-0 translate-x-full text-slate-200 text-xs font-mono font-bold whitespace-nowrap bg-slate-800/80 px-1 rounded">{shellHeatmapRange.max.toExponential(2)}</div>
+            <div className="absolute -right-2 bottom-0 translate-x-full text-slate-200 text-xs font-mono font-bold whitespace-nowrap bg-slate-800/80 px-1 rounded">{shellHeatmapRange.min.toExponential(2)}</div>
+            <div className="absolute -right-2 top-1/2 -translate-y-1/2 translate-x-full text-slate-200 text-xs font-mono font-bold whitespace-nowrap bg-slate-800/80 px-1 rounded">{((shellHeatmapRange.max + shellHeatmapRange.min) / 2).toExponential(2)}</div>
           </div>
         </div>
       )}
