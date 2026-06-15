@@ -21,13 +21,13 @@ export function DefineMaterialsModal({ onClose }) {
       type: 'Concrete',
       density: 2400,
       weightVol: 23.56,
-      E: 25000000000,
+      E: 2535600000,
       U: 0.2,
-      G: 10416666666,
+      G: 1056500000,
       A: 0.0000099,
-      fc: 28000000,
-      Fy: 42000000,
-      Fu: 60000000,
+      fc: 28550400,
+      Fy: 420000000,
+      Fu: 600000000,
       color: '#ff00ff'
     });
     setEditingMat('new');
@@ -62,10 +62,27 @@ export function DefineMaterialsModal({ onClose }) {
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'number' ? parseFloat(value) || 0 : value
-    }));
+    let numVal = type === 'number' ? parseFloat(value) || 0 : value;
+
+    // Convert from kgf/cm² (UI) to kgf/m² (internal) for these fields
+    if (['E', 'G', 'fc', 'Fy', 'Fu'].includes(name) && type === 'number') {
+      numVal = numVal * 10000;
+    }
+
+    setFormData(prev => {
+      const next = { ...prev, [name]: numVal };
+      
+      // Auto-calculate E and G when f'c changes for Concrete
+      if (name === 'fc' && next.type === 'Concrete') {
+        const fc_cm2 = numVal / 10000;
+        if (fc_cm2 > 0) {
+          const E_cm2 = 15100 * Math.sqrt(fc_cm2);
+          next.E = E_cm2 * 10000;
+          next.G = next.E / (2 * (1 + (next.U || 0.2)));
+        }
+      }
+      return next;
+    });
   };
 
   if (editingMat) {
@@ -108,7 +125,7 @@ export function DefineMaterialsModal({ onClose }) {
             <div className="border border-slate-300 p-3 rounded relative">
               <span className="absolute -top-2.5 left-2 bg-slate-50 px-1 text-blue-700 font-semibold text-xs">Material Weight and Mass</span>
               <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                <label>Weight per Unit Volume (kN/m³)</label>
+                <label>Weight per Unit Volume (kgf/m³)</label>
                 <input type="number" name="weightVol" value={formData.weightVol || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
               </div>
               <div className="grid grid-cols-[2fr_1fr] gap-2 items-center">
@@ -121,8 +138,8 @@ export function DefineMaterialsModal({ onClose }) {
             <div className="border border-slate-300 p-3 rounded relative">
               <span className="absolute -top-2.5 left-2 bg-slate-50 px-1 text-blue-700 font-semibold text-xs">Mechanical Property Data</span>
               <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                <label>Modulus of Elasticity, E</label>
-                <input type="number" name="E" value={formData.E || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                <label>Modulus of Elasticity, E (kgf/cm²)</label>
+                <input type="number" name="E" value={formData.E ? Math.round(formData.E / 10000) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
               </div>
               <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
                 <label>Poisson's Ratio, U</label>
@@ -133,8 +150,8 @@ export function DefineMaterialsModal({ onClose }) {
                 <input type="number" name="A" step="0.0000001" value={formData.A || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
               </div>
               <div className="grid grid-cols-[2fr_1fr] gap-2 items-center">
-                <label>Shear Modulus, G</label>
-                <input type="number" name="G" value={formData.G || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                <label>Shear Modulus, G (kgf/cm²)</label>
+                <input type="number" name="G" value={formData.G ? Math.round(formData.G / 10000) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
               </div>
             </div>
 
@@ -143,19 +160,19 @@ export function DefineMaterialsModal({ onClose }) {
               <span className="absolute -top-2.5 left-2 bg-slate-50 px-1 text-blue-700 font-semibold text-xs">Design Property Data</span>
               {formData.type === 'Concrete' && (
                 <div className="grid grid-cols-[2fr_1fr] gap-2 items-center">
-                  <label>Specified Concrete Compressive Strength, f'c</label>
-                  <input type="number" name="fc" value={formData.fc || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                  <label>Specified Concrete Compressive Strength, f'c (kgf/cm²)</label>
+                  <input type="number" name="fc" value={formData.fc ? Math.round(formData.fc / 10000) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                 </div>
               )}
               {formData.type === 'Rebar' && (
                 <>
                   <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                    <label>Minimum Yield Strength, Fy</label>
-                    <input type="number" name="Fy" value={formData.Fy || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                    <label>Minimum Yield Strength, Fy (kgf/cm²)</label>
+                    <input type="number" name="Fy" value={formData.Fy ? Math.round(formData.Fy / 10000) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                   </div>
                   <div className="grid grid-cols-[2fr_1fr] gap-2 items-center">
-                    <label>Minimum Tensile Strength, Fu</label>
-                    <input type="number" name="Fu" value={formData.Fu || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                    <label>Minimum Tensile Strength, Fu (kgf/cm²)</label>
+                    <input type="number" name="Fu" value={formData.Fu ? Math.round(formData.Fu / 10000) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                   </div>
                 </>
               )}
