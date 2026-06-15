@@ -256,10 +256,12 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
     const colors = [];
     
     const points = stations.map(st => {
-      const val = st[resultType] * scale;
+      // Si el tipo de resultado no existe en la estación (ej. fue forzado accidentalmente), devolver 0
+      const rawVal = st[resultType];
+      const val = (rawVal !== undefined && isFinite(rawVal)) ? rawVal * scale : 0;
       const basePos = new THREE.Vector3().copy(p1).add(dirX.clone().multiplyScalar(st.x));
       const offsetPos = new THREE.Vector3().copy(basePos).add(plotDir.clone().multiplyScalar(val));
-      return { base: basePos, offset: offsetPos, val: st[resultType] };
+      return { base: basePos, offset: offsetPos, val: (rawVal || 0) };
     });
 
     for (let i = 0; i < points.length - 1; i++) {
@@ -1168,7 +1170,8 @@ export function StructureCanvas() {
           if (!active && cameraView !== '3D') return null;
           
           let elementForces = null;
-          if (viewMode === 'results' && activeResultCombo && activeResultType !== 'deformed') {
+          // Sólo renderizar diagramas de barras si el resultado NO es de losas y NO es deformada
+          if (viewMode === 'results' && activeResultCombo && activeResultType !== 'deformed' && !activeResultType.startsWith('Shell_')) {
             const comboResults = results?.results[activeResultCombo];
             if (comboResults?.element_forces) {
               elementForces = comboResults.element_forces[el.id];
