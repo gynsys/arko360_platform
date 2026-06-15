@@ -141,7 +141,7 @@ function OpeningEditor({ opening, updateOpening, removeOpening, addOpening }) {
 }
 
 export function PropertyPanel() {
-  const { selectedIds, nodes, elements, shells, loads, openings, metadata, updateNode, updateShell, addLoad, updateLoad, deleteLoad, deleteNode, deleteElement, deleteShell, addOpening, updateOpening, removeOpening } = useStructureStore();
+  const { selectedIds, nodes, elements, shells, loads, openings, metadata, updateNode, updateShell, addLoad, updateLoad, deleteLoad, deleteNode, deleteElement, deleteShell, addOpening, updateOpening, removeOpening, generateMeshForShell } = useStructureStore();
   const units = getUnitLabels(metadata?.units);
   const loadFactor = getLoadConversionFactor(metadata?.units);
 
@@ -450,6 +450,35 @@ export function PropertyPanel() {
                 onChange={(e) => updateShell(shell.id, { loads: { ...shell.loads, CV: parseFloat(e.target.value) || 0 } })}
               />
             </div>
+          </div>
+
+          {/* Sección de Auto Meshing */}
+          <div className="pt-4 border-t border-slate-800">
+            <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Auto Meshing (Elementos Finitos)</label>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <label className="text-[10px] uppercase text-slate-500 mb-1 block">Tamaño Máximo ({units.length})</label>
+                <input 
+                  type="number" 
+                  step="0.1"
+                  min="0.1"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm"
+                  value={shell.meshSize || 1.0}
+                  onChange={(e) => updateShell(shell.id, { meshSize: parseFloat(e.target.value) || 1.0 })}
+                />
+              </div>
+              <button 
+                onClick={() => generateMeshForShell(shell.id)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
+              >
+                Generar Malla
+              </button>
+            </div>
+            {shell.mesh && (
+              <p className="text-[10px] text-emerald-400 mt-2">
+                Malla generada: {shell.mesh.elements.length} elementos, {shell.mesh.nodes.length} nudos.
+              </p>
+            )}
           </div>
 
           {/* Sección de Aberturas */}

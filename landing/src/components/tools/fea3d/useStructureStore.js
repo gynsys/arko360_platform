@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { generateMesh } from './mesher';
+import { SlabOpeningGenerator, OpeningType } from './SlabOpeningGenerator';
 
 // Helper para limpiar nudos huérfanos (que no pertenecen a ningún elemento ni losa)
 const cleanupOrphans = (nodes, elements, shells) => {
@@ -390,13 +392,52 @@ export const useStructureStore = create((set, get) => ({
 
   // --- CRUD SHELLS (LOSAS) ---
   addShell: (shell) => set((state) => ({
-    shells: [...state.shells, { ...shell, id: `S-${Date.now()}`, type: 'shell' }],
+    shells: [...state.shells, { ...shell, id: `S-${Date.now()}`, type: 'shell', meshSize: 1.0, mesh: null }],
     isSaved: false
   })),
   updateShell: (id, data) => set((state) => ({
-    shells: state.shells.map(s => s.id === id ? { ...s, ...data } : s),
+    shells: state.shells.map(s => s.id === id ? { ...s, ...data, mesh: data.meshSize !== undefined && data.meshSize !== s.meshSize ? null : s.mesh // Invalidate mesh if size changes
+     } : s),
     isSaved: false
   })),
+
+  generateMeshForShell: (shellId) => set((state) => {
+    const shell = state.shells.find(s => s.id === shellId);
+    if (!shell) return state;
+
+    const boundaryNodes = shell.nodes.map(nid => state.nodes.find(n => n.id === nid)).filter(Boolean);
+    const openings = state.openings.filter(o => o.hostSlabId === shellId);
+
+    const openingsNodes = openings.map(o => {
+      const minX = Math.min(...boundaryNodes.map(c => c.x));
+      const minY = Math.min(...boundaryNodes.map(c => c.y));
+      const baseX = minX + o.offsetX;
+      const baseY = minY + o.offsetY;
+
+      const localVertices = SlabOpeningGenerator.generatePolygon(o.type, o.params);
+      
+      let cx = 0, cy = 0;
+      localVertices.forEach(v => { cx += v.x; cy += v.y; });
+      cx /= localVertices.length;
+      cy /= localVertices.length;
+
+      const scale = 0.9999;
+      return localVertices.map(v => ({
+        id: `H-${o.id}-${v.x}-${v.y}`,
+        x: baseX + cx + (v.x - cx) * scale,
+        y: baseY + cy + (v.y - cy) * scale,
+        z: boundaryNodes[0]?.z || 0
+      }));
+    });
+
+    const meshSize = shell.meshSize || 1.0;
+    const mesh = generateMesh(boundaryNodes, openingsNodes, meshSize);
+
+    return {
+      shells: state.shells.map(s => s.id === shellId ? { ...s, mesh } : s),
+      isSaved: false
+    };
+  }),
 
   // --- CRUD ABERTURAS (OPENINGS) ---
   addOpening: (opening) => set((state) => ({

@@ -4,6 +4,7 @@ import { OrbitControls, Grid, GizmoHelper, GizmoViewport, Text, OrthographicCame
 import * as THREE from 'three';
 import { useStructureStore } from './useStructureStore';
 import { SlabOpeningGenerator } from './SlabOpeningGenerator';
+import { ShellMeshVisualizer } from './ShellMeshVisualizer';
 import toast from 'react-hot-toast';
 
 function CoordinateTracker() {
@@ -33,7 +34,7 @@ function CoordinateTracker() {
   return null;
 }
 
-function ShellMesh({ id, nodeIds, getDisplacement, isFaded }) {
+function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh }) {
   const { nodes, selectedIds, toggleSelection, viewMode, openings } = useStructureStore();
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
@@ -338,6 +339,7 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
           </Text>
         );
       })()}
+      <ShellMeshVisualizer mesh={mesh} />
     </group>
   );
 }
@@ -1187,7 +1189,7 @@ export function StructureCanvas() {
           const active = cameraView === '3D' || shellNodes.every(n => isNodeActive(n));
           // En vista 2D: omitir shells de otros niveles
           if (!active && cameraView !== '3D') return null;
-          return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={false} />;
+          return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={false} mesh={s.mesh} />;
         })}
 
 
