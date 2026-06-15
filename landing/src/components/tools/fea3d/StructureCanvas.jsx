@@ -1310,7 +1310,7 @@ export function StructureCanvas() {
 
       {/* Heatmap Legend */}
       {shellHeatmapRange && (
-        <div className="absolute bottom-6 left-6 bg-slate-900/80 border border-slate-700 backdrop-blur-md rounded-md p-4 shadow-xl z-10 flex flex-col items-center pointer-events-none">
+        <div className="absolute bottom-[74px] left-6 bg-slate-900/80 border border-slate-700 backdrop-blur-md rounded-md p-4 shadow-xl z-10 flex flex-col items-center pointer-events-none">
           <div className="text-slate-300 text-xs font-bold mb-3 tracking-wider border-b border-slate-600 pb-1 w-full text-center">
             {activeResultCombo} / {shellHeatmapRange.prop}
           </div>

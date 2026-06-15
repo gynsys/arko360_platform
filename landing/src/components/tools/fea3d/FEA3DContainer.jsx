@@ -148,10 +148,12 @@ export default function FEA3DContainer() {
         nodes: useStructureStore.getState().nodes,
         elements: useStructureStore.getState().elements,
         shells: useStructureStore.getState().shells,
+        openings: useStructureStore.getState().openings,
         materials: useStructureStore.getState().materials,
         sections: useStructureStore.getState().sections,
         loads: useStructureStore.getState().loads,
         combinations: useStructureStore.getState().loadCombinations,
+        metadata: useStructureStore.getState().metadata,
       },
       results: useStructureStore.getState().results
     };
@@ -227,6 +229,7 @@ export default function FEA3DContainer() {
          nodes: project.topology.nodes || [],
          elements: project.topology.elements || [],
          shells: project.topology.shells || [],
+         openings: project.topology.openings || [],
          materials: project.topology.materials || [],
          sections: project.topology.sections || [],
          loads: project.topology.loads || [],
@@ -234,6 +237,9 @@ export default function FEA3DContainer() {
          isSaved: true,
          projectLoadedTrigger: useStructureStore.getState().projectLoadedTrigger + 1
        });
+       if (project.topology.metadata) {
+         useStructureStore.setState({ metadata: project.topology.metadata });
+       }
        if (project.results) {
          useStructureStore.getState().setResultsMode(project.results);
        } else {

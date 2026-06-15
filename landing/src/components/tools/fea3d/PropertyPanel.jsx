@@ -3,6 +3,7 @@ import { useStructureStore } from './useStructureStore';
 import { Trash2, Info, Layers, Plus, Save, Copy } from 'lucide-react';
 import { FixedIcon, PinnedIcon, RollerIcon, FreeIcon } from './RestraintIcons';
 import { OpeningType } from './SlabOpeningGenerator';
+import toast from 'react-hot-toast';
 
 // Helper: obtiene etiquetas de unidades desde la cadena de unidades global
 function getUnitLabels(unitsStr) {
@@ -470,9 +471,33 @@ export function PropertyPanel() {
               </div>
               <button 
                 onClick={() => {
-                  const px = parseFloat(document.getElementById('shell_px').value) || 0;
-                  const py = parseFloat(document.getElementById('shell_py').value) || 0;
+                  const pxInput = document.getElementById('shell_px');
+                  const pyInput = document.getElementById('shell_py');
+                  const px = parseFloat(pxInput.value) || 0;
+                  const py = parseFloat(pyInput.value) || 0;
                   const fz = parseFloat(document.getElementById('shell_fz').value) || 0;
+
+                  // Validar que la carga esté dentro del área de la losa
+                  const shellNodes = shell.nodes.map(nid => useStructureStore.getState().nodes.find(n => n.id === nid)).filter(Boolean);
+                  if (shellNodes.length > 0) {
+                    const minX = Math.min(...shellNodes.map(n => n.x));
+                    const maxX = Math.max(...shellNodes.map(n => n.x));
+                    const minY = Math.min(...shellNodes.map(n => n.y));
+                    const maxY = Math.max(...shellNodes.map(n => n.y));
+                    let invalid = false;
+                    if (px < minX || px > maxX) {
+                      toast.error(`⚠️ Pos X=${px} fuera del rango de la losa [${minX.toFixed(2)}, ${maxX.toFixed(2)}]. Se ha reseteado.`, { duration: 5000 });
+                      pxInput.value = ((minX + maxX) / 2).toFixed(2);
+                      invalid = true;
+                    }
+                    if (py < minY || py > maxY) {
+                      toast.error(`⚠️ Pos Y=${py} fuera del rango de la losa [${minY.toFixed(2)}, ${maxY.toFixed(2)}]. Se ha reseteado.`, { duration: 5000 });
+                      pyInput.value = ((minY + maxY) / 2).toFixed(2);
+                      invalid = true;
+                    }
+                    if (invalid) return;
+                  }
+
                   addLoad({
                     id: 'L-' + Math.random().toString(36).substr(2, 5),
                     type: 'point_shell',
