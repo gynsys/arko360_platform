@@ -309,8 +309,8 @@ class StructuralSolver:
                 F[idx2:idx2+6] -= f_fixed_global[6:12]
 
             elif load.type == "point_shell":
-                shell = next(s for s in self.shells if s.id == load.target_id)
-                if not shell.mesh or not shell.mesh.elements:
+                shell = next((s for s in self.shells if s.id == load.target_id), None)
+                if not shell or not shell.mesh or not shell.mesh.elements:
                     continue
                 px = load.offset_x
                 py = load.offset_y
