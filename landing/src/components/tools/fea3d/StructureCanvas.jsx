@@ -35,7 +35,7 @@ function CoordinateTracker() {
 }
 
 function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activeResultType }) {
-  const { nodes, selectedIds, toggleSelection, viewMode, openings } = useStructureStore();
+  const { nodes, selectedIds, toggleSelection, viewMode, openings, activeResultCombo } = useStructureStore();
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
 
@@ -171,7 +171,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
       <ShellMeshVisualizer 
         mesh={mesh} 
         shellId={id} 
-        results={results} 
+        results={results?.results?.[activeResultCombo]} 
         activeResultMap={activeResultType?.startsWith('Shell_') ? activeResultType.replace('Shell_', '') : 'None'} 
       />
     </group>

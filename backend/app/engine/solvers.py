@@ -529,7 +529,8 @@ class StructuralSolver:
                 "ecuacion_principal": "[K] * {U} = {F}",
                 "penalty_method": "Multiplicación de la diagonal de [K] por 1e30 en los Grados de Libertad restringidos",
                 "recuperacion_fuerzas_locales": "{f_local} = [k_loc] * {u_local} + {f_fixed_local}",
-                "teoria_aplicada": "Flexión 3D de Euler-Bernoulli"
+                "teoria_aplicada_barras": "Flexión 3D de Euler-Bernoulli y Torsión de Saint-Venant",
+                "teoria_aplicada_losas": "Elemento Finito Quad-4 Isoparamétrico. Membrana (Plane Stress) + Flexión (Mindlin-Reissner con Integración Reducida Selectiva) + Rigidez Ficticia de Drilling (Rz)"
             },
             "results_summary": {
                 combo_id: {

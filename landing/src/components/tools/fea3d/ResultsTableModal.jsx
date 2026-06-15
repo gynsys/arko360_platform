@@ -24,7 +24,9 @@ export function ResultsTableModal({ onClose }) {
 
   const exportPDF = () => {
     const doc = new jsPDF('landscape');
-    const title = activeTab === 'forces' ? 'ARKO3D - Element Forces (Frames)' : 'ARKO3D - Joint Displacements';
+    let title = 'ARKO3D - Joint Displacements';
+    if (activeTab === 'forces') title = 'ARKO3D - Element Forces (Frames)';
+    if (activeTab === 'shell_forces') title = 'ARKO3D - Element Forces (Shells)';
     
     doc.setFontSize(14);
     doc.text(title, 14, 15);
@@ -103,6 +105,44 @@ export function ResultsTableModal({ onClose }) {
           2: { halign: 'center' }
         }
       });
+    } else if (activeTab === 'shell_forces') {
+      const rows = [];
+      useStructureStore.getState().shells?.forEach(shell => {
+        availableCombos.forEach(combo => {
+          const comboData = results.results[combo.id];
+          const shellForces = comboData?.shell_forces || {};
+          const shellMeshElements = shell.mesh?.elements || [];
+          shellMeshElements.forEach((fe, i) => {
+            const st = shellForces[fe.id] || { M11: 0, M22: 0, M12: 0, M_max: 0, M_min: 0 };
+            rows.push([
+              'Base',
+              i === 0 ? shell.id.toString() : '',
+              i === 0 ? combo.name : '',
+              fe.id.toString(),
+              st.M11.toExponential(3),
+              st.M22.toExponential(3),
+              st.M12.toExponential(3),
+              st.M_max.toExponential(3),
+              st.M_min.toExponential(3)
+            ]);
+          });
+        });
+      });
+
+      autoTable(doc, {
+        startY: 28,
+        head: [['Story', 'Shell', 'Output Case', 'Mesh Element', 'M11', 'M22', 'M12', 'M_max', 'M_min']],
+        body: rows,
+        theme: 'striped',
+        styles: { fontSize: 8, cellPadding: 1, halign: 'right' },
+        headStyles: { fillColor: [37, 99, 235], halign: 'center' },
+        columnStyles: {
+          0: { halign: 'center' },
+          1: { halign: 'center', fontStyle: 'bold' },
+          2: { halign: 'center' },
+          3: { halign: 'center' }
+        }
+      });
     }
 
     doc.save(`arko3d_results_${activeTab}.pdf`);
@@ -137,6 +177,12 @@ export function ResultsTableModal({ onClose }) {
               className={`px-4 py-1.5 rounded-t-md font-bold text-sm border-b-2 transition-colors ${activeTab === 'forces' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
             >
               Element Forces - Frames
+            </button>
+            <button 
+              onClick={() => setActiveTab('shell_forces')}
+              className={`px-4 py-1.5 rounded-t-md font-bold text-sm border-b-2 transition-colors ${activeTab === 'shell_forces' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              Element Forces - Shells
             </button>
             <button 
               onClick={() => setActiveTab('displacements')}
@@ -185,6 +231,50 @@ export function ResultsTableModal({ onClose }) {
                         <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.M3.toExponential(3)}</td>
                       </tr>
                     ));
+                  });
+                })}
+              </tbody>
+            </table>
+          )}
+
+          {activeTab === 'shell_forces' && (
+            <table className="w-full text-xs text-right border-collapse whitespace-nowrap">
+              <thead className="bg-slate-200 sticky top-0 shadow-sm text-slate-700">
+                <tr>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Story</th>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Shell</th>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Output Case</th>
+                  <th className="border border-slate-300 px-2 py-1 text-center font-bold">Mesh Element</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">M11</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">M22</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">M12</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">M_max</th>
+                  <th className="border border-slate-300 px-2 py-1 font-bold">M_min</th>
+                </tr>
+              </thead>
+              <tbody>
+                {useStructureStore.getState().shells?.map(shell => {
+                  return availableCombos.map(combo => {
+                    const comboData = results.results[combo.id];
+                    const shellForces = comboData?.shell_forces || {};
+                    const shellMeshElements = shell.mesh?.elements || [];
+                    
+                    return shellMeshElements.map((fe, i) => {
+                      const st = shellForces[fe.id] || { M11: 0, M22: 0, M12: 0, M_max: 0, M_min: 0 };
+                      return (
+                        <tr key={`${shell.id}-${combo.id}-${fe.id}`} className="hover:bg-slate-50 border-b border-slate-100">
+                          <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-500">Base</td>
+                          <td className="border-r border-slate-200 px-2 py-1 text-center font-bold text-slate-700">{i === 0 ? shell.id : ''}</td>
+                          <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-600">{i === 0 ? combo.name : ''}</td>
+                          <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-400">{fe.id}</td>
+                          <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.M11.toExponential(3)}</td>
+                          <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.M22.toExponential(3)}</td>
+                          <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.M12.toExponential(3)}</td>
+                          <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.M_max.toExponential(3)}</td>
+                          <td className="border-r border-slate-200 px-2 py-1 font-mono">{st.M_min.toExponential(3)}</td>
+                        </tr>
+                      );
+                    });
                   });
                 })}
               </tbody>
