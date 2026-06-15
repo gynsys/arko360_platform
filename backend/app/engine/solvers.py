@@ -25,6 +25,16 @@ class StructuralSolver:
                 LoadCombination(id="combo-2", name="1.2 CM + 1.6 CV", factors={"CM": 1.2, "CV": 1.6})
             ]
         
+        # Append mesh nodes to global nodes
+        for shell in self.shells:
+            if shell.mesh and shell.mesh.nodes:
+                # Add to self.nodes if not already there (check by ID)
+                existing_ids = {n.id for n in self.nodes}
+                for mn in shell.mesh.nodes:
+                    if mn.id not in existing_ids:
+                        from app.schemas.fea3d import Node
+                        self.nodes.append(Node(id=mn.id, x=mn.x, y=mn.y, z=mn.z))
+        
         self.num_nodes = len(self.nodes)
         self.ndof = self.num_nodes * 6
         self.node_map = {node.id: i for i, node in enumerate(self.nodes)}
@@ -53,6 +63,33 @@ class StructuralSolver:
             for i in range(12):
                 for j in range(12):
                     row.append(idx[i]); col.append(idx[j]); data.append(k_glob_elem[i, j])
+                    
+        from app.engine.fem_shell import get_quad_shell_local_stiffness
+        
+        # Assemble Shell Elements
+        for shell in self.shells:
+            if not shell.mesh or not shell.mesh.elements:
+                continue
+            mat = self.materials[shell.material_id]
+            
+            for fe in shell.mesh.elements:
+                if fe.type == "quad" and len(fe.nodeIds) == 4:
+                    n1 = next(n for n in self.nodes if n.id == fe.nodeIds[0])
+                    n2 = next(n for n in self.nodes if n.id == fe.nodeIds[1])
+                    n3 = next(n for n in self.nodes if n.id == fe.nodeIds[2])
+                    n4 = next(n for n in self.nodes if n.id == fe.nodeIds[3])
+                    
+                    nodes_local = [[n1.x, n1.y], [n2.x, n2.y], [n3.x, n3.y], [n4.x, n4.y]]
+                    k_loc = get_quad_shell_local_stiffness(nodes_local, mat.E, mat.nu, shell.thickness)
+                    
+                    idx = []
+                    for node_id in [n1.id, n2.id, n3.id, n4.id]:
+                        node_idx = self.node_map[node_id]
+                        for d in range(6): idx.append(node_idx * 6 + d)
+                        
+                    for i in range(24):
+                        for j in range(24):
+                            row.append(idx[i]); col.append(idx[j]); data.append(k_loc[i, j])
                     
         return csr_matrix((data, (row, col)), shape=(self.ndof, self.ndof))
 
@@ -261,6 +298,63 @@ class StructuralSolver:
                 F[idx1:idx1+6] -= f_fixed_global[0:6]
                 F[idx2:idx2+6] -= f_fixed_global[6:12]
 
+            elif load.type == "point_shell":
+                shell = next(s for s in self.shells if s.id == load.target_id)
+                if not shell.mesh or not shell.mesh.elements:
+                    continue
+                # Determine absolute coordinates from offsets
+                n_coords = [next(n for n in self.nodes if n.id == nid) for nid in shell.nodes]
+                minX = min(n.x for n in n_coords)
+                maxX = max(n.x for n in n_coords)
+                minY = min(n.y for n in n_coords)
+                maxY = max(n.y for n in n_coords)
+                
+                px = minX + (maxX - minX) * load.offset_x
+                py = minY + (maxY - minY) * load.offset_y
+                
+                # Find which element contains (px, py)
+                # Using a simple bounding box check per quad
+                for fe in shell.mesh.elements:
+                    if fe.type == "quad" and len(fe.nodeIds) == 4:
+                        n1 = next(n for n in self.nodes if n.id == fe.nodeIds[0])
+                        n2 = next(n for n in self.nodes if n.id == fe.nodeIds[1])
+                        n3 = next(n for n in self.nodes if n.id == fe.nodeIds[2])
+                        n4 = next(n for n in self.nodes if n.id == fe.nodeIds[3])
+                        
+                        fminX = min(n1.x, n2.x, n3.x, n4.x)
+                        fmaxX = max(n1.x, n2.x, n3.x, n4.x)
+                        fminY = min(n1.y, n2.y, n3.y, n4.y)
+                        fmaxY = max(n1.y, n2.y, n3.y, n4.y)
+                        
+                        if fminX - 1e-4 <= px <= fmaxX + 1e-4 and fminY - 1e-4 <= py <= fmaxY + 1e-4:
+                            # Found the element!
+                            # Distribute load to 4 nodes using bilinear shape functions
+                            L_x = fmaxX - fminX
+                            L_y = fmaxY - fminY
+                            if L_x == 0 or L_y == 0: continue
+                            
+                            xi = (px - fminX) / L_x
+                            eta = (py - fminY) / L_y
+                            
+                            # Standard shape functions (N1=BL, N2=BR, N3=TR, N4=TL)
+                            N = [
+                                (1 - xi) * (1 - eta),
+                                xi * (1 - eta),
+                                xi * eta,
+                                (1 - xi) * eta
+                            ]
+                            
+                            # Assuming nodes are ordered CCW from Bottom-Left
+                            # We must match the node order! The mesher outputs them: BL, BR, TR, TL.
+                            # So this matches.
+                            nodes_idx = [self.node_map[nid] for nid in [n1.id, n2.id, n3.id, n4.id]]
+                            
+                            for i, n_idx in enumerate(nodes_idx):
+                                F[n_idx * 6 + 0] += load.fx * factor * N[i]
+                                F[n_idx * 6 + 1] += load.fy * factor * N[i]
+                                F[n_idx * 6 + 2] += load.fz * factor * N[i]
+                            break
+
         return F, element_local_loads
 
     def solve(self):
@@ -380,9 +474,33 @@ class StructuralSolver:
                 
                 element_forces[elem.id] = stations
                 
+            shell_forces = {}
+            from app.engine.fem_shell import recover_shell_stresses
+            for shell in self.shells:
+                if not shell.mesh or not shell.mesh.elements:
+                    continue
+                mat = self.materials[shell.material_id]
+                for fe in shell.mesh.elements:
+                    if fe.type == "quad" and len(fe.nodeIds) == 4:
+                        n1 = next(n for n in self.nodes if n.id == fe.nodeIds[0])
+                        n2 = next(n for n in self.nodes if n.id == fe.nodeIds[1])
+                        n3 = next(n for n in self.nodes if n.id == fe.nodeIds[2])
+                        n4 = next(n for n in self.nodes if n.id == fe.nodeIds[3])
+                        
+                        nodes_local = [[n1.x, n1.y], [n2.x, n2.y], [n3.x, n3.y], [n4.x, n4.y]]
+                        
+                        u_loc = np.zeros(24)
+                        nodes_idx = [self.node_map[nid] for nid in [n1.id, n2.id, n3.id, n4.id]]
+                        for i, n_idx in enumerate(nodes_idx):
+                            u_loc[i*6:(i+1)*6] = U[n_idx*6:(n_idx+1)*6]
+                            
+                        stresses = recover_shell_stresses(nodes_local, u_loc, mat.E, mat.nu, shell.thickness)
+                        shell_forces[fe.id] = stresses
+                
             results_by_combo[combo.id] = {
                 "displacements": displacements,
-                "element_forces": element_forces
+                "element_forces": element_forces,
+                "shell_forces": shell_forces
             }
             
         # Generar archivo de auditoría

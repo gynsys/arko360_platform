@@ -34,7 +34,7 @@ function CoordinateTracker() {
   return null;
 }
 
-function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh }) {
+function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activeResultType }) {
   const { nodes, selectedIds, toggleSelection, viewMode, openings } = useStructureStore();
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
@@ -165,7 +165,12 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh }) {
           polygonOffsetUnits={-1}
         />
       </mesh>
-      <ShellMeshVisualizer mesh={mesh} />
+      <ShellMeshVisualizer 
+        mesh={mesh} 
+        shellId={id} 
+        results={results} 
+        activeResultMap={activeResultType?.startsWith('Shell_') ? activeResultType.replace('Shell_', '') : 'None'} 
+      />
     </group>
   );
 }
@@ -1191,7 +1196,7 @@ export function StructureCanvas() {
           const active = cameraView === '3D' || shellNodes.every(n => isNodeActive(n));
           // En vista 2D: omitir shells de otros niveles
           if (!active && cameraView !== '3D') return null;
-          return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={false} mesh={s.mesh} />;
+          return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={false} mesh={s.mesh} results={results} activeResultType={activeResultType} />;
         })}
 
 

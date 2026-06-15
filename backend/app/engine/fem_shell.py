@@ -1,0 +1,233 @@
+import numpy as np
+
+def get_quad_shell_local_stiffness(nodes_local, E, nu, thickness):
+    """
+    Computes the 24x24 local stiffness matrix for a 4-node quadrilateral shell element.
+    Nodes must be in counter-clockwise order.
+    Formulation:
+    - Membrane: Bilinear isoparametric with artificial drilling stiffness (theta_z).
+    - Bending: Mindlin-Reissner plate with selective reduced integration to avoid shear locking.
+    
+    nodes_local: list of 4 [x, y] coordinates in the element's local 2D plane.
+    """
+    K = np.zeros((24, 24))
+    
+    # Material properties
+    t = thickness
+    G = E / (2 * (1 + nu))
+    
+    # Membrane constitutive matrix (Plane Stress)
+    D_m = (E * t / (1 - nu**2)) * np.array([
+        [1, nu, 0],
+        [nu, 1, 0],
+        [0, 0, (1 - nu)/2]
+    ])
+    
+    # Bending constitutive matrix
+    D_b = (E * t**3 / (12 * (1 - nu**2))) * np.array([
+        [1, nu, 0],
+        [nu, 1, 0],
+        [0, 0, (1 - nu)/2]
+    ])
+    
+    # Shear constitutive matrix (Mindlin-Reissner)
+    k_shear = 5.0 / 6.0 # Shear correction factor
+    D_s = (k_shear * G * t) * np.array([
+        [1, 0],
+        [0, 1]
+    ])
+    
+    # Gauss Integration Points and Weights
+    # 2x2 for Membrane and Bending
+    gps_2 = [-1/np.sqrt(3), 1/np.sqrt(3)]
+    
+    # 1x1 for Shear to prevent shear locking (Reduced Integration)
+    gps_1 = [0.0]
+    
+    x = np.array([n[0] for n in nodes_local])
+    y = np.array([n[1] for n in nodes_local])
+    
+    # Helper for Shape Functions and Derivatives
+    def shape_funcs(xi, eta):
+        N = 0.25 * np.array([
+            (1 - xi)*(1 - eta),
+            (1 + xi)*(1 - eta),
+            (1 + xi)*(1 + eta),
+            (1 - xi)*(1 + eta)
+        ])
+        dN_dxi = 0.25 * np.array([
+            -(1 - eta),  (1 - eta), (1 + eta), -(1 + eta)
+        ])
+        dN_deta = 0.25 * np.array([
+            -(1 - xi), -(1 + xi),  (1 + xi),  (1 - xi)
+        ])
+        return N, dN_dxi, dN_deta
+
+    # --- 1. Membrane Stiffness Integration (2x2) ---
+    for xi in gps_2:
+        for eta in gps_2:
+            N, dN_dxi, dN_deta = shape_funcs(xi, eta)
+            J = np.array([
+                [np.dot(dN_dxi, x), np.dot(dN_dxi, y)],
+                [np.dot(dN_deta, x), np.dot(dN_deta, y)]
+            ])
+            detJ = np.linalg.det(J)
+            invJ = np.linalg.inv(J)
+            
+            dN_dx_dy = invJ @ np.vstack((dN_dxi, dN_deta))
+            dN_dx = dN_dx_dy[0, :]
+            dN_dy = dN_dx_dy[1, :]
+            
+            B_m = np.zeros((3, 12))
+            for i in range(4):
+                B_m[0, 3*i] = dN_dx[i]
+                B_m[1, 3*i+1] = dN_dy[i]
+                B_m[2, 3*i] = dN_dy[i]
+                B_m[2, 3*i+1] = dN_dx[i]
+                
+            K_m = B_m.T @ D_m @ B_m * detJ
+            
+            # Map 12x12 K_m to global 24x24 (u=0, v=1, rz=5)
+            map_m = []
+            for i in range(4): map_m.extend([i*6+0, i*6+1, i*6+5])
+            
+            for i in range(12):
+                for j in range(12):
+                    K[map_m[i], map_m[j]] += K_m[i, j]
+
+    # --- 2. Bending Stiffness Integration (2x2) ---
+    for xi in gps_2:
+        for eta in gps_2:
+            N, dN_dxi, dN_deta = shape_funcs(xi, eta)
+            J = np.array([
+                [np.dot(dN_dxi, x), np.dot(dN_dxi, y)],
+                [np.dot(dN_deta, x), np.dot(dN_deta, y)]
+            ])
+            detJ = np.linalg.det(J)
+            invJ = np.linalg.inv(J)
+            
+            dN_dx_dy = invJ @ np.vstack((dN_dxi, dN_deta))
+            dN_dx = dN_dx_dy[0, :]
+            dN_dy = dN_dx_dy[1, :]
+            
+            B_b = np.zeros((3, 12))
+            for i in range(4):
+                B_b[0, 3*i+1] = dN_dx[i]   # rx
+                B_b[1, 3*i+2] = dN_dy[i]   # ry
+                B_b[2, 3*i+1] = dN_dy[i]
+                B_b[2, 3*i+2] = dN_dx[i]
+                
+            K_b = B_b.T @ D_b @ B_b * detJ
+            
+            # Map 12x12 K_b to global 24x24 (w=2, rx=3, ry=4)
+            map_b = []
+            for i in range(4): map_b.extend([i*6+2, i*6+3, i*6+4])
+            
+            for i in range(12):
+                for j in range(12):
+                    K[map_b[i], map_b[j]] += K_b[i, j]
+
+    # --- 3. Shear Stiffness Integration (1x1 Reduced) ---
+    for xi in gps_1:
+        for eta in gps_1:
+            N, dN_dxi, dN_deta = shape_funcs(xi, eta)
+            J = np.array([
+                [np.dot(dN_dxi, x), np.dot(dN_dxi, y)],
+                [np.dot(dN_deta, x), np.dot(dN_deta, y)]
+            ])
+            detJ = np.linalg.det(J)
+            invJ = np.linalg.inv(J)
+            
+            dN_dx_dy = invJ @ np.vstack((dN_dxi, dN_deta))
+            dN_dx = dN_dx_dy[0, :]
+            dN_dy = dN_dx_dy[1, :]
+            
+            B_s = np.zeros((2, 12))
+            for i in range(4):
+                B_s[0, 3*i] = dN_dx[i]     # dw/dx
+                B_s[0, 3*i+1] = N[i]       # rx
+                B_s[1, 3*i] = dN_dy[i]     # dw/dy
+                B_s[1, 3*i+2] = N[i]       # ry
+                
+            # Note: The area weight for 1x1 is 2*2 = 4
+            K_s = B_s.T @ D_s @ B_s * detJ * 4.0
+            
+            for i in range(12):
+                for j in range(12):
+                    K[map_b[i], map_b[j]] += K_s[i, j]
+
+    # --- 4. Drilling DOF (Artificial Stiffness for Rz) ---
+    # Shell elements naturally lack stiffness around the local Z axis.
+    # To prevent singular matrices in 3D assembly, we add a fictitious stiffness.
+    k_drilling = 1e-4 * E * t * np.linalg.det(J) 
+    for i in range(4):
+        K[i*6+5, i*6+5] += k_drilling
+
+    return K
+
+def recover_shell_stresses(nodes_local, u_local, E, nu, thickness):
+    """
+    Recover internal forces/moments (M11, M22, etc.) at the centroid of the element.
+    Returns a dictionary of stresses.
+    """
+    t = thickness
+    # Bending constitutive matrix
+    D_b = (E * t**3 / (12 * (1 - nu**2))) * np.array([
+        [1, nu, 0],
+        [nu, 1, 0],
+        [0, 0, (1 - nu)/2]
+    ])
+    
+    x = np.array([n[0] for n in nodes_local])
+    y = np.array([n[1] for n in nodes_local])
+    
+    # Evaluate at centroid (xi=0, eta=0)
+    xi, eta = 0.0, 0.0
+    N = 0.25 * np.array([
+        (1 - xi)*(1 - eta),
+        (1 + xi)*(1 - eta),
+        (1 + xi)*(1 + eta),
+        (1 - xi)*(1 + eta)
+    ])
+    dN_dxi = 0.25 * np.array([-(1 - eta), (1 - eta), (1 + eta), -(1 + eta)])
+    dN_deta = 0.25 * np.array([-(1 - xi), -(1 + xi), (1 + xi), (1 - xi)])
+    
+    J = np.array([
+        [np.dot(dN_dxi, x), np.dot(dN_dxi, y)],
+        [np.dot(dN_deta, x), np.dot(dN_deta, y)]
+    ])
+    invJ = np.linalg.inv(J)
+    
+    dN_dx_dy = invJ @ np.vstack((dN_dxi, dN_deta))
+    dN_dx = dN_dx_dy[0, :]
+    dN_dy = dN_dx_dy[1, :]
+    
+    B_b = np.zeros((3, 12))
+    for i in range(4):
+        B_b[0, 3*i+1] = dN_dx[i]   # rx
+        B_b[1, 3*i+2] = dN_dy[i]   # ry
+        B_b[2, 3*i+1] = dN_dy[i]
+        B_b[2, 3*i+2] = dN_dx[i]
+        
+    # Extract bending DOFs (w, rx, ry) from u_local (24x1)
+    u_b = np.zeros(12)
+    for i in range(4):
+        u_b[3*i+0] = u_local[i*6+2]
+        u_b[3*i+1] = u_local[i*6+3]
+        u_b[3*i+2] = u_local[i*6+4]
+        
+    curvature = B_b @ u_b
+    moments = D_b @ curvature  # [M11, M22, M12]
+    
+    # Evaluate principal moments
+    M11, M22, M12 = moments[0], moments[1], moments[2]
+    M_max = (M11 + M22)/2 + np.sqrt(((M11 - M22)/2)**2 + M12**2)
+    M_min = (M11 + M22)/2 - np.sqrt(((M11 - M22)/2)**2 + M12**2)
+    
+    return {
+        "M11": float(M11),
+        "M22": float(M22),
+        "M12": float(M12),
+        "M_max": float(M_max),
+        "M_min": float(M_min)
+    }

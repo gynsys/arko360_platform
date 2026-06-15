@@ -34,6 +34,21 @@ class ShellLoads(BaseModel):
     CM: float = 0.0
     CV: float = 0.0
 
+class MeshNode(BaseModel):
+    id: str
+    x: float
+    y: float
+    z: float
+
+class MeshElement(BaseModel):
+    id: str
+    type: str # "quad" or "triangle"
+    nodeIds: List[str]
+
+class Mesh(BaseModel):
+    nodes: List[MeshNode]
+    elements: List[MeshElement]
+
 class Shell(BaseModel):
     id: str
     type: str = "shell"
@@ -41,6 +56,7 @@ class Shell(BaseModel):
     thickness: float
     material_id: str
     loads: ShellLoads
+    mesh: Optional[Mesh] = None
 
 class LoadCombination(BaseModel):
     id: str
@@ -59,6 +75,8 @@ class LoadAssignment(BaseModel):
     mz: float = 0.0
     load_case: str = "Dead"
     offset: float = 0.5 # Para cargas puntuales en elementos (0 a 1)
+    offset_x: float = 0.5 # Coordenada relativa X para shells (0 a 1)
+    offset_y: float = 0.5 # Coordenada relativa Y para shells (0 a 1)
 
 class Material(BaseModel):
     id: str
@@ -87,4 +105,5 @@ class Topology(BaseModel):
 class ProjectResults(BaseModel):
     displacements: Dict[str, List[float]]
     element_forces: Dict[str, Dict]
+    shell_forces: Optional[Dict[str, Dict]] = None
     design_checks: Dict[str, Dict]

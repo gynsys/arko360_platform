@@ -452,6 +452,56 @@ export function PropertyPanel() {
             </div>
           </div>
 
+          {/* Sección de Cargas Puntuales en Losa */}
+          <div className="pt-4 border-t border-slate-800">
+            <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Cargas Puntuales (Pz)</label>
+            <div className="flex gap-2 items-end mb-2">
+              <div className="flex-1">
+                <label className="text-[10px] uppercase text-slate-500 mb-1 block">Pos X (0-1)</label>
+                <input type="number" step="0.1" min="0" max="1" id="shell_px" defaultValue="0.5" className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white" />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] uppercase text-slate-500 mb-1 block">Pos Y (0-1)</label>
+                <input type="number" step="0.1" min="0" max="1" id="shell_py" defaultValue="0.5" className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white" />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] uppercase text-slate-500 mb-1 block">Fz ({units.force})</label>
+                <input type="number" step="any" id="shell_fz" defaultValue="-1000" className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white" />
+              </div>
+              <button 
+                onClick={() => {
+                  const px = parseFloat(document.getElementById('shell_px').value) || 0.5;
+                  const py = parseFloat(document.getElementById('shell_py').value) || 0.5;
+                  const fz = parseFloat(document.getElementById('shell_fz').value) || 0;
+                  addLoad({
+                    id: 'L-' + Math.random().toString(36).substr(2, 5),
+                    type: 'point_shell',
+                    target_id: shell.id,
+                    offset_x: px,
+                    offset_y: py,
+                    fz: fz,
+                    fx: 0, fy: 0, mx: 0, my: 0, mz: 0, offset: 0,
+                    load_case: 'CV' // Forzamos a CV para este prototipo o dejamos CM
+                  });
+                }}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1.5 rounded text-xs font-bold"
+              >
+                +
+              </button>
+            </div>
+            
+            <div className="space-y-1">
+              {loads.filter(l => l.target_id === shell.id && l.type === 'point_shell').map(l => (
+                <div key={l.id} className="flex justify-between items-center bg-slate-900/50 p-1.5 rounded border border-slate-800">
+                  <span className="text-[10px] text-slate-300">
+                    ({l.offset_x}, {l.offset_y}) ➔ Fz: {l.fz}
+                  </span>
+                  <button onClick={() => removeLoad(l.id)} className="text-red-400 hover:text-red-300"><Trash2 size={12}/></button>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Sección de Auto Meshing */}
           <div className="pt-4 border-t border-slate-800">
             <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Auto Meshing (Elementos Finitos)</label>

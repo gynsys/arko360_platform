@@ -68,6 +68,12 @@ export function ResultsPanel() {
             <option value="V3">Cortante (V3)</option>
             <option value="M2">Momento (M2)</option>
             <option value="M3">Momento (M3)</option>
+            <option disabled>--- Esfuerzos en Losas ---</option>
+            <option value="Shell_M11">Momento Losa (M11)</option>
+            <option value="Shell_M22">Momento Losa (M22)</option>
+            <option value="Shell_M12">Momento Losa (M12)</option>
+            <option value="Shell_M_max">Momento Losa (Max)</option>
+            <option value="Shell_M_min">Momento Losa (Min)</option>
           </select>
         </div>
 
