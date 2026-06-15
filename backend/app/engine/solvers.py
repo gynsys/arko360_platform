@@ -25,14 +25,23 @@ class StructuralSolver:
                 LoadCombination(id="combo-2", name="1.2 CM + 1.6 CV", factors={"CM": 1.2, "CV": 1.6})
             ]
         
+        self.mesh_node_mapping = {} # maps mesh_node.id -> global_node.id
+        
         # Append mesh nodes to global nodes
         for shell in self.shells:
             if shell.mesh and shell.mesh.nodes:
-                # Add to self.nodes if not already there (check by ID)
-                existing_ids = {n.id for n in self.nodes}
                 for mn in shell.mesh.nodes:
-                    if mn.id not in existing_ids:
+                    # Check distance to existing nodes to merge corners
+                    matched = False
+                    for existing_n in self.nodes:
+                        dist = ((mn.x - existing_n.x)**2 + (mn.y - existing_n.y)**2 + (mn.z - existing_n.z)**2)**0.5
+                        if dist < 1e-4:
+                            self.mesh_node_mapping[mn.id] = existing_n.id
+                            matched = True
+                            break
+                    if not matched:
                         from app.schemas.fea3d import Node
+                        self.mesh_node_mapping[mn.id] = mn.id
                         self.nodes.append(Node(id=mn.id, x=mn.x, y=mn.y, z=mn.z))
         
         self.num_nodes = len(self.nodes)
@@ -74,10 +83,11 @@ class StructuralSolver:
             
             for fe in shell.mesh.elements:
                 if fe.type == "quad" and len(fe.nodeIds) == 4:
-                    n1 = next(n for n in self.nodes if n.id == fe.nodeIds[0])
-                    n2 = next(n for n in self.nodes if n.id == fe.nodeIds[1])
-                    n3 = next(n for n in self.nodes if n.id == fe.nodeIds[2])
-                    n4 = next(n for n in self.nodes if n.id == fe.nodeIds[3])
+                    mapped_ids = [self.mesh_node_mapping.get(nid, nid) for nid in fe.nodeIds]
+                    n1 = next(n for n in self.nodes if n.id == mapped_ids[0])
+                    n2 = next(n for n in self.nodes if n.id == mapped_ids[1])
+                    n3 = next(n for n in self.nodes if n.id == mapped_ids[2])
+                    n4 = next(n for n in self.nodes if n.id == mapped_ids[3])
                     
                     nodes_local = [[n1.x, n1.y], [n2.x, n2.y], [n3.x, n3.y], [n4.x, n4.y]]
                     k_loc = get_quad_shell_local_stiffness(nodes_local, mat.E, mat.nu, shell.thickness)
@@ -345,9 +355,8 @@ class StructuralSolver:
                             ]
                             
                             # Assuming nodes are ordered CCW from Bottom-Left
-                            # We must match the node order! The mesher outputs them: BL, BR, TR, TL.
-                            # So this matches.
-                            nodes_idx = [self.node_map[nid] for nid in [n1.id, n2.id, n3.id, n4.id]]
+                            mapped_ids = [self.mesh_node_mapping.get(nid, nid) for nid in [fe.nodeIds[0], fe.nodeIds[1], fe.nodeIds[2], fe.nodeIds[3]]]
+                            nodes_idx = [self.node_map[nid] for nid in mapped_ids]
                             
                             for i, n_idx in enumerate(nodes_idx):
                                 F[n_idx * 6 + 0] += load.fx * factor * N[i]
@@ -482,15 +491,16 @@ class StructuralSolver:
                 mat = self.materials[shell.material_id]
                 for fe in shell.mesh.elements:
                     if fe.type == "quad" and len(fe.nodeIds) == 4:
-                        n1 = next(n for n in self.nodes if n.id == fe.nodeIds[0])
-                        n2 = next(n for n in self.nodes if n.id == fe.nodeIds[1])
-                        n3 = next(n for n in self.nodes if n.id == fe.nodeIds[2])
-                        n4 = next(n for n in self.nodes if n.id == fe.nodeIds[3])
+                        mapped_ids = [self.mesh_node_mapping.get(nid, nid) for nid in fe.nodeIds]
+                        n1 = next(n for n in self.nodes if n.id == mapped_ids[0])
+                        n2 = next(n for n in self.nodes if n.id == mapped_ids[1])
+                        n3 = next(n for n in self.nodes if n.id == mapped_ids[2])
+                        n4 = next(n for n in self.nodes if n.id == mapped_ids[3])
                         
                         nodes_local = [[n1.x, n1.y], [n2.x, n2.y], [n3.x, n3.y], [n4.x, n4.y]]
                         
                         u_loc = np.zeros(24)
-                        nodes_idx = [self.node_map[nid] for nid in [n1.id, n2.id, n3.id, n4.id]]
+                        nodes_idx = [self.node_map[nid] for nid in mapped_ids]
                         for i, n_idx in enumerate(nodes_idx):
                             u_loc[i*6:(i+1)*6] = U[n_idx*6:(n_idx+1)*6]
                             
