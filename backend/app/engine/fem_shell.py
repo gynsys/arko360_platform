@@ -132,9 +132,15 @@ def get_quad_shell_local_stiffness(nodes_local: List[List[float]], E: float, nu:
                 for j in range(12):
                     K[map_b[i], map_b[j]] += K_b[i, j]
 
-    # --- 3. Shear Stiffness Integration (1x1 Reduced) ---
-    for xi in gps_1:
-        for eta in gps_1:
+    # --- 3. Shear Stiffness Integration with Hourglass Stabilization ---
+    # We combine 1x1 reduced integration (to prevent shear locking) 
+    # with a 5% fraction of 2x2 integration (to stabilize the zero-energy hourglass mode).
+    alpha = 0.05
+    
+    # 1. 1x1 integration part (weight 4.0)
+    K_s_1x1 = np.zeros((12, 12))
+    for xi in [0.0]:
+        for eta in [0.0]:
             N, dN_dxi, dN_deta = shape_funcs(xi, eta)
             J = np.array([
                 [np.dot(dN_dxi, x), np.dot(dN_dxi, y)],
@@ -142,24 +148,49 @@ def get_quad_shell_local_stiffness(nodes_local: List[List[float]], E: float, nu:
             ])
             detJ = abs(np.linalg.det(J))
             invJ = np.linalg.inv(J)
-            
             dN_dx_dy = invJ @ np.vstack((dN_dxi, dN_deta))
             dN_dx = dN_dx_dy[0, :]
             dN_dy = dN_dx_dy[1, :]
             
             B_s = np.zeros((2, 12))
             for i in range(4):
-                B_s[0, 3*i+0] = dN_dx[i]   # dw/dx
-                B_s[0, 3*i+2] = N[i]        # +theta_y (ry) → gamma_xz = dw/dx + theta_y
-                B_s[1, 3*i+0] = dN_dy[i]   # dw/dy
-                B_s[1, 3*i+1] = -N[i]       # -theta_x (rx) → gamma_yz = dw/dy - theta_x
-                
-            # Note: The area weight for 1x1 is 2*2 = 4
-            K_s = B_s.T @ D_s @ B_s * detJ * 4.0
+                B_s[0, 3*i+0] = dN_dx[i]
+                B_s[0, 3*i+2] = N[i]
+                B_s[1, 3*i+0] = dN_dy[i]
+                B_s[1, 3*i+1] = -N[i]
             
-            for i in range(12):
-                for j in range(12):
-                    K[map_b[i], map_b[j]] += K_s[i, j]
+            K_s_1x1 += B_s.T @ D_s @ B_s * detJ * 4.0
+
+    # 2. 2x2 integration part (weight 1.0 per point)
+    K_s_2x2 = np.zeros((12, 12))
+    for xi in gps_2:
+        for eta in gps_2:
+            N, dN_dxi, dN_deta = shape_funcs(xi, eta)
+            J = np.array([
+                [np.dot(dN_dxi, x), np.dot(dN_dxi, y)],
+                [np.dot(dN_deta, x), np.dot(dN_deta, y)]
+            ])
+            detJ = abs(np.linalg.det(J))
+            invJ = np.linalg.inv(J)
+            dN_dx_dy = invJ @ np.vstack((dN_dxi, dN_deta))
+            dN_dx = dN_dx_dy[0, :]
+            dN_dy = dN_dx_dy[1, :]
+            
+            B_s = np.zeros((2, 12))
+            for i in range(4):
+                B_s[0, 3*i+0] = dN_dx[i]
+                B_s[0, 3*i+2] = N[i]
+                B_s[1, 3*i+0] = dN_dy[i]
+                B_s[1, 3*i+1] = -N[i]
+            
+            K_s_2x2 += B_s.T @ D_s @ B_s * detJ * 1.0
+
+    # Combined shear stiffness matrix
+    K_s = (1 - alpha) * K_s_1x1 + alpha * K_s_2x2
+    
+    for i in range(12):
+        for j in range(12):
+            K[map_b[i], map_b[j]] += K_s[i, j]
 
     # --- 4. Drilling DOF (Artificial Stiffness for Rz) ---
     # Shell elements naturally lack stiffness around the local Z axis.
