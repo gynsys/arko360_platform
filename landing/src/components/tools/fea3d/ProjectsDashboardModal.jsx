@@ -68,9 +68,16 @@ export function ProjectsDashboardModal({ onClose }) {
       useStructureStore.setState(s => ({ 
         projectLoadedTrigger: s.projectLoadedTrigger + 1 
       }));
+      
+      console.log('--- DEBUG CARGA PROYECTO ---');
+      console.log('Project data:', project);
+      console.log('Nodes loaded:', newState.nodes.length);
+      console.log('Elements loaded:', newState.elements.length);
+      console.log('Shells loaded:', newState.shells.length);
+      
+      toast.success(`Cargado: ${newState.nodes.length} Nudos, ${newState.shells.length} Losas, ${newState.elements.length} Elem.`);
     }, 0);
     
-    toast.success(`Proyecto "${project.name}" cargado`);
     onClose();
   };
 

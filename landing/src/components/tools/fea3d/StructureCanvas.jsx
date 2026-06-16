@@ -627,6 +627,8 @@ function CameraController() {
     if (projectLoadedTrigger > 0) {
       const span = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 10);
       
+      console.log('--- CAMERA ADJUSTMENT ---', { minX, maxX, minY, maxY, minZ, maxZ, cx, cy, cz, span, nodesCount: nodes.length });
+      
       if (cameraView === '3D') {
         camera.position.set(cx - span * 1.5, cy - span * 1.5, cz + span * 1.2);
         controls.target.set(cx, cy, cz);

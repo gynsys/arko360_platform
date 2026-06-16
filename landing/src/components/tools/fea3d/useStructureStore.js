@@ -662,6 +662,8 @@ export const useStructureStore = create((set, get) => ({
           get().generateMeshForShell(shell.id);
         });
         set(state => ({ projectLoadedTrigger: state.projectLoadedTrigger + 1 }));
+        
+        toast.success(`Archivo cargado: ${nodesRaw.length} Nudos, ${shellsRaw.length} Losas, ${(data.elements||[]).length} Elementos`, { duration: 5000 });
       }, 0);
     } catch (e) {
       toast.error("Error cargando archivo .arko3d");
