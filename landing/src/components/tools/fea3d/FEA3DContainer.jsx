@@ -104,7 +104,7 @@ export default function FEA3DContainer() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [elements.length, isSaved]);
 
-  const hasModel = wizardConfig !== null;
+  const hasModel = wizardConfig !== null || elements.length > 0 || shells.length > 0 || useStructureStore.getState().nodes.length > 0;
   const isResultsMode = viewMode === 'results';
   const totalElements = elements.length + shells.length;
 
