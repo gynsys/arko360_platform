@@ -34,7 +34,7 @@ function CoordinateTracker() {
   return null;
 }
 
-function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activeResultType, globalRange }) {
+function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activeResultType, globalRange, displacementScale = 1 }) {
   const { nodes, selectedIds, toggleSelection, viewMode, openings, activeResultCombo, metadata } = useStructureStore();
   const units = metadata?.units || { force: 'kgf', length: 'm', moment: 'kgf-m' };
   const isSelected = selectedIds.includes(id);
@@ -1323,7 +1323,7 @@ export function StructureCanvas() {
           const active = cameraView === '3D' || shellNodes.every(n => isNodeActive(n));
           // En vista 2D: omitir shells de otros niveles
           if (!active && cameraView !== '3D') return null;
-          return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={false} mesh={s.mesh} results={results} activeResultType={activeResultType} globalRange={shellHeatmapRange} />;
+          return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={false} mesh={s.mesh} results={results} activeResultType={activeResultType} globalRange={shellHeatmapRange} displacementScale={displacementScale} />;
         })}
 
 
