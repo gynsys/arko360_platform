@@ -28,7 +28,7 @@ function isValidNode(n) {
     isFinite(n.z) && !isNaN(n.z);
 }
 
-export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, globalRange, unit, getDisplacement }) {
+export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, globalRange, unit, getDisplacement, displacementScale = 1 }) {
   const [hovered, setHovered] = useState(null);
 
   const { lineGeometry, faceGeometry, hasFaces } = useMemo(() => {
