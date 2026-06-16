@@ -177,6 +177,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
         globalRange={globalRange}
         unit={units.moment}
         getDisplacement={getDisplacement}
+        displacementScale={displacementScale}
       />
     </group>
   );

@@ -93,10 +93,23 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, g
       const p = ids.map(id => {
         const n = nodeMap.get(id);
         if (!n) return null;
-        const d = getDisplacement ? getDisplacement(id) : [0, 0, 0];
-        const dx = isFinite(d[0]) ? d[0] : 0;
-        const dy = isFinite(d[1]) ? d[1] : 0;
-        const dz = isFinite(d[2]) ? d[2] : 0;
+
+        let dx = 0, dy = 0, dz = 0;
+        
+        // Use deformed nodes from backend directly
+        if (results && results.deformed_shell_nodes && results.deformed_shell_nodes[shellId] && results.deformed_shell_nodes[shellId][id]) {
+          const defNode = results.deformed_shell_nodes[shellId][id];
+          dx = (defNode.x - n.x) * displacementScale;
+          dy = (defNode.y - n.y) * displacementScale;
+          dz = (defNode.z - n.z) * displacementScale;
+        } else {
+          // Fallback to getDisplacement if backend deformed nodes are missing
+          const d = getDisplacement ? getDisplacement(id) : [0, 0, 0];
+          dx = isFinite(d[0]) ? d[0] : 0;
+          dy = isFinite(d[1]) ? d[1] : 0;
+          dz = isFinite(d[2]) ? d[2] : 0;
+        }
+        
         return { ...n, x: n.x + dx, y: n.y + dy, z: n.z + dz };
       });
 
@@ -166,7 +179,7 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, g
       faceGeometry: fGeo,
       hasFaces: facePositions.length > 0,
     };
-  }, [mesh, results, activeResultMap, globalRange, getDisplacement]);
+  }, [mesh, results, activeResultMap, globalRange, getDisplacement, displacementScale]);
 
   return (
     <group>

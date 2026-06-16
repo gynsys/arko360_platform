@@ -593,10 +593,26 @@ class StructuralSolver:
                         stresses = recover_shell_stresses(nodes_local, u_loc, mat.E, mat.nu, shell.thickness)
                         shell_forces[fe.id] = stresses
                 
+            deformed_shell_nodes = {}
+            for shell in self.shells:
+                if not shell.mesh or not shell.mesh.nodes:
+                    continue
+                shell_nodes_deformed = {}
+                for mn in shell.mesh.nodes:
+                    mapped_id = self.mesh_node_mapping.get(mn.id, mn.id)
+                    u = displacements.get(mapped_id, [0, 0, 0, 0, 0, 0])
+                    shell_nodes_deformed[mn.id] = {
+                        "x": float(mn.x + u[0]),
+                        "y": float(mn.y + u[1]),
+                        "z": float(mn.z + u[2])
+                    }
+                deformed_shell_nodes[shell.id] = shell_nodes_deformed
+                
             results_by_combo[combo.id] = {
                 "displacements": displacements,
                 "element_forces": element_forces,
-                "shell_forces": shell_forces
+                "shell_forces": shell_forces,
+                "deformed_shell_nodes": deformed_shell_nodes
             }
             
         # Generar archivo de auditoría
