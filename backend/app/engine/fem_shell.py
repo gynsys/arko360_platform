@@ -1,6 +1,7 @@
 import numpy as np
+from typing import List, Dict
 
-def get_quad_shell_local_stiffness(nodes_local, E, nu, thickness):
+def get_quad_shell_local_stiffness(nodes_local: List[List[float]], E: float, nu: float, thickness: float) -> np.ndarray:
     """
     Computes the 24x24 local stiffness matrix for a 4-node quadrilateral shell element.
     Nodes must be in counter-clockwise order.
@@ -71,7 +72,7 @@ def get_quad_shell_local_stiffness(nodes_local, E, nu, thickness):
                 [np.dot(dN_dxi, x), np.dot(dN_dxi, y)],
                 [np.dot(dN_deta, x), np.dot(dN_deta, y)]
             ])
-            detJ = np.linalg.det(J)
+            detJ = abs(np.linalg.det(J))
             invJ = np.linalg.inv(J)
             
             dN_dx_dy = invJ @ np.vstack((dN_dxi, dN_deta))
@@ -103,7 +104,7 @@ def get_quad_shell_local_stiffness(nodes_local, E, nu, thickness):
                 [np.dot(dN_dxi, x), np.dot(dN_dxi, y)],
                 [np.dot(dN_deta, x), np.dot(dN_deta, y)]
             ])
-            detJ = np.linalg.det(J)
+            detJ = abs(np.linalg.det(J))
             invJ = np.linalg.inv(J)
             
             dN_dx_dy = invJ @ np.vstack((dN_dxi, dN_deta))
@@ -139,7 +140,7 @@ def get_quad_shell_local_stiffness(nodes_local, E, nu, thickness):
                 [np.dot(dN_dxi, x), np.dot(dN_dxi, y)],
                 [np.dot(dN_deta, x), np.dot(dN_deta, y)]
             ])
-            detJ = np.linalg.det(J)
+            detJ = abs(np.linalg.det(J))
             invJ = np.linalg.inv(J)
             
             dN_dx_dy = invJ @ np.vstack((dN_dxi, dN_deta))
@@ -163,13 +164,13 @@ def get_quad_shell_local_stiffness(nodes_local, E, nu, thickness):
     # --- 4. Drilling DOF (Artificial Stiffness for Rz) ---
     # Shell elements naturally lack stiffness around the local Z axis.
     # To prevent singular matrices in 3D assembly, we add a fictitious stiffness.
-    k_drilling = 1e-4 * E * t * np.linalg.det(J) 
+    k_drilling = 1e-4 * E * t * abs(np.linalg.det(J)) 
     for i in range(4):
         K[i*6+5, i*6+5] += k_drilling
 
     return K
 
-def recover_shell_stresses(nodes_local, u_local, E, nu, thickness):
+def recover_shell_stresses(nodes_local: List[List[float]], u_local: np.ndarray, E: float, nu: float, thickness: float) -> Dict[str, float]:
     """
     Recover internal forces/moments (M11, M22, etc.) at the centroid of the element.
     Returns a dictionary of stresses.

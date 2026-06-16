@@ -191,7 +191,11 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
 }
 
 function FrameElement({ start, end, id, isShadow, isFaded }) {
-  const { selectedIds, toggleSelection, setRightClickedElementId, viewMode } = useStructureStore();
+  const { 
+    selectedIds, toggleSelection, setRightClickedElementId, viewMode,
+    nodes, elements, shells, results, activeResultCombo, displacementScale
+  } = useStructureStore();
+  
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
 
@@ -204,10 +208,96 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     const ey = isFinite(end[1]) ? end[1] : 0;
     const ez = isFinite(end[2]) ? end[2] : 0;
     
+    // In results mode (for non-shadow deformed elements), retrieve shell mesh nodes lying along this frame
+    if (viewMode === 'results' && !isShadow && elements && nodes && shells) {
+      const elem = elements.find(el => el.id === id);
+      const n1Id = elem?.nodes?.[0];
+      const n2Id = elem?.nodes?.[1];
+      const n1 = nodes.find(n => n.id === n1Id);
+      const n2 = nodes.find(n => n.id === n2Id);
+
+      if (n1 && n2) {
+        const p1 = { x: n1.x, y: n1.y, z: n1.z };
+        const p2 = { x: n2.x, y: n2.y, z: n2.z };
+        
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dz = p2.z - p1.z;
+        const lenSq = dx*dx + dy*dy + dz*dz;
+
+        if (lenSq > 1e-6) {
+          const intermediateNodes = [];
+          shells.forEach(shell => {
+            if (shell.mesh && Array.isArray(shell.mesh.nodes)) {
+              shell.mesh.nodes.forEach(mn => {
+                if (mn.id === n1.id || mn.id === n2.id) return;
+                
+                const wx = mn.x - p1.x;
+                const wy = mn.y - p1.y;
+                const wz = mn.z - p1.z;
+                
+                const t = (wx*dx + wy*dy + wz*dz) / lenSq;
+                if (t > 1e-4 && t < 1 - 1e-4) {
+                  const px = p1.x + t * dx;
+                  const py = p1.y + t * dy;
+                  const pz = p1.z + t * dz;
+                  
+                  const distSq = (mn.x - px)**2 + (mn.y - py)**2 + (mn.z - pz)**2;
+                  if (distSq < 1e-4) {
+                    intermediateNodes.push({ t, id: mn.id, x: mn.x, y: mn.y, z: mn.z });
+                  }
+                }
+              });
+            }
+          });
+
+          // Remove duplicates
+          const uniqueIntermediates = [];
+          const seenIds = new Set();
+          intermediateNodes.forEach(node => {
+            if (!seenIds.has(node.id)) {
+              seenIds.add(node.id);
+              uniqueIntermediates.push(node);
+            }
+          });
+
+          // Sort along the element direction
+          uniqueIntermediates.sort((a, b) => a.t - b.t);
+
+          const segmentNodes = [
+            { id: n1.id, x: p1.x, y: p1.y, z: p1.z },
+            ...uniqueIntermediates,
+            { id: n2.id, x: p2.x, y: p2.y, z: p2.z }
+          ];
+
+          const positions = [];
+          segmentNodes.forEach(node => {
+            let ndx = 0, ndy = 0, ndz = 0;
+            if (results && activeResultCombo) {
+              const comboResults = results.results[activeResultCombo];
+              if (comboResults && comboResults.displacements) {
+                const d = comboResults.displacements[node.id];
+                if (d) {
+                  ndx = d[0] * displacementScale;
+                  ndy = d[1] * displacementScale;
+                  ndz = d[2] * displacementScale;
+                }
+              }
+            }
+            positions.push(node.x + ndx, node.y + ndy, node.z + ndz);
+          });
+
+          geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
+          return geo;
+        }
+      }
+    }
+
+    // Fallback straight line
     const positions = new Float32Array([sx, sy, sz, ex, ey, ez]);
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     return geo;
-  }, [start[0], start[1], start[2], end[0], end[1], end[2]]);
+  }, [start[0], start[1], start[2], end[0], end[1], end[2], viewMode, isShadow, id, elements, nodes, shells, results, activeResultCombo, displacementScale]);
 
   return (
     <line 
