@@ -8,9 +8,9 @@ import json
 import os
 
 class StructuralSolver:
-    def __init__(self, topology: "Topology"):
-        self.nodes = topology.nodes
-        self.elements = topology.elements
+    def __init__(self, topology: Topology) -> None:
+        self.nodes = list(topology.nodes)
+        self.elements = list(topology.elements)
         self.shells = getattr(topology, 'shells', [])
         self.materials = {m.id: m for m in topology.materials}
         self.sections = {s.id: s for s in topology.sections}
@@ -43,6 +43,76 @@ class StructuralSolver:
                         from app.schemas.fea3d import Node
                         self.mesh_node_mapping[mn.id] = mn.id
                         self.nodes.append(Node(id=mn.id, x=mn.x, y=mn.y, z=mn.z))
+
+        # Subdividir elementos de pórtico (vigas/columnas) que tengan nodos del mesh sobre su longitud
+        self.segment_to_original = {}
+        self.original_element_lengths = {}
+        self.segment_start_offset = {}
+        
+        subdivided_elements = []
+        from app.schemas.fea3d import Element
+        
+        for elem in self.elements:
+            n1 = next((n for n in self.nodes if n.id == elem.nodes[0]), None)
+            n2 = next((n for n in self.nodes if n.id == elem.nodes[1]), None)
+            if not n1 or not n2:
+                subdivided_elements.append(elem)
+                self.segment_to_original[elem.id] = elem.id
+                self.segment_start_offset[elem.id] = 0.0
+                continue
+                
+            p1 = np.array([n1.x, n1.y, n1.z])
+            p2 = np.array([n2.x, n2.y, n2.z])
+            v = p2 - p1
+            v_len = np.linalg.norm(v)
+            v_len_sq = np.dot(v, v)
+            
+            if v_len < 1e-4:
+                subdivided_elements.append(elem)
+                self.segment_to_original[elem.id] = elem.id
+                self.segment_start_offset[elem.id] = 0.0
+                continue
+                
+            self.original_element_lengths[elem.id] = v_len
+                
+            # Encontrar nodos de malla que yacen sobre el segmento n1-n2
+            intermediate_nodes = []
+            for existing_n in self.nodes:
+                if existing_n.id == n1.id or existing_n.id == n2.id:
+                    continue
+                p = np.array([existing_n.x, existing_n.y, existing_n.z])
+                w = p - p1
+                t = np.dot(w, v) / v_len_sq
+                if 1e-4 < t < 1 - 1e-4:
+                    p_proj = p1 + t * v
+                    dist = np.linalg.norm(p - p_proj)
+                    if dist < 1e-4:
+                        intermediate_nodes.append((t, existing_n.id))
+            
+            if not intermediate_nodes:
+                subdivided_elements.append(elem)
+                self.segment_to_original[elem.id] = elem.id
+                self.segment_start_offset[elem.id] = 0.0
+            else:
+                intermediate_nodes.sort(key=lambda x: x[0])
+                segment_nodes = [n1.id] + [nid for _, nid in intermediate_nodes] + [n2.id]
+                segment_projections = [0.0] + [t for t, _ in intermediate_nodes] + [1.0]
+                
+                for i in range(len(segment_nodes) - 1):
+                    seg_id = f"{elem.id}_seg_{i}"
+                    seg = Element(
+                        id=seg_id,
+                        type=elem.type,
+                        nodes=[segment_nodes[i], segment_nodes[i+1]],
+                        section_id=elem.section_id,
+                        material_id=elem.material_id,
+                        beta_angle=elem.beta_angle
+                    )
+                    subdivided_elements.append(seg)
+                    self.segment_to_original[seg_id] = elem.id
+                    self.segment_start_offset[seg_id] = segment_projections[i] * v_len
+                    
+        self.elements = subdivided_elements
         
         self.num_nodes = len(self.nodes)
         self.ndof = self.num_nodes * 6
@@ -103,7 +173,7 @@ class StructuralSolver:
                     
         return csr_matrix((data, (row, col)), shape=(self.ndof, self.ndof))
 
-    def assemble_load_vector(self, factors: dict):
+    def assemble_load_vector(self, factors: dict) -> tuple:
         F = np.zeros(self.ndof)
         g = 9.81
         factor_cm = factors.get("CM", 1.0)
@@ -145,13 +215,38 @@ class StructuralSolver:
             edges = [(shell.nodes[0], shell.nodes[1]), (shell.nodes[1], shell.nodes[2]), 
                      (shell.nodes[2], shell.nodes[3]), (shell.nodes[3], shell.nodes[0])]
             
-            # Encontrar elementos que coincidan con estos bordes
+            # Encontrar elementos (o sus segmentos) que coincidan con estos bordes
             perimeter_elements = []
             for edge in edges:
+                nA = next((n for n in self.nodes if n.id == edge[0]), None)
+                nB = next((n for n in self.nodes if n.id == edge[1]), None)
+                if not nA or not nB: continue
+                pA = np.array([nA.x, nA.y, nA.z])
+                pB = np.array([nB.x, nB.y, nB.z])
+                v_edge = pB - pA
+                v_edge_len = np.linalg.norm(v_edge)
+                v_edge_sq = np.dot(v_edge, v_edge)
+                
+                if v_edge_len < 1e-4: continue
+                
                 for elem in self.elements:
-                    if (elem.nodes[0] == edge[0] and elem.nodes[1] == edge[1]) or \
-                       (elem.nodes[0] == edge[1] and elem.nodes[1] == edge[0]):
-                        perimeter_elements.append(elem)
+                    en1 = next((n for n in self.nodes if n.id == elem.nodes[0]), None)
+                    en2 = next((n for n in self.nodes if n.id == elem.nodes[1]), None)
+                    if not en1 or not en2: continue
+                    
+                    p_en1 = np.array([en1.x, en1.y, en1.z])
+                    w_en1 = p_en1 - pA
+                    t_en1 = np.dot(w_en1, v_edge) / v_edge_sq
+                    
+                    p_en2 = np.array([en2.x, en2.y, en2.z])
+                    w_en2 = p_en2 - pA
+                    t_en2 = np.dot(w_en2, v_edge) / v_edge_sq
+                    
+                    if -1e-4 <= t_en1 <= 1 + 1e-4 and -1e-4 <= t_en2 <= 1 + 1e-4:
+                        dist_en1 = np.linalg.norm(p_en1 - (pA + t_en1 * v_edge))
+                        dist_en2 = np.linalg.norm(p_en2 - (pA + t_en2 * v_edge))
+                        if dist_en1 < 1e-4 and dist_en2 < 1e-4:
+                            perimeter_elements.append(elem)
             
             if perimeter_elements:
                 # Carga uniforme equivalente = Carga Total / Longitud Total del Perímetro
@@ -228,57 +323,83 @@ class StructuralSolver:
                 F[node_idx * 6 + 5] += load.mz * factor
             
             elif load.type == "distributed":
-                elem = next((e for e in self.elements if e.id == load.target_id), None)
-                if not elem: continue
-                n1 = next((n for n in self.nodes if n.id == elem.nodes[0]), None)
-                n2 = next((n for n in self.nodes if n.id == elem.nodes[1]), None)
-                if not n1 or not n2: continue
-                p1 = np.array([n1.x, n1.y, n1.z])
-                p2 = np.array([n2.x, n2.y, n2.z])
-                l = np.linalg.norm(p2 - p1)
-                
-                q_global = np.array([load.fx * factor, load.fy * factor, load.fz * factor])
-                T = get_rotation_matrix(p1, p2, elem.beta_angle)
-                q_local = T[0:3, 0:3] @ q_global
-                
-                element_local_loads[elem.id]["px"] += q_local[0]
-                element_local_loads[elem.id]["py"] += q_local[1]
-                element_local_loads[elem.id]["pz"] += q_local[2]
-                
-                f_fixed_local = np.zeros(12)
-                # Carga axial
-                f_fixed_local[0] = q_local[0] * l / 2
-                f_fixed_local[6] = q_local[0] * l / 2
-                # Carga Y local
-                f_fixed_local[1] = q_local[1] * l / 2
-                f_fixed_local[5] = q_local[1] * l**2 / 12
-                f_fixed_local[7] = q_local[1] * l / 2
-                f_fixed_local[11] = -q_local[1] * l**2 / 12
-                # Carga Z local
-                f_fixed_local[2] = q_local[2] * l / 2
-                f_fixed_local[4] = -q_local[2] * l**2 / 12
-                f_fixed_local[8] = q_local[2] * l / 2
-                f_fixed_local[10] = q_local[2] * l**2 / 12
-                
-                element_local_loads[elem.id]["f_fixed_local"] += f_fixed_local
-                
-                f_fixed_global = T.T @ f_fixed_local
-                idx1 = self.node_map[n1.id] * 6
-                idx2 = self.node_map[n2.id] * 6
-                F[idx1:idx1+6] -= f_fixed_global[0:6]
-                F[idx2:idx2+6] -= f_fixed_global[6:12]
+                target_segments = [e for e in self.elements if self.segment_to_original.get(e.id) == load.target_id]
+                for elem in target_segments:
+                    n1 = next((n for n in self.nodes if n.id == elem.nodes[0]), None)
+                    n2 = next((n for n in self.nodes if n.id == elem.nodes[1]), None)
+                    if not n1 or not n2: continue
+                    p1 = np.array([n1.x, n1.y, n1.z])
+                    p2 = np.array([n2.x, n2.y, n2.z])
+                    l = np.linalg.norm(p2 - p1)
+                    
+                    q_global = np.array([load.fx * factor, load.fy * factor, load.fz * factor])
+                    T = get_rotation_matrix(p1, p2, elem.beta_angle)
+                    q_local = T[0:3, 0:3] @ q_global
+                    
+                    element_local_loads[elem.id]["px"] += q_local[0]
+                    element_local_loads[elem.id]["py"] += q_local[1]
+                    element_local_loads[elem.id]["pz"] += q_local[2]
+                    
+                    f_fixed_local = np.zeros(12)
+                    # Carga axial
+                    f_fixed_local[0] = q_local[0] * l / 2
+                    f_fixed_local[6] = q_local[0] * l / 2
+                    # Carga Y local
+                    f_fixed_local[1] = q_local[1] * l / 2
+                    f_fixed_local[5] = q_local[1] * l**2 / 12
+                    f_fixed_local[7] = q_local[1] * l / 2
+                    f_fixed_local[11] = -q_local[1] * l**2 / 12
+                    # Carga Z local
+                    f_fixed_local[2] = q_local[2] * l / 2
+                    f_fixed_local[4] = -q_local[2] * l**2 / 12
+                    f_fixed_local[8] = q_local[2] * l / 2
+                    f_fixed_local[10] = q_local[2] * l**2 / 12
+                    
+                    element_local_loads[elem.id]["f_fixed_local"] += f_fixed_local
+                    
+                    f_fixed_global = T.T @ f_fixed_local
+                    idx1 = self.node_map[n1.id] * 6
+                    idx2 = self.node_map[n2.id] * 6
+                    F[idx1:idx1+6] -= f_fixed_global[0:6]
+                    F[idx2:idx2+6] -= f_fixed_global[6:12]
 
             elif load.type == "point_frame":
-                elem = next((e for e in self.elements if e.id == load.target_id), None)
-                if not elem: continue
+                total_len = self.original_element_lengths.get(load.target_id)
+                if total_len is None or total_len < 1e-4:
+                    continue
+                point_dist = total_len * load.offset
+                
+                target_segments = [e for e in self.elements if self.segment_to_original.get(e.id) == load.target_id]
+                
+                selected_elem = None
+                relative_offset = 0.0
+                seg_len = 0.0
+                
+                for elem in target_segments:
+                    start_off = self.segment_start_offset.get(elem.id, 0.0)
+                    n1 = next((n for n in self.nodes if n.id == elem.nodes[0]), None)
+                    n2 = next((n for n in self.nodes if n.id == elem.nodes[1]), None)
+                    if not n1 or not n2: continue
+                    l = np.linalg.norm(np.array([n2.x-n1.x, n2.y-n1.y, n2.z-n1.z]))
+                    if start_off - 1e-4 <= point_dist <= start_off + l + 1e-4:
+                        selected_elem = elem
+                        seg_len = l
+                        relative_offset = (point_dist - start_off) / (l if l > 1e-6 else 1.0)
+                        relative_offset = max(0.0, min(1.0, relative_offset))
+                        break
+                        
+                if not selected_elem:
+                    continue
+                    
+                elem = selected_elem
                 n1 = next((n for n in self.nodes if n.id == elem.nodes[0]), None)
                 n2 = next((n for n in self.nodes if n.id == elem.nodes[1]), None)
                 if not n1 or not n2: continue
                 p1 = np.array([n1.x, n1.y, n1.z])
                 p2 = np.array([n2.x, n2.y, n2.z])
-                l = np.linalg.norm(p2 - p1)
+                l = seg_len
                 
-                a = l * load.offset
+                a = l * relative_offset
                 b = l - a
                 
                 q_global = np.array([load.fx * factor, load.fy * factor, load.fz * factor])
@@ -485,7 +606,7 @@ class StructuralSolver:
                 if mesh_id != mapped_id and mapped_id in displacements:
                     displacements[mesh_id] = displacements[mapped_id]
             
-            element_forces = {}
+            seg_element_forces = {}
             for elem in self.elements:
                 n1 = next(n for n in self.nodes if n.id == elem.nodes[0])
                 n2 = next(n for n in self.nodes if n.id == elem.nodes[1])
@@ -567,7 +688,35 @@ class StructuralSolver:
                         "uz": float(v_z)
                     })
                 
-                element_forces[elem.id] = stations
+                seg_element_forces[elem.id] = stations
+
+            # Reconstruir element_forces para los elementos originales combinando sus segmentos
+            element_forces = {}
+            orig_to_segs = {}
+            for seg_id, orig_id in self.segment_to_original.items():
+                if orig_id not in orig_to_segs:
+                    orig_to_segs[orig_id] = []
+                orig_to_segs[orig_id].append(seg_id)
+                
+            for orig_id, seg_ids in orig_to_segs.items():
+                if len(seg_ids) == 1 and seg_ids[0] == orig_id:
+                    element_forces[orig_id] = seg_element_forces.get(orig_id, [])
+                    continue
+                    
+                seg_ids.sort(key=lambda sid: self.segment_start_offset.get(sid, 0.0))
+                
+                combined_stations = []
+                for seg_id in seg_ids:
+                    seg_stations = seg_element_forces.get(seg_id, [])
+                    start_off = self.segment_start_offset.get(seg_id, 0.0)
+                    for st in seg_stations:
+                        if combined_stations and abs(combined_stations[-1]["x"] - (st["x"] + start_off)) < 1e-4:
+                            continue
+                        new_st = dict(st)
+                        new_st["x"] = float(st["x"] + start_off)
+                        combined_stations.append(new_st)
+                        
+                element_forces[orig_id] = combined_stations
                 
             shell_forces = {}
             from app.engine.fem_shell import recover_shell_stresses
