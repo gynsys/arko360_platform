@@ -28,7 +28,7 @@ function isValidNode(n) {
     isFinite(n.z) && !isNaN(n.z);
 }
 
-export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, globalRange, unit, getDisplacement }) {
+export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, globalRange, unit, cornerDisplacements }) {
   const [hovered, setHovered] = useState(null);
 
   const { lineGeometry, faceGeometry, hasFaces } = useMemo(() => {
@@ -93,7 +93,8 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, g
       const p = ids.map(id => {
         const n = nodeMap.get(id);
         if (!n) return null;
-        const d = getDisplacement ? getDisplacement(n.id) : [0, 0, 0];
+        // Use bilinear interpolation from the 4 shell corners — never use internal FEM node IDs
+        const d = cornerDisplacements ? cornerDisplacements(n.x, n.y) : [0, 0, 0];
         const dx = isFinite(d[0]) ? d[0] : 0;
         const dy = isFinite(d[1]) ? d[1] : 0;
         const dz = isFinite(d[2]) ? d[2] : 0;
@@ -166,7 +167,7 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, g
       faceGeometry: fGeo,
       hasFaces: facePositions.length > 0,
     };
-  }, [mesh, results, activeResultMap, globalRange, getDisplacement]);
+  }, [mesh, results, activeResultMap, globalRange, cornerDisplacements]);
 
   return (
     <group>
