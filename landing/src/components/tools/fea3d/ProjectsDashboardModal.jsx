@@ -25,6 +25,8 @@ export function ProjectsDashboardModal({ onClose }) {
 
   const handleOpen = (project) => {
     const topo = project.topology || {};
+    
+    // 1. Construir estado base SIN projectLoadedTrigger
     const newState = {
       nodes: topo.nodes || [],
       elements: topo.elements || [],
@@ -33,33 +35,41 @@ export function ProjectsDashboardModal({ onClose }) {
       materials: topo.materials || [],
       sections: topo.sections || [],
       loads: topo.loads || [],
-      loadCombinations: topo.combinations || [],
+      loadCombinations: topo.loadCombinations || topo.combinations || [],
       isSaved: true,
       viewMode: 'model',
       results: null,
       selectedIds: [],
-      projectLoadedTrigger: useStructureStore.getState().projectLoadedTrigger + 1,
     };
+    
     if (topo.metadata) {
       newState.metadata = topo.metadata;
     } else {
       newState.metadata = { name: project.name, author: '', units: 'm, kgf, C' };
     }
+    
+    // 2. Cargar estado inicial
     useStructureStore.setState(newState);
-
-    // Regenerate FEM mesh for all shells asynchronously to prevent freezing UI
+    
+    // 3. Regenerar meshes y aplicar resultados de forma asíncrona
     const shellsRaw = topo.shells || [];
     setTimeout(() => {
-      const state = useStructureStore.getState();
+      // Regenerar meshes con getState() fresco
       shellsRaw.forEach(shell => {
-        state.generateMeshForShell(shell.id);
+        useStructureStore.getState().generateMeshForShell(shell.id);
       });
-      useStructureStore.setState({ projectLoadedTrigger: state.projectLoadedTrigger + 1 });
+      
+      // Aplicar resultados AHORA que los meshes existen
+      if (project.results) {
+        useStructureStore.getState().setResultsMode(project.results);
+      }
+      
+      // UN SOLO trigger al final, con estado fresco
+      useStructureStore.setState(s => ({ 
+        projectLoadedTrigger: s.projectLoadedTrigger + 1 
+      }));
     }, 0);
-
-    if (project.results) {
-      useStructureStore.getState().setResultsMode(project.results);
-    }
+    
     toast.success(`Proyecto "${project.name}" cargado`);
     onClose();
   };

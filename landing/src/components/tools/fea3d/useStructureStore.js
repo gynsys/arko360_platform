@@ -1,12 +1,16 @@
 import { create } from 'zustand';
 import { generateMesh } from './mesher';
 import { SlabOpeningGenerator, OpeningType } from './SlabOpeningGenerator';
+import toast from 'react-hot-toast';
 
 // Helper para limpiar nudos huérfanos (que no pertenecen a ningún elemento ni losa)
-const cleanupOrphans = (nodes, elements, shells) => {
+const cleanupOrphans = (nodes, elements, shells, openings = []) => {
   const connectedNodeIds = new Set();
   elements.forEach(e => e.nodes.forEach(nid => connectedNodeIds.add(nid)));
   shells.forEach(s => s.nodes.forEach(nid => connectedNodeIds.add(nid)));
+  openings.forEach(o => {
+    if (o.nodes) o.nodes.forEach(nid => connectedNodeIds.add(nid));
+  });
   return nodes.filter(n => connectedNodeIds.has(n.id));
 };
 
@@ -199,6 +203,25 @@ export const useStructureStore = create((set, get) => ({
             }));
           });
         }
+        
+        // Shell Forces
+        if (r.shell_forces) {
+          Object.keys(r.shell_forces).forEach(sid => {
+            const shellForce = r.shell_forces[sid];
+            if (typeof shellForce === 'object' && shellForce !== null) {
+              Object.keys(shellForce).forEach(key => {
+                const val = shellForce[key];
+                if (typeof val === 'number') {
+                  if (key.startsWith('M')) {
+                    shellForce[key] = val * fFactor * lFactor;
+                  } else if (key.startsWith('V') || key.startsWith('N')) {
+                    shellForce[key] = val * fFactor;
+                  }
+                }
+              });
+            }
+          });
+        }
       });
     }
 
@@ -337,25 +360,34 @@ export const useStructureStore = create((set, get) => ({
     selectedIds: []
   })),
 
-  addNodeToDrawing: (nodeId) => {
-    const { drawingNodes, nodes, addShell, toggleDrawingShell } = get();
-    if (drawingNodes.includes(nodeId)) return;
-    
-    const newDrawingNodes = [...drawingNodes, nodeId];
+  addNodeToDrawing: (nodeId) => set((state) => {
+    if (state.drawingNodes.includes(nodeId)) return {};
+    const newDrawingNodes = [...state.drawingNodes, nodeId];
     
     if (newDrawingNodes.length === 4) {
-      // Al completar 4 nudos, generamos la losa
-      addShell({
-        nodes: newDrawingNodes,
+      const shellNodes = newDrawingNodes;
+      const newShell = {
+        nodes: shellNodes,
         thickness: 0.20,
         material_id: '4000Psi',
-        loads: { CM: 2.0, CV: 1.8 } // Valores por defecto
-      });
-      toggleDrawingShell();
-    } else {
-      set({ drawingNodes: newDrawingNodes });
+        loads: { CM: 2.0, CV: 1.8 }
+      };
+      return {
+        shells: [...state.shells, { 
+          ...newShell, 
+          id: `S-${Date.now()}`, 
+          type: 'shell', 
+          meshSize: newShell.meshSize ?? 1.0, 
+          mesh: null 
+        }],
+        drawingNodes: [],
+        isDrawingShell: false,
+        isQuickDrawingShell: false,
+        isSaved: false
+      };
     }
-  },
+    return { drawingNodes: newDrawingNodes };
+  }),
 
   // --- CRUD NODOS ---
   updateNode: (id, data) => set((state) => ({
@@ -363,15 +395,16 @@ export const useStructureStore = create((set, get) => ({
     isSaved: false
   })),
   deleteNode: (id) => set((state) => {
-    const newNodes = state.nodes.filter(n => n.id !== id);
+    const newNodesDraft = state.nodes.filter(n => n.id !== id);
     const newElements = state.elements.filter(e => !e.nodes.includes(id));
     const newShells = state.shells.filter(s => !s.nodes.includes(id));
-    return {
-      nodes: cleanupOrphans(newNodes, newElements, newShells),
-      elements: newElements,
-      shells: newShells,
+    const newNodes = cleanupOrphans(newNodesDraft, newElements, newShells, state.openings);
+    return { 
+      nodes: newNodes, 
+      elements: newElements, 
+      shells: newShells, 
       selectedIds: state.selectedIds.filter(sid => sid !== id),
-      isSaved: false
+      isSaved: false 
     };
   }),
 
@@ -384,7 +417,7 @@ export const useStructureStore = create((set, get) => ({
     const newElements = state.elements.filter(e => e.id !== id);
     return {
       elements: newElements,
-      nodes: cleanupOrphans(state.nodes, newElements, state.shells),
+      nodes: cleanupOrphans(state.nodes, newElements, state.shells, state.openings),
       selectedIds: state.selectedIds.filter(sid => sid !== id),
       isSaved: false
     };
@@ -392,12 +425,11 @@ export const useStructureStore = create((set, get) => ({
 
   // --- CRUD SHELLS (LOSAS) ---
   addShell: (shell) => set((state) => ({
-    shells: [...state.shells, { ...shell, id: `S-${Date.now()}`, type: 'shell', meshSize: 1.0, mesh: null }],
+    shells: [...state.shells, { ...shell, id: `S-${Date.now()}`, type: 'shell', meshSize: shell.meshSize ?? 1.0, mesh: null }],
     isSaved: false
   })),
   updateShell: (id, data) => set((state) => ({
-    shells: state.shells.map(s => s.id === id ? { ...s, ...data, mesh: data.meshSize !== undefined && data.meshSize !== s.meshSize ? null : s.mesh // Invalidate mesh if size changes
-     } : s),
+    shells: state.shells.map(s => s.id === id ? { ...s, ...data, mesh: data.meshSize !== undefined && data.meshSize !== s.meshSize ? null : s.mesh } : s),
     isSaved: false
   })),
 
@@ -455,12 +487,8 @@ export const useStructureStore = create((set, get) => ({
 
   deleteShell: (id) => set((state) => {
     const newShells = state.shells.filter(s => s.id !== id);
-    return {
-      shells: newShells,
-      nodes: cleanupOrphans(state.nodes, state.elements, newShells),
-      selectedIds: state.selectedIds.filter(sid => sid !== id),
-      isSaved: false
-    };
+    const cleanedNodes = cleanupOrphans(state.nodes, state.elements, newShells, state.openings);
+    return { shells: newShells, nodes: cleanedNodes, selectedIds: state.selectedIds.filter(sid => sid !== id), isSaved: false };
   }),
 
   // --- CRUD MATERIALES ---
@@ -629,11 +657,11 @@ export const useStructureStore = create((set, get) => ({
 
       // Regenerate FEM mesh for all shells asynchronously to prevent freezing UI
       setTimeout(() => {
-        const state = get();
+        const shellsRaw = data.shells || [];
         shellsRaw.forEach(shell => {
-          state.generateMeshForShell(shell.id);
+          get().generateMeshForShell(shell.id);
         });
-        set({ projectLoadedTrigger: get().projectLoadedTrigger + 1 });
+        set(state => ({ projectLoadedTrigger: state.projectLoadedTrigger + 1 }));
       }, 0);
     } catch (e) {
       toast.error("Error cargando archivo .arko3d");
