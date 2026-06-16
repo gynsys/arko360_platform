@@ -146,41 +146,86 @@ export default function FEA3DContainer() {
     
     let projectName = metadata.name || 'Sin Título';
     
-    if (!currentProjectId) {
-      const inputName = window.prompt("Ingrese el nombre del proyecto:", projectName === 'Sin Título' ? "Nuevo Proyecto" : projectName);
-      if (inputName === null) return;
-      projectName = inputName.trim() || 'Sin Título';
-      setMetadata({ ...metadata, name: projectName });
-    }
-    
-    const projectData = {
-      name: projectName,
-      topology: {
-        nodes: useStructureStore.getState().nodes,
-        elements: useStructureStore.getState().elements,
-        shells: useStructureStore.getState().shells,
-        openings: useStructureStore.getState().openings,
-        materials: useStructureStore.getState().materials,
-        sections: useStructureStore.getState().sections,
-        loads: useStructureStore.getState().loads,
-        combinations: useStructureStore.getState().loadCombinations,
-        metadata: useStructureStore.getState().metadata,
-      },
-      results: useStructureStore.getState().results
+    const executeSave = async (finalName) => {
+      const projectData = {
+        name: finalName,
+        topology: {
+          nodes: useStructureStore.getState().nodes,
+          elements: useStructureStore.getState().elements,
+          shells: useStructureStore.getState().shells,
+          openings: useStructureStore.getState().openings,
+          materials: useStructureStore.getState().materials,
+          sections: useStructureStore.getState().sections,
+          loads: useStructureStore.getState().loads,
+          combinations: useStructureStore.getState().loadCombinations,
+          metadata: useStructureStore.getState().metadata,
+        },
+        results: useStructureStore.getState().results
+      };
+
+      try {
+        if (currentProjectId) {
+          await updateProject(currentProjectId, projectData);
+          toast.success("Proyecto actualizado en la nube");
+        } else {
+          const res = await createProject(projectData);
+          setCurrentProjectId(res.id);
+          toast.success("Proyecto guardado en la nube");
+        }
+        useStructureStore.setState({ isSaved: true });
+      } catch (err) {
+        toast.error("Error guardando proyecto en la nube");
+      }
     };
 
-    try {
-      if (currentProjectId) {
-        await updateProject(currentProjectId, projectData);
-        toast.success("Proyecto actualizado en la nube");
-      } else {
-        const res = await createProject(projectData);
-        setCurrentProjectId(res.id);
-        toast.success("Proyecto guardado en la nube");
-      }
-      useStructureStore.setState({ isSaved: true });
-    } catch (err) {
-      toast.error("Error al guardar en la nube");
+    if (!currentProjectId) {
+      toast.custom((t) => {
+        let inputValue = projectName === 'Sin Título' ? "Nuevo Proyecto" : projectName;
+        return (
+          <div className="bg-slate-800 border border-slate-700 p-4 rounded-lg shadow-xl flex flex-col gap-3 min-w-[300px]">
+            <p className="text-white text-sm font-bold flex items-center gap-2">
+              <Cloud size={16} className="text-blue-400" /> Guardar Nuevo Proyecto
+            </p>
+            <input 
+              type="text" 
+              defaultValue={inputValue}
+              id={`save-input-${t.id}`}
+              className="bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm focus:border-blue-500 focus:outline-none"
+              placeholder="Nombre del proyecto"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const val = e.target.value.trim() || 'Sin Título';
+                  setMetadata({ ...metadata, name: val });
+                  toast.dismiss(t.id);
+                  executeSave(val);
+                }
+              }}
+            />
+            <div className="flex gap-2 justify-end mt-2">
+              <button 
+                onClick={() => toast.dismiss(t.id)} 
+                className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  const val = document.getElementById(`save-input-${t.id}`)?.value.trim() || 'Sin Título';
+                  setMetadata({ ...metadata, name: val });
+                  toast.dismiss(t.id);
+                  executeSave(val);
+                }} 
+                className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        );
+      }, { duration: Infinity });
+    } else {
+      executeSave(projectName);
     }
   };
 
@@ -224,7 +269,7 @@ export default function FEA3DContainer() {
         toast.error('Error al interpretar los resultados.');
       }
     } catch (err) {
-      console.error('[ARKO3D] Error en el solver:', err);
+      toast.error('Ocurrió un error al ejecutar el análisis.');
       toast.error('Error de conexión con el motor de cálculo en el servidor.');
     } finally {
       setIsSolving(false);
@@ -236,10 +281,12 @@ export default function FEA3DContainer() {
     setProjectsModalOpen(false);
     setWizardOpen(false);
     if (project.topology) {
+       const shellsRaw = project.topology.shells || [];
+       
        useStructureStore.setState({
          nodes: project.topology.nodes || [],
          elements: project.topology.elements || [],
-         shells: project.topology.shells || [],
+         shells: shellsRaw,
          openings: project.topology.openings || [],
          materials: project.topology.materials || [],
          sections: project.topology.sections || [],
@@ -251,6 +298,12 @@ export default function FEA3DContainer() {
        if (project.topology.metadata) {
          useStructureStore.setState({ metadata: project.topology.metadata });
        }
+       // Regenerate FEM mesh for all shells (needed for visualization)
+       setTimeout(() => {
+         shellsRaw.forEach(shell => {
+           useStructureStore.getState().generateMeshForShell(shell.id);
+         });
+       }, 0);
        if (project.results) {
          useStructureStore.getState().setResultsMode(project.results);
        } else {

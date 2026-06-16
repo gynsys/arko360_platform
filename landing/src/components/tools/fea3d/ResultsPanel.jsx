@@ -8,6 +8,22 @@ export function ResultsPanel() {
     setActiveResultCombo, setActiveResultType, setDisplacementScale, setDiagramScale, exitResultsMode 
   } = useStructureStore();
 
+  // Auto-compute a sensible scale when result type or combo changes
+  const autoScale = React.useMemo(() => {
+    if (!results || !activeResultCombo) return 100;
+    const comboResults = results.results?.[activeResultCombo];
+    if (!comboResults?.displacements) return 100;
+    let maxDz = 0;
+    Object.values(comboResults.displacements).forEach(d => {
+      if (Math.abs(d[2]) > maxDz) maxDz = Math.abs(d[2]);
+    });
+    if (maxDz < 1e-9) return 100;
+    // Target: max deformation ≈ 10% of structure height (or at least visible)
+    const targetViz = 0.5; // meters of visual displacement target
+    const scale = Math.round(Math.min(500, Math.max(1, targetViz / maxDz)));
+    return scale;
+  }, [results, activeResultCombo]);
+
   if (viewMode !== 'results' || !results) return null;
 
   const combinations = results.combinations || [];
@@ -83,22 +99,29 @@ export function ResultsPanel() {
             <label className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
               <Scaling size={12} /> Factor de Escala (Def.)
             </label>
-            <span className="text-xs text-indigo-300 font-mono bg-indigo-900/40 px-2 py-0.5 rounded">
-              x{displacementScale}
-            </span>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setDisplacementScale(autoScale)}
+                className="text-[9px] text-indigo-400 hover:text-indigo-200 bg-indigo-900/30 px-1.5 py-0.5 rounded"
+                title="Auto-escala"
+              >AUTO</button>
+              <span className="text-xs text-indigo-300 font-mono bg-indigo-900/40 px-2 py-0.5 rounded">
+                x{displacementScale}
+              </span>
+            </div>
           </div>
           <input
             type="range"
             min="1"
-            max={Math.max(10000, displacementScale * 2)}
-            step="10"
-            value={displacementScale}
+            max="500"
+            step="1"
+            value={Math.min(500, displacementScale)}
             onChange={(e) => setDisplacementScale(parseInt(e.target.value))}
             className="w-full accent-indigo-500"
           />
           <div className="flex justify-between text-[9px] text-slate-500 mt-1 font-mono">
             <span>x1</span>
-            <span>x{Math.max(10000, displacementScale * 2)}</span>
+            <span>x500</span>
           </div>
         </div>
 

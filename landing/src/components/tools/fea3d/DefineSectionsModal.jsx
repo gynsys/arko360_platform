@@ -244,8 +244,45 @@ export function DefineSectionsModal({ onClose }) {
             <div className="flex-1"></div>
             <button 
               onClick={() => {
-                const id = prompt('Ingrese ID de la sección a eliminar:');
-                if (id) handleDelete(id);
+                toast.custom((t) => (
+                  <div className="bg-slate-800 border border-slate-700 p-4 rounded-lg shadow-xl flex flex-col gap-3 min-w-[300px]">
+                    <p className="text-white text-sm font-bold flex items-center gap-2">
+                      <Trash2 size={16} className="text-red-400" /> Eliminar Sección
+                    </p>
+                    <input 
+                      type="text" 
+                      id={`delete-sec-input-${t.id}`}
+                      className="bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm focus:border-red-500 focus:outline-none"
+                      placeholder="ID de la sección (ej. SEC_1)"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const val = e.target.value.trim();
+                          if (val) handleDelete(val);
+                          toast.dismiss(t.id);
+                        }
+                      }}
+                    />
+                    <div className="flex gap-2 justify-end mt-2">
+                      <button 
+                        onClick={() => toast.dismiss(t.id)} 
+                        className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+                      >
+                        Cancelar
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const val = document.getElementById(`delete-sec-input-${t.id}`)?.value.trim();
+                          if (val) handleDelete(val);
+                          toast.dismiss(t.id);
+                        }} 
+                        className="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ), { duration: Infinity });
               }} 
               className="w-full text-left bg-slate-200 border border-slate-300 hover:bg-red-100 hover:border-red-300 px-3 py-1.5 rounded text-sm flex items-center gap-2"
             >

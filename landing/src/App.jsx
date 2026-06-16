@@ -111,7 +111,7 @@ export default function App() {
 
   return (
     <SiteConfigContext.Provider value={config}>
-      <Toaster position="bottom-right" toastOptions={{ className: 'font-sans text-sm shadow-xl' }} />
+      <Toaster position="top-center" toastOptions={{ className: 'font-sans text-sm shadow-xl' }} />
       {!isAppRoute && <Navbar />}
       <Routes>
         <Route path="/" element={<LandingPage />} />

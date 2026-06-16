@@ -602,12 +602,48 @@ export const useStructureStore = create((set, get) => ({
   importProject: (jsonData) => {
     try {
       const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+      
+      // Shells loaded from file may not have a mesh — regenerate them all
+      const shellsRaw = data.shells || [];
+      const nodesRaw = data.nodes || [];
+      const openingsRaw = data.openings || [];
+      
+      const shellsWithMesh = shellsRaw.map(shell => {
+        const boundaryNodes = shell.nodes.map(nid => nodesRaw.find(n => n.id === nid)).filter(Boolean);
+        if (boundaryNodes.length < 3) return shell;
+        
+        const shellOpenings = openingsRaw.filter(o => o.hostSlabId === shell.id);
+        const openingsNodes = shellOpenings.map(o => {
+          const minX = Math.min(...boundaryNodes.map(c => c.x));
+          const minY = Math.min(...boundaryNodes.map(c => c.y));
+          const baseX = minX + (o.offsetX || 0);
+          const baseY = minY + (o.offsetY || 0);
+          const localVertices = SlabOpeningGenerator.generatePolygon(o.type, o.params || {});
+          let cx = 0, cy = 0;
+          localVertices.forEach(v => { cx += v.x; cy += v.y; });
+          cx /= localVertices.length; cy /= localVertices.length;
+          const scale = 0.9999;
+          return localVertices.map(v => ({
+            id: `H-${o.id}-${v.x}-${v.y}`,
+            x: baseX + cx + (v.x - cx) * scale,
+            y: baseY + cy + (v.y - cy) * scale,
+            z: boundaryNodes[0]?.z || 0
+          }));
+        });
+        
+        const meshSize = shell.meshSize || 1.0;
+        const mesh = generateMesh(boundaryNodes, openingsNodes, meshSize);
+        return { ...shell, mesh };
+      });
+      
       set({
-        nodes: data.nodes || [],
+        nodes: nodesRaw,
         elements: data.elements || [],
-        shells: data.shells || [],
+        shells: shellsWithMesh,
+        openings: openingsRaw,
         materials: data.materials || [],
         sections: data.sections || [],
+        loads: data.loads || [],
         loadCombinations: data.loadCombinations || [
           { id: 'combo-1', name: '1.4 CM (ACI)', factors: { CM: 1.4, CV: 0.0 } },
           { id: 'combo-2', name: '1.2 CM + 1.6 CV (ACI)', factors: { CM: 1.2, CV: 1.6 } }
@@ -616,10 +652,11 @@ export const useStructureStore = create((set, get) => ({
         metadata: data.metadata || { name: 'Importado', author: '' },
         results: null,
         selectedIds: [],
-        isSaved: true
+        isSaved: true,
+        projectLoadedTrigger: get().projectLoadedTrigger + 1
       });
     } catch (e) {
-      console.error("Error cargando archivo .arko3d", e);
+      toast.error("Error cargando archivo .arko3d");
     }
   },
 
