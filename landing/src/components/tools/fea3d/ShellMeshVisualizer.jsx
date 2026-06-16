@@ -94,6 +94,23 @@ export function ShellMeshVisualizer({
 
     const hasRange = isFinite(valMin) && isFinite(valMax);
 
+    // --- Build mesh_node -> structural_node mapping ---
+    const meshNodeToStructMap = new Map();
+    if (nodes && mesh.nodes) {
+      mesh.nodes.forEach(mn => {
+        const matched = nodes.find(sn => {
+          const dx = mn.x - sn.x;
+          const dy = mn.y - sn.y;
+          const dz = mn.z - sn.z;
+          const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+          return dist < 1e-4;
+        });
+        if (matched) {
+          meshNodeToStructMap.set(mn.id, matched.id);
+        }
+      });
+    }
+
     // --- Build geometry buffers ---
     const linePositions = [];
     const facePositions = [];
@@ -116,7 +133,8 @@ export function ShellMeshVisualizer({
           dz = (defNode.z - n.z) * displacementScale;
         } else {
           // Fallback to getDisplacement if backend deformed nodes are missing
-          const d = getDisplacement ? getDisplacement(id) : [0, 0, 0];
+          const resolvedId = meshNodeToStructMap.get(id) || id;
+          const d = getDisplacement ? getDisplacement(resolvedId) : [0, 0, 0];
           dx = isFinite(d[0]) ? d[0] : 0;
           dy = isFinite(d[1]) ? d[1] : 0;
           dz = isFinite(d[2]) ? d[2] : 0;
@@ -191,7 +209,7 @@ export function ShellMeshVisualizer({
       faceGeometry: fGeo,
       hasFaces: facePositions.length > 0,
     };
-  }, [mesh, results, activeResultMap, globalRange, getDisplacement, displacementScale, showHeatmap, shellId]);
+  }, [mesh, results, activeResultMap, globalRange, getDisplacement, displacementScale, showHeatmap, shellId, nodes]);
 
   // Fallback: si no hay mesh, renderizar wireframe del perímetro del shell
   const fallbackLineGeometry = useMemo(() => {

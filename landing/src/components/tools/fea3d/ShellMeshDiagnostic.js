@@ -213,10 +213,19 @@ function checkDoubleRendering(shells, scene) {
 // ============================================================================
 // DIAGNÓSTICO 5: Verificar desplazamientos de nodos de esquina vs nodos interiores
 // ============================================================================
-function checkCornerVsInteriorDisplacement(mesh, getDisplacement, shellBoundaryIds) {
+function checkCornerVsInteriorDisplacement(mesh, getDisplacement, shellBoundaryIds, structuralNodes) {
   if (!mesh || !mesh.nodes || !getDisplacement) return { ok: true };
 
   const boundarySet = new Set(shellBoundaryIds || []);
+  const boundaryNodesCoords = [];
+  if (structuralNodes) {
+    structuralNodes.forEach(sn => {
+      if (boundarySet.has(sn.id)) {
+        boundaryNodesCoords.push(sn);
+      }
+    });
+  }
+
   const boundaryNodes = [];
   const interiorNodes = [];
 
@@ -224,7 +233,16 @@ function checkCornerVsInteriorDisplacement(mesh, getDisplacement, shellBoundaryI
     const disp = getDisplacement(n.id);
     const mag = Math.sqrt(disp[0]**2 + disp[1]**2 + disp[2]**2);
 
-    if (boundarySet.has(n.id)) {
+    // Identificar por proximidad espacial
+    const isBoundary = boundaryNodesCoords.some(sn => {
+      const dx = n.x - sn.x;
+      const dy = n.y - sn.y;
+      const dz = n.z - sn.z;
+      const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      return dist < 1e-4;
+    });
+
+    if (isBoundary) {
       boundaryNodes.push({ id: n.id, displacement: disp, magnitude: mag });
     } else {
       interiorNodes.push({ id: n.id, displacement: disp, magnitude: mag });
@@ -304,11 +322,31 @@ export function diagnoseShellRizado(store, shellId = null) {
     return;
   }
 
+  // Construir mapeo mesh_node -> structural_node para el diagnóstico
+  const meshNodeToStructMap = new Map();
+  shellsToCheck.forEach(s => {
+    if (s.mesh && s.mesh.nodes) {
+      s.mesh.nodes.forEach(mn => {
+        const matched = nodes.find(sn => {
+          const dx = mn.x - sn.x;
+          const dy = mn.y - sn.y;
+          const dz = mn.z - sn.z;
+          const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+          return dist < 1e-4;
+        });
+        if (matched) {
+          meshNodeToStructMap.set(mn.id, matched.id);
+        }
+      });
+    }
+  });
+
   const getDisplacement = (nodeId) => {
     if (!results || !activeResultCombo) return [0, 0, 0];
     const comboResults = results.results?.[activeResultCombo];
     if (!comboResults || !comboResults.displacements) return [0, 0, 0];
-    const d = comboResults.displacements[nodeId];
+    const resolvedId = meshNodeToStructMap.get(nodeId) || nodeId;
+    const d = comboResults.displacements[resolvedId];
     return d ? [d[0], d[1], d[2]] : [0, 0, 0];
   };
 
@@ -354,7 +392,7 @@ export function diagnoseShellRizado(store, shellId = null) {
     }
 
     // Test 4: Nodos de esquina vs interiores
-    const cornerTest = checkCornerVsInteriorDisplacement(shell.mesh, getDisplacement, shell.nodes);
+    const cornerTest = checkCornerVsInteriorDisplacement(shell.mesh, getDisplacement, shell.nodes, nodes);
     console.log(`  4️⃣  Esquina vs Interior: ${cornerTest.ok ? '✅ OK' : '❌ PROBLEMA'}`);
     if (!cornerTest.ok) {
       console.log(`     Nodos esquina: ${cornerTest.boundaryNodeCount}, Interiores: ${cornerTest.interiorNodeCount}`);
