@@ -176,6 +176,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
         activeResultMap={activeResultType?.startsWith('Shell_') ? activeResultType.replace('Shell_', '') : 'None'} 
         globalRange={globalRange}
         unit={units.moment}
+        getDisplacement={getDisplacement}
       />
     </group>
   );
@@ -926,7 +927,7 @@ export function StructureCanvas() {
     displacementScale
   } = useStructureStore();
 
-  const getDisplacement = (nodeId) => {
+  const getDisplacement = React.useCallback((nodeId) => {
     if (viewMode === 'results' && results && activeResultCombo) {
       const comboResults = results.results[activeResultCombo];
       if (comboResults && comboResults.displacements && comboResults.displacements[nodeId]) {
@@ -935,7 +936,7 @@ export function StructureCanvas() {
       }
     }
     return [0, 0, 0];
-  };
+  }, [viewMode, results, activeResultCombo, displacementScale]);
 
   // Tolerancia para considerar si un elemento está en el nivel activo
   const TOLERANCE = 0.15;

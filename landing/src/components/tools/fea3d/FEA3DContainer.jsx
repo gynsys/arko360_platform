@@ -346,6 +346,18 @@ export default function FEA3DContainer() {
               } 
             },
             { label: 'Guardar en la Nube', icon: Save, onClick: handleSaveToCloud },
+            { label: 'Guardar Como', icon: Save, onClick: () => {
+                toast.custom((t) => (
+                  <div className="bg-slate-800 border border-slate-700 p-4 rounded-lg shadow-xl flex flex-col gap-3">
+                    <p className="text-white text-sm font-bold">¿Cómo deseas guardar el proyecto?</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => { handleSaveToCloud(); toast.dismiss(t.id); }} className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1"><Cloud size={14} /> En la Nube</button>
+                      <button onClick={() => { exportProject(); toast.dismiss(t.id); }} className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1"><FolderOpen size={14} /> Local (.arko3d)</button>
+                    </div>
+                  </div>
+                ), { duration: 5000 });
+              }
+            },
             { separator: true },
             { label: 'Abrir Local (.arko3d)', icon: FolderOpen, onClick: () => fileInputRef.current?.click() },
             { label: 'Guardar Copia Local', icon: Save, onClick: exportProject },

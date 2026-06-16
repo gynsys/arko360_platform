@@ -28,7 +28,7 @@ function isValidNode(n) {
     isFinite(n.z) && !isNaN(n.z);
 }
 
-export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, globalRange, unit }) {
+export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, globalRange, unit, getDisplacement }) {
   const [hovered, setHovered] = useState(null);
 
   const { lineGeometry, faceGeometry, hasFaces } = useMemo(() => {
@@ -90,7 +90,15 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, g
 
     mesh.elements.forEach(el => {
       const ids = el.nodeIds || [];
-      const p = ids.map(id => nodeMap.get(id));
+      const p = ids.map(id => {
+        const n = nodeMap.get(id);
+        if (!n) return null;
+        const d = getDisplacement ? getDisplacement(n.id) : [0, 0, 0];
+        const dx = isFinite(d[0]) ? d[0] : 0;
+        const dy = isFinite(d[1]) ? d[1] : 0;
+        const dz = isFinite(d[2]) ? d[2] : 0;
+        return { ...n, x: n.x + dx, y: n.y + dy, z: n.z + dz };
+      });
 
       // Resolve element color
       let elColor = new THREE.Color(0x1f2937);
@@ -158,7 +166,7 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, g
       faceGeometry: fGeo,
       hasFaces: facePositions.length > 0,
     };
-  }, [mesh, results, activeResultMap, globalRange]);
+  }, [mesh, results, activeResultMap, globalRange, getDisplacement]);
 
   return (
     <group>
