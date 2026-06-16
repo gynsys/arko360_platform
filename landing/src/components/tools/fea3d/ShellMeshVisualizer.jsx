@@ -28,8 +28,25 @@ function isValidNode(n) {
     isFinite(n.z) && !isNaN(n.z);
 }
 
-export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, globalRange, unit, getDisplacement, displacementScale = 1 }) {
+export function ShellMeshVisualizer({ 
+  mesh, 
+  shellId, 
+  shellNodeIds,
+  nodes,
+  results, 
+  activeResultMap, 
+  globalRange, 
+  unit, 
+  getDisplacement, 
+  displacementScale = 1,
+  isSelected,
+  isResultsMode,
+  isFaded,
+  toggleSelection
+}) {
   const [hovered, setHovered] = useState(null);
+
+  const showHeatmap = showingHeatmap(results, activeResultMap);
 
   const { lineGeometry, faceGeometry, hasFaces } = useMemo(() => {
     const EMPTY = {
@@ -56,11 +73,6 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, g
     // --- Compute heatmap range ---
     let valMin = Infinity;
     let valMax = -Infinity;
-    const showHeatmap =
-      results &&
-      results.shell_forces &&
-      activeResultMap &&
-      activeResultMap !== 'None';
 
     if (showHeatmap) {
       if (globalRange) {
@@ -179,15 +191,52 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, g
       faceGeometry: fGeo,
       hasFaces: facePositions.length > 0,
     };
-  }, [mesh, results, activeResultMap, globalRange, getDisplacement, displacementScale]);
+  }, [mesh, results, activeResultMap, globalRange, getDisplacement, displacementScale, showHeatmap, shellId]);
+
+  // Fallback: si no hay mesh, renderizar wireframe del perímetro del shell
+  const fallbackLineGeometry = useMemo(() => {
+    if (mesh && mesh.elements && mesh.elements.length > 0) return null;
+    if (!shellNodeIds || !nodes) return null;
+    
+    const linePositions = [];
+    const nodeMap = new Map(nodes.map(n => [n.id, n]));
+    
+    for (let i = 0; i < shellNodeIds.length; i++) {
+      const currId = shellNodeIds[i];
+      const nextId = shellNodeIds[(i + 1) % shellNodeIds.length];
+      const curr = nodeMap.get(currId);
+      const next = nodeMap.get(nextId);
+      if (!curr || !next) continue;
+      
+      const d1 = getDisplacement ? getDisplacement(currId) : [0,0,0];
+      const d2 = getDisplacement ? getDisplacement(nextId) : [0,0,0];
+      
+      linePositions.push(
+        curr.x + d1[0], curr.y + d1[1], curr.z + d1[2],
+        next.x + d2[0], next.y + d2[1], next.z + d2[2]
+      );
+    }
+    
+    if (linePositions.length === 0) return null;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+    return geo;
+  }, [mesh, shellNodeIds, nodes, getDisplacement]);
 
   return (
     <group>
-      {/* Solid Faces with Heatmap */}
-      {hasFaces && showingHeatmap(results, activeResultMap) && (
+      {/* Solid Faces (either Heatmap or design mode) */}
+      {hasFaces && (
         <mesh 
           geometry={faceGeometry}
-          onPointerMove={(e) => {
+          onClick={isResultsMode || isFaded ? undefined : (e) => { 
+            if (e.delta > 5) return; // Ignorar si fue un drag
+            e.stopPropagation();
+            if (toggleSelection) {
+              toggleSelection(shellId, e.shiftKey || e.ctrlKey); 
+            }
+          }}
+          onPointerMove={showHeatmap ? (e) => {
             if (e.faceIndex !== undefined) {
               e.stopPropagation();
               const elId = faceGeometry.userData.faceToElement[e.faceIndex];
@@ -197,10 +246,30 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, g
                 setHovered({ x: e.point.x, y: e.point.y, z: e.point.z, id: elId, val });
               }
             }
-          }}
-          onPointerOut={() => setHovered(null)}
+          } : undefined}
+          onPointerOut={showHeatmap ? () => setHovered(null) : undefined}
         >
-          <meshBasicMaterial vertexColors side={THREE.DoubleSide} opacity={0.85} transparent depthWrite={false} />
+          {showHeatmap ? (
+            <meshBasicMaterial 
+              vertexColors 
+              side={THREE.DoubleSide} 
+              opacity={0.85} 
+              transparent 
+              depthWrite={false} 
+            />
+          ) : (
+            <meshStandardMaterial
+              color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
+              transparent={true}
+              depthWrite={false}
+              opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? 0.15 : 0.25}
+              side={THREE.DoubleSide}
+              wireframe={isFaded}
+              polygonOffset={true}
+              polygonOffsetFactor={-1}
+              polygonOffsetUnits={-1}
+            />
+          )}
         </mesh>
       )}
 
@@ -213,8 +282,15 @@ export function ShellMeshVisualizer({ mesh, shellId, results, activeResultMap, g
         </Html>
       )}
 
-      {/* Wireframe overlay — only render if geometry has vertices */}
-      {lineGeometry && lineGeometry.attributes.position && (
+      {/* Fallback wireframe cuando no hay mesh */}
+      {!mesh && fallbackLineGeometry && (
+        <lineSegments geometry={fallbackLineGeometry}>
+          <lineBasicMaterial color="#10b981" opacity={0.6} transparent depthTest={false} />
+        </lineSegments>
+      )}
+
+      {/* Wireframe del mesh (cuando hay mesh) */}
+      {mesh && lineGeometry && lineGeometry.attributes.position && (
         <lineSegments geometry={lineGeometry}>
           <lineBasicMaterial color="#10b981" opacity={0.6} transparent depthTest={false} />
         </lineSegments>

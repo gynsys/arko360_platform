@@ -145,42 +145,46 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
     return geo;
   }, [coordKey]); // Solo recalcula cuando las coordenadas reales cambian
 
-  if (!geometry) return null;
-
   return (
     <group>
-      <mesh
-        geometry={geometry}
-        userData={{ shellId: id }}
-        onClick={isResultsMode || isFaded ? undefined : (e) => { 
-          if (e.delta > 5) return; // Ignorar si fue un drag
-          e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
-        }}
-      >
-        <meshStandardMaterial
-          color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
-          transparent={true}
-          depthWrite={false}
-          opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? (mesh ? 0.15 : 0.4) : 0.25}
-          side={THREE.DoubleSide}
-          wireframe={isFaded}
-          polygonOffset={true}
-          polygonOffsetFactor={-1}
-          polygonOffsetUnits={-1}
-        />
-      </mesh>
-      {mesh && (
-        <ShellMeshVisualizer 
-          mesh={mesh} 
-          shellId={id} 
-          results={results?.results?.[activeResultCombo]} 
-          activeResultMap={activeResultType?.startsWith('Shell_') ? activeResultType.replace('Shell_', '') : 'None'} 
-          globalRange={globalRange}
-          unit={units.moment}
-          getDisplacement={getDisplacement}
-          displacementScale={displacementScale}
-        />
+      {!mesh && geometry && (
+        <mesh
+          geometry={geometry}
+          userData={{ shellId: id }}
+          onClick={isResultsMode || isFaded ? undefined : (e) => { 
+            if (e.delta > 5) return; // Ignorar si fue un drag
+            e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
+          }}
+        >
+          <meshStandardMaterial
+            color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
+            transparent={true}
+            depthWrite={false}
+            opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? 0.4 : 0.25}
+            side={THREE.DoubleSide}
+            wireframe={isFaded}
+            polygonOffset={true}
+            polygonOffsetFactor={-1}
+            polygonOffsetUnits={-1}
+          />
+        </mesh>
       )}
+      <ShellMeshVisualizer 
+        mesh={mesh} 
+        shellId={id} 
+        shellNodeIds={nodeIds}
+        nodes={nodes}
+        results={results?.results?.[activeResultCombo]} 
+        activeResultMap={activeResultType?.startsWith('Shell_') ? activeResultType.replace('Shell_', '') : 'None'} 
+        globalRange={globalRange}
+        unit={units.moment}
+        getDisplacement={getDisplacement}
+        displacementScale={displacementScale}
+        isSelected={isSelected}
+        isResultsMode={isResultsMode}
+        isFaded={isFaded}
+        toggleSelection={toggleSelection}
+      />
     </group>
   );
 }
