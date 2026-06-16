@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { useStructureStore } from './useStructureStore';
 import { SlabOpeningGenerator } from './SlabOpeningGenerator';
 import { ShellMeshVisualizer } from './ShellMeshVisualizer';
+import { diagnoseShellRizado, quickCheckDoubleRendering, exportMeshDebugData } from './ShellMeshDiagnostic';
 import toast from 'react-hot-toast';
 
 function CoordinateTracker() {
@@ -962,6 +963,20 @@ export function StructureCanvas() {
     cameraView, activeLevel, isDrawingShell, isQuickDrawingShell, clearSelection,
     displacementScale
   } = useStructureStore();
+
+  useEffect(() => {
+    window.diagnoseShellRizado = (shellId = null) => diagnoseShellRizado(useStructureStore, shellId);
+    window.quickCheckDoubleRendering = quickCheckDoubleRendering;
+    window.exportMeshDebugData = (shellId) => exportMeshDebugData(useStructureStore, shellId);
+    window.useStructureStore = useStructureStore;
+    
+    return () => {
+      delete window.diagnoseShellRizado;
+      delete window.quickCheckDoubleRendering;
+      delete window.exportMeshDebugData;
+      delete window.useStructureStore;
+    };
+  }, []);
 
   const getDisplacement = React.useCallback((nodeId) => {
     if (viewMode === 'results' && results && activeResultCombo) {
