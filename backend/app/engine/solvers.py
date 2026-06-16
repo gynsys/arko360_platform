@@ -480,6 +480,11 @@ class StructuralSolver:
             U = spsolve(K_csr, F)
             displacements = {n.id: U[i*6:(i+1)*6].tolist() for i, n in enumerate(self.nodes)}
             
+            # Include aliases for mesh nodes that were merged with structural nodes
+            for mesh_id, mapped_id in self.mesh_node_mapping.items():
+                if mesh_id != mapped_id and mapped_id in displacements:
+                    displacements[mesh_id] = displacements[mapped_id]
+            
             element_forces = {}
             for elem in self.elements:
                 n1 = next(n for n in self.nodes if n.id == elem.nodes[0])

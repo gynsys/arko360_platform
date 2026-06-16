@@ -46,6 +46,17 @@ export function ProjectsDashboardModal({ onClose }) {
       newState.metadata = { name: project.name, author: '', units: 'm, kgf, C' };
     }
     useStructureStore.setState(newState);
+
+    // Regenerate FEM mesh for all shells asynchronously to prevent freezing UI
+    const shellsRaw = topo.shells || [];
+    setTimeout(() => {
+      const state = useStructureStore.getState();
+      shellsRaw.forEach(shell => {
+        state.generateMeshForShell(shell.id);
+      });
+      useStructureStore.setState({ projectLoadedTrigger: state.projectLoadedTrigger + 1 });
+    }, 0);
+
     if (project.results) {
       useStructureStore.getState().setResultsMode(project.results);
     }
