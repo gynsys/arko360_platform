@@ -655,10 +655,39 @@ function CameraController() {
     }
 
     // Effect for centering camera when a new project loads
-    if (projectLoadedTrigger > 0 && cameraView === '3D') {
+    if (projectLoadedTrigger > 0) {
       const span = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 10);
-      camera.position.set(cx - span * 1.5, cy - span * 1.5, cz + span * 1.2);
-      controls.target.set(cx, cy, cz);
+      
+      if (cameraView === '3D') {
+        camera.position.set(cx - span * 1.5, cy - span * 1.5, cz + span * 1.2);
+        controls.target.set(cx, cy, cz);
+      } else {
+        // Orthographic camera needs zoom adjustment to fit the structure
+        if (camera.isOrthographicCamera) {
+          const aspect = window.innerWidth / window.innerHeight;
+          // Calculate zoom such that the span fits in the smaller dimension
+          const targetZoom = Math.min(window.innerWidth, window.innerHeight) / (span * 1.5);
+          camera.zoom = targetZoom;
+          camera.updateProjectionMatrix();
+        }
+        
+        if (cameraView === 'XY') {
+          controls.enableRotate = false;
+          camera.position.set(cx, cy, activeLevel + 100);
+          camera.up.set(0, 1, 0);
+          controls.target.set(cx, cy, activeLevel);
+        } else if (cameraView === 'XZ') {
+          controls.enableRotate = false;
+          camera.position.set(cx, activeLevel - 100, cz);
+          camera.up.set(0, 0, 1);
+          controls.target.set(cx, activeLevel, cz);
+        } else if (cameraView === 'YZ') {
+          controls.enableRotate = false;
+          camera.position.set(activeLevel + 100, cy, cz);
+          camera.up.set(0, 0, 1);
+          controls.target.set(activeLevel, cy, cz);
+        }
+      }
       controls.update();
       return;
     }
@@ -667,8 +696,6 @@ function CameraController() {
       controls.enableRotate = true;
       // Posición isométrica predeterminada si venimos de 2D
       if (camera.isOrthographicCamera) {
-        // En react-three-fiber, el cambio de cámara lo hacemos con componentes condicionales, 
-        // pero reseteamos el target aquí
         controls.target.set(cx, cy, cz);
       }
     } else if (cameraView === 'XY') {
@@ -688,7 +715,7 @@ function CameraController() {
       controls.target.set(activeLevel, cy, cz);
     }
     controls.update();
-  }, [cameraView, activeLevel, controls, camera, nodes]);
+  }, [cameraView, activeLevel, controls, camera, nodes, projectLoadedTrigger]);
 
   return null;
 }
