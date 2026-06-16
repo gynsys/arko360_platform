@@ -161,7 +161,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
           color={isSelected ? '#facc15' : isResultsMode ? '#4f46e5' : '#6366f1'}
           transparent={true}
           depthWrite={false}
-          opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? 0.15 : 0.25}
+          opacity={isFaded ? 0.05 : isSelected ? 0.5 : isResultsMode ? (mesh ? 0.15 : 0.4) : 0.25}
           side={THREE.DoubleSide}
           wireframe={isFaded}
           polygonOffset={true}
@@ -169,16 +169,18 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
           polygonOffsetUnits={-1}
         />
       </mesh>
-      <ShellMeshVisualizer 
-        mesh={mesh} 
-        shellId={id} 
-        results={results?.results?.[activeResultCombo]} 
-        activeResultMap={activeResultType?.startsWith('Shell_') ? activeResultType.replace('Shell_', '') : 'None'} 
-        globalRange={globalRange}
-        unit={units.moment}
-        getDisplacement={getDisplacement}
-        displacementScale={displacementScale}
-      />
+      {mesh && (
+        <ShellMeshVisualizer 
+          mesh={mesh} 
+          shellId={id} 
+          results={results?.results?.[activeResultCombo]} 
+          activeResultMap={activeResultType?.startsWith('Shell_') ? activeResultType.replace('Shell_', '') : 'None'} 
+          globalRange={globalRange}
+          unit={units.moment}
+          getDisplacement={getDisplacement}
+          displacementScale={displacementScale}
+        />
+      )}
     </group>
   );
 }
@@ -1336,6 +1338,17 @@ export function StructureCanvas() {
         <SelectionHandler />
         
       </Canvas>
+
+      {/* Indicador de carga de mallado */}
+      {shells.some(s => !s.mesh) && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white px-4 py-2 rounded-full shadow-lg border border-indigo-400 backdrop-blur-sm z-50 flex items-center gap-2">
+          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span className="text-sm font-semibold tracking-wide">Generando mallado de losas...</span>
+        </div>
+      )}
 
       {/* Heatmap Legend */}
       {shellHeatmapRange && (
