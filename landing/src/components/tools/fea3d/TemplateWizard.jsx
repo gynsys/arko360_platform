@@ -36,9 +36,9 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
       if (wizardConfig === null && localStorage.getItem('arko_token')) {
         getProjects()
           .then(data => {
-            // sort by updated_at descending and get top 5
+            // sort by updated_at descending and get top 2
             const sorted = data.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-            setRecentProjects(sorted.slice(0, 5));
+            setRecentProjects(sorted.slice(0, 2));
           })
           .catch(err => {
             console.error("Error fetching recent projects", err);
@@ -137,7 +137,7 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                 </h3>
                 
                 {recentProjects.length > 0 ? (
-                  <div className="space-y-2 mb-4">
+                  <div className="space-y-2 mb-2">
                     {recentProjects.map(proj => (
                       <button
                         key={proj.id}
@@ -154,7 +154,16 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-xs text-slate-500 mb-4 px-2">No hay proyectos en la nube.</div>
+                  <div className="text-xs text-slate-500 mb-2 px-2">No hay proyectos en la nube.</div>
+                )}
+                
+                {recentProjects.length > 0 && (
+                  <button 
+                    onClick={() => { onClose(); window.dispatchEvent(new Event('open-projects-modal')); }}
+                    className="w-full mb-4 text-xs font-bold text-blue-400 hover:text-blue-300 text-center py-1"
+                  >
+                    Ver todos mis proyectos
+                  </button>
                 )}
 
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".arko3d,.json" />
@@ -231,22 +240,48 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                 
                 <div className="mt-4">
                   <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Material Predominante (Sistema)</label>
-                  <select 
-                    value={config.systemMaterial || 'Concrete'} 
-                    onChange={(e) => {
-                      const mat = e.target.value;
-                      setConfig({ 
-                        ...config, 
-                        systemMaterial: mat,
-                        colSectionId: mat === 'Steel' ? 'W14X90' : 'COL_DEF',
-                        beamSectionId: mat === 'Steel' ? 'W14X90' : 'BEAM_DEF'
-                      });
-                    }}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="Concrete">Concreto Armado</option>
-                    <option value="Steel">Acero Estructural</option>
-                  </select>
+                  <div className="flex gap-2">
+                    <select 
+                      value={config.systemMaterial || 'Concrete'} 
+                      onChange={(e) => {
+                        const mat = e.target.value;
+                        setConfig({ 
+                          ...config, 
+                          systemMaterial: mat,
+                          colSectionId: mat === 'Steel' ? 'W14X90' : 'COL_DEF',
+                          beamSectionId: mat === 'Steel' ? 'W14X90' : 'BEAM_DEF'
+                        });
+                      }}
+                      className="w-1/2 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="Concrete">Concreto Armado</option>
+                      <option value="Steel">Acero Estructural</option>
+                    </select>
+                    
+                    {config.systemMaterial === 'Concrete' && (
+                      <div className="flex w-1/2 gap-1">
+                        <select 
+                          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                          value={materials.length > 0 ? materials[0].id : ''}
+                          disabled
+                        >
+                          {materials.filter(m => m.type === 'Concrete').map(m => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                          {materials.filter(m => m.type === 'Concrete').length === 0 && (
+                            <option value="">Por defecto (f'c 280)</option>
+                          )}
+                        </select>
+                        <button 
+                          onClick={() => window.dispatchEvent(new Event('open-materials-modal'))}
+                          className="bg-slate-700 hover:bg-slate-600 text-white rounded-lg px-3 flex items-center justify-center font-bold"
+                          title="Definir Materiales"
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mt-4">

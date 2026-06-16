@@ -41,13 +41,24 @@ export default function FEA3DContainer() {
   const [assignRestraintsModalOpen, setAssignRestraintsModalOpen] = useState(false);
   const [replicateModalOpen, setReplicateModalOpen] = useState(false);
 
-  useEffect(() => {
-    const handleOpenReplicate = () => setReplicateModalOpen(true);
-    window.addEventListener('open-replicate-modal', handleOpenReplicate);
-    return () => window.removeEventListener('open-replicate-modal', handleOpenReplicate);
-  }, []);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenReplicate = () => setReplicateModalOpen(true);
+    const handleOpenMaterials = () => setMaterialsModalOpen(true);
+    const handleOpenProjects = () => setProjectsModalOpen(true);
+    
+    window.addEventListener('open-replicate-modal', handleOpenReplicate);
+    window.addEventListener('open-materials-modal', handleOpenMaterials);
+    window.addEventListener('open-projects-modal', handleOpenProjects);
+    
+    return () => {
+      window.removeEventListener('open-replicate-modal', handleOpenReplicate);
+      window.removeEventListener('open-materials-modal', handleOpenMaterials);
+      window.removeEventListener('open-projects-modal', handleOpenProjects);
+    };
+  }, []);
   const [docsModalOpen, setDocsModalOpen] = useState(false);
   const [docsInitialTab, setDocsInitialTab] = useState('manual');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -462,11 +473,26 @@ export default function FEA3DContainer() {
           <div className="w-px h-6 bg-slate-700 mx-1"></div>
           
           <button 
-            onClick={() => window.location.href = '/'}
-            className="p-1.5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded transition-colors"
-            title="Salir al Home"
+            onClick={() => {
+              // Cerrar proyecto y volver al wizard
+              useStructureStore.setState({ 
+                nodes: [], elements: [], shells: [], loads: [], 
+                selectedIds: [], results: null, wizardConfig: null, metadata: { name: 'Proyecto ARKO3D', author: '', units: 'm, kgf, C' } 
+              });
+              setWizardOpen(true);
+            }}
+            className="p-1.5 hover:bg-slate-700 text-slate-400 hover:text-white rounded transition-colors"
+            title="Cerrar Proyecto Activo"
           >
             <X size={20} />
+          </button>
+          
+          <button 
+            onClick={() => window.location.href = '/'}
+            className="p-1.5 ml-1 bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded transition-colors border border-slate-700"
+            title="Salir de ARKO3D"
+          >
+            <LogOut size={16} />
           </button>
         </div>
       </div>

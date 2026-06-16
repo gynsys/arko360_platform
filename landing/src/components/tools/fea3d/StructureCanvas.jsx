@@ -927,7 +927,7 @@ export function StructureCanvas() {
   } = useStructureStore();
 
   const getDisplacement = (nodeId) => {
-    if (viewMode === 'results' && results && activeResultCombo && activeResultType === 'deformed') {
+    if (viewMode === 'results' && results && activeResultCombo) {
       const comboResults = results.results[activeResultCombo];
       if (comboResults && comboResults.displacements && comboResults.displacements[nodeId]) {
         const d = comboResults.displacements[nodeId];
