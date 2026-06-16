@@ -303,6 +303,7 @@ export default function FEA3DContainer() {
          shellsRaw.forEach(shell => {
            useStructureStore.getState().generateMeshForShell(shell.id);
          });
+         useStructureStore.setState({ projectLoadedTrigger: useStructureStore.getState().projectLoadedTrigger + 1 });
        }, 0);
        if (project.results) {
          useStructureStore.getState().setResultsMode(project.results);

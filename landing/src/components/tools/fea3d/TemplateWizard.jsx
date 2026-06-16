@@ -248,6 +248,7 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                         setConfig({ 
                           ...config, 
                           systemMaterial: mat,
+                          materialId: '', // Reset material when system changes
                           colSectionId: mat === 'Steel' ? 'W14X90' : 'COL_DEF',
                           beamSectionId: mat === 'Steel' ? 'W14X90' : 'BEAM_DEF'
                         });
@@ -262,8 +263,8 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                       <div className="flex w-1/2 gap-1">
                         <select 
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                          value={materials.length > 0 ? materials[0].id : ''}
-                          disabled
+                          value={config.materialId || (materials.filter(m => m.type === 'Concrete').length > 0 ? materials.filter(m => m.type === 'Concrete')[0].id : '')}
+                          onChange={(e) => setConfig({ ...config, materialId: e.target.value })}
                         >
                           {materials.filter(m => m.type === 'Concrete').map(m => (
                             <option key={m.id} value={m.id}>{m.name}</option>

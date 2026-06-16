@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, Grid, GizmoHelper, GizmoViewport, Text, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, Grid, GizmoHelper, GizmoViewport, Text, OrthographicCamera, PerspectiveCamera, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStructureStore } from './useStructureStore';
 import { SlabOpeningGenerator } from './SlabOpeningGenerator';
@@ -176,41 +176,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
         activeResultMap={activeResultType?.startsWith('Shell_') ? activeResultType.replace('Shell_', '') : 'None'} 
         globalRange={globalRange}
         unit={units.moment}
-        cornerDisplacements={(() => {
-          // Build bilinear interpolation: for each corner, get the structural-node displacement
-          // then interpolate smoothly across the slab using normalized (s,t) coordinates.
-          // This gives a proper bowl deformation like SAP2000.
-          if (!getDisplacement) return null;
-          const corners = nodeIds.map(nid => {
-            const n = nodes.find(nd => nd.id === nid);
-            if (!n) return null;
-            const d = getDisplacement(nid);
-            return { x: n.x, y: n.y, d };
-          }).filter(Boolean);
-          if (corners.length < 4) return null;
-          // corners order: [0]=bottom-left, [1]=bottom-right, [2]=top-right, [3]=top-left
-          const minX = Math.min(...corners.map(c => c.x));
-          const maxX = Math.max(...corners.map(c => c.x));
-          const minY = Math.min(...corners.map(c => c.y));
-          const maxY = Math.max(...corners.map(c => c.y));
-          const rangeX = maxX - minX || 1;
-          const rangeY = maxY - minY || 1;
-          
-          // Sort corners to known positions
-          const bl = corners.find(c => c.x <= minX + rangeX*0.5 && c.y <= minY + rangeY*0.5) || corners[0];
-          const br = corners.find(c => c.x > minX + rangeX*0.5 && c.y <= minY + rangeY*0.5) || corners[1];
-          const tr = corners.find(c => c.x > minX + rangeX*0.5 && c.y > minY + rangeY*0.5) || corners[2];
-          const tl = corners.find(c => c.x <= minX + rangeX*0.5 && c.y > minY + rangeY*0.5) || corners[3];
-
-          return (x, y) => {
-            const s = Math.max(0, Math.min(1, (x - minX) / rangeX)); // 0=left, 1=right
-            const t = Math.max(0, Math.min(1, (y - minY) / rangeY)); // 0=bottom, 1=top
-            // Bilinear: (1-s)(1-t)*bl + s*(1-t)*br + s*t*tr + (1-s)*t*tl
-            return [0, 1, 2].map(i => 
-              (1-s)*(1-t)*bl.d[i] + s*(1-t)*br.d[i] + s*t*tr.d[i] + (1-s)*t*tl.d[i]
-            );
-          };
-        })()}
+        getDisplacement={getDisplacement}
       />
     </group>
   );

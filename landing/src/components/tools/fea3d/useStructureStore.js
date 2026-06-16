@@ -603,43 +603,15 @@ export const useStructureStore = create((set, get) => ({
     try {
       const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
       
-      // Shells loaded from file may not have a mesh — regenerate them all
+      // Shells loaded from file might have old mesh ids that don't match or no mesh
       const shellsRaw = data.shells || [];
       const nodesRaw = data.nodes || [];
       const openingsRaw = data.openings || [];
       
-      const shellsWithMesh = shellsRaw.map(shell => {
-        const boundaryNodes = shell.nodes.map(nid => nodesRaw.find(n => n.id === nid)).filter(Boolean);
-        if (boundaryNodes.length < 3) return shell;
-        
-        const shellOpenings = openingsRaw.filter(o => o.hostSlabId === shell.id);
-        const openingsNodes = shellOpenings.map(o => {
-          const minX = Math.min(...boundaryNodes.map(c => c.x));
-          const minY = Math.min(...boundaryNodes.map(c => c.y));
-          const baseX = minX + (o.offsetX || 0);
-          const baseY = minY + (o.offsetY || 0);
-          const localVertices = SlabOpeningGenerator.generatePolygon(o.type, o.params || {});
-          let cx = 0, cy = 0;
-          localVertices.forEach(v => { cx += v.x; cy += v.y; });
-          cx /= localVertices.length; cy /= localVertices.length;
-          const scale = 0.9999;
-          return localVertices.map(v => ({
-            id: `H-${o.id}-${v.x}-${v.y}`,
-            x: baseX + cx + (v.x - cx) * scale,
-            y: baseY + cy + (v.y - cy) * scale,
-            z: boundaryNodes[0]?.z || 0
-          }));
-        });
-        
-        const meshSize = shell.meshSize || 1.0;
-        const mesh = generateMesh(boundaryNodes, openingsNodes, meshSize);
-        return { ...shell, mesh };
-      });
-      
       set({
         nodes: nodesRaw,
         elements: data.elements || [],
-        shells: shellsWithMesh,
+        shells: shellsRaw,
         openings: openingsRaw,
         materials: data.materials || [],
         sections: data.sections || [],
@@ -653,8 +625,16 @@ export const useStructureStore = create((set, get) => ({
         results: null,
         selectedIds: [],
         isSaved: true,
-        projectLoadedTrigger: get().projectLoadedTrigger + 1
       });
+
+      // Regenerate FEM mesh for all shells asynchronously to prevent freezing UI
+      setTimeout(() => {
+        const state = get();
+        shellsRaw.forEach(shell => {
+          state.generateMeshForShell(shell.id);
+        });
+        set({ projectLoadedTrigger: get().projectLoadedTrigger + 1 });
+      }, 0);
     } catch (e) {
       toast.error("Error cargando archivo .arko3d");
     }
@@ -893,7 +873,7 @@ export const useStructureStore = create((set, get) => ({
 
     // Determine default base materials depending on selected system
     const defaultMaterials = get().materials.length > 0 ? get().materials : [matConcrete, matSteel];
-    const baseMatId = systemMaterial === 'Steel' ? 'A992Fy50' : '4000Psi';
+    const baseMatId = config.materialId || (systemMaterial === 'Steel' ? 'A992Fy50' : '4000Psi');
 
     const defaultSections = get().sections.length > 0 ? get().sections : [
       { id: 'COL_DEF', name: 'COL_40x40', type: 'Rectangular', material_id: '4000Psi', A: 0.16, Ix: 0.002133, Iy: 0.002133, J: 0.004266, params: { b: 0.4, h: 0.4 } },
