@@ -298,8 +298,8 @@ class StructuralSolver:
                     
                     idx1 = self.node_map[en1.id] * 6
                     idx2 = self.node_map[en2.id] * 6
-                    F[idx1:idx1+6] -= f_fixed_global[0:6]
-                    F[idx2:idx2+6] -= f_fixed_global[6:12]
+                    F[idx1:idx1+6] += f_fixed_global[0:6]
+                    F[idx2:idx2+6] += f_fixed_global[6:12]
             else:
                 # Si no hay vigas, enviar a los nudos directamente
                 f_node = total_load_N / len(shell.nodes)
@@ -360,8 +360,8 @@ class StructuralSolver:
                     f_fixed_global = T.T @ f_fixed_local
                     idx1 = self.node_map[n1.id] * 6
                     idx2 = self.node_map[n2.id] * 6
-                    F[idx1:idx1+6] -= f_fixed_global[0:6]
-                    F[idx2:idx2+6] -= f_fixed_global[6:12]
+                    F[idx1:idx1+6] += f_fixed_global[0:6]
+                    F[idx2:idx2+6] += f_fixed_global[6:12]
 
             elif load.type == "point_frame":
                 total_len = self.original_element_lengths.get(load.target_id)
@@ -432,8 +432,8 @@ class StructuralSolver:
                 f_fixed_global = T.T @ f_fixed_local
                 idx1 = self.node_map[n1.id] * 6
                 idx2 = self.node_map[n2.id] * 6
-                F[idx1:idx1+6] -= f_fixed_global[0:6]
-                F[idx2:idx2+6] -= f_fixed_global[6:12]
+                F[idx1:idx1+6] += f_fixed_global[0:6]
+                F[idx2:idx2+6] += f_fixed_global[6:12]
 
             elif load.type == "point_shell":
                 shell = next((s for s in self.shells if s.id == load.target_id), None)
