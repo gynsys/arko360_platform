@@ -368,3 +368,34 @@ La función `exportProject()` del store los genera; `importProject()` los consum
    * Se genera un nombre autodescriptivo (ej: `COL_30x30`, `VIGA_35x35`).
    * Si ya existe un perfil equivalente en el catálogo de secciones, se asocia directamente al elemento; en caso contrario, se crea un nuevo objeto sección y se registra de forma limpia en el store global, evitando mutar secciones compartidas por otros elementos.
 
+---
+
+## 11. Fase 9: Automatizaciones y Fórmulas en Definición de Materiales (Completado)
+
+*Fecha de Implementación: 2026-06-18*
+
+### Logros y Cambios
+1. **Etiquetas y Unidades Dinámicas en Materiales:**
+   * Se modificó `DefineMaterialsModal.jsx` para leer el sistema de unidades activo desde el store (`metadata.units`).
+   * Las etiquetas de los campos se adaptan automáticamente al sistema seleccionado:
+     * **MKS (kgf, m):** Peso en `kgf/m³`, Masa en `kg/m³`, Elasticidad/Fluencia en `kgf/cm²`.
+     * **SI (kN, m):** Peso en `kN/m³`, Masa en `kg/m³`, Elasticidad/Fluencia en `MPa`.
+     * **US (kip, ft):** Peso en `kip/ft³`, Masa en `slug/ft³`, Elasticidad/Fluencia en `ksi` (y $f'_c$ en `psi`).
+2. **Vinculación Bidireccional de Peso y Masa:**
+   * Al editar la masa (densidad), se calcula automáticamente el peso volumétrico según la relación física correspondiente al sistema de unidades:
+     * **MKS:** $W = M$ (Numéricamente iguales)
+     * **SI:** $W = M \times 9.80665 / 1000$ (en kN/m³)
+     * **US:** $W = M \times 32.17405 / 1000$ (en kips/ft³)
+   * La relación se calcula bidireccionalmente cuando el usuario edita cualquiera de los dos campos, eliminando discrepancias por errores de digitación.
+3. **Cálculo y Sugerencia de Módulo de Elasticidad ($E$):**
+   * Se agregaron botones de sugerencias con fórmulas estándar de ACI 318 adaptadas a las unidades activas:
+     * **MKS:** Sugiere $15100 \sqrt{f'_c}$ y $15000 \sqrt{f'_c}$ en kgf/cm².
+     * **SI:** Sugiere $4700 \sqrt{f'_c}$ en MPa.
+     * **US:** Sugiere $57000 \sqrt{f'_c}$ en psi (convertido a ksi para el módulo).
+   * Al hacer clic en cualquiera de las sugerencias, se auto-completa el campo de módulo de elasticidad y se recalcula el módulo de cortante.
+4. **Módulo de Cortante ($G$) Protegido y Auto-calculado:**
+   * El input de Shear Modulus ($G$) se bloqueó en modo solo lectura (`disabled`) y con estilo visual distintivo.
+   * Se calcula y actualiza en tiempo real a partir de $E$ y $U$ mediante la ecuación elástica de cortante:
+     $$G = \frac{E}{2(1 + U)}$$
+
+
