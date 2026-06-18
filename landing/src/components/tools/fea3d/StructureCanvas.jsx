@@ -36,7 +36,7 @@ function CoordinateTracker() {
 }
 
 function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activeResultType, globalRange, displacementScale = 1 }) {
-  const { nodes, selectedIds, toggleSelection, viewMode, openings, activeResultCombo, metadata } = useStructureStore();
+  const { nodes, selectedIds, toggleSelection, viewMode, openings, activeResultCombo, metadata, showMesh } = useStructureStore();
   const units = metadata?.units || { force: 'kgf', length: 'm', moment: 'kgf-m' };
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
@@ -148,7 +148,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
 
   return (
     <group>
-      {!mesh && geometry && (
+      {(!mesh || !showMesh) && geometry && (
         <mesh
           geometry={geometry}
           userData={{ shellId: id }}
@@ -171,7 +171,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
         </mesh>
       )}
       <ShellMeshVisualizer 
-        mesh={mesh} 
+        mesh={showMesh ? mesh : null} 
         shellId={id} 
         shellNodeIds={nodeIds}
         nodes={nodes}
@@ -208,72 +208,136 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     const ey = isFinite(end[1]) ? end[1] : 0;
     const ez = isFinite(end[2]) ? end[2] : 0;
     
-    // In results mode (for non-shadow deformed elements), retrieve shell mesh nodes lying along this frame
-    if (viewMode === 'results' && !isShadow && elements && nodes && shells) {
+    // In results mode (for non-shadow deformed elements), retrieve deformed shape
+    if (viewMode === 'results' && !isShadow && results && activeResultCombo && elements && nodes) {
       const elem = elements.find(el => el.id === id);
-      const n1Id = elem?.nodes?.[0];
-      const n2Id = elem?.nodes?.[1];
-      const n1 = nodes.find(n => n.id === n1Id);
-      const n2 = nodes.find(n => n.id === n2Id);
-
-      if (n1 && n2) {
-        const p1 = { x: n1.x, y: n1.y, z: n1.z };
-        const p2 = { x: n2.x, y: n2.y, z: n2.z };
+      if (elem) {
+        const comboResults = results.results[activeResultCombo];
+        const stations = comboResults?.element_forces?.[id];
         
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        const dz = p2.z - p1.z;
-        const lenSq = dx*dx + dy*dy + dz*dz;
-
-        if (lenSq > 1e-6) {
-          const intermediateNodes = [];
-          shells.forEach(shell => {
-            if (shell.mesh && Array.isArray(shell.mesh.nodes)) {
-              shell.mesh.nodes.forEach(mn => {
-                if (mn.id === n1.id || mn.id === n2.id) return;
+        // 1. Draw using station-based deflection curves (Euler-Bernoulli/Mindlin output from Python)
+        if (stations && stations.length > 0) {
+          const n1Id = elem.nodes[0];
+          const n2Id = elem.nodes[1];
+          const n1 = nodes.find(n => n.id === n1Id);
+          const n2 = nodes.find(n => n.id === n2Id);
+          
+          if (n1 && n2) {
+            const dx = n2.x - n1.x;
+            const dy = n2.y - n1.y;
+            const dz = n2.z - n1.z;
+            const L = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            
+            if (L > 1e-6) {
+              const dx_n = dx / L;
+              const dy_n = dy / L;
+              const dz_n = dz / L;
+              
+              const dirX_sub = new THREE.Vector3();
+              const dirY_sub = new THREE.Vector3();
+              const dirZ_sub = new THREE.Vector3();
+              
+              if (Math.abs(dx_n) < 1e-6 && Math.abs(dy_n) < 1e-6) {
+                const m = dz_n > 0 ? 1 : -1;
+                dirX_sub.set(0, 0, m);
+                dirY_sub.set(0, 1, 0);
+                dirZ_sub.set(-m, 0, 0);
+              } else {
+                const D = Math.sqrt(dx_n*dx_n + dy_n*dy_n);
+                dirX_sub.set(dx_n, dy_n, dz_n);
+                dirY_sub.set(-dy_n / D, dx_n / D, 0);
+                dirZ_sub.set(-dx_n * dz_n / D, -dy_n * dz_n / D, D);
+              }
+              
+              const betaRad = ((elem.beta_angle || 0) * Math.PI) / 180;
+              const cosBeta = Math.cos(betaRad);
+              const sinBeta = Math.sin(betaRad);
+              
+              const dirX_final = dirX_sub;
+              const dirY_final = new THREE.Vector3().copy(dirY_sub).multiplyScalar(cosBeta).addScaledVector(dirZ_sub, sinBeta);
+              const dirZ_final = new THREE.Vector3().copy(dirY_sub).multiplyScalar(-sinBeta).addScaledVector(dirZ_sub, cosBeta);
+              
+              const positions = [];
+              stations.forEach(st => {
+                const x = st.x;
+                const ux = st.ux || 0;
+                const uy = st.uy || 0;
+                const uz = st.uz || 0;
                 
-                const wx = mn.x - p1.x;
-                const wy = mn.y - p1.y;
-                const wz = mn.z - p1.z;
-                
-                const t = (wx*dx + wy*dy + wz*dz) / lenSq;
-                if (t > 1e-4 && t < 1 - 1e-4) {
-                  const px = p1.x + t * dx;
-                  const py = p1.y + t * dy;
-                  const pz = p1.z + t * dz;
-                  
-                  const distSq = (mn.x - px)**2 + (mn.y - py)**2 + (mn.z - pz)**2;
-                  if (distSq < 1e-4) {
-                    intermediateNodes.push({ t, id: mn.id, x: mn.x, y: mn.y, z: mn.z });
-                  }
-                }
+                const pos = new THREE.Vector3(n1.x, n1.y, n1.z)
+                  .addScaledVector(dirX_final, x + ux * displacementScale)
+                  .addScaledVector(dirY_final, uy * displacementScale)
+                  .addScaledVector(dirZ_final, uz * displacementScale);
+                positions.push(pos.x, pos.y, pos.z);
               });
+              
+              geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
+              return geo;
             }
-          });
+          }
+        }
+        
+        // 2. Fallback: retrieve shell mesh nodes lying along this frame (linear segmentation)
+        const n1Id = elem?.nodes?.[0];
+        const n2Id = elem?.nodes?.[1];
+        const n1 = nodes.find(n => n.id === n1Id);
+        const n2 = nodes.find(n => n.id === n2Id);
 
-          // Remove duplicates
-          const uniqueIntermediates = [];
-          const seenIds = new Set();
-          intermediateNodes.forEach(node => {
-            if (!seenIds.has(node.id)) {
-              seenIds.add(node.id);
-              uniqueIntermediates.push(node);
-            }
-          });
+        if (n1 && n2 && shells) {
+          const p1 = { x: n1.x, y: n1.y, z: n1.z };
+          const p2 = { x: n2.x, y: n2.y, z: n2.z };
+          
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const dz = p2.z - p1.z;
+          const lenSq = dx*dx + dy*dy + dz*dz;
 
-          // Sort along the element direction
-          uniqueIntermediates.sort((a, b) => a.t - b.t);
+          if (lenSq > 1e-6) {
+            const intermediateNodes = [];
+            shells.forEach(shell => {
+              if (shell.mesh && Array.isArray(shell.mesh.nodes)) {
+                shell.mesh.nodes.forEach(mn => {
+                  if (mn.id === n1.id || mn.id === n2.id) return;
+                  
+                  const wx = mn.x - p1.x;
+                  const wy = mn.y - p1.y;
+                  const wz = mn.z - p1.z;
+                  
+                  const t = (wx*dx + wy*dy + wz*dz) / lenSq;
+                  if (t > 1e-4 && t < 1 - 1e-4) {
+                    const px = p1.x + t * dx;
+                    const py = p1.y + t * dy;
+                    const pz = p1.z + t * dz;
+                    
+                    const distSq = (mn.x - px)**2 + (mn.y - py)**2 + (mn.z - pz)**2;
+                    if (distSq < 1e-4) {
+                      intermediateNodes.push({ t, id: mn.id, x: mn.x, y: mn.y, z: mn.z });
+                    }
+                  }
+                });
+              }
+            });
 
-          const segmentNodes = [
-            { id: n1.id, x: p1.x, y: p1.y, z: p1.z },
-            ...uniqueIntermediates,
-            { id: n2.id, x: p2.x, y: p2.y, z: p2.z }
-          ];
+            const uniqueIntermediates = [];
+            const seenIds = new Set();
+            intermediateNodes.forEach(node => {
+              if (!seenIds.has(node.id)) {
+                seenIds.add(node.id);
+                uniqueIntermediates.push(node);
+              }
+            });
 
-          const positions = [];
-          segmentNodes.forEach(node => {
-            let ndx = 0, ndy = 0, ndz = 0;
-            if (results && activeResultCombo) {
+            uniqueIntermediates.sort((a, b) => a.t - b.t);
+
+            const segmentNodes = [
+              { id: n1.id, x: p1.x, y: p1.y, z: p1.z },
+              ...uniqueIntermediates,
+              { id: n2.id, x: p2.x, y: p2.y, z: p2.z }
+            ];
+
+            const positions = [];
+            segmentNodes.forEach(node => {
+              let ndx = 0, ndy = 0, ndz = 0;
               const comboResults = results.results[activeResultCombo];
               if (comboResults && comboResults.displacements) {
                 const d = comboResults.displacements[node.id];
@@ -283,12 +347,12 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
                   ndz = d[2] * displacementScale;
                 }
               }
-            }
-            positions.push(node.x + ndx, node.y + ndy, node.z + ndz);
-          });
+              positions.push(node.x + ndx, node.y + ndy, node.z + ndz);
+            });
 
-          geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
-          return geo;
+            geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
+            return geo;
+          }
         }
       }
     }

@@ -209,102 +209,140 @@ class StructuralSolver:
             
             # Carga factorizada total en N/m2
             q_factored = (cm_total_N * factor_cm) + (cv_total_N * factor_cv)
-            total_load_N = q_factored * area
-            
-            # Repartir a vigas perimetrales (o nudos)
-            edges = [(shell.nodes[0], shell.nodes[1]), (shell.nodes[1], shell.nodes[2]), 
-                     (shell.nodes[2], shell.nodes[3]), (shell.nodes[3], shell.nodes[0])]
-            
-            # Encontrar elementos (o sus segmentos) que coincidan con estos bordes
-            perimeter_elements = []
-            for edge in edges:
-                nA = next((n for n in self.nodes if n.id == edge[0]), None)
-                nB = next((n for n in self.nodes if n.id == edge[1]), None)
-                if not nA or not nB: continue
-                pA = np.array([nA.x, nA.y, nA.z])
-                pB = np.array([nB.x, nB.y, nB.z])
-                v_edge = pB - pA
-                v_edge_len = np.linalg.norm(v_edge)
-                v_edge_sq = np.dot(v_edge, v_edge)
-                
-                if v_edge_len < 1e-4: continue
-                
-                for elem in self.elements:
-                    en1 = next((n for n in self.nodes if n.id == elem.nodes[0]), None)
-                    en2 = next((n for n in self.nodes if n.id == elem.nodes[1]), None)
-                    if not en1 or not en2: continue
-                    
-                    p_en1 = np.array([en1.x, en1.y, en1.z])
-                    w_en1 = p_en1 - pA
-                    t_en1 = np.dot(w_en1, v_edge) / v_edge_sq
-                    
-                    p_en2 = np.array([en2.x, en2.y, en2.z])
-                    w_en2 = p_en2 - pA
-                    t_en2 = np.dot(w_en2, v_edge) / v_edge_sq
-                    
-                    if -1e-4 <= t_en1 <= 1 + 1e-4 and -1e-4 <= t_en2 <= 1 + 1e-4:
-                        dist_en1 = np.linalg.norm(p_en1 - (pA + t_en1 * v_edge))
-                        dist_en2 = np.linalg.norm(p_en2 - (pA + t_en2 * v_edge))
-                        if dist_en1 < 1e-4 and dist_en2 < 1e-4:
-                            perimeter_elements.append(elem)
-            
-            if perimeter_elements:
-                # Carga uniforme equivalente = Carga Total / Longitud Total del Perímetro
-                total_length = 0
-                lengths = []
-                for elem in perimeter_elements:
-                    en1 = next(n for n in self.nodes if n.id == elem.nodes[0])
-                    en2 = next(n for n in self.nodes if n.id == elem.nodes[1])
-                    l = np.linalg.norm(np.array([en2.x-en1.x, en2.y-en1.y, en2.z-en1.z]))
-                    total_length += l
-                    lengths.append((elem, l, en1, en2))
-                
-                w_eq = total_load_N / total_length
-                for elem, l, en1, en2 in lengths:
-                    p1 = np.array([en1.x, en1.y, en1.z])
-                    p2 = np.array([en2.x, en2.y, en2.z])
-                    T = get_rotation_matrix(p1, p2, elem.beta_angle)
-                    
-                    # El peso de la losa va hacia abajo en global Z (-Z).
-                    # Para una viga horizontal, Local Z o Local Y puede apuntar hacia arriba/abajo.
-                    # Mapeamos la carga global -Z a local.
-                    q_global = np.array([0, 0, -w_eq])
-                    q_local = T[0:3, 0:3] @ q_global
-                    
-                    # Guardamos la carga local para los diagramas
-                    element_local_loads[elem.id]["px"] += q_local[0]
-                    element_local_loads[elem.id]["py"] += q_local[1]
-                    element_local_loads[elem.id]["pz"] += q_local[2]
-                    
-                    f_fixed_local = np.zeros(12)
-                    # Carga distribuida local en Y
-                    f_fixed_local[1] = q_local[1] * l / 2
-                    f_fixed_local[5] = q_local[1] * l**2 / 12
-                    f_fixed_local[7] = q_local[1] * l / 2
-                    f_fixed_local[11] = -q_local[1] * l**2 / 12
-                    # Carga distribuida local en Z
-                    f_fixed_local[2] = q_local[2] * l / 2
-                    f_fixed_local[4] = -q_local[2] * l**2 / 12
-                    f_fixed_local[8] = q_local[2] * l / 2
-                    f_fixed_local[10] = q_local[2] * l**2 / 12
-                    
-                    # Carga axial
-                    f_fixed_local[0] = q_local[0] * l / 2
-                    f_fixed_local[6] = q_local[0] * l / 2
-                    
-                    element_local_loads[elem.id]["f_fixed_local"] += f_fixed_local
-                    
-                    f_fixed_global = T.T @ f_fixed_local
-                    
-                    idx1 = self.node_map[en1.id] * 6
-                    idx2 = self.node_map[en2.id] * 6
-                    F[idx1:idx1+6] += f_fixed_global[0:6]
-                    F[idx2:idx2+6] += f_fixed_global[6:12]
+            if shell.mesh and shell.mesh.elements:
+                # Caso Con Malla (Meshing): Distribuir carga uniformemente a nudos de la malla directly
+                for fe in shell.mesh.elements:
+                    if fe.type == "quad" and len(fe.nodeIds) == 4:
+                        mapped_ids = [self.mesh_node_mapping.get(nid, nid) for nid in fe.nodeIds]
+                        n1 = next(n for n in self.nodes if n.id == mapped_ids[0])
+                        n2 = next(n for n in self.nodes if n.id == mapped_ids[1])
+                        n3 = next(n for n in self.nodes if n.id == mapped_ids[2])
+                        n4 = next(n for n in self.nodes if n.id == mapped_ids[3])
+                        
+                        # Área del quad (fórmula de Shoelace en XY)
+                        area_fe = 0.5 * abs(
+                            n1.x * (n2.y - n4.y) +
+                            n2.x * (n3.y - n1.y) +
+                            n3.x * (n4.y - n2.y) +
+                            n4.x * (n1.y - n3.y)
+                        )
+                        load_per_node = q_factored * area_fe / 4.0
+                        for nid in mapped_ids:
+                            node_idx = self.node_map[nid]
+                            F[node_idx * 6 + 2] -= load_per_node
+                            
+                    elif (fe.type == "triangle" or len(fe.nodeIds) == 3) and len(fe.nodeIds) == 3:
+                        mapped_ids = [self.mesh_node_mapping.get(nid, nid) for nid in fe.nodeIds]
+                        n1 = next(n for n in self.nodes if n.id == mapped_ids[0])
+                        n2 = next(n for n in self.nodes if n.id == mapped_ids[1])
+                        n3 = next(n for n in self.nodes if n.id == mapped_ids[2])
+                        
+                        # Área del triángulo
+                        area_fe = 0.5 * abs(
+                            n1.x * (n2.y - n3.y) +
+                            n2.x * (n3.y - n1.y) +
+                            n3.x * (n1.y - n2.y)
+                        )
+                        load_per_node = q_factored * area_fe / 3.0
+                        for nid in mapped_ids:
+                            node_idx = self.node_map[nid]
+                            F[node_idx * 6 + 2] -= load_per_node
             else:
-                # Si no hay vigas, enviar a los nudos directamente
-                f_node = total_load_N / len(shell.nodes)
-                for nid in shell.nodes:
-                    F[self.node_map[nid]*6 + 2] -= f_node
+                # Caso Sin Malla (Membrana): Transferir a vigas perimetrales o a nudos principales
+                total_load_N = q_factored * area
+                
+                # Repartir a vigas perimetrales (o nudos)
+                edges = [(shell.nodes[0], shell.nodes[1]), (shell.nodes[1], shell.nodes[2]), 
+                         (shell.nodes[2], shell.nodes[3]), (shell.nodes[3], shell.nodes[0])]
+                
+                perimeter_elements = []
+                for edge in edges:
+                    nA = next((n for n in self.nodes if n.id == edge[0]), None)
+                    nB = next((n for n in self.nodes if n.id == edge[1]), None)
+                    if not nA or not nB: continue
+                    pA = np.array([nA.x, nA.y, nA.z])
+                    pB = np.array([nB.x, nB.y, nB.z])
+                    v_edge = pB - pA
+                    v_edge_len = np.linalg.norm(v_edge)
+                    v_edge_sq = np.dot(v_edge, v_edge)
+                    
+                    if v_edge_len < 1e-4: continue
+                    
+                    for elem in self.elements:
+                        en1 = next((n for n in self.nodes if n.id == elem.nodes[0]), None)
+                        en2 = next((n for n in self.nodes if n.id == elem.nodes[1]), None)
+                        if not en1 or not en2: continue
+                        
+                        p_en1 = np.array([en1.x, en1.y, en1.z])
+                        w_en1 = p_en1 - pA
+                        t_en1 = np.dot(w_en1, v_edge) / v_edge_sq
+                        
+                        p_en2 = np.array([en2.x, en2.y, en2.z])
+                        w_en2 = p_en2 - pA
+                        t_en2 = np.dot(w_en2, v_edge) / v_edge_sq
+                        
+                        if -1e-4 <= t_en1 <= 1 + 1e-4 and -1e-4 <= t_en2 <= 1 + 1e-4:
+                            dist_en1 = np.linalg.norm(p_en1 - (pA + t_en1 * v_edge))
+                            dist_en2 = np.linalg.norm(p_en2 - (pA + t_en2 * v_edge))
+                            if dist_en1 < 1e-4 and dist_en2 < 1e-4:
+                                perimeter_elements.append(elem)
+                
+                if perimeter_elements:
+                    # Carga uniforme equivalente = Carga Total / Longitud Total del Perímetro
+                    total_length = 0
+                    lengths = []
+                    for elem in perimeter_elements:
+                        en1 = next(n for n in self.nodes if n.id == elem.nodes[0])
+                        en2 = next(n for n in self.nodes if n.id == elem.nodes[1])
+                        l = np.linalg.norm(np.array([en2.x-en1.x, en2.y-en1.y, en2.z-en1.z]))
+                        total_length += l
+                        lengths.append((elem, l, en1, en2))
+                    
+                    w_eq = total_load_N / total_length
+                    for elem, l, en1, en2 in lengths:
+                        p1 = np.array([en1.x, en1.y, en1.z])
+                        p2 = np.array([en2.x, en2.y, en2.z])
+                        T = get_rotation_matrix(p1, p2, elem.beta_angle)
+                        
+                        # El peso de la losa va hacia abajo en global Z (-Z).
+                        # Mapeamos la carga global -Z a local.
+                        q_global = np.array([0, 0, -w_eq])
+                        q_local = T[0:3, 0:3] @ q_global
+                        
+                        # Guardamos la carga local para los diagramas
+                        element_local_loads[elem.id]["px"] += q_local[0]
+                        element_local_loads[elem.id]["py"] += q_local[1]
+                        element_local_loads[elem.id]["pz"] += q_local[2]
+                        
+                        f_fixed_local = np.zeros(12)
+                        # Carga distribuida local en Y
+                        f_fixed_local[1] = q_local[1] * l / 2
+                        f_fixed_local[5] = q_local[1] * l**2 / 12
+                        f_fixed_local[7] = q_local[1] * l / 2
+                        f_fixed_local[11] = -q_local[1] * l**2 / 12
+                        # Carga distribuida local en Z
+                        f_fixed_local[2] = q_local[2] * l / 2
+                        f_fixed_local[4] = -q_local[2] * l**2 / 12
+                        f_fixed_local[8] = q_local[2] * l / 2
+                        f_fixed_local[10] = q_local[2] * l**2 / 12
+                        
+                        # Carga axial
+                        f_fixed_local[0] = q_local[0] * l / 2
+                        f_fixed_local[6] = q_local[0] * l / 2
+                        
+                        element_local_loads[elem.id]["f_fixed_local"] += f_fixed_local
+                        
+                        f_fixed_global = T.T @ f_fixed_local
+                        
+                        idx1 = self.node_map[en1.id] * 6
+                        idx2 = self.node_map[en2.id] * 6
+                        F[idx1:idx1+6] += f_fixed_global[0:6]
+                        F[idx2:idx2+6] += f_fixed_global[6:12]
+                else:
+                    # Si no hay vigas, enviar a los nudos directamente
+                    f_node = total_load_N / len(shell.nodes)
+                    for nid in shell.nodes:
+                        F[self.node_map[nid]*6 + 2] -= f_node
 
         # 3. Cargas Manuales (Puntuales y Distribuidas)
         for load in self.loads:
@@ -673,6 +711,7 @@ class StructuralSolver:
                     N3 = 3*xi**2 - 2*xi**3
                     N4 = l * (-xi**2 + xi**3)
                     
+                    v_x = (1 - xi) * u_loc[0] + xi * u_loc[6]
                     v_y = N1 * u_loc[1] + N2 * u_loc[5] + N3 * u_loc[7] + N4 * u_loc[11]
                     v_z = N1 * u_loc[2] - N2 * u_loc[4] + N3 * u_loc[8] - N4 * u_loc[10]
                     
@@ -684,6 +723,7 @@ class StructuralSolver:
                         "T": float(T_tors),
                         "M2": float(M2),
                         "M3": float(M3),
+                        "ux": float(v_x),
                         "uy": float(v_y),
                         "uz": float(v_z)
                     })

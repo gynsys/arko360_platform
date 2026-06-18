@@ -253,7 +253,7 @@ REGLAS TÉCNICAS A RESPETAR:
 
 ---
 
-*Documento creado: 2026-06-09 | Última actualización: 2026-06-10*
+*Documento creado: 2026-06-09 | Última actualización: 2026-06-17*
 *Autor: Antigravity AI + Pablo (Ingeniería Arko 360)*
 
 ---
@@ -317,3 +317,21 @@ La función `exportProject()` del store los genera; `importProject()` los consum
 - Los IDs de nudos son enteros. Los IDs de shells son strings con formato `S-{timestamp}`.
 - Los apoyos (`restraint`) siguen el orden `[Fx, Fy, Fz, Mx, My, Mz]` en booleanos.
 - Las unidades (`units`) viajan como un string libre en la `metadata` (e.g. `"m, kgf, C"` o `"m, kN, C"`). Sirve de referencia para la interfaz, el usuario debe proveer los valores consistentes con la unidad elegida.
+
+---
+
+## 8. Fase 6: Carga Dual en Losas y Curvatura 3D de Pórticos (Completado)
+
+*Fecha de Implementación: 2026-06-17*
+
+### Logros y Cambios
+1. **Comportamiento Dual de Losa:**
+   * **Con Malla (Meshing):** La carga de gravedad uniforme de la losa se calcula a nivel de elemento finito (Shoelace en XY para obtener el área de cada Quad o triángulo de malla) y se distribuye directamente a los grados de libertad de Z de sus nodos correspondientes (`F[node_idx*6 + 2] -= load_per_node`). La rigidez a flexión del shell transmite las cargas de manera realista.
+   * **Sin Malla (Membrana):** Se mantiene el cálculo simplificado de transmisión por áreas tributarias de carga uniforme equivalente a las vigas perimetrales del cuadrilátero de la losa.
+2. **Columnas y Barras Deformadas Curvas en 3D:**
+   * Se modificó `FrameElement` en `StructureCanvas.jsx` para reconstruir la geometría deformada tridimensional completa usando el listado de 21 estaciones calculado por el solver en Python.
+   * Se proyecta cada coordenada local `[x + ux, uy, uz]` al espacio global sumando las contribuciones de los tres ejes locales del elemento considerando su ángulo beta:
+     $$\vec{P}_{global} = \vec{P}_{start} + \vec{dirX} \cdot (x + ux \cdot S_d) + \vec{dirY} \cdot (uy \cdot S_d) + \vec{dirZ} \cdot (uz \cdot S_d)$$
+   * Esto permite que las columnas (y vigas generales) se dibujen como curvas deformadas continuas y elásticas, emulando la precisión visual de SAP2000.
+3. **Guía Técnica de Arquitectura:**
+   * Se creó [ARKO3D_TECHNICAL_GUIDE.md](file:///c:/Users/pablo/Documents/arko360_platform/landing/readme/ARKO3D_TECHNICAL_GUIDE.md) para documentar el funcionamiento de todo el sistema matemático y gráfico del visor 3D.

@@ -35,6 +35,7 @@ export const useStructureStore = create((set, get) => ({
   cameraView: '3D', // '3D', 'XY', 'XZ', 'YZ'
   activeLevel: 0, // El valor Z, Y, o X actual según la vista
   showLoads: true, // Toggle para visibilidad de cargas
+  showMesh: true, // Toggle para visibilidad del mallado (meshing)
   activeResultCombo: null, // ID de la combinación activa en resultados
   activeResultType: 'deformed', // 'deformed', 'P', 'V2', 'V3', 'M2', 'M3'
   displacementScale: 100, // Factor de exageración
@@ -240,6 +241,7 @@ export const useStructureStore = create((set, get) => ({
   }),
   setCurrentUser: (user) => set({ currentUser: user }),
   toggleShowLoads: () => set(state => ({ showLoads: !state.showLoads })),
+  toggleShowMesh: () => set(state => ({ showMesh: !state.showMesh })),
 
   setSelectionBox: (data) => set(state => ({ selectionBox: { ...state.selectionBox, ...data } })),
   
@@ -968,5 +970,267 @@ export const useStructureStore = create((set, get) => ({
       activeLevel: 0,
       projectLoadedTrigger: get().projectLoadedTrigger + 1
     });
-  }
+  },
+  addCantilever: (config) => set(state => {
+    const { level, axisType, axisVal, dir, length } = config;
+    const { nodes, elements, shells, openings, loads } = state;
+    
+    const baseNodes = nodes.filter(n => {
+      const zMatch = Math.abs(n.z - level) < 1e-3;
+      if (!zMatch) return false;
+      if (axisType === 'X') {
+        return Math.abs(n.x - axisVal) < 1e-3;
+      } else {
+        return Math.abs(n.y - axisVal) < 1e-3;
+      }
+    });
+
+    if (baseNodes.length < 2) {
+      toast.error('Se necesitan al menos 2 nudos en el eje para generar el volado.');
+      return {};
+    }
+
+    if (axisType === 'X') {
+      baseNodes.sort((a, b) => a.y - b.y);
+    } else {
+      baseNodes.sort((a, b) => a.x - b.x);
+    }
+
+    let dx = 0, dy = 0;
+    if (dir === '+X') dx = length;
+    else if (dir === '-X') dx = -length;
+    else if (dir === '+Y') dy = length;
+    else if (dir === '-Y') dy = -length;
+
+    const newNodes = [...nodes];
+    const newElements = [...elements];
+    const newShells = [...shells];
+    
+    const cantileverId = `CANT-${Date.now()}`;
+    const tipNodes = [];
+
+    const templateBeam = elements.find(e => {
+      const n = nodes.find(nd => nd.id === e.nodes[0]);
+      return n && Math.abs(n.z - level) < 1e-3;
+    });
+    const sectionId = templateBeam ? templateBeam.section_id : (state.sections[0]?.id || 'BEAM_DEF');
+    const materialId = templateBeam ? templateBeam.material_id : (state.materials[0]?.id || '4000Psi');
+
+    const templateShell = shells.find(s => {
+      const n = nodes.find(nd => nd.id === s.nodes[0]);
+      return n && Math.abs(n.z - level) < 1e-3;
+    });
+    const thickness = templateShell ? templateShell.thickness : 0.20;
+    const shellMaterialId = templateShell ? templateShell.material_id : materialId;
+    const shellLoads = templateShell ? { ...templateShell.loads } : { CM: 2.0, CV: 1.8 };
+
+    let maxNodeId = nodes.reduce((max, n) => Math.max(max, parseInt(n.id.replace('N', '')) || 0), 0);
+    let maxElemId = elements.reduce((max, e) => Math.max(max, parseInt(e.id.replace('E', '')) || 0), 0);
+    let maxShellId = shells.reduce((max, s) => Math.max(max, parseInt(s.id.replace('S', '')) || 0), 0);
+
+    baseNodes.forEach((bn, idx) => {
+      const targetX = round(bn.x + dx);
+      const targetY = round(bn.y + dy);
+      const targetZ = round(bn.z);
+
+      maxNodeId++;
+      const tipNodeId = `N${maxNodeId}`;
+      const newTipNode = {
+        id: tipNodeId,
+        x: targetX,
+        y: targetY,
+        z: targetZ,
+        cantilever: {
+          cantileverId,
+          baseNodeId: bn.id,
+          axisType,
+          axisVal,
+          dir,
+          length
+        }
+      };
+      newNodes.push(newTipNode);
+      tipNodes.push(newTipNode);
+
+      maxElemId++;
+      newElements.push({
+        id: `E${maxElemId}`,
+        type: 'frame',
+        nodes: [bn.id, tipNodeId],
+        section_id: sectionId,
+        material_id: materialId,
+        beta_angle: 0,
+        beam_type: 'carga',
+        cantileverId
+      });
+    });
+
+    for (let i = 0; i < baseNodes.length - 1; i++) {
+      const bn1 = baseNodes[i];
+      const bn2 = baseNodes[i+1];
+      const tn1 = tipNodes[i];
+      const tn2 = tipNodes[i+1];
+
+      maxElemId++;
+      newElements.push({
+        id: `E${maxElemId}`,
+        type: 'frame',
+        nodes: [tn1.id, tn2.id],
+        section_id: sectionId,
+        material_id: materialId,
+        beta_angle: 0,
+        beam_type: 'secundaria',
+        cantileverId
+      });
+
+      maxShellId++;
+      const shellId = `S-${Date.now()}-${i}`;
+      newShells.push({
+        id: shellId,
+        type: 'shell',
+        nodes: [bn1.id, tn1.id, tn2.id, bn2.id],
+        thickness,
+        material_id: shellMaterialId,
+        loads: shellLoads,
+        meshSize: 1.0,
+        mesh: null,
+        cantileverId
+      });
+    }
+
+    toast.success('Volado (Cantilever) generado exitosamente.');
+
+    setTimeout(() => {
+      newShells.forEach(s => {
+        if (s.cantileverId === cantileverId) {
+          get().generateMeshForShell(s.id);
+        }
+      });
+    }, 0);
+
+    return {
+      nodes: newNodes,
+      elements: newElements,
+      shells: newShells,
+      isSaved: false
+    };
+  }),
+
+  updateCantileverLength: (cantileverId, newLength) => set(state => {
+    const { nodes, shells } = state;
+    
+    const newNodes = nodes.map(n => {
+      if (n.cantilever && n.cantilever.cantileverId === cantileverId) {
+        const baseNode = nodes.find(bn => bn.id === n.cantilever.baseNodeId);
+        if (baseNode) {
+          const dir = n.cantilever.dir;
+          let dx = 0, dy = 0;
+          if (dir === '+X') dx = newLength;
+          else if (dir === '-X') dx = -newLength;
+          else if (dir === '+Y') dy = newLength;
+          else if (dir === '-Y') dy = -newLength;
+
+          return {
+            ...n,
+            x: round(baseNode.x + dx),
+            y: round(baseNode.y + dy),
+            cantilever: {
+              ...n.cantilever,
+              length: newLength
+            }
+          };
+        }
+      }
+      return n;
+    });
+
+    toast.success(`Longitud de volado actualizada a ${newLength}m.`);
+
+    setTimeout(() => {
+      shells.forEach(s => {
+        if (s.cantileverId === cantileverId) {
+          get().generateMeshForShell(s.id);
+        }
+      });
+    }, 0);
+
+    return {
+      nodes: newNodes,
+      isSaved: false
+    };
+  }),
+
+  replicateColumnProperties: (elementId, toAll = false) => set(state => {
+    const selectedCol = state.elements.find(e => e.id === elementId);
+    if (!selectedCol) return {};
+    
+    const n1_sel = state.nodes.find(n => n.id === selectedCol.nodes[0]);
+    const n2_sel = state.nodes.find(n => n.id === selectedCol.nodes[1]);
+    if (!n1_sel || !n2_sel) return {};
+    
+    const selZMin = Math.min(n1_sel.z, n2_sel.z);
+    const selZMax = Math.max(n1_sel.z, n2_sel.z);
+    
+    let count = 0;
+    const newElements = state.elements.map(e => {
+      const n1 = state.nodes.find(n => n.id === e.nodes[0]);
+      const n2 = state.nodes.find(n => n.id === e.nodes[1]);
+      if (!n1 || !n2) return e;
+      
+      const isCol = Math.abs(n1.x - n2.x) < 1e-3 && Math.abs(n1.y - n2.y) < 1e-3;
+      if (!isCol) return e;
+      
+      if (toAll) {
+        count++;
+        return { ...e, section_id: selectedCol.section_id, material_id: selectedCol.material_id };
+      } else {
+        const zMin = Math.min(n1.z, n2.z);
+        const zMax = Math.max(n1.z, n2.z);
+        const isSameFloor = Math.abs(zMin - selZMin) < 1e-3 && Math.abs(zMax - selZMax) < 1e-3;
+        if (isSameFloor) {
+          count++;
+          return { ...e, section_id: selectedCol.section_id, material_id: selectedCol.material_id };
+        }
+      }
+      return e;
+    });
+    
+    toast.success(`Sección replicada a ${count} columnas.`);
+    return { elements: newElements, isSaved: false };
+  }),
+
+  replicateBeamProperties: (elementId) => set(state => {
+    const selectedBeam = state.elements.find(e => e.id === elementId);
+    if (!selectedBeam) return {};
+    
+    const n1_sel = state.nodes.find(n => n.id === selectedBeam.nodes[0]);
+    const n2_sel = state.nodes.find(n => n.id === selectedBeam.nodes[1]);
+    if (!n1_sel || !n2_sel) return {};
+    
+    const selZ = (n1_sel.z + n2_sel.z) / 2;
+    const selBeamType = selectedBeam.beam_type || 'carga';
+    
+    let count = 0;
+    const newElements = state.elements.map(e => {
+      const n1 = state.nodes.find(n => n.id === e.nodes[0]);
+      const n2 = state.nodes.find(n => n.id === e.nodes[1]);
+      if (!n1 || !n2) return e;
+      
+      const isCol = Math.abs(n1.x - n2.x) < 1e-3 && Math.abs(n1.y - n2.y) < 1e-3;
+      if (isCol) return e;
+      
+      const zVal = (n1.z + n2.z) / 2;
+      const isSameFloor = Math.abs(zVal - selZ) < 1e-3;
+      const otherBeamType = e.beam_type || 'carga';
+      
+      if (isSameFloor && otherBeamType === selBeamType) {
+        count++;
+        return { ...e, section_id: selectedBeam.section_id, material_id: selectedBeam.material_id };
+      }
+      return e;
+    });
+    
+    toast.success(`Sección replicada a ${count} vigas de tipo '${selBeamType}'.`);
+    return { elements: newElements, isSaved: false };
+  })
 }));

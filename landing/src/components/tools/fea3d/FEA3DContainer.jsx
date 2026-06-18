@@ -16,6 +16,7 @@ import { AssignLoadsModal } from './AssignLoadsModal';
 import { AssignFrameLoadsModal } from './AssignFrameLoadsModal';
 import { AssignRestraintsModal } from './AssignRestraintsModal';
 import { ReplicateModal } from './ReplicateModal';
+import { DrawCantileverModal } from './DrawCantileverModal';
 import { ViewControls } from './ViewControls';
 import { useStructureStore } from './useStructureStore';
 import { useSolver } from './useSolver';
@@ -40,6 +41,7 @@ export default function FEA3DContainer() {
   const [assignFrameLoadsModalOpen, setAssignFrameLoadsModalOpen] = useState(false);
   const [assignRestraintsModalOpen, setAssignRestraintsModalOpen] = useState(false);
   const [replicateModalOpen, setReplicateModalOpen] = useState(false);
+  const [cantileverModalOpen, setCantileverModalOpen] = useState(false);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
@@ -72,6 +74,7 @@ export default function FEA3DContainer() {
     isQuickDrawingShell, toggleQuickDrawingShell,
     viewMode, activeResultType, setResultsMode,
     isSaved, currentUser, setCurrentUser, showLoads, toggleShowLoads,
+    showMesh, toggleShowMesh,
     selectionBox
   } = useStructureStore();
 
@@ -452,6 +455,12 @@ export default function FEA3DContainer() {
                 }
               }, 
               disabled: isResultsMode 
+            },
+            {
+              label: 'Volados (Ejes)...',
+              icon: Layers,
+              onClick: () => setCantileverModalOpen(true),
+              disabled: isResultsMode
             }
           ]} />
 
@@ -470,6 +479,7 @@ export default function FEA3DContainer() {
 
           <MenuDropdown title="Display" items={[
             { label: showLoads ? 'Ocultar Cargas' : 'Mostrar Cargas', icon: Settings, onClick: toggleShowLoads, disabled: isResultsMode },
+            { label: showMesh ? 'Ocultar Mallado' : 'Mostrar Mallado', icon: Settings, onClick: toggleShowMesh },
             { label: 'Tablas de Resultados', icon: Settings, onClick: () => setTablesModalOpen(true), disabled: !isResultsMode }
           ]} />
 
@@ -655,6 +665,7 @@ export default function FEA3DContainer() {
       {assignLoadsModalOpen && <AssignLoadsModal onClose={() => setAssignLoadsModalOpen(false)} />}
       {assignFrameLoadsModalOpen && <AssignFrameLoadsModal onClose={() => setAssignFrameLoadsModalOpen(false)} />}
       {assignRestraintsModalOpen && <AssignRestraintsModal onClose={() => setAssignRestraintsModalOpen(false)} />}
+      {cantileverModalOpen && <DrawCantileverModal onClose={() => setCantileverModalOpen(false)} />}
       
       {authModalOpen && (
         <AuthModal 

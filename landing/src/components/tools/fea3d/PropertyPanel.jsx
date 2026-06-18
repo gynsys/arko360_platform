@@ -142,7 +142,14 @@ function OpeningEditor({ opening, updateOpening, removeOpening, addOpening }) {
 }
 
 export function PropertyPanel() {
-  const { selectedIds, nodes, elements, shells, loads, openings, metadata, updateNode, updateShell, addLoad, updateLoad, deleteLoad, deleteNode, deleteElement, deleteShell, addOpening, updateOpening, removeOpening, generateMeshForShell } = useStructureStore();
+  const { 
+    selectedIds, nodes, elements, shells, loads, openings, metadata, 
+    updateNode, updateShell, addLoad, updateLoad, deleteLoad, 
+    deleteNode, deleteElement, deleteShell, addOpening, updateOpening, 
+    removeOpening, generateMeshForShell,
+    materials, sections, updateMaterial, updateSection, updateElement,
+    replicateColumnProperties, replicateBeamProperties
+  } = useStructureStore();
   const units = getUnitLabels(metadata?.units);
   const loadFactor = getLoadConversionFactor(metadata?.units);
 
@@ -179,6 +186,23 @@ export function PropertyPanel() {
 
   const elementLoads = loads.filter(l => l.target_id === selectedId);
   const shellOpenings = shell ? openings.filter(o => o.hostSlabId === selectedId) : [];
+
+  const cantileverId = shell?.cantileverId || element?.cantileverId;
+  const cantNode = cantileverId ? nodes.find(n => n.cantilever && n.cantilever.cantileverId === cantileverId) : null;
+  const cantileverInfo = cantNode ? cantNode.cantilever : null;
+
+  let axisLabel = '';
+  if (cantileverInfo) {
+    if (cantileverInfo.axisType === 'X') {
+      const uniqueX = [...new Set(nodes.map(n => Math.round(n.x * 10) / 10))].sort((a, b) => a - b);
+      const index = uniqueX.findIndex(val => Math.abs(val - cantileverInfo.axisVal) < 0.15);
+      axisLabel = index >= 0 ? `Eje ${index + 1}` : `${cantileverInfo.axisVal}m`;
+    } else {
+      const uniqueY = [...new Set(nodes.map(n => Math.round(n.y * 10) / 10))].sort((a, b) => a - b);
+      const index = uniqueY.findIndex(val => Math.abs(val - cantileverInfo.axisVal) < 0.15);
+      axisLabel = index >= 0 ? `Eje ${String.fromCharCode(65 + index)}` : `${cantileverInfo.axisVal}m`;
+    }
+  }
 
   if (!node && !element && !shell) return null;
 
@@ -310,78 +334,334 @@ export function PropertyPanel() {
         </div>
       )}
 
-      {element && (
-        <div className="space-y-4">
-          <div className="bg-emerald-600/10 border border-emerald-500/20 p-3 rounded-xl">
-            <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider">ELEMENTO FRAME</p>
-            <p className="text-2xl font-mono">ID: {element.id}</p>
-          </div>
-          <div className="space-y-2">
-            <p className="text-sm text-slate-400">Nudos: {element.nodes.join(' → ')}</p>
-            <p className="text-sm text-slate-400">Sección: <span className="text-white font-mono">{element.section_id}</span></p>
-          </div>
-          
-          <div className="pt-4 border-t border-slate-800">
-            <label className="text-xs font-bold text-slate-400 block mb-2">Cargas Asignadas</label>
-            {elementLoads.length === 0 ? (
-              <p className="text-xs text-slate-500 italic bg-slate-800/50 p-2 rounded">No hay cargas asignadas a este elemento.</p>
-            ) : (
-              <div className="space-y-2">
-                {elementLoads.map((l, idx) => (
-                  <div key={idx} className="bg-slate-800 border border-slate-700 rounded-md p-2 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-blue-400 uppercase flex items-center gap-1">
-                        {l.type === 'distributed' ? 'Distribuida' : 'Puntual'}
-                        <button onClick={() => deleteLoad(l.id)} className="text-red-400 hover:text-red-300 ml-2" title="Eliminar Carga"><Trash2 size={12} /></button>
-                      </span>
-                      {l.type === 'point_frame' && (
-                        <div className="flex items-center gap-1 text-slate-500 text-[10px]">
-                          <span>Pos:</span>
-                          <input 
-                            type="text" 
-                            className="w-10 bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-white" 
-                            value={l.offset} 
-                            onChange={(e) => updateLoad(l.id, { offset: parseFloat(e.target.value) || 0 })} 
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-3 gap-1 text-slate-300 text-[11px] bg-slate-900 p-1 rounded">
-                      <div className="flex items-center gap-1">
-                        <span className="text-slate-500">Fx:</span>
-                        <input 
-                          type="text" 
-                          className="w-full bg-slate-800 border border-slate-700 rounded px-1 py-0.5" 
-                          value={l.fx} 
-                          onChange={(e) => updateLoad(l.id, { fx: parseFloat(e.target.value) || 0 })} 
-                        />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-slate-500">Fy:</span>
-                        <input 
-                          type="text" 
-                          className="w-full bg-slate-800 border border-slate-700 rounded px-1 py-0.5" 
-                          value={l.fy} 
-                          onChange={(e) => updateLoad(l.id, { fy: parseFloat(e.target.value) || 0 })} 
-                        />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-slate-500">Fz:</span>
-                        <input 
-                          type="text" 
-                          className="w-full bg-slate-800 border border-slate-700 rounded px-1 py-0.5" 
-                          value={l.fz} 
-                          onChange={(e) => updateLoad(l.id, { fz: parseFloat(e.target.value) || 0 })} 
-                        />
-                      </div>
-                    </div>
+         {element && (() => {
+        const n1 = nodes.find(n => n.id === element.nodes[0]);
+        const n2 = nodes.find(n => n.id === element.nodes[1]);
+        const isCol = n1 && n2 && Math.abs(n1.x - n2.x) < 1e-3 && Math.abs(n1.y - n2.y) < 1e-3;
+        
+        const section = sections.find(s => s.id === element.section_id);
+        const matId = element.material_id || section?.material_id;
+        const material = matId ? materials.find(m => m.id === matId) : null;
+        
+        return (
+          <div className="space-y-5">
+            <div className={`${isCol ? 'bg-indigo-600/10 border border-indigo-500/20' : 'bg-emerald-600/10 border border-emerald-500/20'} p-3 rounded-xl`}>
+              <p className={`${isCol ? 'text-indigo-400' : 'text-emerald-400'} text-xs font-bold uppercase tracking-wider`}>
+                {isCol ? 'ELEMENTO COLUMNA' : 'ELEMENTO VIGA'}
+              </p>
+              <p className="text-2xl font-mono text-white">ID: {element.id}</p>
+            </div>
+            
+            <div className="space-y-1 text-slate-300 text-xs bg-slate-900 border border-slate-800 p-2 rounded-lg">
+              <p>Nudos: <span className="font-mono text-white">{element.nodes.join(' → ')}</span></p>
+              {n1 && n2 && (
+                <p>Longitud: <span className="text-white font-mono">
+                  {Math.sqrt(Math.pow(n1.x - n2.x, 2) + Math.pow(n1.y - n2.y, 2) + Math.pow(n1.z - n2.z, 2)).toFixed(2)}m
+                </span></p>
+              )}
+            </div>
+
+            {/* Configuración de Sección */}
+            <div className="pt-4 border-t border-slate-800 space-y-3">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Perfil (Sección)</h3>
+              
+              <div>
+                <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Sección Asignada</label>
+                <select 
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white font-mono outline-none focus:border-blue-500"
+                  value={element.section_id || ''}
+                  onChange={(e) => {
+                    const secId = e.target.value;
+                    const sec = sections.find(s => s.id === secId);
+                    updateElement(element.id, { 
+                      section_id: secId,
+                      material_id: sec ? sec.material_id : element.material_id
+                    });
+                  }}
+                >
+                  {sections.map(s => (
+                    <option key={s.id} value={s.id}>{s.name || s.id}</option>
+                  ))}
+                </select>
+              </div>
+
+              {section && section.type === 'Rectangular' && (
+                <div className="grid grid-cols-2 gap-3 bg-slate-800/20 p-2.5 rounded-lg border border-slate-800">
+                  <div>
+                    <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Ancho b (m)</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white"
+                      value={section.params?.b || 0}
+                      onChange={(e) => {
+                        const b = parseFloat(e.target.value) || 0;
+                        const h = section.params?.h || 0;
+                        const A = b * h;
+                        const Ix = (b * Math.pow(h, 3)) / 12;
+                        const Iy = (h * Math.pow(b, 3)) / 12;
+                        const J = Ix + Iy;
+                        updateSection(section.id, { params: { ...section.params, b }, A, Ix, Iy, J });
+                      }}
+                    />
                   </div>
-                ))}
+                  <div>
+                    <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Alto h (m)</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white"
+                      value={section.params?.h || 0}
+                      onChange={(e) => {
+                        const h = parseFloat(e.target.value) || 0;
+                        const b = section.params?.b || 0;
+                        const A = b * h;
+                        const Ix = (b * Math.pow(h, 3)) / 12;
+                        const Iy = (h * Math.pow(b, 3)) / 12;
+                        const J = Ix + Iy;
+                        updateSection(section.id, { params: { ...section.params, h }, A, Ix, Iy, J });
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {section && section.type === 'Circular' && (
+                <div className="bg-slate-800/20 p-2.5 rounded-lg border border-slate-800">
+                  <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Diámetro d (m)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white"
+                    value={section.params?.d || 0}
+                    onChange={(e) => {
+                      const d = parseFloat(e.target.value) || 0;
+                      const A = Math.PI * Math.pow(d, 2) / 4;
+                      const Ix = Math.PI * Math.pow(d, 4) / 64;
+                      const Iy = Ix;
+                      const J = Math.PI * Math.pow(d, 4) / 32;
+                      updateSection(section.id, { params: { ...section.params, d }, A, Ix, Iy, J });
+                    }}
+                  />
+                </div>
+              )}
+
+              {section && (section.type === 'I-Shape' || section.type === 'I/Wide Flange') && (
+                <div className="grid grid-cols-2 gap-3 bg-slate-800/20 p-2.5 rounded-lg border border-slate-800">
+                  <div>
+                    <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Alto h (m)</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white"
+                      value={section.params?.h || section.params?.ht || 0}
+                      onChange={(e) => {
+                        const h = parseFloat(e.target.value) || 0;
+                        updateSection(section.id, { params: { ...section.params, h, ht: h } });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Ancho Ala b (m)</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white"
+                      value={section.params?.b || section.params?.w2 || 0}
+                      onChange={(e) => {
+                        const b = parseFloat(e.target.value) || 0;
+                        updateSection(section.id, { params: { ...section.params, b, w2: b, w3: b } });
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Configuración de Material */}
+            <div className="pt-4 border-t border-slate-800 space-y-3">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Propiedades del Material</h3>
+
+              <div>
+                <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Material Asignado</label>
+                <select 
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white font-mono outline-none"
+                  value={element.material_id || section?.material_id || ''}
+                  onChange={(e) => updateElement(element.id, { material_id: e.target.value })}
+                >
+                  {materials.map(m => (
+                    <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                  ))}
+                </select>
+              </div>
+
+              {material && (
+                <div className="grid grid-cols-2 gap-3 bg-slate-800/20 p-2.5 rounded-lg border border-slate-800">
+                  <div>
+                    <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Tipo</label>
+                    <select
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white"
+                      value={material.type || 'Concrete'}
+                      onChange={(e) => updateMaterial(material.id, { type: e.target.value })}
+                    >
+                      <option value="Concrete">Concreto</option>
+                      <option value="Steel">Acero</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    {material.type === 'Concrete' ? (
+                      <>
+                        <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">F'c (kg/cm²)</label>
+                        <input 
+                          type="number" 
+                          step="10"
+                          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white font-mono"
+                          value={material.fc ? Math.round(material.fc / 10000) : 280}
+                          onChange={(e) => {
+                            const fc_cm2 = parseFloat(e.target.value) || 0;
+                            const fc = fc_cm2 * 10000;
+                            const E_cm2 = 15100 * Math.sqrt(fc_cm2);
+                            const E = E_cm2 * 10000;
+                            const G = E / (2 * (1 + (material.U || 0.2)));
+                            updateMaterial(material.id, { fc, E, G });
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Fy (kg/cm²)</label>
+                        <input 
+                          type="number" 
+                          step="100"
+                          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white font-mono"
+                          value={material.Fy ? Math.round(material.Fy / 10000) : 2530}
+                          onChange={(e) => {
+                            const Fy_cm2 = parseFloat(e.target.value) || 0;
+                            const Fy = Fy_cm2 * 10000;
+                            updateMaterial(material.id, { Fy });
+                          }}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sección de Replicación / Cargas específica */}
+            {isCol ? (
+              <div className="pt-4 border-t border-slate-800 space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase block mb-1">Replicar Propiedades</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => replicateColumnProperties(element.id, false)}
+                    className="bg-indigo-900/40 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-600 hover:text-white px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    title="Replicar sección y material a todas las columnas del mismo piso"
+                  >
+                    <Copy size={13} /> Por Piso
+                  </button>
+                  <button
+                    onClick={() => replicateColumnProperties(element.id, true)}
+                    className="bg-blue-900/40 border border-blue-500/30 text-blue-300 hover:bg-blue-600 hover:text-white px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    title="Replicar sección y material a todas las columnas del modelo"
+                  >
+                    <Copy size={13} /> Todo el Edificio
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 pt-4 border-t border-slate-800">
+                {/* Tipo de Viga */}
+                <div>
+                  <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Función de la Viga</label>
+                  <select 
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white"
+                    value={element.beam_type || 'carga'}
+                    onChange={(e) => updateElement(element.id, { beam_type: e.target.value })}
+                  >
+                    <option value="carga">Viga de Carga</option>
+                    <option value="secundaria">Viga Secundaria</option>
+                  </select>
+                </div>
+
+                {/* Replicación */}
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase block mb-2">Replicar Propiedades</label>
+                  <button
+                    onClick={() => replicateBeamProperties(element.id)}
+                    className="w-full bg-emerald-900/40 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    title="Replicar sección y material a todas las vigas del mismo piso con igual función estructural"
+                  >
+                    <Copy size={13} /> Replicar por Piso (Mismo Tipo)
+                  </button>
+                </div>
+
+                {/* Cargas Asignadas en Vigas */}
+                <div className="space-y-2 pt-2">
+                  <label className="text-xs font-bold text-slate-400 block mb-2">Cargas Asignadas</label>
+                  {elementLoads.length === 0 ? (
+                    <p className="text-xs text-slate-500 italic bg-slate-800/50 p-2 rounded">No hay cargas asignadas a este elemento.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {elementLoads.map((l, idx) => (
+                        <div key={idx} className="bg-slate-800 border border-slate-700 rounded-md p-2 text-xs">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-blue-400 uppercase flex items-center gap-1">
+                              {l.type === 'distributed' ? 'Distribuida' : 'Puntual'}
+                              <button onClick={() => deleteLoad(l.id)} className="text-red-400 hover:text-red-300 ml-2" title="Eliminar Carga"><Trash2 size={12} /></button>
+                            </span>
+                            {l.type === 'point_frame' && (
+                              <div className="flex items-center gap-1 text-slate-500 text-[10px]">
+                                <span>Pos:</span>
+                                <input 
+                                  type="text" 
+                                  className="w-10 bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-white" 
+                                  value={l.offset} 
+                                  onChange={(e) => updateLoad(l.id, { offset: parseFloat(e.target.value) || 0 })} 
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-3 gap-1 text-slate-300 text-[11px] bg-slate-900 p-1 rounded font-mono">
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-500">Fx:</span>
+                              <input 
+                                type="text" 
+                                className="w-full bg-slate-850 border border-slate-700 rounded px-1 py-0.5" 
+                                value={l.fx} 
+                                onChange={(e) => updateLoad(l.id, { fx: parseFloat(e.target.value) || 0 })} 
+                              />
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-500">Fy:</span>
+                              <input 
+                                type="text" 
+                                className="w-full bg-slate-850 border border-slate-700 rounded px-1 py-0.5" 
+                                value={l.fy} 
+                                onChange={(e) => updateLoad(l.id, { fy: parseFloat(e.target.value) || 0 })} 
+                              />
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-500">Fz:</span>
+                              <input 
+                                type="text" 
+                                className="w-full bg-slate-850 border border-slate-700 rounded px-1 py-0.5" 
+                                value={l.fz} 
+                                onChange={(e) => updateLoad(l.id, { fz: parseFloat(e.target.value) || 0 })} 
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {shell && (
         <div className="space-y-6">
@@ -648,6 +928,39 @@ export function PropertyPanel() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Tarjeta de Volado (si aplica) */}
+      {cantileverInfo && (
+        <div className="pt-6 border-t border-slate-800 mt-6">
+          <div className="bg-indigo-950/40 border border-indigo-500/30 p-3.5 rounded-xl space-y-2">
+            <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1">
+              📐 Configuración del Volado
+            </h3>
+            <p className="text-[10px] text-slate-400">
+              Eje de referencia: <span className="font-mono text-white font-bold">{axisLabel}</span> (Coord: {cantileverInfo.axisVal}m)
+            </p>
+            <p className="text-[10px] text-slate-400">
+              Dirección de proyección: <span className="font-mono text-white font-bold">{cantileverInfo.dir}</span>
+            </p>
+            <div>
+              <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Longitud del Volado ({units.length})</label>
+              <input 
+                type="number" 
+                step="0.05"
+                min="0.1"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white"
+                value={cantileverInfo.length}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (val > 0) {
+                    useStructureStore.getState().updateCantileverLength(cantileverId, val);
+                  }
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
