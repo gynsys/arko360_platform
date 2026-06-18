@@ -976,6 +976,7 @@ export const useStructureStore = create((set, get) => ({
     const { nodes, elements, shells, openings, loads } = state;
     
     const baseNodes = nodes.filter(n => {
+      if (n.cantilever) return false;
       const zMatch = Math.abs(n.z - level) < 1e-3;
       if (!zMatch) return false;
       if (axisType === 'X') {
@@ -1022,7 +1023,7 @@ export const useStructureStore = create((set, get) => ({
     });
     const thickness = templateShell ? templateShell.thickness : 0.20;
     const shellMaterialId = templateShell ? templateShell.material_id : materialId;
-    const shellLoads = templateShell ? { ...templateShell.loads } : { CM: 2.0, CV: 1.8 };
+    const shellLoads = {}; // Fix: No assignar cargas distribuidas automáticamente
 
     let maxNodeId = nodes.reduce((max, n) => Math.max(max, parseInt(n.id.replace('N', '')) || 0), 0);
     let maxElemId = elements.reduce((max, e) => Math.max(max, parseInt(e.id.replace('E', '')) || 0), 0);
