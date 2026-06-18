@@ -1223,7 +1223,7 @@ export function StructureCanvas() {
     nodes, elements, shells, openings, viewMode, showLoads, loads, 
     activeResultCombo, activeResultType, diagramScale, results,
     cameraView, activeLevel, isDrawingShell, isQuickDrawingShell, clearSelection,
-    displacementScale, materials
+    displacementScale, materials, metadata
   } = useStructureStore();
 
   useEffect(() => {
