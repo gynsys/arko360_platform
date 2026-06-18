@@ -256,6 +256,7 @@ class StructuralSolver:
                          (shell.nodes[2], shell.nodes[3]), (shell.nodes[3], shell.nodes[0])]
                 
                 perimeter_elements = []
+                edges_lengths = []
                 for edge in edges:
                     nA = next((n for n in self.nodes if n.id == edge[0]), None)
                     nB = next((n for n in self.nodes if n.id == edge[1]), None)
@@ -267,6 +268,7 @@ class StructuralSolver:
                     v_edge_sq = np.dot(v_edge, v_edge)
                     
                     if v_edge_len < 1e-4: continue
+                    edges_lengths.append(v_edge_len)
                     
                     for elem in self.elements:
                         en1 = next((n for n in self.nodes if n.id == elem.nodes[0]), None)
@@ -285,21 +287,28 @@ class StructuralSolver:
                             dist_en1 = np.linalg.norm(p_en1 - (pA + t_en1 * v_edge))
                             dist_en2 = np.linalg.norm(p_en2 - (pA + t_en2 * v_edge))
                             if dist_en1 < 1e-4 and dist_en2 < 1e-4:
-                                perimeter_elements.append(elem)
+                                perimeter_elements.append((elem, v_edge_len))
                 
                 if perimeter_elements:
-                    # Carga uniforme equivalente = Carga Total / Longitud Total del Perímetro
-                    total_length = 0
-                    lengths = []
-                    for elem in perimeter_elements:
+                    # Método de Líneas de Rotura (Yield Line Equivalent Uniform Loads)
+                    Ls = min(edges_lengths) if edges_lengths else 0
+                    Ll = max(edges_lengths) if edges_lengths else 0
+                    
+                    for elem, v_edge_len in perimeter_elements:
                         en1 = next(n for n in self.nodes if n.id == elem.nodes[0])
                         en2 = next(n for n in self.nodes if n.id == elem.nodes[1])
                         l = np.linalg.norm(np.array([en2.x-en1.x, en2.y-en1.y, en2.z-en1.z]))
-                        total_length += l
-                        lengths.append((elem, l, en1, en2))
-                    
-                    w_eq = total_load_N / total_length
-                    for elem, l, en1, en2 in lengths:
+                        
+                        # Determinar carga equivalente según lado (Corto=Triángulo, Largo=Trapecio)
+                        is_short = abs(v_edge_len - Ls) < 0.1
+                        if is_short:
+                            w_eq = q_factored * (Ls / 3.0)
+                        else:
+                            if Ll > 1e-4:
+                                w_eq = q_factored * (Ls / 2.0) * (1.0 - (1.0/3.0) * (Ls / Ll)**2)
+                            else:
+                                w_eq = 0
+                        
                         p1 = np.array([en1.x, en1.y, en1.z])
                         p2 = np.array([en2.x, en2.y, en2.z])
                         T = get_rotation_matrix(p1, p2, elem.beta_angle)

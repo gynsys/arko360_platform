@@ -762,6 +762,109 @@ function FrameLoadGraphic({ element, load, nodes }) {
   return null;
 }
 
+function SlabLoadGraphic({ shell, nodes, q, loadColor = 0x06b6d4, textColor = '#22d3ee', units = 'kgf', lenUnit = 'm' }) {
+  const { viewMode } = useStructureStore();
+  if (viewMode === 'results' || Math.abs(q) < 1e-4) return null;
+
+  const n_coords = shell.nodes.map(nid => nodes.find(n => n.id === nid)).filter(Boolean);
+  if (n_coords.length !== 4) return null; // Solo losas rectangulares/cuadrangulares
+
+  const p0 = new THREE.Vector3(n_coords[0].x, n_coords[0].y, n_coords[0].z);
+  const p1 = new THREE.Vector3(n_coords[1].x, n_coords[1].y, n_coords[1].z);
+  const p2 = new THREE.Vector3(n_coords[2].x, n_coords[2].y, n_coords[2].z);
+  const p3 = new THREE.Vector3(n_coords[3].x, n_coords[3].y, n_coords[3].z);
+
+  const edges = [
+    { pA: p0, pB: p1 },
+    { pA: p1, pB: p2 },
+    { pA: p2, pB: p3 },
+    { pA: p3, pB: p0 }
+  ];
+
+  edges.forEach(e => {
+    e.dir = new THREE.Vector3().subVectors(e.pB, e.pA);
+    e.length = e.dir.length();
+    e.dir.normalize();
+  });
+
+  // Identificar lados cortos y largos
+  let Ls = Infinity;
+  let Ll = 0;
+  edges.forEach(e => {
+    if (e.length < Ls) Ls = e.length;
+    if (e.length > Ll) Ll = e.length;
+  });
+
+  const arrowColor = loadColor;
+  const fdir = q > 0 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 0, -1);
+  const zSign = q > 0 ? -1 : 1; // Hacia abajo si q es positivo (gravedad)
+
+  // Altura máxima del tributario es Ls / 2
+  const tributaryHeight = Ls / 2;
+  const maxLoadVal = q * tributaryHeight; // Valor máximo de carga lineal
+  const scale = 1.0; // Max visual arrow length
+  
+  return (
+    <group>
+      {edges.map((e, idx) => {
+        const isShort = Math.abs(e.length - Ls) < 0.1;
+        const numArrows = isShort ? 5 : 9;
+        const topPoints = [];
+        const arrows = [];
+        
+        for (let j = 0; j <= numArrows; j++) {
+          const fraction = j / numArrows;
+          const pos = e.pA.clone().add(e.dir.clone().multiplyScalar(e.length * fraction));
+          
+          let mag = 0;
+          if (isShort) {
+            // Triángulo
+            if (fraction <= 0.5) mag = fraction * 2 * maxLoadVal;
+            else mag = (1 - fraction) * 2 * maxLoadVal;
+          } else {
+            // Trapecio
+            const slopeLen = Ls / 2;
+            const dist = fraction * e.length;
+            if (dist <= slopeLen) mag = (dist / slopeLen) * maxLoadVal;
+            else if (dist >= e.length - slopeLen) mag = ((e.length - dist) / slopeLen) * maxLoadVal;
+            else mag = maxLoadVal;
+          }
+
+          const currentArrowLength = (mag / maxLoadVal) * scale;
+          const origin = pos.clone().add(new THREE.Vector3(0, 0, zSign * currentArrowLength));
+          topPoints.push(origin);
+          
+          if (currentArrowLength > 0.05) {
+            arrows.push(<arrowHelper key={j} args={[fdir, origin, currentArrowLength, arrowColor, 0.2, 0.1]} />);
+          }
+        }
+
+        const lineGeom = new THREE.BufferGeometry().setFromPoints(topPoints);
+        const midPos = topPoints[Math.floor(numArrows/2)];
+        
+        return (
+          <group key={idx}>
+            {arrows}
+            <line geometry={lineGeom}>
+              <lineBasicMaterial color={loadColor} linewidth={2} />
+            </line>
+            <Text
+              position={[midPos.x, midPos.y - 0.2, midPos.z]}
+              fontSize={0.25}
+              color={textColor}
+              font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
+              anchorX="center"
+              rotation={[Math.PI / 2, 0, 0]}
+            >
+              {`Fz (Losa): ${Number(Math.abs(maxLoadVal).toFixed(2))} ${units}/${lenUnit}`}
+            </Text>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
 function CameraController() {
   const { camera } = useThree();
   const { cameraView, activeLevel, nodes, projectLoadedTrigger } = useStructureStore();
@@ -1148,101 +1251,7 @@ export function StructureCanvas() {
     return [0, 0, 0];
   }, [viewMode, results, activeResultCombo, displacementScale]);
 
-  const virtualSlabLoads = useMemo(() => {
-    const virtualLoads = [];
-    shells.forEach(shell => {
-      const mat = materials.find(m => m.id === shell.material_id) || materials[0];
-      const n_coords = shell.nodes.map(nid => nodes.find(n => n.id === nid)).filter(Boolean);
-      if (n_coords.length < 3) return;
-      
-      // Calcular área de la losa usando Shoelace
-      const n0 = n_coords[0];
-      const n1 = n_coords[1];
-      const n2 = n_coords[2];
-      const n3 = n_coords[3] || n_coords[0];
-      const area = 0.5 * Math.abs(n0.x*(n1.y-n3.y) + n1.x*(n2.y-n0.y) + n2.x*(n3.y-n1.y) + n3.x*(n0.y-n2.y));
-      
-      // q = PP + CM + CV
-      const density = mat?.weightVol || mat?.density || 2400;
-      const pp = shell.thickness * density;
-      const cm = shell.loads?.CM || 0;
-      const cv = shell.loads?.CV || 0;
-      const q = pp + cm + cv;
-      
-      const total_load = q * area;
-      
-      // Encontrar vanos perimetrales
-      const edges = [];
-      for (let i = 0; i < shell.nodes.length; i++) {
-        const nextIdx = (i + 1) % shell.nodes.length;
-        edges.push([shell.nodes[i], shell.nodes[nextIdx]]);
-      }
-      
-      const perimeterElements = [];
-      edges.forEach(edge => {
-        const nA = nodes.find(n => n.id === edge[0]);
-        const nB = nodes.find(n => n.id === edge[1]);
-        if (!nA || !nB) return;
-        
-        const pA = [nA.x, nA.y, nA.z];
-        const pB = [nB.x, nB.y, nB.z];
-        
-        elements.forEach(elem => {
-          const en1 = nodes.find(n => n.id === elem.nodes[0]);
-          const en2 = nodes.find(n => n.id === elem.nodes[1]);
-          if (!en1 || !en2) return;
-          
-          const p_en1 = [en1.x, en1.y, en1.z];
-          const p_en2 = [en2.x, en2.y, en2.z];
-          
-          const distToSegment = (p, p1, p2) => {
-            const dx = p2[0] - p1[0];
-            const dy = p2[1] - p1[1];
-            const dz = p2[2] - p1[2];
-            const l2 = dx*dx + dy*dy + dz*dz;
-            if (l2 < 1e-8) return Math.sqrt((p[0]-p1[0])**2 + (p[1]-p1[1])**2 + (p[2]-p1[2])**2);
-            let t = ((p[0] - p1[0]) * dx + (p[1] - p1[1]) * dy + (p[2] - p1[2]) * dz) / l2;
-            t = Math.max(0, Math.min(1, t));
-            const proj = [p1[0] + t * dx, p1[1] + t * dy, p1[2] + t * dz];
-            return Math.sqrt((p[0]-proj[0])**2 + (p[1]-proj[1])**2 + (p[2]-proj[2])**2);
-          };
-          
-          const d1 = distToSegment(p_en1, pA, pB);
-          const d2 = distToSegment(p_en2, pA, pB);
-          
-          if (d1 < 1e-2 && d2 < 1e-2) {
-            perimeterElements.push(elem);
-          }
-        });
-      });
-      
-      const uniquePerimElems = [...new Set(perimeterElements)];
-      
-      if (uniquePerimElems.length > 0) {
-        let totalLength = 0;
-        const elemLengths = [];
-        uniquePerimElems.forEach(elem => {
-          const en1 = nodes.find(n => n.id === elem.nodes[0]);
-          const en2 = nodes.find(n => n.id === elem.nodes[1]);
-          const l = Math.sqrt((en2.x-en1.x)**2 + (en2.y-en1.y)**2 + (en2.z-en1.z)**2);
-          totalLength += l;
-          elemLengths.push({ elem, l });
-        });
-        
-        const w_eq = totalLength > 0 ? (total_load / totalLength) : 0;
-        elemLengths.forEach(({ elem }) => {
-          virtualLoads.push({
-            id: `virtual-slab-load-${shell.id}-${elem.id}`,
-            type: 'distributed',
-            target_id: elem.id,
-            fz: -w_eq,
-            isSlabLoad: true
-          });
-        });
-      }
-    });
-    return virtualLoads;
-  }, [nodes, elements, shells, materials]);
+
 
   // Tolerancia para considerar si un elemento está en el nivel activo
   const TOLERANCE = 0.15;
@@ -1551,13 +1560,30 @@ export function StructureCanvas() {
           return null;
         })}
 
-        {showLoads && virtualSlabLoads.map(load => {
-          const targetElem = elements.find(e => e.id === load.target_id);
-          if (!targetElem) return null;
-          const n1 = nodes.find(n => n.id === targetElem.nodes[0]);
-          const n2 = nodes.find(n => n.id === targetElem.nodes[1]);
-          if (!n1 || !n2 || (!isNodeActive(n1) && !isNodeActive(n2))) return null;
-          return <FrameLoadGraphic key={load.id} element={targetElem} load={load} nodes={nodes} />;
+        {/* Cargas Virtuales de Losas (Líneas de Rotura) */}
+        {showLoads && shells.map(shell => {
+          const mat = materials.find(m => m.id === shell.material_id) || materials[0];
+          const density = mat?.weightVol || mat?.density || 2400;
+          const pp = shell.thickness * density;
+          const cm = shell.loads?.CM || 0;
+          const cv = shell.loads?.CV || 0;
+          const q = pp + cm + cv;
+          
+          if (q === 0) return null;
+          
+          const units = metadata?.units?.split(',')[1]?.trim() || 'kgf';
+          const lenUnit = metadata?.units?.split(',')[0]?.trim() || 'm';
+
+          return (
+            <SlabLoadGraphic 
+              key={`slab-load-${shell.id}`} 
+              shell={shell} 
+              nodes={nodes} 
+              q={q} 
+              units={units} 
+              lenUnit={lenUnit} 
+            />
+          );
         })}
         
         {/* Elementos y Diagramas */}
