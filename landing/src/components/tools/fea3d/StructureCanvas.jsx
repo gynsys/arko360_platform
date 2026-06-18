@@ -796,8 +796,10 @@ function SlabLoadGraphic({ shell, nodes, q, loadColor = 0x06b6d4, textColor = '#
   });
 
   const arrowColor = loadColor;
-  const fdir = q > 0 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 0, -1);
-  const zSign = q > 0 ? -1 : 1; // Hacia abajo si q es positivo (gravedad)
+  // Si q > 0 (gravedad, peso propio), la fuerza va en -Z (hacia abajo).
+  // Si q < 0, la fuerza va en +Z (hacia arriba).
+  const fdir = q > 0 ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 0, 1);
+  const zSign = q > 0 ? 1 : -1; // Para que la línea superior flote sobre la viga.
 
   // Altura máxima del tributario es Ls / 2
   const tributaryHeight = Ls / 2;
@@ -808,39 +810,56 @@ function SlabLoadGraphic({ shell, nodes, q, loadColor = 0x06b6d4, textColor = '#
     <group>
       {edges.map((e, idx) => {
         const isShort = Math.abs(e.length - Ls) < 0.1;
-        const numArrows = isShort ? 5 : 9;
-        const topPoints = [];
         const arrows = [];
         
-        for (let j = 0; j <= numArrows; j++) {
-          const fraction = j / numArrows;
-          const pos = e.pA.clone().add(e.dir.clone().multiplyScalar(e.length * fraction));
-          
-          let mag = 0;
+        // Función para calcular la magnitud en cualquier fracción (0 a 1)
+        const getMagAt = (fraction) => {
           if (isShort) {
-            // Triángulo
-            if (fraction <= 0.5) mag = fraction * 2 * maxLoadVal;
-            else mag = (1 - fraction) * 2 * maxLoadVal;
+            if (fraction <= 0.5) return fraction * 2 * maxLoadVal;
+            else return (1 - fraction) * 2 * maxLoadVal;
           } else {
-            // Trapecio
             const slopeLen = Ls / 2;
             const dist = fraction * e.length;
-            if (dist <= slopeLen) mag = (dist / slopeLen) * maxLoadVal;
-            else if (dist >= e.length - slopeLen) mag = ((e.length - dist) / slopeLen) * maxLoadVal;
-            else mag = maxLoadVal;
+            if (dist <= slopeLen) return (dist / slopeLen) * maxLoadVal;
+            else if (dist >= e.length - slopeLen) return ((e.length - dist) / slopeLen) * maxLoadVal;
+            else return maxLoadVal;
           }
+        };
 
+        // Generar flechas a intervalos regulares
+        const numArrows = isShort ? 6 : 10;
+        for (let j = 0; j <= numArrows; j++) {
+          const fraction = j / numArrows;
+          const mag = getMagAt(fraction);
           const currentArrowLength = (mag / maxLoadVal) * scale;
-          const origin = pos.clone().add(new THREE.Vector3(0, 0, zSign * currentArrowLength));
-          topPoints.push(origin);
           
           if (currentArrowLength > 0.05) {
-            arrows.push(<arrowHelper key={j} args={[fdir, origin, currentArrowLength, arrowColor, 0.2, 0.1]} />);
+            const pos = e.pA.clone().add(e.dir.clone().multiplyScalar(e.length * fraction));
+            const origin = pos.clone().add(new THREE.Vector3(0, 0, zSign * currentArrowLength));
+            arrows.push(<arrowHelper key={`a-${j}`} args={[fdir, origin, currentArrowLength, arrowColor, 0.2, 0.1]} />);
           }
         }
 
+        // Generar la línea perimetral perfecta (Triangle o Trapezoid outline)
+        const topPoints = [];
+        const keyFractions = isShort ? [0, 0.5, 1.0] : [0, (Ls/2)/e.length, 1 - (Ls/2)/e.length, 1.0];
+        
+        keyFractions.forEach(fraction => {
+          const mag = getMagAt(fraction);
+          const currentArrowLength = (mag / maxLoadVal) * scale;
+          const pos = e.pA.clone().add(e.dir.clone().multiplyScalar(e.length * fraction));
+          const origin = pos.clone().add(new THREE.Vector3(0, 0, zSign * currentArrowLength));
+          topPoints.push(origin);
+        });
+
         const lineGeom = new THREE.BufferGeometry().setFromPoints(topPoints);
-        const midPos = topPoints[Math.floor(numArrows/2)];
+        
+        // Determinar posición del texto
+        const midFraction = 0.5;
+        const midMag = getMagAt(midFraction);
+        const midArrowLen = (midMag / maxLoadVal) * scale;
+        const midPos = e.pA.clone().add(e.dir.clone().multiplyScalar(e.length * midFraction));
+        midPos.add(new THREE.Vector3(0, 0, zSign * midArrowLen));
         
         return (
           <group key={idx}>
@@ -850,13 +869,13 @@ function SlabLoadGraphic({ shell, nodes, q, loadColor = 0x06b6d4, textColor = '#
             </line>
             <Text
               position={[midPos.x, midPos.y - 0.2, midPos.z]}
-              fontSize={0.25}
+              fontSize={0.22}
               color={textColor}
               font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
               anchorX="center"
               rotation={[Math.PI / 2, 0, 0]}
             >
-              {`Fz (Losa): ${Number(Math.abs(maxLoadVal).toFixed(2))} ${units}/${lenUnit}`}
+              {`${Number(Math.abs(maxLoadVal).toFixed(2))} ${units}/${lenUnit}`}
             </Text>
           </group>
         );
@@ -1397,11 +1416,6 @@ export function StructureCanvas() {
       shells: [...currentState.shells, newShell],
       isSaved: false
     });
-
-    // Asegurar que se genere la malla automáticamente para la nueva losa
-    setTimeout(() => {
-      useStructureStore.getState().generateMeshForShell(shellId);
-    }, 0);
   };
 
   const shellHeatmapRange = useMemo(() => {
