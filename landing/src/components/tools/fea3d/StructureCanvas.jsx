@@ -861,6 +861,16 @@ function SlabLoadGraphic({ shell, nodes, q, loadColor = 0x06b6d4, textColor = '#
         const midPos = e.pA.clone().add(e.dir.clone().multiplyScalar(e.length * midFraction));
         midPos.add(new THREE.Vector3(0, 0, zSign * midArrowLen));
         
+        // Calcular carga uniforme equivalente (w_eq) para mostrar en el texto
+        let w_eq = 0;
+        if (isShort) {
+          w_eq = q * (Ls / 3.0);
+        } else {
+          if (Ll > 1e-4) {
+            w_eq = q * (Ls / 2.0) * (1.0 - (1.0/3.0) * Math.pow(Ls / Ll, 2));
+          }
+        }
+        
         return (
           <group key={idx}>
             {arrows}
@@ -875,7 +885,7 @@ function SlabLoadGraphic({ shell, nodes, q, loadColor = 0x06b6d4, textColor = '#
               anchorX="center"
               rotation={[Math.PI / 2, 0, 0]}
             >
-              {`${Number(Math.abs(maxLoadVal).toFixed(2))} ${units}/${lenUnit}`}
+              {`${Number(Math.abs(w_eq).toFixed(2))} ${units}/${lenUnit}`}
             </Text>
           </group>
         );
