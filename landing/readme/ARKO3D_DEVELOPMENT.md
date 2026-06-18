@@ -335,3 +335,36 @@ La función `exportProject()` del store los genera; `importProject()` los consum
    * Esto permite que las columnas (y vigas generales) se dibujen como curvas deformadas continuas y elásticas, emulando la precisión visual de SAP2000.
 3. **Guía Técnica de Arquitectura:**
    * Se creó [ARKO3D_TECHNICAL_GUIDE.md](file:///c:/Users/pablo/Documents/arko360_platform/landing/readme/ARKO3D_TECHNICAL_GUIDE.md) para documentar el funcionamiento de todo el sistema matemático y gráfico del visor 3D.
+
+---
+
+## 9. Fase 7: Mejoras en Visualización de Mallado, Edición/Replicación de Frames y Volados por Ejes (Completado)
+
+*Fecha de Implementación: 2026-06-18*
+
+### Logros y Cambios
+1. **Toggle de Mallado (Display):**
+   * Se implementó un toggle en el menú "Display" para ocultar/mostrar la malla. Al ocultarlo, las losas se visualizan como superficies sólidas continuas de color naranja translúcido sin líneas internas ni nudos de subdivisión, mejorando la limpieza visual de la maqueta.
+2. **Edición Específica de Columnas y Vigas:**
+   * Se adaptó el panel lateral de propiedades para diferenciar elementos:
+     * **Columnas:** Se ocultan las secciones de carga (no aplicable). Permite editar tipo de material (concreto/acero), calidad ($F'_c$/$F_y$) y sección de forma rápida. Se incluye un botón para replicar las propiedades del elemento seleccionado a todas las columnas o solo a las de un piso determinado.
+     * **Vigas:** Permite definir si es una viga de carga o secundaria, configurar el tipo de material, calidad, sección e ingresar cargas directas. Permite replicar configuraciones por piso y filtrado inteligente por tipo de viga (carga/secundaria).
+3. **Generación y Edición de Volados por Ejes:**
+   * Se creó la interfaz de modal `DrawCantileverModal.jsx` para dibujar volados referenciados a los ejes de construcción (1, 2... en X, o A, B... en Y).
+   * Al seleccionar un elemento que pertenezca a un volado, el panel lateral muestra la tarjeta de configuración del volado, permitiendo ajustar dinámicamente su longitud.
+
+---
+
+## 10. Fase 8: Cargas Transmitidas de Losas y Creación Dinámica de Perfiles (Completado)
+
+*Fecha de Implementación: 2026-06-18*
+
+### Logros y Cambios
+1. **Visualización de Cargas Tributarias Transmitidas:**
+   * Implementación del hook `virtualSlabLoads` en `StructureCanvas.jsx` que calcula en tiempo real las cargas superficiales totales $q$ ($PP + CM + CV$) de las losas y las asigna uniformemente a sus vigas perimetrales.
+   * Se renderizan como cargas distribuidas lineales de color cian (`0x06b6d4`) y etiqueta `Fz (Losa)` al activar "Mostrar Cargas".
+2. **Creación Dinámica de Perfiles y No Mutación:**
+   * Al cambiar las dimensiones en el panel de propiedades lateral, el sistema calcula las nuevas propiedades de área ($A$), inercias ($I_x$, $I_y$) y constante torsional ($J$).
+   * Se genera un nombre autodescriptivo (ej: `COL_30x30`, `VIGA_35x35`).
+   * Si ya existe un perfil equivalente en el catálogo de secciones, se asocia directamente al elemento; en caso contrario, se crea un nuevo objeto sección y se registra de forma limpia en el store global, evitando mutar secciones compartidas por otros elementos.
+

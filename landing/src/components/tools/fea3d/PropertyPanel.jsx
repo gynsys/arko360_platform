@@ -148,7 +148,7 @@ export function PropertyPanel() {
     deleteNode, deleteElement, deleteShell, addOpening, updateOpening, 
     removeOpening, generateMeshForShell,
     materials, sections, updateMaterial, updateSection, updateElement,
-    replicateColumnProperties, replicateBeamProperties
+    replicateColumnProperties, replicateBeamProperties, addSection
   } = useStructureStore();
   const units = getUnitLabels(metadata?.units);
   const loadFactor = getLoadConversionFactor(metadata?.units);
@@ -184,6 +184,11 @@ export function PropertyPanel() {
   const element = elements.find(e => e.id === selectedId);
   const shell = shells.find(s => s.id === selectedId);
 
+  const n1_el = element ? nodes.find(n => n.id === element.nodes[0]) : null;
+  const n2_el = element ? nodes.find(n => n.id === element.nodes[1]) : null;
+  const isCol = element && n1_el && n2_el && Math.abs(n1_el.x - n2_el.x) < 1e-3 && Math.abs(n1_el.y - n2_el.y) < 1e-3;
+  const section = element ? sections.find(s => s.id === element.section_id) : null;
+
   const elementLoads = loads.filter(l => l.target_id === selectedId);
   const shellOpenings = shell ? openings.filter(o => o.hostSlabId === selectedId) : [];
 
@@ -203,6 +208,70 @@ export function PropertyPanel() {
       axisLabel = index >= 0 ? `Eje ${String.fromCharCode(65 + index)}` : `${cantileverInfo.axisVal}m`;
     }
   }
+
+  const handleDimensionChange = (newParams) => {
+    if (!element || !section) return;
+
+    let A = 0, Ix = 0, Iy = 0, J = 0;
+    const type = section.type || 'Rectangular';
+    
+    if (type === 'Rectangular') {
+      const b = newParams.b !== undefined ? newParams.b : (section.params?.b || 0);
+      const h = newParams.h !== undefined ? newParams.h : (section.params?.h || 0);
+      A = b * h;
+      Ix = (b * Math.pow(h, 3)) / 12;
+      Iy = (h * Math.pow(b, 3)) / 12;
+      J = Ix + Iy;
+    } else if (type === 'Circular') {
+      const d = newParams.d !== undefined ? newParams.d : (section.params?.d || 0);
+      A = Math.PI * Math.pow(d, 2) / 4;
+      Ix = Math.PI * Math.pow(d, 4) / 64;
+      Iy = Ix;
+      J = Math.PI * Math.pow(d, 4) / 32;
+    } else {
+      // Ala Ancha / I-Shape
+      const h = newParams.h !== undefined ? newParams.h : (section.params?.h || section.params?.ht || 0);
+      const b = newParams.b !== undefined ? newParams.b : (section.params?.b || section.params?.w2 || 0);
+      A = section.A;
+      Ix = section.Ix;
+      Iy = section.Iy;
+      J = section.J;
+    }
+
+    const matId = element.material_id || section.material_id || '4000Psi';
+
+    // Generar nombre descriptivo
+    let prefix = isCol ? 'COL' : 'VIGA';
+    let newName = '';
+    if (type === 'Rectangular') {
+      newName = `${prefix}_${Math.round((newParams.b ?? section.params?.b ?? 0)*100)}x${Math.round((newParams.h ?? section.params?.h ?? 0)*100)}`;
+    } else if (type === 'Circular') {
+      newName = `${prefix}_D${Math.round((newParams.d ?? section.params?.d ?? 0)*100)}`;
+    } else {
+      newName = `${prefix}_I_${Math.round((newParams.b ?? section.params?.b ?? 0)*100)}x${Math.round((newParams.h ?? section.params?.h ?? 0)*100)}`;
+    }
+
+    // Buscar si ya existe una sección con el mismo nombre y material
+    const existing = sections.find(s => s.name === newName && s.type === type && s.material_id === matId);
+
+    if (existing) {
+      updateElement(element.id, { section_id: existing.id });
+    } else {
+      const newSecId = `SEC_${Date.now()}`;
+      addSection({
+        id: newSecId,
+        name: newName,
+        type: type,
+        material_id: matId,
+        params: { ...section.params, ...newParams },
+        A,
+        Ix,
+        Iy,
+        J
+      });
+      updateElement(element.id, { section_id: newSecId });
+    }
+  };
 
   if (!node && !element && !shell) return null;
 
@@ -335,14 +404,6 @@ export function PropertyPanel() {
       )}
 
          {element && (() => {
-        const n1 = nodes.find(n => n.id === element.nodes[0]);
-        const n2 = nodes.find(n => n.id === element.nodes[1]);
-        const isCol = n1 && n2 && Math.abs(n1.x - n2.x) < 1e-3 && Math.abs(n1.y - n2.y) < 1e-3;
-        
-        const section = sections.find(s => s.id === element.section_id);
-        const matId = element.material_id || section?.material_id;
-        const material = matId ? materials.find(m => m.id === matId) : null;
-        
         return (
           <div className="space-y-5">
             <div className={`${isCol ? 'bg-indigo-600/10 border border-indigo-500/20' : 'bg-emerald-600/10 border border-emerald-500/20'} p-3 rounded-xl`}>
@@ -354,9 +415,9 @@ export function PropertyPanel() {
             
             <div className="space-y-1 text-slate-300 text-xs bg-slate-900 border border-slate-800 p-2 rounded-lg">
               <p>Nudos: <span className="font-mono text-white">{element.nodes.join(' → ')}</span></p>
-              {n1 && n2 && (
+              {n1_el && n2_el && (
                 <p>Longitud: <span className="text-white font-mono">
-                  {Math.sqrt(Math.pow(n1.x - n2.x, 2) + Math.pow(n1.y - n2.y, 2) + Math.pow(n1.z - n2.z, 2)).toFixed(2)}m
+                  {Math.sqrt(Math.pow(n1_el.x - n2_el.x, 2) + Math.pow(n1_el.y - n2_el.y, 2) + Math.pow(n1_el.z - n2_el.z, 2)).toFixed(2)}m
                 </span></p>
               )}
             </div>
@@ -395,13 +456,7 @@ export function PropertyPanel() {
                       className="w-full bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white"
                       value={section.params?.b || 0}
                       onChange={(e) => {
-                        const b = parseFloat(e.target.value) || 0;
-                        const h = section.params?.h || 0;
-                        const A = b * h;
-                        const Ix = (b * Math.pow(h, 3)) / 12;
-                        const Iy = (h * Math.pow(b, 3)) / 12;
-                        const J = Ix + Iy;
-                        updateSection(section.id, { params: { ...section.params, b }, A, Ix, Iy, J });
+                        handleDimensionChange({ b: parseFloat(e.target.value) || 0 });
                       }}
                     />
                   </div>
@@ -413,13 +468,7 @@ export function PropertyPanel() {
                       className="w-full bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white"
                       value={section.params?.h || 0}
                       onChange={(e) => {
-                        const h = parseFloat(e.target.value) || 0;
-                        const b = section.params?.b || 0;
-                        const A = b * h;
-                        const Ix = (b * Math.pow(h, 3)) / 12;
-                        const Iy = (h * Math.pow(b, 3)) / 12;
-                        const J = Ix + Iy;
-                        updateSection(section.id, { params: { ...section.params, h }, A, Ix, Iy, J });
+                        handleDimensionChange({ h: parseFloat(e.target.value) || 0 });
                       }}
                     />
                   </div>
@@ -435,12 +484,7 @@ export function PropertyPanel() {
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white"
                     value={section.params?.d || 0}
                     onChange={(e) => {
-                      const d = parseFloat(e.target.value) || 0;
-                      const A = Math.PI * Math.pow(d, 2) / 4;
-                      const Ix = Math.PI * Math.pow(d, 4) / 64;
-                      const Iy = Ix;
-                      const J = Math.PI * Math.pow(d, 4) / 32;
-                      updateSection(section.id, { params: { ...section.params, d }, A, Ix, Iy, J });
+                      handleDimensionChange({ d: parseFloat(e.target.value) || 0 });
                     }}
                   />
                 </div>
@@ -456,8 +500,7 @@ export function PropertyPanel() {
                       className="w-full bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white"
                       value={section.params?.h || section.params?.ht || 0}
                       onChange={(e) => {
-                        const h = parseFloat(e.target.value) || 0;
-                        updateSection(section.id, { params: { ...section.params, h, ht: h } });
+                        handleDimensionChange({ h: parseFloat(e.target.value) || 0 });
                       }}
                     />
                   </div>
@@ -469,8 +512,7 @@ export function PropertyPanel() {
                       className="w-full bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white"
                       value={section.params?.b || section.params?.w2 || 0}
                       onChange={(e) => {
-                        const b = parseFloat(e.target.value) || 0;
-                        updateSection(section.id, { params: { ...section.params, b, w2: b, w3: b } });
+                        handleDimensionChange({ b: parseFloat(e.target.value) || 0 });
                       }}
                     />
                   </div>
