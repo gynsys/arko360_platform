@@ -188,6 +188,8 @@ export function PropertyPanel() {
   const n2_el = element ? nodes.find(n => n.id === element.nodes[1]) : null;
   const isCol = element && n1_el && n2_el && Math.abs(n1_el.x - n2_el.x) < 1e-3 && Math.abs(n1_el.y - n2_el.y) < 1e-3;
   const section = element ? sections.find(s => s.id === element.section_id) : null;
+  const matId = element?.material_id || section?.material_id || '';
+  const material = materials.find(m => m.id === matId);
 
   const elementLoads = loads.filter(l => l.target_id === selectedId);
   const shellOpenings = shell ? openings.filter(o => o.hostSlabId === selectedId) : [];
@@ -199,11 +201,11 @@ export function PropertyPanel() {
   let axisLabel = '';
   if (cantileverInfo) {
     if (cantileverInfo.axisType === 'X') {
-      const uniqueX = [...new Set(nodes.map(n => Math.round(n.x * 10) / 10))].sort((a, b) => a - b);
+      const uniqueX = [...new Set(nodes.filter(n => !n.cantilever).map(n => Math.round(n.x * 10) / 10))].sort((a, b) => a - b);
       const index = uniqueX.findIndex(val => Math.abs(val - cantileverInfo.axisVal) < 0.15);
       axisLabel = index >= 0 ? `Eje ${index + 1}` : `${cantileverInfo.axisVal}m`;
     } else {
-      const uniqueY = [...new Set(nodes.map(n => Math.round(n.y * 10) / 10))].sort((a, b) => a - b);
+      const uniqueY = [...new Set(nodes.filter(n => !n.cantilever).map(n => Math.round(n.y * 10) / 10))].sort((a, b) => a - b);
       const index = uniqueY.findIndex(val => Math.abs(val - cantileverInfo.axisVal) < 0.15);
       axisLabel = index >= 0 ? `Eje ${String.fromCharCode(65 + index)}` : `${cantileverInfo.axisVal}m`;
     }

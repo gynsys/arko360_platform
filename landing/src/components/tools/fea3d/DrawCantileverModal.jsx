@@ -8,7 +8,7 @@ export function DrawCantileverModal({ onClose }) {
   
   // 1. Obtener niveles únicos (coordenadas Z)
   const uniqueZ = useMemo(() => {
-    const zs = [...new Set(nodes.map(n => Math.round(n.z * 10) / 10))];
+    const zs = [...new Set(nodes.filter(n => !n.cantilever).map(n => Math.round(n.z * 10) / 10))];
     return zs.sort((a, b) => a - b);
   }, [nodes]);
   
@@ -23,12 +23,12 @@ export function DrawCantileverModal({ onClose }) {
   
   // 2. Obtener ejes únicos (coordenadas X e Y)
   const uniqueX = useMemo(() => {
-    const xs = [...new Set(nodes.map(n => Math.round(n.x * 10) / 10))];
+    const xs = [...new Set(nodes.filter(n => !n.cantilever).map(n => Math.round(n.x * 10) / 10))];
     return xs.sort((a, b) => a - b);
   }, [nodes]);
   
   const uniqueY = useMemo(() => {
-    const ys = [...new Set(nodes.map(n => Math.round(n.y * 10) / 10))];
+    const ys = [...new Set(nodes.filter(n => !n.cantilever).map(n => Math.round(n.y * 10) / 10))];
     return ys.sort((a, b) => a - b);
   }, [nodes]);
   

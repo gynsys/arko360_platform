@@ -1047,12 +1047,12 @@ function GridAxes() {
   const { nodes, viewMode } = useStructureStore();
   
   const uniqueX = useMemo(() => {
-    const xs = [...new Set(nodes.map(n => Math.round(n.x * 10) / 10))];
+    const xs = [...new Set(nodes.filter(n => !n.cantilever).map(n => Math.round(n.x * 10) / 10))];
     return xs.sort((a, b) => a - b);
   }, [nodes]);
 
   const uniqueY = useMemo(() => {
-    const ys = [...new Set(nodes.map(n => Math.round(n.y * 10) / 10))];
+    const ys = [...new Set(nodes.filter(n => !n.cantilever).map(n => Math.round(n.y * 10) / 10))];
     return ys.sort((a, b) => a - b); // Ascendente para que A parta de Y menor (hacia arriba)
   }, [nodes]);
 
@@ -1316,8 +1316,8 @@ export function StructureCanvas() {
     const pz = activeLevel;
 
     // Find bounding uniqueX and uniqueY
-    const uniqueX = [...new Set(nodes.map(n => Math.round(n.x * 10) / 10))].sort((a,b) => a - b);
-    const uniqueY = [...new Set(nodes.map(n => Math.round(n.y * 10) / 10))].sort((a,b) => a - b);
+    const uniqueX = [...new Set(nodes.filter(n => !n.cantilever).map(n => Math.round(n.x * 10) / 10))].sort((a,b) => a - b);
+    const uniqueY = [...new Set(nodes.filter(n => !n.cantilever).map(n => Math.round(n.y * 10) / 10))].sort((a,b) => a - b);
 
     let xLeft = null, xRight = null;
     for(let i=0; i<uniqueX.length - 1; i++) {
