@@ -1017,17 +1017,8 @@ export const useStructureStore = create((set, get) => ({
     const sectionId = templateBeam ? templateBeam.section_id : (state.sections[0]?.id || 'BEAM_DEF');
     const materialId = templateBeam ? templateBeam.material_id : (state.materials[0]?.id || '4000Psi');
 
-    const templateShell = shells.find(s => {
-      const n = nodes.find(nd => nd.id === s.nodes[0]);
-      return n && Math.abs(n.z - level) < 1e-3;
-    });
-    const thickness = templateShell ? templateShell.thickness : 0.20;
-    const shellMaterialId = templateShell ? templateShell.material_id : materialId;
-    const shellLoads = {}; // Fix: No assignar cargas distribuidas automáticamente
-
     let maxNodeId = nodes.reduce((max, n) => Math.max(max, parseInt(n.id.replace('N', '')) || 0), 0);
     let maxElemId = elements.reduce((max, e) => Math.max(max, parseInt(e.id.replace('E', '')) || 0), 0);
-    let maxShellId = shells.reduce((max, s) => Math.max(max, parseInt(s.id.replace('S', '')) || 0), 0);
 
     baseNodes.forEach((bn, idx) => {
       const targetX = round(bn.x + dx);
@@ -1067,8 +1058,6 @@ export const useStructureStore = create((set, get) => ({
     });
 
     for (let i = 0; i < baseNodes.length - 1; i++) {
-      const bn1 = baseNodes[i];
-      const bn2 = baseNodes[i+1];
       const tn1 = tipNodes[i];
       const tn2 = tipNodes[i+1];
 
@@ -1083,36 +1072,13 @@ export const useStructureStore = create((set, get) => ({
         beam_type: 'secundaria',
         cantileverId
       });
-
-      maxShellId++;
-      const shellId = `S-${Date.now()}-${i}`;
-      newShells.push({
-        id: shellId,
-        type: 'shell',
-        nodes: [bn1.id, tn1.id, tn2.id, bn2.id],
-        thickness,
-        material_id: shellMaterialId,
-        loads: shellLoads,
-        meshSize: 1.0,
-        mesh: null,
-        cantileverId
-      });
     }
 
     toast.success('Volado (Cantilever) generado exitosamente.');
 
-    setTimeout(() => {
-      newShells.forEach(s => {
-        if (s.cantileverId === cantileverId) {
-          get().generateMeshForShell(s.id);
-        }
-      });
-    }, 0);
-
     return {
       nodes: newNodes,
       elements: newElements,
-      shells: newShells,
       isSaved: false
     };
   }),

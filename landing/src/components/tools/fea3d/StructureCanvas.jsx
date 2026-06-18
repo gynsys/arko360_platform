@@ -1315,9 +1315,9 @@ export function StructureCanvas() {
     const py = point.y;
     const pz = activeLevel;
 
-    // Find bounding uniqueX and uniqueY
-    const uniqueX = [...new Set(nodes.filter(n => !n.cantilever).map(n => Math.round(n.x * 10) / 10))].sort((a,b) => a - b);
-    const uniqueY = [...new Set(nodes.filter(n => !n.cantilever).map(n => Math.round(n.y * 10) / 10))].sort((a,b) => a - b);
+    // Find bounding uniqueX and uniqueY, including cantilevers so we can draw on them
+    const uniqueX = [...new Set(nodes.filter(n => Math.abs(n.z - pz) < 0.1).map(n => Math.round(n.x * 10) / 10))].sort((a,b) => a - b);
+    const uniqueY = [...new Set(nodes.filter(n => Math.abs(n.z - pz) < 0.1).map(n => Math.round(n.y * 10) / 10))].sort((a,b) => a - b);
 
     let xLeft = null, xRight = null;
     for(let i=0; i<uniqueX.length - 1; i++) {
@@ -1348,15 +1348,16 @@ export function StructureCanvas() {
     const newNodes = [...currentState.nodes];
     const shellNodeIds = [];
 
-    corners.forEach(c => {
-      const existing = newNodes.find(n => Math.abs(n.x - c.x) < 0.1 && Math.abs(n.y - c.y) < 0.1 && Math.abs(n.z - c.z) < 0.1);
-      if (existing) {
-        shellNodeIds.push(existing.id);
-      } else {
-        const newId = `N${Date.now()}_${Math.floor(Math.random()*10000)}`;
-        newNodes.push({ id: newId, x: c.x, y: c.y, z: c.z, restraint: null });
-        shellNodeIds.push(newId);
-      }
+    // Verify all 4 corners exist. If not, the user clicked in an empty space (e.g. adjacent to a cantilever)
+    const existingNodes = corners.map(c => newNodes.find(n => Math.abs(n.x - c.x) < 0.1 && Math.abs(n.y - c.y) < 0.1 && Math.abs(n.z - c.z) < 0.1));
+    
+    if (existingNodes.some(n => !n)) {
+      toast.error('No hay nudos definidos en esta ubicación para crear una losa.');
+      return;
+    }
+
+    existingNodes.forEach(existing => {
+      shellNodeIds.push(existing.id);
     });
 
     // Prevenir losas duplicadas (overlapping exacto)
