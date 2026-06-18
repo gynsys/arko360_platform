@@ -4,10 +4,36 @@ import { useStructureStore } from './useStructureStore';
 import toast from 'react-hot-toast';
 
 export function DefineMaterialsModal({ onClose }) {
-  const { materials, addMaterial, updateMaterial, deleteMaterial } = useStructureStore();
+  const { materials, addMaterial, updateMaterial, deleteMaterial, metadata } = useStructureStore();
   const [editingMat, setEditingMat] = useState(null); // null, 'new', or material_id
 
   const [formData, setFormData] = useState({});
+
+  const unitParts = (metadata?.units || 'm, kgf, C').split(',');
+  const forceUnit = unitParts[1]?.trim() || 'kgf';
+  const lenUnit = unitParts[0]?.trim() || 'm';
+  const isMKS = forceUnit === 'kgf';
+  const isSI = forceUnit === 'kN';
+  const isUS = forceUnit === 'kip';
+
+  const weightLabel = isUS ? 'Weight per Unit Volume (kip/ft³)' : isSI ? 'Weight per Unit Volume (kN/m³)' : 'Weight per Unit Volume (kgf/m³)';
+  const massLabel = isUS ? 'Mass per Unit Volume (slug/ft³)' : 'Mass per Unit Volume (kg/m³)';
+  const ELabel = isUS ? 'Modulus of Elasticity, E (ksi)' : isSI ? 'Modulus of Elasticity, E (MPa)' : 'Modulus of Elasticity, E (kgf/cm²)';
+  const GLabel = isUS ? 'Shear Modulus, G (ksi)' : isSI ? 'Shear Modulus, G (MPa)' : 'Shear Modulus, G (kgf/cm²)';
+  const fcLabel = isUS ? "Specified Concrete Compressive Strength, f'c (psi)" : isSI ? "Specified Concrete Compressive Strength, f'c (MPa)" : "Specified Concrete Compressive Strength, f'c (kgf/cm²)";
+  const FyLabel = isUS ? 'Minimum Yield Strength, Fy (ksi)' : isSI ? 'Minimum Yield Strength, Fy (MPa)' : 'Minimum Yield Strength, Fy (kgf/cm²)';
+  const FuLabel = isUS ? 'Minimum Tensile Strength, Fu (ksi)' : isSI ? 'Minimum Tensile Strength, Fu (MPa)' : 'Minimum Tensile Strength, Fu (kgf/cm²)';
+
+  const getFieldFactor = (fieldName) => {
+    if (isMKS) return 10000;
+    if (isSI) return 1000;
+    if (isUS) {
+      if (['E', 'G'].includes(fieldName)) return 1;
+      if (fieldName === 'fc') return 0.000144;
+      if (['Fy', 'Fu'].includes(fieldName)) return 0.144;
+    }
+    return 10000;
+  };
 
   const handleEdit = (mat) => {
     setFormData({ ...mat });
@@ -15,21 +41,55 @@ export function DefineMaterialsModal({ onClose }) {
   };
 
   const handleAdd = () => {
-    setFormData({
-      id: `MAT_${Date.now()}`,
-      name: 'Nuevo Material',
-      type: 'Concrete',
-      density: 2400,
-      weightVol: 23.56,
-      E: 2535600000,
-      U: 0.2,
-      G: 1056500000,
-      A: 0.0000099,
-      fc: 28550400,
-      Fy: 420000000,
-      Fu: 600000000,
-      color: '#ff00ff'
-    });
+    if (isUS) {
+      setFormData({
+        id: `MAT_${Date.now()}`,
+        name: 'Nuevo Material',
+        type: 'Concrete',
+        density: 4.66,
+        weightVol: 0.150,
+        E: 3605,
+        U: 0.2,
+        G: 1502,
+        A: 0.0000099,
+        fc: 0.576,
+        Fy: 7.20,
+        Fu: 9.36,
+        color: '#ff00ff'
+      });
+    } else if (isSI) {
+      setFormData({
+        id: `MAT_${Date.now()}`,
+        name: 'Nuevo Material',
+        type: 'Concrete',
+        density: 2400,
+        weightVol: 23.544,
+        E: 24855578,
+        U: 0.2,
+        G: 10356491,
+        A: 0.0000099,
+        fc: 28000,
+        Fy: 345000,
+        Fu: 450000,
+        color: '#ff00ff'
+      });
+    } else {
+      setFormData({
+        id: `MAT_${Date.now()}`,
+        name: 'Nuevo Material',
+        type: 'Concrete',
+        density: 2400,
+        weightVol: 2400,
+        E: 2535600000,
+        U: 0.2,
+        G: 1056500000,
+        A: 0.0000099,
+        fc: 2800000,
+        Fy: 42000000,
+        Fu: 60000000,
+        color: '#ff00ff'
+      });
+    }
     setEditingMat('new');
   };
 
@@ -64,23 +124,53 @@ export function DefineMaterialsModal({ onClose }) {
     const { name, value, type } = e.target;
     let numVal = type === 'number' ? parseFloat(value) || 0 : value;
 
-    // Convert from kgf/cm² (UI) to kgf/m² (internal) for these fields
     if (['E', 'G', 'fc', 'Fy', 'Fu'].includes(name) && type === 'number') {
-      numVal = numVal * 10000;
+      const factor = getFieldFactor(name);
+      numVal = numVal * factor;
     }
 
     setFormData(prev => {
       const next = { ...prev, [name]: numVal };
       
-      // Auto-calculate E and G when f'c changes for Concrete
-      if (name === 'fc' && next.type === 'Concrete') {
-        const fc_cm2 = numVal / 10000;
-        if (fc_cm2 > 0) {
-          const E_cm2 = 15100 * Math.sqrt(fc_cm2);
-          next.E = E_cm2 * 10000;
-          next.G = next.E / (2 * (1 + (next.U || 0.2)));
+      // Link weight and mass bidirectionally
+      if (name === 'density') {
+        if (isMKS) {
+          next.weightVol = numVal;
+        } else if (isSI) {
+          next.weightVol = Math.round((numVal * 0.00980665) * 10000) / 10000;
+        } else if (isUS) {
+          next.weightVol = Math.round((numVal * 0.03217405) * 100000) / 100000;
         }
       }
+      if (name === 'weightVol') {
+        if (isMKS) {
+          next.density = numVal;
+        } else if (isSI) {
+          next.density = Math.round((numVal / 0.00980665) * 100) / 100;
+        } else if (isUS) {
+          next.density = Math.round((numVal / 0.03217405) * 10000) / 10000;
+        }
+      }
+
+      // Auto-calculate G
+      if (name === 'E' || name === 'U') {
+        next.G = next.E / (2 * (1 + (next.U ?? 0.2)));
+      }
+
+      // Auto-calculate E and G when f'c changes for Concrete
+      if (name === 'fc' && next.type === 'Concrete') {
+        const fc_ui = numVal / getFieldFactor('fc');
+        if (fc_ui > 0) {
+          let E_ui = 0;
+          if (isMKS) E_ui = 15100 * Math.sqrt(fc_ui);
+          else if (isSI) E_ui = 4700 * Math.sqrt(fc_ui);
+          else if (isUS) E_ui = 57000 * Math.sqrt(fc_ui);
+
+          next.E = E_ui * getFieldFactor('E');
+          next.G = next.E / (2 * (1 + (next.U ?? 0.2)));
+        }
+      }
+
       return next;
     });
   };
@@ -125,12 +215,12 @@ export function DefineMaterialsModal({ onClose }) {
             <div className="border border-slate-300 p-3 rounded relative">
               <span className="absolute -top-2.5 left-2 bg-slate-50 px-1 text-blue-700 font-semibold text-xs">Material Weight and Mass</span>
               <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                <label>Weight per Unit Volume (kgf/m³)</label>
-                <input type="number" name="weightVol" value={formData.weightVol || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                <label>{weightLabel}</label>
+                <input type="number" step="any" name="weightVol" value={formData.weightVol || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
               </div>
               <div className="grid grid-cols-[2fr_1fr] gap-2 items-center">
-                <label>Mass per Unit Volume (kg/m³)</label>
-                <input type="number" name="density" value={formData.density || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                <label>{massLabel}</label>
+                <input type="number" step="any" name="density" value={formData.density || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
               </div>
             </div>
 
@@ -138,20 +228,87 @@ export function DefineMaterialsModal({ onClose }) {
             <div className="border border-slate-300 p-3 rounded relative">
               <span className="absolute -top-2.5 left-2 bg-slate-50 px-1 text-blue-700 font-semibold text-xs">Mechanical Property Data</span>
               <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                <label>Modulus of Elasticity, E (kgf/cm²)</label>
-                <input type="number" name="E" value={formData.E ? Math.round(formData.E / 10000) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                <div>
+                  <label>{ELabel}</label>
+                  {formData.type === 'Concrete' && (
+                    <div className="text-[10px] text-blue-600 mt-0.5 flex flex-wrap gap-1">
+                      <span>Sugerencias ACI:</span>
+                      {isMKS && (
+                        <>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const fc_ui = (formData.fc || 0) / 10000;
+                              if (fc_ui > 0) {
+                                const E_val = Math.round(15100 * Math.sqrt(fc_ui));
+                                handleChange({ target: { name: 'E', value: E_val.toString(), type: 'number' } });
+                              }
+                            }}
+                            className="underline hover:text-blue-800 font-bold"
+                          >
+                            15100*√f'c ({Math.round(15100 * Math.sqrt((formData.fc || 0) / 10000))})
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const fc_ui = (formData.fc || 0) / 10000;
+                              if (fc_ui > 0) {
+                                const E_val = Math.round(15000 * Math.sqrt(fc_ui));
+                                handleChange({ target: { name: 'E', value: E_val.toString(), type: 'number' } });
+                              }
+                            }}
+                            className="underline hover:text-blue-800 font-bold"
+                          >
+                            15000*√f'c ({Math.round(15000 * Math.sqrt((formData.fc || 0) / 10000))})
+                          </button>
+                        </>
+                      )}
+                      {isSI && (
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            const fc_ui = (formData.fc || 0) / 1000;
+                            if (fc_ui > 0) {
+                              const E_val = Math.round(4700 * Math.sqrt(fc_ui));
+                              handleChange({ target: { name: 'E', value: E_val.toString(), type: 'number' } });
+                            }
+                          }}
+                          className="underline hover:text-blue-800 font-bold"
+                        >
+                          4700*√f'c ({Math.round(4700 * Math.sqrt((formData.fc || 0) / 1000))})
+                        </button>
+                      )}
+                      {isUS && (
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            const fc_ui = (formData.fc || 0) / 0.000144;
+                            if (fc_ui > 0) {
+                              const E_val = Math.round((57000 * Math.sqrt(fc_ui)) / 1000);
+                              handleChange({ target: { name: 'E', value: E_val.toString(), type: 'number' } });
+                            }
+                          }}
+                          className="underline hover:text-blue-800 font-bold"
+                        >
+                          57000*√f'c ({Math.round((57000 * Math.sqrt((formData.fc || 0) / 0.000144)) / 1000)})
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <input type="number" step="any" name="E" value={formData.E ? Math.round(formData.E / getFieldFactor('E')) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
               </div>
               <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
                 <label>Poisson's Ratio, U</label>
-                <input type="number" name="U" value={formData.U || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                <input type="number" step="any" name="U" value={formData.U || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
               </div>
               <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
                 <label>Coefficient of Thermal Expansion, A</label>
                 <input type="number" name="A" step="0.0000001" value={formData.A || 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
               </div>
               <div className="grid grid-cols-[2fr_1fr] gap-2 items-center">
-                <label>Shear Modulus, G (kgf/cm²)</label>
-                <input type="number" name="G" value={formData.G ? Math.round(formData.G / 10000) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                <label>{GLabel}</label>
+                <input type="number" step="any" name="G" value={formData.G ? Math.round(formData.G / getFieldFactor('G')) : 0} disabled className="border border-slate-300 px-2 py-1 text-right w-full bg-slate-100 font-semibold cursor-not-allowed" title="Shear Modulus is auto-calculated" />
               </div>
             </div>
 
@@ -160,19 +317,19 @@ export function DefineMaterialsModal({ onClose }) {
               <span className="absolute -top-2.5 left-2 bg-slate-50 px-1 text-blue-700 font-semibold text-xs">Design Property Data</span>
               {formData.type === 'Concrete' && (
                 <div className="grid grid-cols-[2fr_1fr] gap-2 items-center">
-                  <label>Specified Concrete Compressive Strength, f'c (kgf/cm²)</label>
-                  <input type="number" name="fc" value={formData.fc ? Math.round(formData.fc / 10000) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                  <label>{fcLabel}</label>
+                  <input type="number" step="any" name="fc" value={formData.fc ? Math.round(formData.fc / getFieldFactor('fc')) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                 </div>
               )}
-              {formData.type === 'Rebar' && (
+              {(formData.type === 'Rebar' || formData.type === 'Steel') && (
                 <>
                   <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                    <label>Minimum Yield Strength, Fy (kgf/cm²)</label>
-                    <input type="number" name="Fy" value={formData.Fy ? Math.round(formData.Fy / 10000) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                    <label>{FyLabel}</label>
+                    <input type="number" step="any" name="Fy" value={formData.Fy ? Math.round(formData.Fy / getFieldFactor('Fy')) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                   </div>
                   <div className="grid grid-cols-[2fr_1fr] gap-2 items-center">
-                    <label>Minimum Tensile Strength, Fu (kgf/cm²)</label>
-                    <input type="number" name="Fu" value={formData.Fu ? Math.round(formData.Fu / 10000) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
+                    <label>{FuLabel}</label>
+                    <input type="number" step="any" name="Fu" value={formData.Fu ? Math.round(formData.Fu / getFieldFactor('Fu')) : 0} onChange={handleChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                   </div>
                 </>
               )}
