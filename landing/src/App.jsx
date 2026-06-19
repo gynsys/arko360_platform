@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useParams } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import Hero from './components/Hero.jsx';
 import Services from './components/Services.jsx';
@@ -19,6 +19,9 @@ import { getSiteConfig } from './services/api.js';
 import { Toaster } from 'react-hot-toast';
 
 export const SiteConfigContext = React.createContext(null);
+// basePath is the slug prefix for cloned sites (e.g. '/pablo-milano')
+// For the main site it is ''
+export const BasePathContext = React.createContext('');
 
 function LandingPage() {
   const config = React.useContext(SiteConfigContext);
@@ -92,6 +95,31 @@ function ToolsPage() {
   );
 }
 
+// Wrapper that loads config for a cloned slug and renders the landing page
+function SlugLandingPage() {
+  const { slug } = useParams();
+  const [config, setConfig] = React.useState(null);
+
+  React.useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL || 'https://api.arko360.net/api/v1'}/arko/landing_sites/config/${slug}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setConfig(data); })
+      .catch(() => {});
+  }, [slug]);
+
+  const basePath = `/${slug}`;
+
+  return (
+    <SiteConfigContext.Provider value={config}>
+      <BasePathContext.Provider value={basePath}>
+        <Navbar />
+        <LandingPage />
+        <Footer />
+      </BasePathContext.Provider>
+    </SiteConfigContext.Provider>
+  );
+}
+
 export default function App() {
   const [config, setConfig] = React.useState(null);
 
@@ -109,19 +137,28 @@ export default function App() {
   const location = useLocation();
   const isAppRoute = location.pathname.startsWith('/arko3d');
 
+  // Known non-slug routes
+  const knownRoutes = ['biblio', 'herramientas', 'arko3d'];
+  const firstSegment = location.pathname.split('/').filter(Boolean)[0];
+  const isKnownRoute = !firstSegment || knownRoutes.includes(firstSegment);
+
   return (
     <SiteConfigContext.Provider value={config}>
-      <Toaster position="top-center" toastOptions={{ className: 'font-sans text-sm shadow-xl' }} />
-      {!isAppRoute && <Navbar />}
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/biblio" element={<BiblioPage />} />
-        <Route path="/biblio/:slug" element={<BiblioArticle />} />
-        <Route path="/herramientas" element={<ToolsPage />} />
-        <Route path="/herramientas/diseno-de-mezclas" element={<MixDesignCalculator />} />
-        <Route path="/arko3d" element={<FEA3DContainer />} />
-      </Routes>
-      {!isAppRoute && <Footer />}
+      <BasePathContext.Provider value="">
+        <Toaster position="top-center" toastOptions={{ className: 'font-sans text-sm shadow-xl' }} />
+        {!isAppRoute && isKnownRoute && <Navbar />}
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/biblio" element={<BiblioPage />} />
+          <Route path="/biblio/:slug" element={<BiblioArticle />} />
+          <Route path="/herramientas" element={<ToolsPage />} />
+          <Route path="/herramientas/diseno-de-mezclas" element={<MixDesignCalculator />} />
+          <Route path="/arko3d" element={<FEA3DContainer />} />
+          {/* Cloned landing sites served under their slug */}
+          <Route path="/:slug" element={<SlugLandingPage />} />
+        </Routes>
+        {!isAppRoute && isKnownRoute && <Footer />}
+      </BasePathContext.Provider>
     </SiteConfigContext.Provider>
   );
 }

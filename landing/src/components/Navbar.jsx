@@ -3,17 +3,9 @@ import { Menu, X } from 'lucide-react';
 import { FaUserShield } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { SiteConfigContext } from '../App.jsx';
+import { SiteConfigContext, BasePathContext } from '../App.jsx';
 import { useContext } from 'react';
 import { useStructureStore } from './tools/fea3d/useStructureStore';
-
-const NAV_LINKS = [
-  { label: 'Servicios', href: '/#servicios' },
-  { label: 'Proyectos', href: '/#proyectos' },
-  { label: 'Nosotros', href: '/#nosotros' },
-  { label: 'BiblioARKO', href: '/biblio' },
-  { label: 'Herramientas', href: '/herramientas' },
-];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -21,6 +13,17 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const siteConfig = useContext(SiteConfigContext);
+  const basePath = useContext(BasePathContext); // '' for main site, '/slug' for clones
+
+  // Build nav links using the correct base path
+  const NAV_LINKS = [
+    { label: 'Servicios', href: `${basePath}/#servicios` },
+    { label: 'Proyectos', href: `${basePath}/#proyectos` },
+    { label: 'Nosotros', href: `${basePath}/#nosotros` },
+    { label: 'BiblioARKO', href: '/biblio' },
+    { label: 'Herramientas', href: '/herramientas' },
+  ];
+  const ctaHref = `${basePath}/#contacto`;
   
   // ARKO3D Unsaved Changes Logic
   const { elements, isSaved, exportProject } = useStructureStore();
@@ -58,13 +61,14 @@ export default function Navbar() {
 
     setMobileOpen(false);
     
-    // If it's a hash link on the same page (landing)
-    if (href.startsWith('/#') && location.pathname === '/') {
+    // If it's a hash link that corresponds to the current page (main or slug)
+    const baseLanding = basePath || '/';
+    const isOnLanding = location.pathname === '/' || (basePath && location.pathname === basePath);
+    if (href.includes('#') && isOnLanding) {
       e.preventDefault();
-      const id = href.replace('/#', '');
+      const id = href.split('#')[1];
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Update url without reload
       window.history.pushState(null, '', href);
     }
   };
@@ -107,9 +111,9 @@ export default function Navbar() {
             </ul>
 
             <div className="navbar-actions">
-              <Link
-                to="/#contacto"
-                onClick={(e) => handleLinkClick(e, '/#contacto')}
+            <Link
+                to={ctaHref}
+                onClick={(e) => handleLinkClick(e, ctaHref)}
                 className="btn btn-primary navbar-cta"
               >
                 Cotízame
@@ -173,8 +177,8 @@ export default function Navbar() {
             ))}
 
             <Link
-              to="/#contacto"
-              onClick={(e) => handleLinkClick(e, '/#contacto')}
+              to={ctaHref}
+              onClick={(e) => handleLinkClick(e, ctaHref)}
               className="btn btn-primary btn-lg"
               style={{ marginTop: 16 }}
             >
