@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { loginArkoAdmin } from '../services/api';
+import { loginArkoAdmin, loginLandingSite } from '../services/api';
 
 export const AuthContext = createContext(null);
 
@@ -17,9 +17,11 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  const login = async (email, password) => {
+  const login = async (email, password, isLandingSite = false) => {
     try {
-      const response = await loginArkoAdmin(email, password);
+      const response = isLandingSite 
+        ? await loginLandingSite(email, password)
+        : await loginArkoAdmin(email, password);
       if (response.access_token) {
         setToken(response.access_token);
         return { success: true };

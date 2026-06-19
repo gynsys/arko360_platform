@@ -69,3 +69,31 @@ export async function loginArkoAdmin(email, password) {
 
   return response.json();
 }
+
+/**
+ * Login for Landing Sites (Cloned Templates)
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<Object>}
+ */
+export async function loginLandingSite(email, password) {
+  const formData = new URLSearchParams();
+  formData.append('username', email);
+  formData.append('password', password);
+
+  const response = await fetch(`${API_URL}/arko/landing_sites/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || 'Credenciales incorrectas');
+  }
+
+  return response.json();
+}

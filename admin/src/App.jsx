@@ -74,6 +74,22 @@ function App() {
               <Route path="blog" element={<BlogManagementPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
+
+            {/* Rutas para sitios clonados usando el slug */}
+            <Route path="/:slug/login" element={<Login />} />
+            <Route path="/:slug" element={<Navigate to="admin" replace />} />
+            <Route 
+              path="/:slug/admin/*" 
+              element={
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="blog" replace />} />
+              <Route path="blog" element={<BlogManagementPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </SiteConfigContext.Provider>

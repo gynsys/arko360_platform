@@ -10,6 +10,7 @@ export default function LandingSitesList() {
   // New Landing Site Form State
   const [showForm, setShowForm] = useState(false);
   const [siteToDelete, setSiteToDelete] = useState(null);
+  const [logoFile, setLogoFile] = useState(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -18,7 +19,8 @@ export default function LandingSitesList() {
     especialidad: '',
     slug: '',
     custom_domain: '',
-    template_name: 'construccion'
+    template_name: 'construccion',
+    ramo: ''
   });
 
   useEffect(() => {
@@ -58,6 +60,27 @@ export default function LandingSitesList() {
       if (!payload.custom_domain) {
         delete payload.custom_domain;
       }
+      if (!payload.ramo) {
+        delete payload.ramo;
+      }
+
+      // Upload logo if selected
+      if (logoFile) {
+        const logoData = new FormData();
+        logoData.append('file', logoFile);
+        
+        const uploadRes = await fetch(`${API_URL}/arko/admin/upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: logoData
+        });
+        
+        if (!uploadRes.ok) throw new Error('Error al subir el logo');
+        const uploadJson = await uploadRes.json();
+        payload.logo_url = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api/v1', '') + uploadJson.image_url : `https://api.arko360.net${uploadJson.image_url}`;
+      }
       
       const response = await fetch(`${API_URL}/arko/landing_sites/`, {
         method: 'POST',
@@ -75,8 +98,9 @@ export default function LandingSitesList() {
       
       await fetchSites();
       setShowForm(false);
+      setLogoFile(null);
       setFormData({
-        email: '', password: '', nombre_cliente: '', telefono: '', especialidad: '', slug: '', custom_domain: '', template_name: 'construccion'
+        email: '', password: '', nombre_cliente: '', telefono: '', especialidad: '', slug: '', custom_domain: '', template_name: 'construccion', ramo: ''
       });
     } catch (err) {
       alert(err.message);
@@ -190,6 +214,28 @@ export default function LandingSitesList() {
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   placeholder="Ej. Dr. Juan Pérez"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Logo del Sitio (Opcional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setLogoFile(e.target.files[0])}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ramo (Badge) (Opcional)</label>
+                <input
+                  type="text"
+                  name="ramo"
+                  value={formData.ramo}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  placeholder="Ej. Ingeniería & Arquitectura"
                 />
               </div>
 

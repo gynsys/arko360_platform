@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -11,15 +11,21 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+  const { slug } = useParams();
+  const isLandingSite = !!slug;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    const result = await login(email, password);
+    const result = await login(email, password, isLandingSite);
     if (result.success) {
-      navigate('/admin');
+      if (isLandingSite) {
+        navigate(`/${slug}/admin`);
+      } else {
+        navigate('/admin');
+      }
     } else {
       setError(result.error || 'Ocurrió un error al iniciar sesión');
     }

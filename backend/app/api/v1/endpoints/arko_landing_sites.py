@@ -7,6 +7,8 @@ from app.db.models.landing_site import LandingSite, LandingSiteStatus
 from app.api.v1.endpoints.arko import get_current_arko_admin
 from app.core.logging import logger
 from pydantic import BaseModel, EmailStr
+from fastapi.security import OAuth2PasswordRequestForm
+from app.core.security import verify_password, create_access_token
 
 router = APIRouter()
 
@@ -372,6 +374,8 @@ class LandingSiteCreate(BaseModel):
     slug: str
     custom_domain: str | None = None
     template_name: str = "construccion"
+    logo_url: str | None = None
+    ramo: str | None = None
 
 class LandingSiteUpdate(BaseModel):
     nombre_cliente: str | None = None
@@ -393,6 +397,27 @@ class LandingSiteResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+@router.post("/auth/login")
+def login_landing_site(
+    db: Session = Depends(get_db),
+    form_data: OAuth2PasswordRequestForm = Depends()
+) -> Any:
+    """
+    OAuth2 compatible token login, get an access token for future requests
+    for Landing Site clients.
+    """
+    user = db.query(LandingSite).filter(LandingSite.email == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+    
+    if user.status != LandingSiteStatus.ACTIVE:
+        raise HTTPException(status_code=400, detail="Inactive user")
+
+    access_token = create_access_token(
+        data={"sub": user.email, "type": "landing_client", "slug": user.slug}
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/", response_model=List[LandingSiteResponse])
 def read_landing_sites(
@@ -442,9 +467,23 @@ def create_landing_site(
     
     # Customize config with client-specific information
     customized_config = template_config.copy()
+    
+    # Ensure nested dictionaries exist before modifying them if they don't in the template
+    if "hero" not in customized_config: customized_config["hero"] = {}
+    if "global" not in customized_config: customized_config["global"] = {}
+    
     customized_config["siteName"] = site_in.nombre_cliente
+    
     if site_in.especialidad:
         customized_config["hero"]["titleAccent"] = site_in.especialidad
+        
+    if site_in.ramo:
+        customized_config["hero"]["badge"] = site_in.ramo
+        
+    if site_in.logo_url:
+        customized_config["logoUrl"] = site_in.logo_url
+        customized_config["global"]["logo"] = site_in.logo_url
+        
     if site_in.telefono:
         customized_config["global"]["phone"] = site_in.telefono
     customized_config["global"]["email"] = site_in.email
