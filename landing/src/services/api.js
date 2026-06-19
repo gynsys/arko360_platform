@@ -29,7 +29,25 @@ export async function submitContactForm(data) {
 }
 
 export async function getSiteConfig() {
-  const response = await fetch(`${API_URL}/arko/config`, {
+  // Check if we're viewing a cloned site (based on URL path)
+  const path = window.location.pathname;
+  
+  // If the path is just '/', check if it's a cloned site by looking at the hostname
+  // For cloned sites, the URL would be arko360.net/{slug}
+  const pathParts = path.split('/').filter(part => part.length > 0);
+  
+  // If we have a path part that's not a known route, it might be a site slug
+  const knownRoutes = ['biblio', 'herramientas', 'arko3d'];
+  const potentialSlug = pathParts[0];
+  
+  let endpoint = '/arko/config'; // Default to global config
+  
+  // If we have a potential slug that's not a known route, try to get site-specific config
+  if (potentialSlug && !knownRoutes.includes(potentialSlug)) {
+    endpoint = `/arko/landing_sites/config/${potentialSlug}`;
+  }
+  
+  const response = await fetch(`${API_URL}${endpoint}`, {
     method: 'GET',
     headers: {
       'Accept': 'application/json',
@@ -37,6 +55,18 @@ export async function getSiteConfig() {
   });
 
   if (!response.ok) {
+    // If site-specific config fails, fall back to global config
+    if (endpoint !== '/arko/config') {
+      const fallbackResponse = await fetch(`${API_URL}/arko/config`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      if (fallbackResponse.ok) {
+        return fallbackResponse.json();
+      }
+    }
     return null; // Silent fail, fallback to defaults
   }
   return response.json();

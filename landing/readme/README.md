@@ -210,4 +210,52 @@ Actualmente, las llamadas apuntan a un mock o una ruta API configurada en `api.j
 - **Servidor DigitalOcean:** 167.172.115.154
 
 ---
-*Documento actualizado el 2 de Junio de 2026 - Proyecto arko360_platform independiente.*
+
+## 🗄️ 10. Base de Datos PostgreSQL
+
+### Información de Conexión
+- **Tipo:** PostgreSQL
+- **Puerto:** 5434
+- **Ubicación:** Servidor DigitalOcean (167.172.115.154)
+- **Contenedor Docker:** La base de datos se ejecuta dentro de un contenedor Docker en el servidor
+
+### Ejecutar Migraciones SQL
+
+Para ejecutar scripts SQL en la base de datos de producción, usa el script `ssh_runner.py` desde el proyecto appgynsys:
+
+```powershell
+# 1. Ve a la carpeta de appgynsys
+cd C:\Users\pablo\Documents\appgynsys
+
+# 2. Ejecuta el comando SQL dentro del contenedor de PostgreSQL
+python ssh_runner.py "docker exec -i arko360_platform-db-1 psql -U postgres -d arko360_db < /ruta/al/script.sql"
+```
+
+**Ejemplo práctico para ejecutar la migración de site_config:**
+
+```powershell
+# Primero, copia el script SQL al servidor
+python ssh_runner.py "cat > /tmp/add_site_config.sql" < backend/app/db/migrations/add_site_config_to_landing_sites.sql
+
+# Luego ejecuta el script en la base de datos
+python ssh_runner.py "docker exec -i arko360_platform-db-1 psql -U postgres -d arko360_db < /tmp/add_site_config.sql"
+```
+
+### Acceso Directo a la Base de Datos
+
+Si necesitas acceso interactivo a la base de datos:
+
+```powershell
+# Acceso al shell de PostgreSQL dentro del contenedor
+python ssh_runner.py "docker exec -it arko360_platform-db-1 psql -U postgres -d arko360_db"
+```
+
+### Tablas Principales
+
+- **landing_sites:** Sitios clonados desde plantillas (con configuración site_config JSON)
+- **arko_admins:** Administradores del sistema Arko 360
+- **arko_posts:** Artículos de blog
+- **arko_projects:** Proyectos de portafolio
+
+---
+*Documento actualizado el 18 de Junio de 2026 - Proyecto arko360_platform independiente.*

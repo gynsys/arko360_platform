@@ -2,7 +2,7 @@
 LandingSite model - represents a cloned template/website sold to a client.
 This is separate from the SaaS Tenant model.
 """
-from sqlalchemy import Column, Integer, String, Enum, DateTime
+from sqlalchemy import Column, Integer, String, Enum, DateTime, JSON
 from sqlalchemy.sql import func
 from app.db.base import Base
 import enum
@@ -31,6 +31,9 @@ class LandingSite(Base):
     slug = Column(String, unique=True, index=True, nullable=False)
     custom_domain = Column(String, unique=True, index=True, nullable=True)
     template_name = Column(String, nullable=False, default="construccion")
+    
+    # Site configuration (sections, content, etc.)
+    site_config = Column(JSON, nullable=True)
     
     # Status
     status = Column(Enum(LandingSiteStatus), default=LandingSiteStatus.ACTIVE)
