@@ -781,12 +781,49 @@ export const useStructureStore = create((set, get) => ({
         maxShellId++;
         const newId = `S${maxShellId}`;
         const clonedNodes = shell.nodes.map(nid => nodeIdMap[nid] || nid);
-        
-        newShells.push({
+        const clonedShell = {
           ...shell,
           id: newId,
           nodes: clonedNodes
-        });
+        };
+        
+        if (shell.mesh) {
+          const meshNodeIdMap = {};
+          const clonedMeshNodes = shell.mesh.nodes.map(n => {
+            const newMeshNodeId = 'M_N_' + Math.random().toString(36).substr(2, 9);
+            meshNodeIdMap[n.id] = newMeshNodeId;
+            return {
+              ...n,
+              id: newMeshNodeId,
+              x: round(n.x + (dx * c)),
+              y: round(n.y + (dy * c)),
+              z: round(n.z + (dz * c))
+            };
+          });
+
+          const clonedMeshElements = shell.mesh.elements.map(e => {
+            const newMeshElemId = 'M_E_' + Math.random().toString(36).substr(2, 9);
+            return {
+              ...e,
+              id: newMeshElemId,
+              nodes: e.nodes.map(nid => meshNodeIdMap[nid] || nid),
+              center: e.center ? {
+                x: round(e.center.x + (dx * c)),
+                y: round(e.center.y + (dy * c)),
+                z: round(e.center.z + (dz * c))
+              } : undefined
+            };
+          });
+
+          clonedShell.mesh = {
+            nodes: clonedMeshNodes,
+            elements: clonedMeshElements
+          };
+        } else {
+          delete clonedShell.mesh;
+        }
+        
+        newShells.push(clonedShell);
 
         // Clonar Aberturas asociadas a esta losa
         const shellOpenings = openings.filter(o => o.hostSlabId === shell.id);

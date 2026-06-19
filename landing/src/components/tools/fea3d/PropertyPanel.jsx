@@ -148,7 +148,8 @@ export function PropertyPanel() {
     deleteNode, deleteElement, deleteShell, addOpening, updateOpening, 
     removeOpening, generateMeshForShell,
     materials, sections, updateMaterial, updateSection, updateElement,
-    replicateColumnProperties, replicateBeamProperties, addSection
+    replicateColumnProperties, replicateBeamProperties, addSection,
+    setSelectedIds
   } = useStructureStore();
   const units = getUnitLabels(metadata?.units);
   const loadFactor = getLoadConversionFactor(metadata?.units);
@@ -163,26 +164,106 @@ export function PropertyPanel() {
     );
   }
 
-  if (selectedIds.length > 1) {
+  const selectedShells = shells.filter(s => selectedIds.includes(s.id));
+  const isMultiShell = selectedIds.length > 1 && selectedShells.length === selectedIds.length;
+
+  if (selectedIds.length > 1 && !isMultiShell) {
+    const numNodes = selectedIds.filter(id => id.startsWith('N') || nodes.some(n => n.id === id)).length;
+    const numElems = selectedIds.filter(id => id.startsWith('E') || elements.some(e => e.id === id)).length;
+    const numShells = selectedIds.filter(id => id.startsWith('S') || shells.some(s => s.id === id)).length;
+
+    const handleFilter = (type) => {
+      let filtered = [];
+      if (type === 'nodes') filtered = selectedIds.filter(id => id.startsWith('N') || nodes.some(n => n.id === id));
+      if (type === 'elements') filtered = selectedIds.filter(id => id.startsWith('E') || elements.some(e => e.id === id));
+      if (type === 'shells') filtered = selectedIds.filter(id => id.startsWith('S') || shells.some(s => s.id === id));
+      setSelectedIds(filtered);
+    };
+
     return (
       <div className="bg-slate-900 h-full p-4 text-white overflow-y-auto">
         <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
           <h2 className="text-lg font-bold">Selección Múltiple</h2>
         </div>
-        <div className="p-8 text-center text-slate-400 bg-slate-800/50 rounded-xl border border-slate-700 border-dashed">
+        <div className="p-6 text-center text-slate-400 bg-slate-800/50 rounded-xl border border-slate-700 border-dashed mb-6">
           <Layers className="mx-auto mb-3 text-blue-500" size={32} />
           <p className="text-2xl font-bold text-white mb-1">{selectedIds.length}</p>
           <p className="text-xs uppercase font-bold tracking-widest">Elementos Seleccionados</p>
-          <p className="text-xs mt-4 opacity-60">Usa el menú "Assign" para aplicar propiedades a la selección.</p>
+          <p className="text-xs mt-4 opacity-60">Selección mixta. Usa el filtro para refinarla.</p>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Filtrar Selección (Dejar Solo)</h3>
+          
+          <div className="grid grid-cols-1 gap-2">
+            <button 
+              onClick={() => handleFilter('nodes')}
+              disabled={numNodes === 0}
+              className={`flex justify-between items-center px-4 py-3 rounded-lg border text-sm font-bold transition-all ${
+                numNodes > 0 
+                  ? 'bg-blue-900/40 border-blue-500/50 text-blue-300 hover:bg-blue-600 hover:text-white' 
+                  : 'bg-slate-800 border-slate-700 text-slate-600 cursor-not-allowed'
+              }`}
+            >
+              <span>Nudos</span>
+              <span className="bg-slate-900/80 px-2 py-0.5 rounded text-xs">{numNodes}</span>
+            </button>
+            
+            <button 
+              onClick={() => handleFilter('elements')}
+              disabled={numElems === 0}
+              className={`flex justify-between items-center px-4 py-3 rounded-lg border text-sm font-bold transition-all ${
+                numElems > 0 
+                  ? 'bg-emerald-900/40 border-emerald-500/50 text-emerald-300 hover:bg-emerald-600 hover:text-white' 
+                  : 'bg-slate-800 border-slate-700 text-slate-600 cursor-not-allowed'
+              }`}
+            >
+              <span>Vigas y Columnas</span>
+              <span className="bg-slate-900/80 px-2 py-0.5 rounded text-xs">{numElems}</span>
+            </button>
+
+            <button 
+              onClick={() => handleFilter('shells')}
+              disabled={numShells === 0}
+              className={`flex justify-between items-center px-4 py-3 rounded-lg border text-sm font-bold transition-all ${
+                numShells > 0 
+                  ? 'bg-indigo-900/40 border-indigo-500/50 text-indigo-300 hover:bg-indigo-600 hover:text-white' 
+                  : 'bg-slate-800 border-slate-700 text-slate-600 cursor-not-allowed'
+              }`}
+            >
+              <span>Losas</span>
+              <span className="bg-slate-900/80 px-2 py-0.5 rounded text-xs">{numShells}</span>
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   const selectedId = selectedIds[0];
-  const node = nodes.find(n => n.id === selectedId);
-  const element = elements.find(e => e.id === selectedId);
-  const shell = shells.find(s => s.id === selectedId);
+  const node = !isMultiShell ? nodes.find(n => n.id === selectedId) : null;
+  const element = !isMultiShell ? elements.find(e => e.id === selectedId) : null;
+  const shell = isMultiShell ? selectedShells[0] : shells.find(s => s.id === selectedId);
+
+  const handleUpdateShell = (updates) => {
+    if (isMultiShell) {
+      selectedIds.forEach(id => updateShell(id, updates));
+    } else if (shell) {
+      updateShell(shell.id, updates);
+    }
+  };
+
+  const handleGenerateMesh = () => {
+    if (isMultiShell) {
+      selectedIds.forEach(id => generateMeshForShell(id));
+    } else if (shell) {
+      generateMeshForShell(shell.id);
+    }
+  };
+
+  const handleClearMesh = () => {
+    handleUpdateShell({ mesh: null });
+  };
 
   const n1_el = element ? nodes.find(n => n.id === element.nodes[0]) : null;
   const n2_el = element ? nodes.find(n => n.id === element.nodes[1]) : null;
@@ -710,8 +791,12 @@ export function PropertyPanel() {
       {shell && (
         <div className="space-y-6">
           <div className="bg-indigo-600/10 border border-indigo-500/20 p-2.5 rounded-lg flex items-center justify-between">
-            <span className="text-indigo-400 text-xs font-bold uppercase tracking-wider">Losa (Shell)</span>
-            <span className="text-sm font-mono text-indigo-200">{shell.id}</span>
+            <span className="text-indigo-400 text-xs font-bold uppercase tracking-wider">
+              {isMultiShell ? 'Múltiples Losas' : 'Losa (Shell)'}
+            </span>
+            <span className="text-sm font-mono text-indigo-200">
+              {isMultiShell ? `${selectedIds.length} seleccionadas` : shell.id}
+            </span>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -722,7 +807,7 @@ export function PropertyPanel() {
                 step="any"
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 value={shell.thickness}
-                onChange={(e) => updateShell(shell.id, { thickness: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => handleUpdateShell({ thickness: parseFloat(e.target.value) || 0 })}
               />
             </div>
             <div>
@@ -735,7 +820,7 @@ export function PropertyPanel() {
                   if (val !== 'personalizado') {
                     const usage = STANDARD_USAGES.find(u => u.id === val);
                     if (usage) {
-                      updateShell(shell.id, {
+                      handleUpdateShell({
                         loads: {
                           ...shell.loads,
                           CM: parseFloat((usage.cm * loadFactor).toFixed(4)),
@@ -762,7 +847,7 @@ export function PropertyPanel() {
                 step="any"
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 value={shell.loads.CM}
-                onChange={(e) => updateShell(shell.id, { loads: { ...shell.loads, CM: parseFloat(e.target.value) || 0 } })}
+                onChange={(e) => handleUpdateShell({ loads: { ...shell.loads, CM: parseFloat(e.target.value) || 0 } })}
               />
             </div>
             <div>
@@ -772,7 +857,7 @@ export function PropertyPanel() {
                 step="any"
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 value={shell.loads.CV}
-                onChange={(e) => updateShell(shell.id, { loads: { ...shell.loads, CV: parseFloat(e.target.value) || 0 } })}
+                onChange={(e) => handleUpdateShell({ loads: { ...shell.loads, CV: parseFloat(e.target.value) || 0 } })}
               />
             </div>
           </div>
@@ -927,19 +1012,31 @@ export function PropertyPanel() {
                   min="0.1"
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm"
                   value={shell.meshSize || 1.0}
-                  onChange={(e) => updateShell(shell.id, { meshSize: parseFloat(e.target.value) || 1.0 })}
+                  onChange={(e) => handleUpdateShell({ meshSize: parseFloat(e.target.value) || 1.0 })}
                 />
               </div>
               <button 
-                onClick={() => generateMeshForShell(shell.id)}
+                onClick={handleGenerateMesh}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
               >
-                Generar Malla
+                Generar
+              </button>
+              <button 
+                onClick={handleClearMesh}
+                className="bg-red-900/60 hover:bg-red-600 text-red-300 hover:text-white px-3 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
+                title="Eliminar Malla"
+              >
+                Limpiar
               </button>
             </div>
-            {shell.mesh && (
+            {!isMultiShell && shell.mesh && (
               <p className="text-[10px] text-emerald-400 mt-2">
                 Malla generada: {shell.mesh.elements.length} elementos, {shell.mesh.nodes.length} nudos.
+              </p>
+            )}
+            {isMultiShell && (
+              <p className="text-[10px] text-emerald-400 mt-2">
+                Presiona "Generar" para mallar todas las losas seleccionadas.
               </p>
             )}
           </div>
