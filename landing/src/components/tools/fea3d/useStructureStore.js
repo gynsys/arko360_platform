@@ -806,12 +806,7 @@ export const useStructureStore = create((set, get) => ({
             return {
               ...e,
               id: newMeshElemId,
-              nodes: e.nodes.map(nid => meshNodeIdMap[nid] || nid),
-              center: e.center ? {
-                x: round(e.center.x + (dx * c)),
-                y: round(e.center.y + (dy * c)),
-                z: round(e.center.z + (dz * c))
-              } : undefined
+              nodeIds: e.nodeIds.map(nid => meshNodeIdMap[nid] || nid)
             };
           });
 
