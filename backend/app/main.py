@@ -4,6 +4,7 @@ from app.api.v1.api import api_router
 from app.db.arko_base import ArkoBase, arko_engine
 from app.db.base import Base, engine
 from app.core.config import settings
+from fastapi.staticfiles import StaticFiles
 import logging
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,12 @@ if settings.CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix="/api/v1")
+
+import os
+upload_dir = settings.UPLOAD_DIR
+if not os.path.exists(upload_dir):
+    os.makedirs(upload_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
 @app.get("/api/v1/arko/health")
 def health_check():
