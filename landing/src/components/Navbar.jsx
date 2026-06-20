@@ -120,7 +120,7 @@ export default function Navbar() {
               </Link>
 
               <a
-                href="https://admin.arko360.net/login"
+                href={siteConfig?.slug ? `https://admin.arko360.net/${siteConfig.slug}` : "https://admin.arko360.net/login"}
                 target="_blank"
                 rel="noreferrer"
                 className="navbar-admin-icon"
@@ -186,7 +186,7 @@ export default function Navbar() {
             </Link>
 
             <a
-              href="https://admin.arko360.net/login"
+              href={siteConfig?.slug ? `https://admin.arko360.net/${siteConfig.slug}` : "https://admin.arko360.net/login"}
               target="_blank"
               rel="noreferrer"
               className="btn btn-outline btn-lg"

@@ -56,3 +56,23 @@ El desarrollo del motor ARKO3D se rige por un marco de planificación estructura
   - Matemáticas de subdivisión de parches y funciones de forma bilineales interpoladas.
   - *Estado: Implementado.*
 
+## Base de Datos (PostgreSQL)
+
+La plataforma utiliza una base de datos PostgreSQL alojada y gestionada dentro de contenedores de Docker.
+
+### Estructura de Tablas y Esquemas
+La base de datos se denomina `arko360` y se particiona conceptualmente en varias áreas:
+- **Gynsys / Plataforma Médica (Heredado):** Tablas originales de pacientes, citas y doctores (SaaS).
+- **Arko Admin (`arko_admins`):** Usuarios superadministradores que pueden acceder al CMS generador de plantillas en `superadmin.arko360.net`.
+- **Landing Sites (`landing_sites`):** Entidades de los clientes a los cuales se les generó una página web independiente. Contiene el "slug" (ej. `/mi-empresa`), las configuraciones de diseño (`site_config` almacenado como JSONB) y las credenciales individuales de los clientes.
+
+### Tecnologías Utilizadas
+- **ORM:** `SQLAlchemy` para mapeo objeto-relacional desde Python (FastAPI).
+- **Tipos de datos avanzados:** Uso intensivo de `JSONB` para almacenar las configuraciones flexibles (colores, imágenes, textos del header, testimonios) que cada cliente configura desde su panel y que la landing page dibuja de forma dinámica.
+
+### Migraciones y Conexiones
+Para conectarse y gestionar la base de datos en producción:
+- El contenedor se llama `arko360_platform-db-1`.
+- Los datos son persistentes a través del volumen `arko_db_data`.
+- Ejecutar queries manuales en producción: `docker exec -it arko360_platform-db-1 psql -U arko_user -d arko360`.
+

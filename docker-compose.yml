@@ -25,6 +25,7 @@ services:
       - SECRET_KEY=changethisinproduction
     volumes:
       - ./backend/app:/app/app
+      - ./uploads:/app/uploads
     depends_on:
       - db
 
