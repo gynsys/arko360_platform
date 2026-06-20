@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet, Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 
 const baseNavigation = [
   { name: 'Gestión Blog', href: '/admin/blog', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
@@ -10,15 +10,20 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  const { slug } = useParams()
+  
+  // Extraer el slug de la URL actual de forma robusta
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  // Si la ruta es /slug/admin/..., pathParts[0] será 'slug', pathParts[1] será 'admin'
+  const isTenantRoute = pathParts.length >= 2 && pathParts[1] === 'admin' && pathParts[0] !== 'admin';
+  const urlSlug = isTenantRoute ? pathParts[0] : null;
 
   const navigation = baseNavigation.map(item => ({
     ...item,
-    href: slug && slug !== 'admin' ? `/${slug}${item.href}` : item.href
+    href: urlSlug ? `/${urlSlug}${item.href}` : item.href
   }))
 
   const handleLogout = () => {
-    navigate('/login')
+    navigate(urlSlug ? `/${urlSlug}/login` : '/login')
   }
 
   // Obtener el color primario de las variables CSS o usar el valor por defecto
