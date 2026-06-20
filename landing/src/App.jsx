@@ -109,6 +109,15 @@ function SlugLandingPage() {
 
   const basePath = `/${slug}`;
 
+  if (!config) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a' }}>
+        <div style={{ width: '40px', height: '40px', border: '4px solid rgba(255,255,255,0.1)', borderLeftColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   return (
     <SiteConfigContext.Provider value={config}>
       <BasePathContext.Provider value={basePath}>
