@@ -553,7 +553,10 @@ def get_landing_site_config(
 # --- Dependencia Landing Client ---
 oauth2_scheme_landing = OAuth2PasswordBearer(tokenUrl="/api/v1/arko/landing_sites/auth/login")
 
-def get_current_landing_client(token: str = Depends(oauth2_scheme_landing)):
+def get_current_landing_client(
+    token: str = Depends(oauth2_scheme_landing),
+    db: Session = Depends(get_db)
+):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
@@ -564,7 +567,6 @@ def get_current_landing_client(token: str = Depends(oauth2_scheme_landing)):
     except Exception:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
     
-    db = next(get_db())
     user = db.query(LandingSite).filter(LandingSite.email == email, LandingSite.slug == slug).first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
