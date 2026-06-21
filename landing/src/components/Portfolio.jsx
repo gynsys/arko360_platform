@@ -18,6 +18,8 @@ export default function Portfolio() {
 
   const dynamicProjects = config?.portfolioProjects?.length > 0 ? config.portfolioProjects : portfolio.projects;
 
+  const uniqueCategories = ['Todos', ...new Set(dynamicProjects.map(p => p.category).filter(Boolean))];
+
   const filteredProjects = filter === 'Todos'
     ? dynamicProjects
     : dynamicProjects.filter(p => p.category === filter);
@@ -38,7 +40,7 @@ export default function Portfolio() {
           </p>
 
           <div className="portfolio-filters" style={{ justifyContent: 'center' }}>
-            {portfolio.categories.map(cat => (
+            {uniqueCategories.map(cat => (
               <button
                 key={cat}
                 className={`filter-btn ${filter === cat ? 'active' : ''}`}
