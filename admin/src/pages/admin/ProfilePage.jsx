@@ -5,8 +5,9 @@ import { AuthContext } from '../../context/AuthContext';
 import { 
   FiUpload, FiUser, FiSettings, FiFileText, FiGrid, FiSave, 
   FiPlus, FiTrash2, FiEdit, FiCheck, FiX, FiChevronDown, FiChevronUp, 
-  FiLink, FiPhone, FiMail, FiMapPin, FiMessageSquare, FiStar, FiSliders 
+  FiLink, FiPhone, FiMail, FiMapPin, FiMessageSquare, FiStar, FiSliders, FiAlertCircle 
 } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 
 const DEFAULT_PORTFOLIO_PROJECTS = [
   {
@@ -118,7 +119,6 @@ export default function ProfilePage() {
 
   const handleSaveConfig = async () => {
     setIsSaving(true);
-    setSaveMessage('');
     
     try {
       const token = localStorage.getItem('arko_admin_token');
@@ -147,7 +147,7 @@ export default function ProfilePage() {
       }
 
       setSiteConfig(result);
-      setSaveMessage('Configuración guardada exitosamente');
+      toast.success('Configuración guardada exitosamente');
         
         // Aplicar el color dinámicamente si cambió
         if (siteConfig.branding?.primaryColor) {
@@ -156,10 +156,9 @@ export default function ProfilePage() {
         }
     } catch (error) {
       console.error('Error saving config:', error);
-      setSaveMessage('Error al guardar la configuración');
+      toast.error('Error al guardar la configuración');
     } finally {
       setIsSaving(false);
-      setTimeout(() => setSaveMessage(''), 4000);
     }
   };
 
@@ -213,11 +212,11 @@ export default function ProfilePage() {
         const data = await response.json();
         updateConfigValue(path, data.image_url);
       } else {
-        alert('Error al subir la imagen');
+        toast.error('Error al subir la imagen');
       }
     } catch (err) {
       console.error('Error uploading image:', err);
-      alert('Error al subir la imagen');
+      toast.error('Error al subir la imagen');
     }
   };
 
@@ -281,9 +280,7 @@ export default function ProfilePage() {
   };
 
   // Eliminar elemento de una lista
-  const deleteCrudItem = (type, index) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este elemento?')) return;
-
+  const performDelete = (type, index) => {
     if (type === 'service') {
       const currentList = [...(siteConfig.services?.list || [])];
       currentList.splice(index, 1);
@@ -301,6 +298,34 @@ export default function ProfilePage() {
       currentList.splice(index, 1);
       updateConfigValue('portfolioProjects', currentList);
     }
+  };
+
+  const deleteCrudItem = (type, index) => {
+    toast((t) => (
+      <div className="flex flex-col gap-3 min-w-[250px]">
+        <div className="flex items-center gap-2 text-gray-900 font-medium">
+          <FiAlertCircle className="text-amber-500 flex-shrink-0" size={20} />
+          <span>¿Estás seguro de que deseas eliminar este elemento?</span>
+        </div>
+        <div className="flex gap-2 justify-end mt-2">
+          <button 
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1.5 text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={() => {
+              performDelete(type, index);
+              toast.dismiss(t.id);
+            }}
+            className="px-3 py-1.5 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+          >
+            Aceptar
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity, position: 'top-center' });
   };
 
   if (!siteConfig) {
@@ -334,11 +359,6 @@ export default function ProfilePage() {
         
         {/* Guardar cambios flotante/fijo en el header */}
         <div className="flex items-center gap-3">
-          {saveMessage && (
-            <span className={`text-sm py-1 px-3 rounded-full ${saveMessage.includes('exitosamente') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-              {saveMessage}
-            </span>
-          )}
           <button
             onClick={handleSaveConfig}
             disabled={isSaving}

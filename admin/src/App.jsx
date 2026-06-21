@@ -8,6 +8,7 @@ import AdminLayout from './components/layout/AdminLayout.jsx';
 import BlogManagementPage from './pages/admin/BlogManagementPage.jsx';
 import ProfilePage from './pages/admin/ProfilePage.jsx';
 import { API_URL } from './services/api';
+import { Toaster } from 'react-hot-toast';
 
 export const SiteConfigContext = React.createContext(null);
 
@@ -57,6 +58,7 @@ function App() {
 
   return (
     <AuthProvider>
+      <Toaster position="top-center" />
       <SiteConfigContext.Provider value={{ config, setConfig, fetchSiteConfig }}>
         <BrowserRouter>
           <Routes>
