@@ -84,6 +84,11 @@ export default function Navbar() {
                 alt={siteConfig?.siteName || "Ingeniería Arko 360"}
                 className={`navbar-logo ${(!scrolled && location.pathname === '/') ? 'navbar-logo-white' : ''}`}
               />
+              {siteConfig?.siteName && (
+                <span className={`font-bold text-xl ${(!scrolled && location.pathname === '/') ? 'text-white' : 'text-slate-800'}`}>
+                  {siteConfig.siteName}
+                </span>
+              )}
             </Link>
 
             <ul className="navbar-links">
