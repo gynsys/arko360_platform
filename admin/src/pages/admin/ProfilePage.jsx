@@ -91,9 +91,6 @@ export default function ProfilePage() {
           document.documentElement.style.setProperty('--primary-color', siteConfig.branding.primaryColor);
           localStorage.setItem('arko_primary_color', siteConfig.branding.primaryColor);
         }
-      } else {
-        setSaveMessage('Error al guardar la configuración');
-      }
     } catch (error) {
       console.error('Error saving config:', error);
       setSaveMessage('Error al guardar la configuración');
