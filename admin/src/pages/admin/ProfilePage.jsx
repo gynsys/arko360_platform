@@ -173,6 +173,9 @@ export default function ProfilePage() {
     } else if (type === 'testimonial') {
       const currentList = siteConfig.testimonials?.list || [];
       setCrudData(index >= 0 ? { ...currentList[index] } : { id: `tst-${Date.now()}`, text: '', name: '', role: '', avatar: '', stars: 5 });
+    } else if (type === 'portfolio') {
+      const currentList = siteConfig.portfolioProjects || [];
+      setCrudData(index >= 0 ? { ...currentList[index] } : { id: `prj-${Date.now()}`, title: '', category: 'Residencial', image: '', description: '', duration: '', area: '', year: '' });
     }
   };
 
@@ -202,6 +205,14 @@ export default function ProfilePage() {
         currentList.push(crudData);
       }
       updateConfigValue('testimonials.list', currentList);
+    } else if (crudType === 'portfolio') {
+      const currentList = [...(siteConfig.portfolioProjects || [])];
+      if (crudIndex >= 0) {
+        currentList[crudIndex] = crudData;
+      } else {
+        currentList.push(crudData);
+      }
+      updateConfigValue('portfolioProjects', currentList);
     }
     setShowCrudModal(false);
   };
@@ -222,6 +233,10 @@ export default function ProfilePage() {
       const currentList = [...(siteConfig.testimonials?.list || [])];
       currentList.splice(index, 1);
       updateConfigValue('testimonials.list', currentList);
+    } else if (type === 'portfolio') {
+      const currentList = [...(siteConfig.portfolioProjects || [])];
+      currentList.splice(index, 1);
+      updateConfigValue('portfolioProjects', currentList);
     }
   };
 
@@ -506,7 +521,8 @@ export default function ProfilePage() {
                 { id: 'aboutUs', label: '2. Nosotros' },
                 { id: 'services', label: '3. Servicios' },
                 { id: 'process', label: '4. Metodología' },
-                { id: 'testimonials', label: '5. Testimonios' }
+                { id: 'testimonials', label: '5. Testimonios' },
+                { id: 'portfolio', label: '6. Portafolio' }
               ].map((sec) => (
                 <button
                   key={sec.id}
@@ -895,6 +911,86 @@ export default function ProfilePage() {
                       ))}
                     </div>
                   </div>
+              )}
+
+              {/* PORTAFOLIO */}
+              {activeContentSection === 'portfolio' && (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-gray-900 border-b pb-2 mb-4">Sección Portafolio</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tag Superior</label>
+                        <input
+                          type="text"
+                          value={siteConfig.portfolio?.tag || ''}
+                          onChange={(e) => updateConfigValue('portfolio.tag', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Título de la Sección</label>
+                        <input
+                          type="text"
+                          value={siteConfig.portfolio?.title || ''}
+                          onChange={(e) => updateConfigValue('portfolio.title', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo descriptivo</label>
+                      <input
+                        type="text"
+                        value={siteConfig.portfolio?.subtitle || ''}
+                        onChange={(e) => updateConfigValue('portfolio.subtitle', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Listado de Proyectos */}
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold text-gray-800">Proyectos Activos ({(siteConfig.portfolioProjects || []).length})</h5>
+                      <button
+                        onClick={() => openCrudModal('portfolio')}
+                        className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 py-1.5 px-3 rounded-lg font-bold hover:bg-indigo-100 transition-colors"
+                      >
+                        <FiPlus /> Añadir Proyecto
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      {(siteConfig.portfolioProjects || []).map((prj, index) => (
+                        <div key={prj.id || index} className="flex items-center justify-between p-3 border border-gray-150 rounded-xl hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <img src={prj.image || prj.imageUrl || 'https://via.placeholder.com/150'} alt="Project" className="w-12 h-12 object-cover rounded-md border" />
+                            <div>
+                              <div className="font-bold text-gray-800 text-sm">{prj.title}</div>
+                              <div className="text-xs text-gray-500 line-clamp-1">{prj.category} | {prj.year}</div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openCrudModal('portfolio', index)}
+                              className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded"
+                              title="Editar"
+                            >
+                              <FiEdit size={16} />
+                            </button>
+                            <button
+                              onClick={() => deleteCrudItem('portfolio', index)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                              title="Eliminar"
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1106,7 +1202,10 @@ export default function ProfilePage() {
                             formData.append('file', file);
                             try {
                               const token = localStorage.getItem('arko_admin_token');
-                              const response = await fetch(`${API_URL}/arko/admin/upload`, {
+                              const uploadEndpoint = urlSlug 
+                                ? `${API_URL}/arko/landing_sites/me/upload`
+                                : `${API_URL}/arko/admin/upload`;
+                              const response = await fetch(uploadEndpoint, {
                                 method: 'POST',
                                 headers: { 'Authorization': `Bearer ${token}` },
                                 body: formData
@@ -1126,6 +1225,120 @@ export default function ProfilePage() {
                           className="hidden"
                         />
                       </label>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Para Portafolio */}
+              {crudType === 'portfolio' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Título del Proyecto</label>
+                      <input
+                        type="text"
+                        value={crudData.title || ''}
+                        onChange={(e) => setCrudData({ ...crudData, title: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Edificio Residencial Las Palmas"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                      <select
+                        value={crudData.category || 'Residencial'}
+                        onChange={(e) => setCrudData({ ...crudData, category: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="Residencial">Residencial</option>
+                        <option value="Comercial">Comercial</option>
+                        <option value="Estructural">Estructural</option>
+                        <option value="Industrial">Industrial</option>
+                        <option value="Remodelación">Remodelación</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Año</label>
+                      <input
+                        type="text"
+                        value={crudData.year || ''}
+                        onChange={(e) => setCrudData({ ...crudData, year: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg outline-none"
+                        placeholder="2024"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Área</label>
+                      <input
+                        type="text"
+                        value={crudData.area || ''}
+                        onChange={(e) => setCrudData({ ...crudData, area: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg outline-none"
+                        placeholder="350 m²"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Duración</label>
+                      <input
+                        type="text"
+                        value={crudData.duration || ''}
+                        onChange={(e) => setCrudData({ ...crudData, duration: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg outline-none"
+                        placeholder="6 meses"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                      <textarea
+                        rows={3}
+                        value={crudData.description || ''}
+                        onChange={(e) => setCrudData({ ...crudData, description: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Breve descripción del proyecto..."
+                      />
+                    </div>
+                    {/* Imagen de Portafolio */}
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Imagen del Proyecto</label>
+                      <div className="flex gap-4 items-center">
+                        <img src={crudData.image || crudData.imageUrl || 'https://via.placeholder.com/150'} alt="Project" className="w-20 h-14 object-cover rounded border" />
+                        <label className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-250 transition-colors text-xs font-bold cursor-pointer border">
+                          Subir Imagen
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files[0];
+                              if (!file) return;
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              try {
+                                const token = localStorage.getItem('arko_admin_token');
+                                const uploadEndpoint = urlSlug 
+                                  ? `${API_URL}/arko/landing_sites/me/upload`
+                                  : `${API_URL}/arko/admin/upload`;
+                                const response = await fetch(uploadEndpoint, {
+                                  method: 'POST',
+                                  headers: { 'Authorization': `Bearer ${token}` },
+                                  body: formData
+                                });
+                                if (response.status === 401) {
+                                  logout();
+                                  return;
+                                }
+                                if (response.ok) {
+                                  const res = await response.json();
+                                  setCrudData({ ...crudData, image: res.image_url, imageUrl: res.image_url });
+                                }
+                              } catch (err) {
+                                console.error(err);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </>
