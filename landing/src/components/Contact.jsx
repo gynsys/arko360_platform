@@ -14,6 +14,18 @@ export default function Contact() {
 
   const { register, handleSubmit, errors, status, errorMessage, resetForm, isLoading, isSuccess, isError } = useContactForm();
 
+  const titleText = config?.contact?.title || '¿Listo para construir tu próximo proyecto?';
+  const subtitleText = config?.contact?.subtitle || 'Escríbenos y nuestro equipo de ingenieros se pondrá en contacto contigo a la brevedad posible.';
+  
+  // Try to split title to keep the blue accent on the last word(s)
+  const renderTitle = () => {
+    const parts = titleText.split(' ');
+    if (parts.length <= 2) return <>{titleText}</>;
+    const lastTwo = parts.slice(-2).join(' ');
+    const firstPart = parts.slice(0, -2).join(' ');
+    return <>{firstPart} <span>{lastTwo}</span></>;
+  };
+
   return (
     <section id="contacto" className="section contact">
       <div className="container">
@@ -30,10 +42,10 @@ export default function Contact() {
             Contacto
           </div>
           <h2 className="section-title">
-            ¿Listo para construir <span>tu próximo proyecto?</span>
+            {renderTitle()}
           </h2>
           <p className="section-subtitle" style={{ marginTop: 16 }}>
-            Escríbenos y nuestro equipo de ingenieros se pondrá en contacto contigo a la brevedad posible.
+            {subtitleText}
           </p>
         </motion.div>
 

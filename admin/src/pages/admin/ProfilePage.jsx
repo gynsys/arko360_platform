@@ -9,6 +9,26 @@ import {
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
+const DEFAULT_HERO_STATS = [
+  { id: 'hs-1', number: '15+', label: 'Años de Experiencia' },
+  { id: 'hs-2', number: '200+', label: 'Proyectos Entregados' },
+  { id: 'hs-3', number: '100%', label: 'Garantía de Calidad' }
+];
+
+const DEFAULT_ABOUT_STATS = [
+  { id: 'as-1', number: 200, suffix: '+', label: 'Proyectos Completados' },
+  { id: 'as-2', number: 500, suffix: '+', label: 'Clientes Satisfechos' },
+  { id: 'as-3', number: 15, suffix: '', label: 'Años de Experiencia' },
+  { id: 'as-4', number: 50, suffix: '+', label: 'Colaboradores Expertos' }
+];
+
+const DEFAULT_ABOUT_FEATURES = [
+  { id: 'af-1', icon: 'CheckCircle', title: 'Calidad Garantizada', desc: 'Utilizamos materiales certificados y técnicas constructivas de vanguardia.' },
+  { id: 'af-2', icon: 'Award', title: 'Empresa Certificada', desc: 'Contamos con todas las certificaciones y registros necesarios para operar.' },
+  { id: 'af-3', icon: 'Users', title: 'Equipo Especializado', desc: 'Ingenieros, arquitectos y técnicos con años de experiencia.' },
+  { id: 'af-4', icon: 'ShieldCheck', title: 'Cumplimiento de Plazos', desc: 'Entregamos a tiempo sin sacrificar calidad.' }
+];
+
 const DEFAULT_PORTFOLIO_PROJECTS = [
   {
     id: 1,
@@ -238,6 +258,15 @@ export default function ProfilePage() {
     } else if (type === 'portfolio') {
       const currentList = (siteConfig.portfolioProjects?.length > 0) ? siteConfig.portfolioProjects : DEFAULT_PORTFOLIO_PROJECTS;
       setCrudData(index >= 0 ? { ...currentList[index] } : { id: `prj-${Date.now()}`, title: '', category: 'Residencial', image: '', description: '', duration: '', area: '', year: '' });
+    } else if (type === 'herostat') {
+      const currentList = siteConfig.hero?.stats?.length > 0 ? siteConfig.hero.stats : DEFAULT_HERO_STATS;
+      setCrudData(index >= 0 ? { ...currentList[index] } : { id: `hs-${Date.now()}`, number: '', label: '' });
+    } else if (type === 'aboutstat') {
+      const currentList = siteConfig.aboutUs?.stats?.length > 0 ? siteConfig.aboutUs.stats : DEFAULT_ABOUT_STATS;
+      setCrudData(index >= 0 ? { ...currentList[index] } : { id: `as-${Date.now()}`, number: '', suffix: '', label: '' });
+    } else if (type === 'aboutfeature') {
+      const currentList = siteConfig.aboutUs?.features?.length > 0 ? siteConfig.aboutUs.features : DEFAULT_ABOUT_FEATURES;
+      setCrudData(index >= 0 ? { ...currentList[index] } : { id: `af-${Date.now()}`, icon: 'CheckCircle', title: '', desc: '' });
     }
   };
 
@@ -275,6 +304,18 @@ export default function ProfilePage() {
         currentList.push(crudData);
       }
       updateConfigValue('portfolioProjects', currentList);
+    } else if (crudType === 'herostat') {
+      const currentList = siteConfig.hero?.stats?.length > 0 ? [...siteConfig.hero.stats] : [...DEFAULT_HERO_STATS];
+      if (crudIndex >= 0) currentList[crudIndex] = crudData; else currentList.push(crudData);
+      updateConfigValue('hero.stats', currentList);
+    } else if (crudType === 'aboutstat') {
+      const currentList = siteConfig.aboutUs?.stats?.length > 0 ? [...siteConfig.aboutUs.stats] : [...DEFAULT_ABOUT_STATS];
+      if (crudIndex >= 0) currentList[crudIndex] = crudData; else currentList.push(crudData);
+      updateConfigValue('aboutUs.stats', currentList);
+    } else if (crudType === 'aboutfeature') {
+      const currentList = siteConfig.aboutUs?.features?.length > 0 ? [...siteConfig.aboutUs.features] : [...DEFAULT_ABOUT_FEATURES];
+      if (crudIndex >= 0) currentList[crudIndex] = crudData; else currentList.push(crudData);
+      updateConfigValue('aboutUs.features', currentList);
     }
     setShowCrudModal(false);
   };
@@ -297,6 +338,18 @@ export default function ProfilePage() {
       const currentList = (siteConfig.portfolioProjects?.length > 0) ? [...siteConfig.portfolioProjects] : [...DEFAULT_PORTFOLIO_PROJECTS];
       currentList.splice(index, 1);
       updateConfigValue('portfolioProjects', currentList);
+    } else if (type === 'herostat') {
+      const currentList = siteConfig.hero?.stats?.length > 0 ? [...siteConfig.hero.stats] : [...DEFAULT_HERO_STATS];
+      currentList.splice(index, 1);
+      updateConfigValue('hero.stats', currentList);
+    } else if (type === 'aboutstat') {
+      const currentList = siteConfig.aboutUs?.stats?.length > 0 ? [...siteConfig.aboutUs.stats] : [...DEFAULT_ABOUT_STATS];
+      currentList.splice(index, 1);
+      updateConfigValue('aboutUs.stats', currentList);
+    } else if (type === 'aboutfeature') {
+      const currentList = siteConfig.aboutUs?.features?.length > 0 ? [...siteConfig.aboutUs.features] : [...DEFAULT_ABOUT_FEATURES];
+      currentList.splice(index, 1);
+      updateConfigValue('aboutUs.features', currentList);
     }
   };
 
@@ -448,13 +501,29 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-bold text-gray-950 mb-4">Pie de Página (Footer)</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción del Footer</label>
+                <textarea
+                  value={siteConfig.footer?.description || ''}
+                  onChange={(e) => updateConfigValue('footer.description', e.target.value)}
+                  rows="3"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none"
+                  placeholder="Transformamos espacios y construimos el futuro. Expertos en ingeniería..."
+                ></textarea>
+                <p className="text-xs text-gray-500 mt-1">Texto breve que aparece debajo del logo al final de la página.</p>
+              </div>
+            </div>
           </div>
         )}
 
         {/* APARIENCIA */}
         {activeTab === 'apariencia' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-950 mb-4">Colores de Marca</h3>
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-bold text-gray-950 mb-4">Colores de Marca</h3>
             <p className="text-sm text-gray-600 mb-6">Define los colores globales para botones, acentos y textos resaltados de tu Landing Page.</p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -510,12 +579,69 @@ export default function ProfilePage() {
                 <p className="text-xs text-gray-500 mt-2">Se utiliza para insignias (badges), textos destacados y efectos dinámicos.</p>
               </div>
             </div>
+            
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+              <h3 className="text-lg font-bold text-gray-950 mb-4">Imagen de Fondo (Hero Background)</h3>
+              <p className="text-sm text-gray-600 mb-4">La imagen principal que se muestra en la sección superior (Hero) de tu sitio.</p>
+              
+              <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-indigo-500 transition-colors">
+                <div className="flex flex-col items-center">
+                  {siteConfig.hero?.backgroundImage ? (
+                    <div className="relative w-full max-w-md aspect-video mb-4 rounded-lg overflow-hidden border border-gray-200">
+                      <img src={siteConfig.hero.backgroundImage} alt="Hero Background" className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-full max-w-md aspect-video bg-gray-100 rounded-lg flex items-center justify-center mb-4 border border-gray-200">
+                      <span className="text-gray-400">Usando fondo por defecto (textura CSS)</span>
+                    </div>
+                  )}
+                  <label className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium cursor-pointer">
+                    <FiUpload className="inline mr-2" /> Subir Imagen de Fondo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, 'hero.backgroundImage')}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-xs text-gray-400 mt-2">Recomendado: 1920x1080px (Alta resolución, oscura preferiblemente)</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
         {/* CONTACTO */}
         {activeTab === 'contacto' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+            <h3 className="text-lg font-bold text-gray-950 mb-4">Textos de la Sección</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Título Principal</label>
+                <input
+                  type="text"
+                  value={siteConfig.contact?.title || ''}
+                  onChange={(e) => updateConfigValue('contact.title', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="¿Listo para construir tu próximo proyecto?"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo Descriptivo</label>
+                <textarea
+                  rows="3"
+                  value={siteConfig.contact?.subtitle || ''}
+                  onChange={(e) => updateConfigValue('contact.subtitle', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  placeholder="Escríbenos y nuestro equipo de ingenieros se pondrá en contacto..."
+                />
+              </div>
+            </div>
+
+            <hr className="border-gray-100" />
+            
             <h3 className="text-lg font-bold text-gray-950 mb-4">Información de Contacto y Enlaces</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -676,23 +802,75 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Botón Principal</label>
-                      <input
-                        type="text"
-                        value={siteConfig.hero?.ctaPrimary || ''}
-                        onChange={(e) => updateConfigValue('hero.ctaPrimary', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Texto Botón Principal</label>
+                        <input
+                          type="text"
+                          value={siteConfig.hero?.ctaPrimary || ''}
+                          onChange={(e) => updateConfigValue('hero.ctaPrimary', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Enlace Botón Principal (Ej. https://wa.me/...)</label>
+                        <input
+                          type="text"
+                          value={siteConfig.hero?.ctaPrimaryUrl || ''}
+                          onChange={(e) => updateConfigValue('hero.ctaPrimaryUrl', e.target.value)}
+                          placeholder="#contacto"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Botón Secundario</label>
-                      <input
-                        type="text"
-                        value={siteConfig.hero?.ctaSecondary || ''}
-                        onChange={(e) => updateConfigValue('hero.ctaSecondary', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Texto Botón Secundario</label>
+                        <input
+                          type="text"
+                          value={siteConfig.hero?.ctaSecondary || ''}
+                          onChange={(e) => updateConfigValue('hero.ctaSecondary', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Enlace Botón Secundario</label>
+                        <input
+                          type="text"
+                          value={siteConfig.hero?.ctaSecondaryUrl || ''}
+                          onChange={(e) => updateConfigValue('hero.ctaSecondaryUrl', e.target.value)}
+                          placeholder="#proyectos"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Listado de Estadísticas Hero */}
+                  <div className="border-t pt-4 mt-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold text-gray-800">Estadísticas Principales ({siteConfig.hero?.stats?.length || DEFAULT_HERO_STATS.length})</h5>
+                      <button
+                        onClick={() => openCrudModal('herostat')}
+                        className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 py-1.5 px-3 rounded-lg font-bold hover:bg-indigo-100 transition-colors"
+                      >
+                        <FiPlus /> Añadir Estadística
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {(siteConfig.hero?.stats?.length > 0 ? siteConfig.hero.stats : DEFAULT_HERO_STATS).map((stat, index) => (
+                        <div key={stat.id || index} className="flex items-center justify-between p-3 border border-gray-150 rounded-xl hover:bg-gray-50 transition-colors">
+                          <div>
+                            <div className="font-bold text-gray-800 text-sm">{stat.number}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{stat.label}</div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => openCrudModal('herostat', index)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded" title="Editar"><FiEdit size={16} /></button>
+                            <button onClick={() => deleteCrudItem('herostat', index)} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Eliminar"><FiTrash2 size={16} /></button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -755,6 +933,60 @@ export default function ProfilePage() {
                           className="hidden"
                         />
                       </label>
+                    </div>
+                  </div>
+
+                  {/* Listado de Estadísticas Nosotros */}
+                  <div className="border-t pt-4 mt-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold text-gray-800">Métricas de Empresa ({siteConfig.aboutUs?.stats?.length || DEFAULT_ABOUT_STATS.length})</h5>
+                      <button
+                        onClick={() => openCrudModal('aboutstat')}
+                        className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 py-1.5 px-3 rounded-lg font-bold hover:bg-indigo-100 transition-colors"
+                      >
+                        <FiPlus /> Añadir Métrica
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {(siteConfig.aboutUs?.stats?.length > 0 ? siteConfig.aboutUs.stats : DEFAULT_ABOUT_STATS).map((stat, index) => (
+                        <div key={stat.id || index} className="flex items-center justify-between p-3 border border-gray-150 rounded-xl hover:bg-gray-50 transition-colors">
+                          <div>
+                            <div className="font-bold text-gray-800 text-sm">{stat.number}{stat.suffix}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{stat.label}</div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => openCrudModal('aboutstat', index)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded"><FiEdit size={16} /></button>
+                            <button onClick={() => deleteCrudItem('aboutstat', index)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><FiTrash2 size={16} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Listado de Pilares / Características */}
+                  <div className="border-t pt-4 mt-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold text-gray-800">Pilares / Características ({siteConfig.aboutUs?.features?.length || DEFAULT_ABOUT_FEATURES.length})</h5>
+                      <button
+                        onClick={() => openCrudModal('aboutfeature')}
+                        className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 py-1.5 px-3 rounded-lg font-bold hover:bg-indigo-100 transition-colors"
+                      >
+                        <FiPlus /> Añadir Pilar
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                      {(siteConfig.aboutUs?.features?.length > 0 ? siteConfig.aboutUs.features : DEFAULT_ABOUT_FEATURES).map((feat, index) => (
+                        <div key={feat.id || index} className="flex items-center justify-between p-3 border border-gray-150 rounded-xl hover:bg-gray-50 transition-colors">
+                          <div>
+                            <div className="font-bold text-gray-800 text-sm">{feat.title}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{feat.desc}</div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => openCrudModal('aboutfeature', index)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded"><FiEdit size={16} /></button>
+                            <button onClick={() => deleteCrudItem('aboutfeature', index)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><FiTrash2 size={16} /></button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -1317,6 +1549,7 @@ export default function ProfilePage() {
               {/* Para Portafolio */}
               {crudType === 'portfolio' && (
                 <>
+                  {/* ... Portfolio Modal Content remains ... */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Título del Proyecto</label>
@@ -1399,18 +1632,12 @@ export default function ProfilePage() {
                               formData.append('file', file);
                               try {
                                 const token = localStorage.getItem('arko_admin_token');
-                                const uploadEndpoint = urlSlug 
-                                  ? `${API_URL}/arko/landing_sites/me/upload`
-                                  : `${API_URL}/arko/admin/upload`;
+                                const uploadEndpoint = `${API_URL}/arko/landing_sites/me/upload`;
                                 const response = await fetch(uploadEndpoint, {
                                   method: 'POST',
                                   headers: { 'Authorization': `Bearer ${token}` },
                                   body: formData
                                 });
-                                if (response.status === 401) {
-                                  logout();
-                                  return;
-                                }
                                 if (response.ok) {
                                   const res = await response.json();
                                   setCrudData({ ...crudData, image: res.image_url, imageUrl: res.image_url });
@@ -1426,6 +1653,103 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </>
+              )}
+
+              {crudType === 'herostat' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Número / Valor</label>
+                    <input
+                      type="text"
+                      value={crudData.number || ''}
+                      onChange={(e) => setCrudData({ ...crudData, number: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="15+"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Etiqueta (Label)</label>
+                    <input
+                      type="text"
+                      value={crudData.label || ''}
+                      onChange={(e) => setCrudData({ ...crudData, label: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Años de Experiencia"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {crudType === 'aboutstat' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Número</label>
+                      <input
+                        type="text"
+                        value={crudData.number || ''}
+                        onChange={(e) => setCrudData({ ...crudData, number: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sufijo</label>
+                      <input
+                        type="text"
+                        value={crudData.suffix || ''}
+                        onChange={(e) => setCrudData({ ...crudData, suffix: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="+"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Etiqueta (Label)</label>
+                    <input
+                      type="text"
+                      value={crudData.label || ''}
+                      onChange={(e) => setCrudData({ ...crudData, label: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Proyectos Completados"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {crudType === 'aboutfeature' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                    <input
+                      type="text"
+                      value={crudData.title || ''}
+                      onChange={(e) => setCrudData({ ...crudData, title: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Calidad Garantizada"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                    <textarea
+                      rows={3}
+                      value={crudData.desc || ''}
+                      onChange={(e) => setCrudData({ ...crudData, desc: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Utilizamos materiales certificados..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Icono (Lucide)</label>
+                    <input
+                      type="text"
+                      value={crudData.icon || ''}
+                      onChange={(e) => setCrudData({ ...crudData, icon: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="CheckCircle"
+                    />
+                  </div>
+                </div>
               )}
             </div>
 

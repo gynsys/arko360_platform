@@ -52,9 +52,14 @@ export default function About() {
   const { about } = cmsData;
 
   const title = config?.aboutUs?.title || `${about.title.line1} ${about.title.accent}`;
+  const tag = config?.aboutUs?.tag || about.tag;
   const p1 = config?.aboutUs?.p1 || about.p1;
   const p2 = config?.aboutUs?.p2 || about.p2;
   const image = config?.aboutUs?.imageUrl || about.image;
+  const statsList = config?.aboutUs?.stats?.length > 0 ? config.aboutUs.stats : about.stats;
+  const featuresList = config?.aboutUs?.features?.length > 0 ? config.aboutUs.features : about.features;
+
+  const yearsStat = statsList.find(s => s.label.toLowerCase().includes('año')) || statsList[2] || statsList[0];
 
   return (
     <section id="nosotros" className="section about">
@@ -73,14 +78,14 @@ export default function About() {
               className="about-img-main"
             />
             <div className="about-img-badge">
-              <div className="about-img-badge-number">{about.stats.find(s => s.label.includes('Años')).number}+</div>
+              <div className="about-img-badge-number">{yearsStat?.number || 15}+</div>
               <div className="about-img-badge-text">Años de<br />Experiencia</div>
             </div>
 
             <div className="about-stats">
-              {about.stats.map((stat) => (
-                <div key={stat.label} className="about-stat-card">
-                  <Counter target={stat.number} suffix={stat.suffix} />
+              {statsList.map((stat, index) => (
+                <div key={stat.id || index} className="about-stat-card">
+                  <Counter target={Number(stat.number) || 0} suffix={stat.suffix} />
                   <div className="about-stat-label">{stat.label}</div>
                 </div>
               ))}
@@ -95,7 +100,7 @@ export default function About() {
           >
             <div className="section-tag">
               <Users size={12} />
-              {about.tag}
+              {tag}
             </div>
             <h2 className="section-title" style={{ marginBottom: 20 }}>
               {renderTitle(title)}
@@ -108,12 +113,12 @@ export default function About() {
             </p>
 
             <div className="about-features">
-              {about.features.map((feature) => {
-                const Icon = iconMap[feature.icon];
+              {featuresList.map((feature, index) => {
+                const Icon = iconMap[feature.icon] || CheckCircle;
                 return (
-                  <div key={feature.title} className="about-feature">
+                  <div key={feature.id || index} className="about-feature">
                     <div className="about-feature-icon">
-                      {Icon && <Icon size={20} strokeWidth={2} />}
+                      {<Icon size={20} strokeWidth={2} />}
                     </div>
                     <div className="about-feature-text">
                       <strong>{feature.title}</strong>

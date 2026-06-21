@@ -29,8 +29,7 @@ export default function Footer() {
               className="footer-logo"
             />
             <p className="footer-brand-desc">
-              Transformamos espacios y construimos el futuro. Expertos en ingeniería, construcción
-              y remodelaciones de alta calidad.
+              {config?.footer?.description || 'Transformamos espacios y construimos el futuro. Expertos en ingeniería, construcción y remodelaciones de alta calidad.'}
             </p>
             <div className="footer-social">
               {social.instagram && <a href={social.instagram} target="_blank" rel="noreferrer" className="footer-social-btn"><Instagram size={18} /></a>}
