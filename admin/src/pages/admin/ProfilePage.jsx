@@ -8,6 +8,69 @@ import {
   FiLink, FiPhone, FiMail, FiMapPin, FiMessageSquare, FiStar, FiSliders 
 } from 'react-icons/fi';
 
+const DEFAULT_PORTFOLIO_PROJECTS = [
+  {
+    id: 1,
+    title: 'Residencia Las Acacias',
+    category: 'Residencial',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
+    description: 'Construcción de vivienda unifamiliar de 320m² con diseño moderno, 4 habitaciones, 3 baños, área de servicio y jardín interior. Materiales de primera calidad con acabados importados.',
+    duration: '8 meses',
+    area: '320 m²',
+    year: '2024'
+  },
+  {
+    id: 2,
+    title: 'Remodelación Oficinas Central',
+    category: 'Comercial',
+    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80',
+    description: 'Transformación integral de 5 pisos de oficinas corporativas. Nuevo diseño open-space, salas de reuniones, área lounge y modernización de instalaciones eléctricas y de red.',
+    duration: '4 meses',
+    area: '1,200 m²',
+    year: '2024'
+  },
+  {
+    id: 3,
+    title: 'Conjunto Residencial Torres',
+    category: 'Residencial',
+    image: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80',
+    description: 'Desarrollo de conjunto residencial de 24 apartamentos, 2 torres de 6 niveles con áreas comunes, gimnasio, piscina y parque infantil.',
+    duration: '18 meses',
+    area: '4,800 m²',
+    year: '2023'
+  },
+  {
+    id: 4,
+    title: 'Restaurante Gourmet Nova',
+    category: 'Comercial',
+    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80',
+    description: 'Construcción y acondicionamiento de restaurante gourmet de 2 niveles con cocina industrial, barra de cócteles, terraza exterior y baños premium.',
+    duration: '3 meses',
+    area: '480 m²',
+    year: '2023'
+  },
+  {
+    id: 5,
+    title: 'Villa Mediterránea',
+    category: 'Residencial',
+    image: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&q=80',
+    description: 'Diseño y construcción de villa estilo mediterráneo con piscina desbordante, jardines paisajistas, sala de cine, bodega de vinos y sistema domótico completo.',
+    duration: '12 meses',
+    area: '650 m²',
+    year: '2022'
+  },
+  {
+    id: 6,
+    title: 'Refuerzo Estructural Edificio Caracas',
+    category: 'Estructural',
+    image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80',
+    description: 'Evaluación y refuerzo estructural de edificio de 12 pisos. Instalación de muros de corte, vigas de amarre, nuevas columnas y sistemas anti-sísmicos.',
+    duration: '6 meses',
+    area: '2,400 m²',
+    year: '2022'
+  }
+];
+
 export default function ProfilePage() {
   const { logout } = useContext(AuthContext);
   const location = useLocation();
@@ -174,7 +237,7 @@ export default function ProfilePage() {
       const currentList = siteConfig.testimonials?.list || [];
       setCrudData(index >= 0 ? { ...currentList[index] } : { id: `tst-${Date.now()}`, text: '', name: '', role: '', avatar: '', stars: 5 });
     } else if (type === 'portfolio') {
-      const currentList = siteConfig.portfolioProjects || [];
+      const currentList = (siteConfig.portfolioProjects?.length > 0) ? siteConfig.portfolioProjects : DEFAULT_PORTFOLIO_PROJECTS;
       setCrudData(index >= 0 ? { ...currentList[index] } : { id: `prj-${Date.now()}`, title: '', category: 'Residencial', image: '', description: '', duration: '', area: '', year: '' });
     }
   };
@@ -206,7 +269,7 @@ export default function ProfilePage() {
       }
       updateConfigValue('testimonials.list', currentList);
     } else if (crudType === 'portfolio') {
-      const currentList = [...(siteConfig.portfolioProjects || [])];
+      const currentList = (siteConfig.portfolioProjects?.length > 0) ? [...siteConfig.portfolioProjects] : [...DEFAULT_PORTFOLIO_PROJECTS];
       if (crudIndex >= 0) {
         currentList[crudIndex] = crudData;
       } else {
@@ -234,7 +297,7 @@ export default function ProfilePage() {
       currentList.splice(index, 1);
       updateConfigValue('testimonials.list', currentList);
     } else if (type === 'portfolio') {
-      const currentList = [...(siteConfig.portfolioProjects || [])];
+      const currentList = (siteConfig.portfolioProjects?.length > 0) ? [...siteConfig.portfolioProjects] : [...DEFAULT_PORTFOLIO_PROJECTS];
       currentList.splice(index, 1);
       updateConfigValue('portfolioProjects', currentList);
     }
@@ -953,7 +1016,7 @@ export default function ProfilePage() {
                   {/* Listado de Proyectos */}
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center mb-4">
-                      <h5 className="font-bold text-gray-800">Proyectos Activos ({(siteConfig.portfolioProjects || []).length})</h5>
+                      <h5 className="font-bold text-gray-800">Proyectos Activos ({((siteConfig.portfolioProjects?.length > 0) ? siteConfig.portfolioProjects : DEFAULT_PORTFOLIO_PROJECTS).length})</h5>
                       <button
                         onClick={() => openCrudModal('portfolio')}
                         className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 py-1.5 px-3 rounded-lg font-bold hover:bg-indigo-100 transition-colors"
@@ -963,7 +1026,7 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-3">
-                      {(siteConfig.portfolioProjects || []).map((prj, index) => (
+                      {((siteConfig.portfolioProjects?.length > 0) ? siteConfig.portfolioProjects : DEFAULT_PORTFOLIO_PROJECTS).map((prj, index) => (
                         <div key={prj.id || index} className="flex items-center justify-between p-3 border border-gray-150 rounded-xl hover:bg-gray-50 transition-colors">
                           <div className="flex items-center gap-3">
                             <img src={prj.image || prj.imageUrl || 'https://via.placeholder.com/150'} alt="Project" className="w-12 h-12 object-cover rounded-md border" />
