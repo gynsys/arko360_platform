@@ -579,6 +579,7 @@ export default function ProfilePage() {
                 <p className="text-xs text-gray-500 mt-2">Se utiliza para insignias (badges), textos destacados y efectos dinámicos.</p>
               </div>
             </div>
+            </div>
             
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
               <h3 className="text-lg font-bold text-gray-950 mb-4">Imagen de Fondo (Hero Background)</h3>
