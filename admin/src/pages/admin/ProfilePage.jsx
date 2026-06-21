@@ -129,7 +129,11 @@ export default function ProfilePage() {
     
     try {
       const token = localStorage.getItem('arko_admin_token');
-      const response = await fetch(`${API_URL}/arko/admin/upload`, {
+      const uploadEndpoint = urlSlug 
+        ? `${API_URL}/arko/landing_sites/me/upload`
+        : `${API_URL}/arko/admin/upload`;
+        
+      const response = await fetch(uploadEndpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

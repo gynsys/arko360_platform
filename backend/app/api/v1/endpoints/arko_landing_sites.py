@@ -684,3 +684,39 @@ def delete_my_post(
     db.delete(post)
     db.commit()
     return {"ok": True}
+
+from fastapi import File, UploadFile
+from pathlib import Path
+import shutil
+from datetime import datetime
+
+UPLOAD_DIR = Path(settings.UPLOAD_DIR).resolve()
+LANDING_DIR = UPLOAD_DIR / "landings"
+LANDING_DIR.mkdir(parents=True, exist_ok=True)
+
+@router.post("/me/upload", status_code=status.HTTP_200_OK)
+async def upload_my_image(
+    file: UploadFile = File(...),
+    current_user: LandingSite = Depends(get_current_landing_client)
+) -> Any:
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_extension = Path(file.filename).suffix
+        filename = f"landing_{current_user.id}_{timestamp}{file_extension}"
+        
+        # Guardar en una carpeta específica para cada landing site
+        site_dir = LANDING_DIR / str(current_user.id)
+        site_dir.mkdir(parents=True, exist_ok=True)
+        file_path = site_dir / filename
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # Get relative path for URL
+        relative_path = file_path.relative_to(UPLOAD_DIR)
+        url_path = f"/uploads/{relative_path.as_posix()}"
+        
+        return {"message": "Image uploaded successfully", "image_url": url_path}
+    except Exception as e:
+        logger.error(f"Error uploading landing image: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error uploading image")
