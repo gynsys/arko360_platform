@@ -21,7 +21,7 @@ export default function Navbar() {
     { label: 'Proyectos', href: `${basePath}/#proyectos` },
     { label: 'Nosotros', href: `${basePath}/#nosotros` },
     { label: 'BiblioARKO', href: '/biblio' },
-    { label: 'Herramientas', href: '/herramientas' },
+    { label: 'Aplicaciones', href: '/herramientas' },
   ];
   const ctaHref = `${basePath}/#contacto`;
   

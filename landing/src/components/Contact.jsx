@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Send, CheckCircle2 } from 'lucide-react';
 import { useContactForm } from '../hooks/useContactForm.js';
@@ -13,6 +13,18 @@ export default function Contact() {
   const address = config?.global?.location || 'Caracas, Venezuela';
 
   const { register, handleSubmit, errors, status, errorMessage, resetForm, isLoading, isSuccess, isError } = useContactForm();
+
+  useEffect(() => {
+    let timer;
+    if (isSuccess) {
+      timer = setTimeout(() => {
+        resetForm();
+      }, 7000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isSuccess, resetForm]);
 
   const titleText = config?.contact?.title || '¿Listo para construir tu próximo proyecto?';
   const subtitleText = config?.contact?.subtitle || 'Escríbenos y nuestro equipo de ingenieros se pondrá en contacto contigo a la brevedad posible.';
@@ -110,13 +122,6 @@ export default function Contact() {
                 <div className="form-success-icon"><CheckCircle2 size={36} /></div>
                 <h3>¡Mensaje Enviado!</h3>
                 <p>Gracias por contactarnos. Nuestro equipo revisará tu solicitud y te responderemos en breve.</p>
-                <button
-                  className="btn btn-outline"
-                  style={{ marginTop: 24 }}
-                  onClick={resetForm}
-                >
-                  Enviar otro mensaje
-                </button>
               </div>
             ) : (
               <>
