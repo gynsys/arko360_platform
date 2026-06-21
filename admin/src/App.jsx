@@ -72,7 +72,7 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="/admin/blog" replace />} />
+              <Route index element={<Navigate to="/admin/profile" replace />} />
               <Route path="blog" element={<BlogManagementPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
@@ -88,7 +88,7 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="blog" replace />} />
+              <Route index element={<Navigate to="profile" replace />} />
               <Route path="blog" element={<BlogManagementPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
