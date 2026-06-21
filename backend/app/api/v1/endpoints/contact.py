@@ -15,7 +15,7 @@ class ContactRequest(BaseModel):
     message: str
     project_type: str = ""
 
-@router.post("/", status_code=200)
+@router.post("", status_code=200)
 @limiter.limit("3/minute")
 def send_contact_email(
     request: Request,
