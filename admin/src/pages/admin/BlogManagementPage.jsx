@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { FiEdit3, FiPlus, FiTrash2, FiEye } from 'react-icons/fi';
 
 export default function BlogManagementPage() {
@@ -10,25 +11,36 @@ export default function BlogManagementPage() {
     { id: 'borradores', label: 'Borradores' },
   ];
 
-  // Mock data
-  const posts = [
-    {
-      id: 1,
-      title: 'Impermeabilización Líquida: La Guía Definitiva',
-      excerpt: 'Descubre por qué los sistemas de poliuretano líquido están revolucionando la protección de techos.',
-      status: 'published',
-      date: '15 de Mayo, 2026',
-      author: 'Ing. Roberto Méndez',
-    },
-    {
-      id: 2,
-      title: 'Patologías comunes en estructuras de concreto armado',
-      excerpt: 'Identificación temprana de fisuras, carbonatación y corrosión de armaduras.',
-      status: 'draft',
-      date: '02 de Mayo, 2026',
-      author: 'Ing. Carlos Silva',
-    },
-  ];
+  const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const location = useLocation();
+
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  const isTenantRoute = pathParts.length >= 2 && pathParts[1] === 'admin' && pathParts[0] !== 'admin';
+  const urlSlug = isTenantRoute ? pathParts[0] : null;
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    try {
+      setIsLoading(true);
+      if (urlSlug) {
+        const token = localStorage.getItem('arko_admin_token');
+        const { getMyLandingSitePosts } = await import('../../services/api');
+        const data = await getMyLandingSitePosts(token);
+        setPosts(data || []);
+      } else {
+        // Fallback or superadmin logic
+        setPosts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching posts', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="p-6">
