@@ -3,12 +3,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.base import get_db
-from app.db.models.landing_site import LandingSite, LandingSiteStatus
+from app.db.models.landing_site import LandingSite, LandingSiteStatus, LandingSitePost
 from app.api.v1.endpoints.arko import get_current_arko_admin
 from app.core.logging import logger
 from pydantic import BaseModel, EmailStr
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from app.core.security import verify_password, create_access_token
+import jwt
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -547,3 +549,138 @@ def get_landing_site_config(
     else:
         # Fallback to default construction template if site_config is not set
         return TEMPLATE_CONFIGS.get(site.template_name, TEMPLATE_CONFIGS["construccion"])
+
+# --- Dependencia Landing Client ---
+oauth2_scheme_landing = OAuth2PasswordBearer(tokenUrl="/api/v1/arko/landing_sites/auth/login")
+
+def get_current_landing_client(token: str = Depends(oauth2_scheme_landing)):
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str = payload.get("sub")
+        token_type: str = payload.get("type")
+        slug: str = payload.get("slug")
+        if email is None or token_type != "landing_client" or slug is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
+    
+    db = next(get_db())
+    user = db.query(LandingSite).filter(LandingSite.email == email, LandingSite.slug == slug).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    if user.status != LandingSiteStatus.ACTIVE:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user")
+    return user
+
+# --- Endpoints Privados para Clientes de Sitios Clonados ---
+
+@router.get("/me/config")
+def get_my_config(current_user: LandingSite = Depends(get_current_landing_client)) -> Any:
+    """Get the current landing site's configuration"""
+    if current_user.site_config:
+        # Include slug in the response
+        config_with_slug = dict(current_user.site_config)
+        config_with_slug["slug"] = current_user.slug
+        return config_with_slug
+    
+    default_config = TEMPLATE_CONFIGS.get(current_user.template_name, TEMPLATE_CONFIGS["construccion"]).copy()
+    default_config["slug"] = current_user.slug
+    return default_config
+
+@router.put("/me/config")
+def update_my_config(config_in: dict, db: Session = Depends(get_db), current_user: LandingSite = Depends(get_current_landing_client)) -> Any:
+    """Update the current landing site's configuration"""
+    current_user.site_config = config_in
+    db.commit()
+    db.refresh(current_user)
+    
+    config_with_slug = dict(current_user.site_config)
+    config_with_slug["slug"] = current_user.slug
+    return config_with_slug
+
+# --- Blog Endpoints para Clientes de Sitios Clonados ---
+from typing import Optional
+
+class LandingSitePostCreate(BaseModel):
+    title: str
+    slug: str
+    excerpt: Optional[str] = None
+    content: Optional[str] = None
+    image_url: Optional[str] = None
+    category: Optional[str] = None
+    status: str = "draft"
+
+class LandingSitePostResponse(BaseModel):
+    id: int
+    landing_site_id: int
+    title: str
+    slug: str
+    excerpt: Optional[str] = None
+    content: Optional[str] = None
+    image_url: Optional[str] = None
+    category: Optional[str] = None
+    author: Optional[str] = None
+    status: str
+    class Config:
+        from_attributes = True
+
+@router.get("/me/posts", response_model=List[LandingSitePostResponse])
+def get_my_posts(
+    skip: int = 0, limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: LandingSite = Depends(get_current_landing_client)
+) -> Any:
+    posts = db.query(LandingSitePost).filter(LandingSitePost.landing_site_id == current_user.id).order_by(LandingSitePost.created_at.desc()).offset(skip).limit(limit).all()
+    return posts
+
+@router.post("/me/posts", response_model=LandingSitePostResponse)
+def create_my_post(
+    post_in: LandingSitePostCreate,
+    db: Session = Depends(get_db),
+    current_user: LandingSite = Depends(get_current_landing_client)
+) -> Any:
+    existing = db.query(LandingSitePost).filter(LandingSitePost.landing_site_id == current_user.id, LandingSitePost.slug == post_in.slug).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Slug already exists")
+    
+    post = LandingSitePost(
+        **post_in.dict(),
+        landing_site_id=current_user.id,
+        author=current_user.nombre_cliente
+    )
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+    return post
+
+@router.put("/me/posts/{post_id}", response_model=LandingSitePostResponse)
+def update_my_post(
+    post_id: int,
+    post_in: LandingSitePostCreate,
+    db: Session = Depends(get_db),
+    current_user: LandingSite = Depends(get_current_landing_client)
+) -> Any:
+    post = db.query(LandingSitePost).filter(LandingSitePost.id == post_id, LandingSitePost.landing_site_id == current_user.id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    for key, value in post_in.dict().items():
+        setattr(post, key, value)
+    
+    db.commit()
+    db.refresh(post)
+    return post
+
+@router.delete("/me/posts/{post_id}")
+def delete_my_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: LandingSite = Depends(get_current_landing_client)
+) -> Any:
+    post = db.query(LandingSitePost).filter(LandingSitePost.id == post_id, LandingSitePost.landing_site_id == current_user.id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    db.delete(post)
+    db.commit()
+    return {"ok": True}

@@ -76,3 +76,11 @@ Para conectarse y gestionar la base de datos en producción:
 - Los datos son persistentes a través del volumen `arko_db_data`.
 - Ejecutar queries manuales en producción: `docker exec -it arko360_platform-db-1 psql -U arko_user -d arko360`.
 
+## Resolución de Problemas y Ejecución Remota (Troubleshooting)
+
+Al ejecutar comandos remotos desde el entorno local de Windows usando `ssh_runner.py`, es común encontrarse con los siguientes obstáculos (documentados para ahorrar tokens y tiempo futuro):
+
+1. **Escapado de Comillas en PowerShell:** Evitar enviar consultas SQL con comillas simples y dobles anidadas directamente en el argumento de línea de comandos, ya que PowerShell corrompe el escapado (ej. fallará la consulta `SELECT * FROM tabla WHERE campo='valor'`). 
+   - *Solución:* Crear un script `.sql` local, usar `python ssh_runner.py --upload script.sql /ruta/script.sql`, copiarlo al contenedor (`docker cp`) y ejecutarlo allí (`docker exec ... psql ... -f script.sql`).
+2. **Ejecución de Scripts de Python vía Piped stdin:** Evitar usar tuberías (`cat script.py | docker compose exec -T backend python -`) desde Windows. El comando `cat` en PowerShell (`Get-Content`) envía saltos de línea con codificaciones incompatibles o se pierden variables de entorno como `PYTHONPATH`, arrojando errores de `ModuleNotFoundError`.
+   - *Solución:* Modificar directamente la base de datos con SQL si es rápido, o en su defecto subir el archivo `.py` correctamente al servidor y ejecutarlo localmente dentro del contenedor indicando la ruta.

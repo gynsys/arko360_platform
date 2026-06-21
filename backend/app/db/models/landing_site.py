@@ -41,3 +41,24 @@ class LandingSite(Base):
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class LandingSitePost(Base):
+    """
+    LandingSitePost model representing an independent blog article for a specific LandingSite.
+    """
+    __tablename__ = "landing_site_posts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    landing_site_id = Column(Integer, index=True, nullable=False)
+    title = Column(String(255), nullable=False)
+    slug = Column(String(255), index=True, nullable=False)
+    excerpt = Column(String, nullable=True)
+    content = Column(String, nullable=True)
+    image_url = Column(String(500), nullable=True)
+    category = Column(String(100), nullable=True)
+    author = Column(String(100), nullable=True)
+    status = Column(String(50), default="published") # "draft" | "published"
+    seo_config = Column(JSON, nullable=True)
+    published_at = Column(DateTime(timezone=True), default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())

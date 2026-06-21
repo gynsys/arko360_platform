@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
-import { API_URL } from '../../services/api';
+import { useLocation } from 'react-router-dom';
+import { API_URL, getMyLandingSiteConfig, updateMyLandingSiteConfig } from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import { 
   FiUpload, FiUser, FiSettings, FiFileText, FiGrid, FiSave, 
@@ -9,6 +10,13 @@ import {
 
 export default function ProfilePage() {
   const { logout } = useContext(AuthContext);
+  const location = useLocation();
+  
+  // Extraer el slug de la URL actual
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  const isTenantRoute = pathParts.length >= 2 && pathParts[1] === 'admin' && pathParts[0] !== 'admin';
+  const urlSlug = isTenantRoute ? pathParts[0] : null;
+
   const [activeTab, setActiveTab] = useState('identidad');
   const [activeContentSection, setActiveContentSection] = useState('hero');
   const [siteConfig, setSiteConfig] = useState(null);
@@ -28,12 +36,19 @@ export default function ProfilePage() {
 
   const fetchSiteConfig = async () => {
     try {
-      const response = await fetch(`${API_URL}/arko/config`);
-      if (response.ok) {
-        const config = await response.json();
-        setSiteConfig(config);
+      if (urlSlug) {
+        const token = localStorage.getItem('arko_admin_token');
+        const config = await getMyLandingSiteConfig(token);
+        if (config) setSiteConfig(config);
+      } else {
+        const response = await fetch(`${API_URL}/arko/config`);
+        if (response.ok) {
+          const config = await response.json();
+          setSiteConfig(config);
+        }
       }
     } catch (error) {
+      if (error.message === 'Unauthorized') logout();
       console.error('Error fetching site config:', error);
     }
   };
@@ -44,24 +59,32 @@ export default function ProfilePage() {
     
     try {
       const token = localStorage.getItem('arko_admin_token');
-      const response = await fetch(`${API_URL}/arko/admin/config`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(siteConfig)
-      });
+      let result;
 
-      if (response.status === 401) {
-        logout();
-        return;
+      if (urlSlug) {
+        result = await updateMyLandingSiteConfig(token, siteConfig);
+      } else {
+        const response = await fetch(`${API_URL}/arko/admin/config`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(siteConfig)
+        });
+
+        if (response.status === 401) {
+          logout();
+          return;
+        }
+        
+        if (!response.ok) throw new Error('Error saving config');
+        result = await response.json();
+        result = result.config || siteConfig;
       }
 
-      if (response.ok) {
-        const result = await response.json();
-        setSiteConfig(result.config || siteConfig);
-        setSaveMessage('Configuración guardada exitosamente');
+      setSiteConfig(result);
+      setSaveMessage('Configuración guardada exitosamente');
         
         // Aplicar el color dinámicamente si cambió
         if (siteConfig.branding?.primaryColor) {
