@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -84,6 +84,14 @@ const Login = () => {
                   <Eye className="h-5 w-5" aria-hidden="true" />
                 )}
               </button>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-end">
+            <div className="text-sm">
+              <Link to="/forgot-password" className="font-medium text-[#1A6BB5] hover:text-[#134F8A]">
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
           </div>
 

@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "https://www.gynsys.net"
     BACKEND_URL: str = "https://api.gynsys.net"
 
+    # Resend Email Configuration
+    RESEND_API_KEY: Optional[str] = "re_XGUjBcS7_MMBj24bU9393ezTnV7wMCbxX"
+    RESEND_FROM_EMAIL: str = "Arko360 <info@arko360.net>"
+
     # Google OAuth
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
@@ -139,8 +143,6 @@ class Settings(BaseSettings):
     SMTP_USER: str | None = "multitenant.app@gmail.com"
     SMTP_PASSWORD: str | None = "tu_password"
     
-    # Resend
-    RESEND_API_KEY: str | None = os.getenv("RESEND_API_KEY")
     # Force verified domain sender
     EMAILS_FROM_EMAIL: str | None = "info@gynsys.net" 
     EMAILS_FROM_NAME: str = "GynSys Notificaciones"
