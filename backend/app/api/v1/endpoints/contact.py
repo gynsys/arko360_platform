@@ -33,7 +33,9 @@ def send_contact_email(
         raise HTTPException(status_code=404, detail="Admin not found")
 
     # Determine recipient email
-    recipient_email = doctor.email
+    # TEMPORAL: Forzamos el envío a proingenioca@gmail.com para pruebas
+    # ya que los MX del dominio arko360 están apagados y rebotaría.
+    recipient_email = "proingenioca@gmail.com"
     
     if not recipient_email:
         raise HTTPException(status_code=500, detail="Admin has no email configured")
