@@ -862,7 +862,7 @@ export const useStructureStore = create((set, get) => ({
           restraint: x === 0 ? { ux: true, uy: true, uz: true, rx: true, ry: false, rz: false } : { ux: false, uy: true, uz: true, rx: true, ry: false, rz: false }
         });
       }
-    } else {
+    } else if (type !== 'galpon') {
       // Edificio 3D o Pórtico
       for (let z = 0; z <= numFloors; z++) {
         for (let x = 0; x <= numBaysX; x++) {
@@ -1003,7 +1003,7 @@ export const useStructureStore = create((set, get) => ({
         const n2 = newNodes.find(n => n.x === (x + 1) * bayWidthX);
         newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [n1.id, n2.id], section_id: finalBeamSectionId, material_id: baseMatId });
       }
-    } else {
+    } else if (type !== 'galpon') {
       // Columnas Edificio 3D
       for (let z = 0; z < numFloors; z++) {
         for (let x = 0; x <= numBaysX; x++) {
