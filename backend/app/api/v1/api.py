@@ -9,10 +9,12 @@ from app.api.v1.endpoints import arko_landing_sites
 from app.api.v1.endpoints import calculadora
 from app.api.v1.endpoints import arko_app
 from app.api.v1.endpoints import contact
+from app.api.v1.endpoints import leads
 
 api_router = APIRouter()
 
 # Arko 360 Endpoints
+api_router.include_router(leads.router, prefix="/leads", tags=["leads"])
 api_router.include_router(contact.router, prefix="/arko360/contact", tags=["contact"])
 api_router.include_router(arko.router, prefix="/arko", tags=["arko360"])
 api_router.include_router(
