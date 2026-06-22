@@ -41,18 +41,45 @@ export default function Promotions() {
           </p>
         </div>
 
-        <div className="grid" style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-          gap: '32px' 
-        }}>
-          {promos.map(promo => (
-            <div key={promo.id} className="card" style={{ 
-              backgroundColor: 'white', 
-              borderRadius: '16px', 
-              overflow: 'hidden', 
-              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
-            }}>
+        <style>{`
+          @keyframes scroll-promos {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(-100% + 100vw - 48px)); }
+          }
+          .promo-track {
+            display: flex;
+            gap: 32px;
+            width: max-content;
+            animation: scroll-promos 25s linear infinite alternate;
+            padding: 16px 0;
+          }
+          .promo-track:hover {
+            animation-play-state: paused;
+          }
+          .promo-card {
+            width: 350px;
+            flex-shrink: 0;
+            background-color: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+          }
+          .promo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+          }
+          /* Media query for smaller screens */
+          @media (max-width: 768px) {
+            .promo-card { width: 300px; }
+          }
+        `}</style>
+
+        <div style={{ overflow: 'hidden', margin: '0 -16px', padding: '0 16px' }}>
+          <div className="promo-track">
+            {/* Duplicamos los promos para que el carrusel se vea lleno y tenga suficiente contenido para desplazarse */}
+            {[...promos, ...promos].map((promo, i) => (
+              <div key={`${promo.id}-${i}`} className="promo-card">
               <div style={{ height: '200px', width: '100%', overflow: 'hidden' }}>
                 <img 
                   src={promo.image} 
@@ -78,9 +105,9 @@ export default function Promotions() {
                   </button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
       </div>
 
       {selectedPromo && (
