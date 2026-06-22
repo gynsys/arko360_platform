@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import toast from 'react-hot-toast';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { SiteConfigContext } from '../../App.jsx';
 
 export default function BudgetCalculatorModal({ promo, onClose }) {
@@ -135,7 +135,7 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
       `$${(currentM2 * prices.mano_obra).toFixed(2)}`
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 40,
       head: [['Item', 'Cantidad', 'Precio Unitario', 'Subtotal']],
       body: tableData,
@@ -143,7 +143,7 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
       headStyles: { fillColor: [59, 130, 246] }
     });
 
-    const finalY = doc.lastAutoTable.finalY || 40;
+    const finalY = doc.lastAutoTable?.finalY || 40 + (tableData.length * 10);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text(`Total Estimado: $${total.toFixed(2)}`, 14, finalY + 15);
