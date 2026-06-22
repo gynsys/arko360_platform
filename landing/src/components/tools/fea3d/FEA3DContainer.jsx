@@ -661,7 +661,6 @@ export default function FEA3DContainer() {
       <ShellPanel isOpen={shellPanelOpen} onClose={() => setShellPanelOpen(false)} />
       <LoadCombosModal isOpen={combosModalOpen} onClose={() => setCombosModalOpen(false)} />
       <ReplicateModal isOpen={replicateModalOpen} onClose={() => setReplicateModalOpen(false)} />
-      <DrawCantileverModal isOpen={cantileverModalOpen} onClose={() => setCantileverModalOpen(false)} />
       <WindLoadModal isOpen={windLoadModalOpen} onClose={() => setWindLoadModalOpen(false)} />
       {materialsModalOpen && <DefineMaterialsModal onClose={() => setMaterialsModalOpen(false)} />}
       {sectionsModalOpen && <DefineSectionsModal onClose={() => setSectionsModalOpen(false)} />}
