@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calculator, Settings2, Droplets, HardHat, Info, ChevronDown, Ruler } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Calculator, Settings2, Droplets, HardHat, Info, ChevronDown, Ruler, ArrowLeft } from 'lucide-react';
 
 const AGGREGATE_FACTORS = {
   '3"': 0.82,
@@ -251,9 +252,16 @@ const MixDesignCalculator = () => {
   const rawCement = parseFloat(results.cemento) || 0;
 
   return (
-    <div className="bg-slate-50 min-h-screen p-6 md:p-12 font-sans">
+    <div className="bg-slate-50 min-h-screen p-6 md:p-12 pt-32 font-sans">
       <div className="max-w-6xl mx-auto space-y-8">
         
+        <div className="mb-4">
+          <Link to="/#promociones" className="inline-flex items-center text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Volver a Cotizadores
+          </Link>
+        </div>
+
         <header className="mb-10 text-center md:text-left">
           <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center md:justify-start gap-3">
             <Calculator className="w-10 h-10 text-amber-500" />
