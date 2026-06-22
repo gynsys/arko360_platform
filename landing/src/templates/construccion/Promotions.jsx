@@ -108,6 +108,7 @@ export default function Promotions() {
               </div>
             ))}
           </div>
+        </div>
       </div>
 
       {selectedPromo && (
