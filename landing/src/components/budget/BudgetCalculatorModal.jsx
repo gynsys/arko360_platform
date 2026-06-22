@@ -6,10 +6,12 @@ import { SiteConfigContext } from '../../App.jsx';
 
 export default function BudgetCalculatorModal({ promo, onClose }) {
   const config = useContext(SiteConfigContext);
-  const [largo, setLargo] = useState(4);
-  const [ancho, setAncho] = useState(3);
-  const [puertas, setPuertas] = useState(0.9); // Ancho típico de una puerta
+  const [rooms, setRooms] = useState([{ id: 1, largo: 4, ancho: 3, puertas: 0.9 }]);
   const [m2Manual, setM2Manual] = useState(10); // Para casos donde solo se pide m2 directo
+  
+  const addRoom = () => setRooms([...rooms, { id: Date.now(), largo: 4, ancho: 3, puertas: 0.9 }]);
+  const removeRoom = (id) => { if (rooms.length > 1) setRooms(rooms.filter(r => r.id !== id)); };
+  const updateRoom = (id, field, value) => setRooms(rooms.map(r => r.id === id ? { ...r, [field]: Number(value) } : r));
   
   const [unlocked, setUnlocked] = useState(false);
   const [showLeadForm, setShowLeadForm] = useState(false);
@@ -32,8 +34,14 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
     let moCost = 0;
 
     const isPerimeterMode = promo.id === 'porcelanato' || promo.id === 'vinil';
-    const currentM2 = isPerimeterMode ? (largo * ancho) : m2Manual;
-    const perimetro = isPerimeterMode ? Math.max(0, ((largo + ancho) * 2) - puertas) : 0;
+    
+    let currentM2 = m2Manual;
+    let perimetro = 0;
+    
+    if (isPerimeterMode) {
+      currentM2 = rooms.reduce((acc, r) => acc + (r.largo * r.ancho), 0);
+      perimetro = rooms.reduce((acc, r) => acc + Math.max(0, ((r.largo + r.ancho) * 2) - r.puertas), 0);
+    }
 
     if (promo.id === 'porcelanato') {
       const boxes = Math.ceil((currentM2 * 1.1) / 1.44); // 10% waste, 1.44m2 per box
@@ -61,7 +69,7 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
 
     setMaterials(mat);
     setTotal(matCost + moCost);
-  }, [largo, ancho, puertas, m2Manual, prices, promo.id]);
+  }, [rooms, m2Manual, prices, promo.id]);
 
   const handlePriceClick = () => {
     if (!unlocked) {
@@ -116,7 +124,7 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
     doc.setFontSize(12);
     
     const isPerimeterMode = promo.id === 'porcelanato' || promo.id === 'vinil';
-    const currentM2 = isPerimeterMode ? (largo * ancho) : m2Manual;
+    const currentM2 = isPerimeterMode ? rooms.reduce((acc, r) => acc + (r.largo * r.ancho), 0) : m2Manual;
     
     doc.text(`Área Total: ${currentM2.toFixed(2)} m2`, 14, 32);
     
@@ -153,7 +161,7 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
 
   const handleWhatsApp = () => {
     const isPerimeterMode = promo.id === 'porcelanato' || promo.id === 'vinil';
-    const currentM2 = isPerimeterMode ? (largo * ancho) : m2Manual;
+    const currentM2 = isPerimeterMode ? rooms.reduce((acc, r) => acc + (r.largo * r.ancho), 0) : m2Manual;
     const phone = config?.phone || '1234567890'; // Config phone or fallback
     
     const message = `Hola, quisiera solicitar más información sobre el presupuesto estimado que realicé (${currentM2.toFixed(2)} m2) para el servicio de: ${promo.title}.`;
@@ -189,33 +197,55 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
         </p>
 
         { (promo.id === 'porcelanato' || promo.id === 'vinil') ? (
-          <div style={{ marginBottom: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 calc(33% - 16px)', minWidth: '100px' }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px' }}>Largo (m)</label>
-              <input 
-                type="number" value={largo} onChange={(e) => setLargo(Number(e.target.value))}
-                className="input" min="0.1" step="0.1"
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1.1rem' }}
-              />
-            </div>
-            <div style={{ flex: '1 1 calc(33% - 16px)', minWidth: '100px' }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px' }}>Ancho (m)</label>
-              <input 
-                type="number" value={ancho} onChange={(e) => setAncho(Number(e.target.value))}
-                className="input" min="0.1" step="0.1"
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1.1rem' }}
-              />
-            </div>
-            <div style={{ flex: '1 1 calc(33% - 16px)', minWidth: '100px' }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px' }}>Puertas (m lineales)</label>
-              <input 
-                type="number" value={puertas} onChange={(e) => setPuertas(Number(e.target.value))}
-                className="input" min="0" step="0.1"
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1.1rem' }}
-              />
-            </div>
-            <div style={{ width: '100%', marginTop: '8px', color: '#64748b', fontSize: '0.9rem' }}>
-              Área total: <strong>{(largo * ancho).toFixed(2)} m²</strong> | Perímetro (sin puertas): <strong>{Math.max(0, ((largo + ancho) * 2) - puertas).toFixed(2)} m</strong>
+          <div style={{ marginBottom: '24px' }}>
+            {rooms.map((room, index) => (
+              <div key={room.id} style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: index < rooms.length - 1 ? '1px dashed #cbd5e1' : 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <h4 style={{ fontWeight: 'bold', color: '#334155' }}>Espacio {index + 1}</h4>
+                  {rooms.length > 1 && (
+                    <button onClick={() => removeRoom(room.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>
+                      Eliminar
+                    </button>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: '1 1 calc(33% - 16px)', minWidth: '100px' }}>
+                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', fontSize: '0.9rem' }}>Largo (m)</label>
+                    <input 
+                      type="number" value={room.largo} onChange={(e) => updateRoom(room.id, 'largo', e.target.value)}
+                      className="input" min="0.1" step="0.1"
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                  <div style={{ flex: '1 1 calc(33% - 16px)', minWidth: '100px' }}>
+                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', fontSize: '0.9rem' }}>Ancho (m)</label>
+                    <input 
+                      type="number" value={room.ancho} onChange={(e) => updateRoom(room.id, 'ancho', e.target.value)}
+                      className="input" min="0.1" step="0.1"
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                  <div style={{ flex: '1 1 calc(33% - 16px)', minWidth: '100px' }}>
+                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', fontSize: '0.9rem' }}>Puertas (ml)</label>
+                    <input 
+                      type="number" value={room.puertas} onChange={(e) => updateRoom(room.id, 'puertas', e.target.value)}
+                      className="input" min="0" step="0.1"
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            <button 
+              onClick={addRoom}
+              style={{ width: '100%', padding: '12px', background: '#f8fafc', color: '#3b82f6', border: '1px dashed #3b82f6', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '16px' }}
+            >
+              + Añadir otro espacio
+            </button>
+            
+            <div style={{ width: '100%', color: '#64748b', fontSize: '0.95rem', background: '#f1f5f9', padding: '12px', borderRadius: '8px' }}>
+              Área total acumulada: <strong>{rooms.reduce((acc, r) => acc + (r.largo * r.ancho), 0).toFixed(2)} m²</strong>
             </div>
           </div>
         ) : (
@@ -267,7 +297,7 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
             <span style={{ width: '50%', color: '#0f172a' }}>Mano de Obra (por m²)</span>
-            <span style={{ width: '20%', textAlign: 'center', color: '#0f172a' }}>{ (promo.id === 'porcelanato' || promo.id === 'vinil') ? (largo * ancho).toFixed(2) : m2Manual }</span>
+            <span style={{ width: '20%', textAlign: 'center', color: '#0f172a' }}>{ (promo.id === 'porcelanato' || promo.id === 'vinil') ? rooms.reduce((acc, r) => acc + (r.largo * r.ancho), 0).toFixed(2) : m2Manual }</span>
             <div style={{ width: '30%', textAlign: 'right', position: 'relative' }}>
                 {!unlocked && <span style={{ position: 'absolute', left: '-15px', top: '5px', fontSize: '0.8rem' }}>🔒</span>}
                 <input 
