@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Settings, Play, Building2, Save, FolderOpen, Plus, MousePointer2, Layers, Grid, ArrowDownToLine, Calculator, ChevronRight, ChevronLeft, LogIn, Cloud, BookOpen, FileText, Download, HelpCircle, LogOut, X, Copy } from 'lucide-react';
+import { Settings, Play, Building2, Save, FolderOpen, Plus, MousePointer2, Layers, Grid, ArrowDownToLine, Calculator, ChevronRight, ChevronLeft, LogIn, Cloud, BookOpen, FileText, Download, HelpCircle, LogOut, X, Copy, Wind } from 'lucide-react';
 import { StructureCanvas } from './StructureCanvas';
 import { PropertyPanel } from './PropertyPanel';
 import { TemplateWizard } from './TemplateWizard';
@@ -27,6 +27,7 @@ import { AuthModal } from './AuthModal';
 import { ProjectsDashboardModal } from './ProjectsDashboardModal';
 import { createProject, updateProject, loadTokenFromStorage } from './api';
 import { HelpDocsModal } from './HelpDocsModal';
+import { WindLoadModal } from './WindLoadModal';
 
 export default function FEA3DContainer() {
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -42,6 +43,7 @@ export default function FEA3DContainer() {
   const [assignRestraintsModalOpen, setAssignRestraintsModalOpen] = useState(false);
   const [replicateModalOpen, setReplicateModalOpen] = useState(false);
   const [cantileverModalOpen, setCantileverModalOpen] = useState(false);
+  const [windLoadModalOpen, setWindLoadModalOpen] = useState(false);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
@@ -470,7 +472,9 @@ export default function FEA3DContainer() {
             { separator: true },
             { label: 'Restricciones / Apoyos', icon: Settings, onClick: () => setAssignRestraintsModalOpen(true), disabled: isResultsMode },
             { label: 'Cargas en Nudos (Joint)', icon: ArrowDownToLine, onClick: () => setAssignLoadsModalOpen(true), disabled: isResultsMode },
-            { label: 'Cargas en Vigas (Frame)', icon: ArrowDownToLine, onClick: () => setAssignFrameLoadsModalOpen(true), disabled: isResultsMode }
+            { label: 'Cargas en Vigas (Frame)', icon: ArrowDownToLine, onClick: () => setAssignFrameLoadsModalOpen(true), disabled: isResultsMode },
+            { separator: true },
+            { label: 'Cargas de Viento (Galpón)', icon: Wind, onClick: () => setWindLoadModalOpen(true), disabled: isResultsMode }
           ]} />
 
           <MenuDropdown title="Analyze" items={[
@@ -657,6 +661,8 @@ export default function FEA3DContainer() {
       <ShellPanel isOpen={shellPanelOpen} onClose={() => setShellPanelOpen(false)} />
       <LoadCombosModal isOpen={combosModalOpen} onClose={() => setCombosModalOpen(false)} />
       <ReplicateModal isOpen={replicateModalOpen} onClose={() => setReplicateModalOpen(false)} />
+      <DrawCantileverModal isOpen={cantileverModalOpen} onClose={() => setCantileverModalOpen(false)} />
+      <WindLoadModal isOpen={windLoadModalOpen} onClose={() => setWindLoadModalOpen(false)} />
       {materialsModalOpen && <DefineMaterialsModal onClose={() => setMaterialsModalOpen(false)} />}
       {sectionsModalOpen && <DefineSectionsModal onClose={() => setSectionsModalOpen(false)} />}
       {tablesModalOpen && <ResultsTableModal onClose={() => setTablesModalOpen(false)} />}

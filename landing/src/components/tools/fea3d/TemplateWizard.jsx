@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStructureStore } from './useStructureStore';
-import { Box, Columns, Rows, Layers, X, FolderOpen, Cloud } from 'lucide-react';
+import { Box, Columns, Rows, Layers, X, FolderOpen, Cloud, Warehouse } from 'lucide-react';
 import { getProjects } from './api';
 import toast from 'react-hot-toast';
 
@@ -15,7 +15,10 @@ const DEFAULT_CONFIG = {
   units: 'm, kgf, C',
   systemMaterial: 'Concrete', // 'Concrete' or 'Steel'
   colSectionId: '',
-  beamSectionId: ''
+  beamSectionId: '',
+  trussType: 'Howe',
+  roofPanels: 4,
+  apexHeight: 4.5
 };
 
 export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
@@ -128,6 +131,12 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
               icon={<Layers size={18} />}
               label="Muro/Cimentación"
             />
+            <TemplateType
+              active={config.type === 'galpon'}
+              onClick={() => setConfig({ ...config, type: 'galpon', systemMaterial: 'Steel' })}
+              icon={<Warehouse size={18} />}
+              label="Galpón Industrial"
+            />
 
             {/* Proyectos Recientes en Nube y Local */}
             {isFirstTime && (
@@ -181,7 +190,7 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
           {/* Formulario */}
           <div className="w-2/3 p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              {config.type !== 'beam' && (
+              {config.type !== 'beam' && config.type !== 'galpon' && (
                 <>
                   <Input
                     label="Número de Pisos"
@@ -195,6 +204,20 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                   />
                 </>
               )}
+              {config.type === 'galpon' && (
+                <>
+                  <Input
+                    label={`Altura de Alero (${config.units?.split(',')[0] || 'm'})`}
+                    value={config.floorHeight}
+                    onChange={v => setConfig({ ...config, floorHeight: v })}
+                  />
+                  <Input
+                    label={`Altura Cumbrera (${config.units?.split(',')[0] || 'm'})`}
+                    value={config.apexHeight}
+                    onChange={v => setConfig({ ...config, apexHeight: v })}
+                  />
+                </>
+              )}
               
               <Input
                 label={config.type === 'beam' ? "Número de Vanos" : "Vanos en X"}
@@ -202,23 +225,59 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                 onChange={v => setConfig({ ...config, numBaysX: v })}
               />
               <Input
-                label={config.type === 'beam' ? `Longitud de Vano (${config.units?.split(',')[0] || 'm'})` : `Ancho de Vanos X (${config.units?.split(',')[0] || 'm'})`}
+                label={config.type === 'beam' ? `Longitud de Vano (${config.units?.split(',')[0] || 'm'})` : (config.type === 'galpon' ? "Luz Libre (Ancho)" : `Ancho de Vanos X (${config.units?.split(',')[0] || 'm'})`)}
                 value={config.bayWidthX}
-                onChange={v => setConfig({ ...config, bayWidthX: v })}
+                onChange={v => {
+                  if (config.type !== 'galpon') {
+                    setConfig({ ...config, bayWidthX: v });
+                  } else {
+                    // Predimensionado para Galpon
+                    let truss = 'Howe';
+                    let panels = 4;
+                    if (v > 10 && v <= 20) {
+                      panels = 6;
+                      truss = 'Pratt';
+                    } else if (v > 20) {
+                      panels = 8;
+                      truss = 'Pratt';
+                    }
+                    setConfig({ ...config, bayWidthX: v, trussType: truss, roofPanels: panels });
+                  }
+                }}
               />
               
               {config.type !== 'beam' && config.type !== '2d_frame' && (
                 <>
                   <Input
-                    label="Vanos en Y"
+                    label={config.type === 'galpon' ? "Vanos Longitudinales (Y)" : "Vanos en Y"}
                     value={config.numBaysY}
                     onChange={v => setConfig({ ...config, numBaysY: v })}
                   />
                   <Input
-                    label={`Ancho de Vanos Y (${config.units?.split(',')[0] || 'm'})`}
+                    label={config.type === 'galpon' ? `Separación entre Pórticos (${config.units?.split(',')[0] || 'm'})` : `Ancho de Vanos Y (${config.units?.split(',')[0] || 'm'})`}
                     value={config.bayWidthY}
                     onChange={v => setConfig({ ...config, bayWidthY: v })}
                   />
+                  {config.type === 'galpon' && (
+                    <>
+                      <div>
+                        <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Tipo de Cercha</label>
+                        <select 
+                          value={config.trussType} 
+                          onChange={(e) => setConfig({ ...config, trussType: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                        >
+                          <option value="Howe">Howe</option>
+                          <option value="Pratt">Pratt</option>
+                        </select>
+                      </div>
+                      <Input
+                        label="Nº Paneles (Por mitad)"
+                        value={config.roofPanels}
+                        onChange={v => setConfig({ ...config, roofPanels: Math.max(2, Math.floor(v)) })}
+                      />
+                    </>
+                  )}
                 </>
               )}
             </div>

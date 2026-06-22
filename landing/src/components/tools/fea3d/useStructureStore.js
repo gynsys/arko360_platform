@@ -875,6 +875,54 @@ export const useStructureStore = create((set, get) => ({
           }
         }
       }
+    } else if (type === 'galpon') {
+      const { apexHeight, roofPanels, trussType } = config;
+      const L = bayWidthX;
+      const E = floorHeight;
+      const H = apexHeight;
+      const P = roofPanels;
+      const dx = L / (2 * P);
+      const slope = (H - E) / (L / 2);
+
+      // We will store nodes per frame to easily connect them later
+      config._galponNodes = []; 
+
+      for (let y = 0; y <= numBaysY; y++) {
+        const yPos = y * bayWidthY;
+        const frameNodes = { base: [], lc: [], uc: [] };
+        
+        // Base nodes (Fixed)
+        const b0 = { id: `N${nodeCount++}`, x: 0, y: yPos, z: 0, restraint: { ux: true, uy: true, uz: true, rx: true, ry: true, rz: true } };
+        const bn = { id: `N${nodeCount++}`, x: L, y: yPos, z: 0, restraint: { ux: true, uy: true, uz: true, rx: true, ry: true, rz: true } };
+        newNodes.push(b0, bn);
+        frameNodes.base.push(b0, bn);
+
+        // Lower and Upper chord nodes
+        for (let i = 0; i <= 2 * P; i++) {
+          const xPos = i * dx;
+          const isEave = (i === 0 || i === 2 * P);
+          
+          let zUc = E;
+          if (xPos <= L/2) zUc = E + xPos * slope;
+          else zUc = E + (L - xPos) * slope;
+
+          // Upper chord node
+          const uc = { id: `N${nodeCount++}`, x: xPos, y: yPos, z: zUc, restraint: null };
+          newNodes.push(uc);
+          frameNodes.uc.push(uc);
+
+          // Lower chord node (only internal, since 0 and 2P are eave nodes which are uc)
+          if (!isEave) {
+            const lc = { id: `N${nodeCount++}`, x: xPos, y: yPos, z: E, restraint: null };
+            newNodes.push(lc);
+            frameNodes.lc.push(lc);
+          } else {
+            // Push the eave node as lc as well for easy indexing
+            frameNodes.lc.push(uc);
+          }
+        }
+        config._galponNodes.push(frameNodes);
+      }
     }
 
     // Concrete 4000 Psi = f'c 28 MPa
@@ -984,6 +1032,70 @@ export const useStructureStore = create((set, get) => ({
           }
         }
       }
+    } else if (type === 'galpon') {
+      const { roofPanels, trussType } = config;
+      const P = roofPanels;
+      
+      for (let y = 0; y <= config.numBaysY; y++) {
+        const frame = config._galponNodes[y];
+        
+        // 1. Columns
+        newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.base[0].id, frame.uc[0].id], section_id: finalColSectionId, material_id: baseMatId });
+        newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.base[1].id, frame.uc[2*P].id], section_id: finalColSectionId, material_id: baseMatId });
+
+        // 2. Truss - Upper Chord
+        for (let i = 0; i < 2*P; i++) {
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: finalBeamSectionId, material_id: baseMatId });
+        }
+
+        // 3. Truss - Lower Chord
+        for (let i = 0; i < 2*P; i++) {
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i].id, frame.lc[i+1].id], section_id: finalBeamSectionId, material_id: baseMatId });
+        }
+
+        // 4. Truss - Verticals (Montantes)
+        for (let i = 1; i < 2*P; i++) {
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i].id, frame.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
+        }
+
+        // 5. Truss - Diagonals
+        for (let i = 1; i <= P; i++) {
+          // Left half
+          if (trussType === 'Howe') {
+            // Howe: diagonals slope UP towards the center (Compression in diagonals, but tension in bottom chord).
+            // From LC_{i-1} to UC_i
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i-1].id, frame.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
+          } else { // Pratt
+            // Pratt: diagonals slope DOWN towards the center
+            // From UC_{i-1} to LC_i
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i-1].id, frame.lc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
+          }
+        }
+        for (let i = P + 1; i <= 2*P; i++) {
+          // Right half
+          if (trussType === 'Howe') {
+            // Howe: From LC_i to UC_{i-1}
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i].id, frame.uc[i-1].id], section_id: finalBeamSectionId, material_id: baseMatId });
+          } else { // Pratt
+            // Pratt: From UC_i to LC_{i-1}
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i].id, frame.lc[i-1].id], section_id: finalBeamSectionId, material_id: baseMatId });
+          }
+        }
+      }
+
+      // 6. Longitudinal Purlins (Correas) and Struts
+      for (let y = 0; y < config.numBaysY; y++) {
+        const frame1 = config._galponNodes[y];
+        const frame2 = config._galponNodes[y+1];
+        
+        // Purlins at upper chord nodes
+        for (let i = 0; i <= 2*P; i++) {
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
+        }
+      }
+      
+      // Cleanup temp reference
+      delete config._galponNodes;
     }
 
     set({
