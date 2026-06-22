@@ -24,6 +24,10 @@ const Z_FACTORS = {
 };
 
 const MixDesignCalculator = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Input State
   const [inputs, setInputs] = useState({
     volume: 1.0,           // Volumen (m3)
@@ -255,9 +259,12 @@ const MixDesignCalculator = () => {
     <div className="bg-slate-50 min-h-screen p-6 md:p-12 pt-32 font-sans">
       <div className="max-w-6xl mx-auto space-y-8">
         
-        <div className="mb-4">
-          <Link to="/#promociones" className="inline-flex items-center text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
-            <ArrowLeft className="w-4 h-4 mr-1" />
+        <div className="mb-6">
+          <Link 
+            to="/#promociones" 
+            className="inline-flex items-center text-sm font-bold text-slate-600 hover:text-amber-600 transition-colors bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200 hover:border-amber-200"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Volver a Cotizadores
           </Link>
         </div>
