@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BudgetCalculatorModal from '../../components/budget/BudgetCalculatorModal.jsx';
 
 const promos = [
@@ -22,11 +23,28 @@ const promos = [
     image: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     description: 'Instalación rápida, resistente al agua y alto tráfico.',
     basePrice: 'Desde $12 / m²'
+  },
+  {
+    id: 'losa',
+    title: 'Cálculo de Losa Maciza',
+    image: 'https://images.unsplash.com/photo-1541888087405-ebcf7429188a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+    description: 'Análisis estructural y diseño de refuerzo en 3D para losas de concreto.',
+    basePrice: 'App Técnica',
+    link: '/arko3d'
+  },
+  {
+    id: 'mezcla',
+    title: 'Diseño de Mezclas ACI',
+    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+    description: 'Calculadora interactiva para dosificación de concreto según el método ACI.',
+    basePrice: 'App Técnica',
+    link: '/herramientas/diseno-de-mezclas'
   }
 ];
 
 export default function Promotions() {
   const [selectedPromo, setSelectedPromo] = useState(null);
+  const navigate = useNavigate();
 
   return (
     <section className="section bg-slate-50" id="promociones">
@@ -97,11 +115,11 @@ export default function Promotions() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontWeight: '600', color: 'var(--primary)' }}>{promo.basePrice}</span>
                   <button 
-                    onClick={() => setSelectedPromo(promo)}
+                    onClick={() => promo.link ? navigate(promo.link) : setSelectedPromo(promo)}
                     className="btn btn-primary" 
                     style={{ padding: '8px 16px', fontSize: '0.9rem' }}
                   >
-                    Calcular
+                    {promo.link ? 'Abrir' : 'Calcular'}
                   </button>
                 </div>
               </div>

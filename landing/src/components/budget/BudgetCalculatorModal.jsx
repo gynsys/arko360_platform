@@ -9,6 +9,19 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
   const [rooms, setRooms] = useState([{ id: 1, largo: 4, ancho: 3, puertas: 0.9 }]);
   const [m2Manual, setM2Manual] = useState(10); // Para casos donde solo se pide m2 directo
   
+  const [tileFormat, setTileFormat] = useState('60x60');
+  const [hasDemolition, setHasDemolition] = useState(false);
+  const [hasScreed, setHasScreed] = useState(false);
+  const [screedArea, setScreedArea] = useState(10);
+  const [screedThickness, setScreedThickness] = useState(4); // cm
+
+  const formatData = {
+    '33x33': { m2PerBox: 1.5 },
+    '45x45': { m2PerBox: 2.0 },
+    '60x60': { m2PerBox: 1.44 },
+    '120x60': { m2PerBox: 1.44 },
+  };
+  
   const addRoom = () => setRooms([...rooms, { id: Date.now(), largo: 4, ancho: 3, puertas: 0.9 }]);
   const removeRoom = (id) => { if (rooms.length > 1) setRooms(rooms.filter(r => r.id !== id)); };
   const updateRoom = (id, field, value) => setRooms(rooms.map(r => r.id === id ? { ...r, [field]: Number(value) } : r));
@@ -22,7 +35,12 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
     material_principal: 15,
     material_secundario: 5,
     rodapie: 8,
-    mano_obra: 12
+    mano_obra: 12,
+    mo_demolicion: 3,
+    bote_escombros: 15, // per m3
+    cemento: 8,
+    arena: 20, // per m3
+    mo_sobrepiso: 5,
   });
 
   const [materials, setMaterials] = useState([]);
@@ -44,7 +62,8 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
     }
 
     if (promo.id === 'porcelanato') {
-      const boxes = Math.ceil((currentM2 * 1.1) / 1.44); // 10% waste, 1.44m2 per box
+      const boxSize = formatData[tileFormat]?.m2PerBox || 1.44;
+      const boxes = Math.ceil((currentM2 * 1.1) / boxSize); // 10% waste
       const pego = Math.ceil(currentM2 / 3); // 1 bag per 3m2
       const rodapieLineal = Math.ceil(perimetro * 1.05); // 5% desperdicio rodapie
       
@@ -54,6 +73,29 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
       
       matCost = (boxes * prices.material_principal) + (pego * prices.material_secundario) + (rodapieLineal * prices.rodapie);
       moCost = currentM2 * prices.mano_obra;
+
+      if (hasDemolition) {
+        const volumeM3 = currentM2 * 0.02; // 2cm thickness
+        mat.push({ name: 'Bote de Escombros (m³)', qty: volumeM3.toFixed(2), unitPrice: prices.bote_escombros, key: 'bote_escombros' });
+        mat.push({ name: 'Mano de Obra Demolición (m²)', qty: currentM2.toFixed(2), unitPrice: prices.mo_demolicion, key: 'mo_demolicion' });
+        matCost += volumeM3 * prices.bote_escombros;
+        moCost += currentM2 * prices.mo_demolicion;
+      }
+
+      if (hasScreed) {
+        const sArea = Number(screedArea) || currentM2; // fallback to currentM2 if not specified
+        const sThick = Number(screedThickness) || 4;
+        const screedVolume = (sArea * (sThick / 100)); // in m3
+        const sacosCemento = Math.ceil(screedVolume * 7); 
+        const arenaM3 = (screedVolume * 1.1).toFixed(2);
+        
+        mat.push({ name: 'Cemento para Sobrepiso (sacos)', qty: sacosCemento, unitPrice: prices.cemento, key: 'cemento' });
+        mat.push({ name: 'Arena para Sobrepiso (m³)', qty: arenaM3, unitPrice: prices.arena, key: 'arena' });
+        mat.push({ name: 'Mano de Obra Sobrepiso (m²)', qty: sArea.toFixed(2), unitPrice: prices.mo_sobrepiso, key: 'mo_sobrepiso' });
+
+        matCost += (sacosCemento * prices.cemento) + (arenaM3 * prices.arena);
+        moCost += sArea * prices.mo_sobrepiso;
+      }
     } else if (promo.id === 'bano') {
       mat.push({ name: 'Kit Remodelación Baño', qty: 1, unitPrice: prices.material_principal * currentM2, key: 'material_principal' });
       matCost = 1 * (prices.material_principal * currentM2);
@@ -69,7 +111,7 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
 
     setMaterials(mat);
     setTotal(matCost + moCost);
-  }, [rooms, m2Manual, prices, promo.id]);
+  }, [rooms, m2Manual, prices, promo.id, tileFormat, hasDemolition, hasScreed, screedArea, screedThickness]);
 
   const handlePriceClick = () => {
     if (!unlocked) {
@@ -244,9 +286,56 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
               + Añadir otro espacio
             </button>
             
-            <div style={{ width: '100%', color: '#64748b', fontSize: '0.95rem', background: '#f1f5f9', padding: '12px', borderRadius: '8px' }}>
+            <div style={{ width: '100%', color: '#64748b', fontSize: '0.95rem', background: '#f1f5f9', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
               Área total acumulada: <strong>{rooms.reduce((acc, r) => acc + (r.largo * r.ancho), 0).toFixed(2)} m²</strong>
             </div>
+
+            {promo.id === 'porcelanato' && (
+              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                <h4 style={{ fontWeight: 'bold', marginBottom: '12px', color: '#0f172a' }}>Opciones Avanzadas</h4>
+                
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', fontSize: '0.9rem' }}>Formato del Porcelanato</label>
+                  <select 
+                    value={tileFormat} onChange={(e) => setTileFormat(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
+                  >
+                    {Object.keys(formatData).map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                    <input type="checkbox" checked={hasDemolition} onChange={(e) => setHasDemolition(e.target.checked)} />
+                    Incluye demolición de piso existente (Cerámica/Porcelanato)
+                  </label>
+                  {hasDemolition && (
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', marginLeft: '24px' }}>
+                      Se calculará automáticamente la mano de obra de demolición y el bote de escombros (estimado en m³).
+                    </p>
+                  )}
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                    <input type="checkbox" checked={hasScreed} onChange={(e) => setHasScreed(e.target.checked)} />
+                    Construcción de sobrepiso (Nivelación)
+                  </label>
+                  {hasScreed && (
+                    <div style={{ display: 'flex', gap: '16px', marginTop: '12px', marginLeft: '24px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px' }}>Área a nivelar (m²)</label>
+                        <input type="number" value={screedArea} onChange={(e) => setScreedArea(e.target.value)} min="1" style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px' }}>Espesor estimado (cm)</label>
+                        <input type="number" value={screedThickness} onChange={(e) => setScreedThickness(e.target.value)} min="1" style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div style={{ marginBottom: '24px' }}>
