@@ -494,36 +494,60 @@ function ForceDiagram({ id, start, end, stations, resultType, scale }) {
         />
       </mesh>
       
-      {/* Textos de Picos */}
-      {geometry.maxPoint && Math.abs(geometry.maxVal) > 1e-4 && (() => {
-        const dir = new THREE.Vector3().subVectors(geometry.maxPoint, geometry.maxBase);
-        if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1);
-        else dir.normalize();
-        const pos = geometry.maxPoint.clone().add(dir.multiplyScalar(0.4));
-        return (
-          <Text 
-            position={[pos.x, pos.y, pos.z]} 
-            fontSize={0.25} color="white"
-            rotation={[Math.PI / 2, 0, 0]}
-          >
-            {geometry.maxVal.toFixed(2)}
-          </Text>
-        );
-      })()}
-      {geometry.minPoint && Math.abs(geometry.minVal) > 1e-4 && geometry.maxVal !== geometry.minVal && (() => {
-        const dir = new THREE.Vector3().subVectors(geometry.minPoint, geometry.minBase);
-        if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1);
-        else dir.normalize();
-        const pos = geometry.minPoint.clone().add(dir.multiplyScalar(0.4));
-        return (
-          <Text 
-            position={[pos.x, pos.y, pos.z]} 
-            fontSize={0.25} color="white"
-            rotation={[Math.PI / 2, 0, 0]}
-          >
-            {geometry.minVal.toFixed(2)}
-          </Text>
-        );
+      {/* Texto de Pico: solo muestra el valor de mayor magnitud absoluta para evitar solapamiento */}
+      {(() => {
+        const absMax = Math.abs(geometry.maxVal);
+        const absMin = Math.abs(geometry.minVal);
+        const showMax = Math.abs(geometry.maxVal) > 1e-4;
+        const showMin = Math.abs(geometry.minVal) > 1e-4 && geometry.maxVal !== geometry.minVal;
+
+        const labels = [];
+
+        if (showMax) {
+          const dir = new THREE.Vector3().subVectors(geometry.maxPoint, geometry.maxBase);
+          if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1); else dir.normalize();
+          const pos = geometry.maxPoint.clone().add(dir.multiplyScalar(0.25));
+          labels.push(
+            <Text
+              key="max"
+              position={[pos.x, pos.y, pos.z]}
+              fontSize={0.12}
+              color="#ffffff"
+              rotation={[Math.PI / 2, 0, 0]}
+              anchorX="center"
+              outlineWidth={0.012}
+              outlineColor="#000000"
+            >
+              {geometry.maxVal.toFixed(2)}
+            </Text>
+          );
+        }
+
+        // Solo mostrar mínimo si tiene diferencia significativa con el máximo y no se solapan
+        if (showMin && absMin > absMax * 0.15) {
+          const dir = new THREE.Vector3().subVectors(geometry.minPoint, geometry.minBase);
+          if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1); else dir.normalize();
+          const pos = geometry.minPoint.clone().add(dir.multiplyScalar(0.25));
+          // Distancia mínima con el label anterior para evitar solapamiento
+          const tooClose = showMax && geometry.maxPoint && pos.distanceTo(geometry.maxPoint) < 1.5;
+          if (!tooClose) {
+            labels.push(
+              <Text
+                key="min"
+                position={[pos.x, pos.y, pos.z]}
+                fontSize={0.12}
+                color="#ffe082"
+                rotation={[Math.PI / 2, 0, 0]}
+                anchorX="center"
+                outlineWidth={0.012}
+                outlineColor="#000000"
+              >
+                {geometry.minVal.toFixed(2)}
+              </Text>
+            );
+          }
+        }
+        return labels;
       })()}
     </group>
   );
@@ -890,6 +914,79 @@ function SlabLoadGraphic({ shell, nodes, q, loadColor = 0x06b6d4, textColor = '#
           </group>
         );
       })}
+    </group>
+  );
+}
+
+/**
+ * WindMembrane: Visualiza planos semitransparentes de viento sobre la cubierta del galpón.
+ * Se muestra solo cuando existen cargas de viento (loadCase 'WX' o 'WY') en el estado.
+ */
+function WindMembrane() {
+  const { loads, nodes, elements, wizardConfig, showLoads } = useStructureStore();
+  
+  const hasWindX = loads.some(l => l.loadCase === 'WX');
+  const hasWindY = loads.some(l => l.loadCase === 'WY');
+  
+  if (!showLoads || (!hasWindX && !hasWindY)) return null;
+  if (!wizardConfig || wizardConfig.type !== 'galpon') return null;
+  
+  const { bayWidthX: L, floorHeight: E, apexHeight: H, bayWidthY, numBaysY } = wizardConfig;
+  const totalY = (numBaysY || 1) * (bayWidthY || 6);
+  
+  // Generar paneles triangulares del techo (dos vertientes)
+  // Vertiente izquierda: (0, 0, E) → (L/2, 0, H) → (L/2, totalY, H) → (0, totalY, E)
+  // Vertiente derecha: (L/2, 0, H) → (L, 0, E) → (L, totalY, E) → (L/2, totalY, H)
+  
+  const slopeLeft = [
+    [0,    0,       E],
+    [L/2,  0,       H],
+    [L/2,  totalY,  H],
+    [0,    totalY,  E],
+  ];
+  const slopeRight = [
+    [L/2,  0,       H],
+    [L,    0,       E],
+    [L,    totalY,  E],
+    [L/2,  totalY,  H],
+  ];
+  
+  const makeGeom = (corners) => {
+    // Quad → 2 triangles
+    const verts = new Float32Array([
+      ...corners[0], ...corners[1], ...corners[2],
+      ...corners[0], ...corners[2], ...corners[3],
+    ]);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+    geo.computeVertexNormals();
+    return geo;
+  };
+  
+  return (
+    <group>
+      {/* Membrana Barlovento (WX - izquierda) */}
+      {hasWindX && (
+        <mesh geometry={makeGeom(slopeLeft)}>
+          <meshBasicMaterial
+            color="#38bdf8"
+            transparent opacity={0.18}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+      {/* Membrana Sotavento (WX - derecha) */}
+      {hasWindX && (
+        <mesh geometry={makeGeom(slopeRight)}>
+          <meshBasicMaterial
+            color="#818cf8"
+            transparent opacity={0.18}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
     </group>
   );
 }
@@ -1633,11 +1730,11 @@ export function StructureCanvas() {
 
           return (
             <group key={el.id}>
-              {/* Línea del elemento - siempre activo si llegamos aquí */}
+              {/* Línea del elemento - con deformada solo en modo deformed */}
               <FrameElement 
                 id={el.id} 
-                start={[n1.x+d1[0], n1.y+d1[1], n1.z+d1[2]]} 
-                end={[n2.x+d2[0], n2.y+d2[1], n2.z+d2[2]]} 
+                start={activeResultType === 'deformed' ? [n1.x+d1[0], n1.y+d1[1], n1.z+d1[2]] : [n1.x, n1.y, n1.z]} 
+                end={activeResultType === 'deformed' ? [n2.x+d2[0], n2.y+d2[1], n2.z+d2[2]] : [n2.x, n2.y, n2.z]} 
                 isFaded={false}
               />
               
@@ -1664,6 +1761,9 @@ export function StructureCanvas() {
           if (!active && cameraView !== '3D') return null;
           return <ShellMesh key={s.id} id={s.id} nodeIds={s.nodes} getDisplacement={getDisplacement} isFaded={false} mesh={s.mesh} results={results} activeResultType={activeResultType} globalRange={shellHeatmapRange} displacementScale={displacementScale} />;
         })}
+
+        {/* Membrana de viento: planos semitransparentes sobre cubierta cuando hay cargas de viento */}
+        <WindMembrane />
 
 
         {/* OrbitControls Mapeado al Clic Derecho (Estilo ETABS) */}
