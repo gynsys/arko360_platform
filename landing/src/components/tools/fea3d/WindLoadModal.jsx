@@ -13,8 +13,6 @@ export function WindLoadModal({ isOpen, onClose }) {
   const [includeWalls, setIncludeWalls] = useState(false);
   const [showCalc, setShowCalc]       = useState(false); // Toggle detalles de cálculo
 
-  if (!isOpen) return null;
-
   const isGalpon = wizardConfig && wizardConfig.type === 'galpon';
 
   // -------------------------------------------------------------------------
@@ -36,6 +34,9 @@ export function WindLoadModal({ isOpen, onClose }) {
       return null;
     }
   }, [isGalpon, wizardConfig, windSpeed, exposure]);
+
+  // Early return AFTER all hooks
+  if (!isOpen) return null;
 
   // -------------------------------------------------------------------------
   // Asignación de cargas a la estructura
