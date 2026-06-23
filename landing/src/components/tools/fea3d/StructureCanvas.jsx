@@ -1380,6 +1380,37 @@ export function StructureCanvas() {
     };
   }, []);
 
+  // Auto-escala para Deformada: limita el desplazamiento visual máximo al 12% de la estructura
+  const autoDeformedScale = useMemo(() => {
+    if (viewMode !== 'results' || !results || !activeResultCombo || activeResultType !== 'deformed') return 1;
+    const comboResults = results.results[activeResultCombo];
+    if (!comboResults?.displacements) return 1;
+
+    let maxDisp = 0;
+    Object.values(comboResults.displacements).forEach(d => {
+      const mag = Math.sqrt(d[0]*d[0] + d[1]*d[1] + d[2]*d[2]);
+      if (mag > maxDisp) maxDisp = mag;
+    });
+
+    if (maxDisp < 1e-10) return 1;
+
+    // Calcular dimensión máxima de la estructura
+    let minZ = Infinity, maxZ = -Infinity, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    nodes.forEach(n => {
+      if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
+      if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
+      if (n.z < minZ) minZ = n.z; if (n.z > maxZ) maxZ = n.z;
+    });
+    const maxDim = Math.max(maxX - minX, maxY - minY, maxZ - minZ) || 10;
+
+    // Desplazamiento visual máximo = 12% de la dimensión máxima
+    const targetDisp = maxDim * 0.12;
+    const baseScale = targetDisp / maxDisp;
+
+    return baseScale;
+  }, [results, activeResultCombo, activeResultType, viewMode, nodes]);
+
+
   const getDisplacement = React.useCallback((nodeId) => {
     if (viewMode === 'results' && results && activeResultCombo && activeResultType === 'deformed') {
       const comboResults = results.results[activeResultCombo];
@@ -1434,37 +1465,6 @@ export function StructureCanvas() {
     const maxDim = Math.max(maxX - minX, maxY - minY, maxZ - minZ) || 10;
     const targetHeight = maxDim * 0.15; // 15% de la dimensión máxima de la estructura
     return targetHeight / maxAbsVal;
-  }, [results, activeResultCombo, activeResultType, viewMode, nodes]);
-
-  // Auto-escala para Deformada: limita el desplazamiento visual máximo al 12% de la estructura
-  const autoDeformedScale = useMemo(() => {
-    if (viewMode !== 'results' || !results || !activeResultCombo || activeResultType !== 'deformed') return 1;
-    const comboResults = results.results[activeResultCombo];
-    if (!comboResults?.displacements) return 1;
-
-    let maxDisp = 0;
-    Object.values(comboResults.displacements).forEach(d => {
-      const mag = Math.sqrt(d[0]*d[0] + d[1]*d[1] + d[2]*d[2]);
-      if (mag > maxDisp) maxDisp = mag;
-    });
-
-    if (maxDisp < 1e-10) return 1;
-
-    // Calcular dimensión máxima de la estructura
-    let minZ = Infinity, maxZ = -Infinity, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    nodes.forEach(n => {
-      if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
-      if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
-      if (n.z < minZ) minZ = n.z; if (n.z > maxZ) maxZ = n.z;
-    });
-    const maxDim = Math.max(maxX - minX, maxY - minY, maxZ - minZ) || 10;
-
-    // Desplazamiento visual máximo = 12% de la dimensión máxima
-    const targetDisp = maxDim * 0.12;
-    const baseScale = targetDisp / maxDisp;
-
-    // Aplicar el factor del usuario sobre la escala automática base
-    return baseScale;
   }, [results, activeResultCombo, activeResultType, viewMode, nodes]);
 
   const isElementActive = (n1, n2) => {

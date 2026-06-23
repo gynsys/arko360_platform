@@ -354,11 +354,34 @@ export default function FEA3DContainer() {
       secciones_registradas: state.sections
     };
 
+    let verificacion_viento = null;
+    if (state.wizardConfig && state.wizardConfig.type === 'galpon') {
+      verificacion_viento = {
+        notas_metodologia: "Procedimiento Analítico COVENIN 2003-89 / Método Direccional",
+        parametros_entrada: {
+          velocidad_basica_V: "Tomada de la normativa regional (km/h)",
+          factor_importancia_I: 1.0,
+          categoria_exposicion: "C",
+          altura_media_techo_h: (state.wizardConfig.floorHeight + state.wizardConfig.apexHeight) / 2
+        },
+        formulas_aplicadas: {
+          "presion_dinamica_q": "q = 0.00482 * Kz * Kzt * Kd * V^2 * I",
+          "coeficiente_Kz": "2.01 * (z/Zg)^(2/alpha) para exposición C",
+          "factor_rafaga_G": "0.85 (estructuras rígidas)",
+          "presion_diseno_p": "p = q * G * Cp - q_i * (GCpi)",
+          "transferencia_cubierta": "q_lineal_correa [kgf/m] = p [kgf/m²] * (L/2 / n_paneles)"
+        },
+        transferencias_calculadas: "Revisar las cargas con loadCase WX y WY sobre los elementos. Las cargas de cubierta aplican en elementos longitudinales (dy > 0) como correas."
+      };
+    }
+
     const auditData = {
       timestamp: new Date().toISOString(),
       metadata: state.metadata,
+      wizard_config: state.wizardConfig,
       verificacion_fisica: verificacion_fisica,
-      formulas_aplicadas: {
+      ...(verificacion_viento ? { verificacion_viento_galpon: verificacion_viento } : {}),
+      formulas_aplicadas_analisis: {
         "matriz_rigidez_local": "[k_loc] = f(E, G, A, J, Iy, Ix, L)",
         "transformacion_coordenadas": "[K_global] = [T]^T * [k_loc] * [T]",
         "ensamblaje_global": "Sumatoria de [K_global_elem] para todos los elementos",
