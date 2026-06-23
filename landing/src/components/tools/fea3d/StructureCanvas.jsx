@@ -601,7 +601,7 @@ function NodePoint({ x, y, z, dx = 0, dy = 0, dz = 0, id, restraint, isFaded }) 
       
       {/* Geometría visual del nodo */}
       <mesh>
-        <sphereGeometry args={[0.08, 8, 8]} />
+        <sphereGeometry args={[0.04, 8, 8]} />
         <meshStandardMaterial
           color={isFaded ? '#475569' : isPartofDrawing ? '#fb923c' : isSelected ? '#facc15' : hasRestraint ? '#ef4444' : isResultsMode ? '#38bdf8' : '#60a5fa'}
           emissive={isPartofDrawing ? '#fb923c' : '#000'}
@@ -1270,7 +1270,7 @@ export function StructureCanvas() {
   }, []);
 
   const getDisplacement = React.useCallback((nodeId) => {
-    if (viewMode === 'results' && results && activeResultCombo) {
+    if (viewMode === 'results' && results && activeResultCombo && activeResultType === 'deformed') {
       const comboResults = results.results[activeResultCombo];
       if (comboResults && comboResults.displacements && comboResults.displacements[nodeId]) {
         const d = comboResults.displacements[nodeId];
@@ -1278,7 +1278,7 @@ export function StructureCanvas() {
       }
     }
     return [0, 0, 0];
-  }, [viewMode, results, activeResultCombo, displacementScale]);
+  }, [viewMode, results, activeResultCombo, activeResultType, displacementScale]);
 
 
 

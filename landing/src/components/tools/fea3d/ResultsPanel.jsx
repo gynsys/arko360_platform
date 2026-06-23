@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStructureStore } from './useStructureStore';
-import { Lock, Scaling, Layers } from 'lucide-react';
+import { Lock, Scaling, Layers, Download } from 'lucide-react';
+import { generateStructuralReport } from './generateStructuralReport';
 
 export function ResultsPanel() {
   const { 
@@ -151,6 +152,18 @@ export function ResultsPanel() {
             </div>
           </div>
         )}
+
+        <div className="mt-6 pt-4 border-t border-slate-700">
+          <button
+            onClick={() => {
+              const canvas = document.querySelector('canvas');
+              generateStructuralReport(useStructureStore.getState(), canvas);
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white p-2 rounded text-sm transition-colors"
+          >
+            <Download size={14} /> Exportar Reporte PDF
+          </button>
+        </div>
       </div>
     </div>
   );

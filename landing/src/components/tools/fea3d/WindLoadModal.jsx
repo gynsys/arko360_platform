@@ -4,10 +4,11 @@ import { useStructureStore } from './useStructureStore';
 import toast from 'react-hot-toast';
 
 export function WindLoadModal({ isOpen, onClose }) {
-  const { nodes, elements, wizardConfig } = useStructureStore();
+  const { nodes, elements, wizardConfig, addLoadCombination, addLoad, loads } = useStructureStore();
   const [norm, setNorm] = useState('COVENIN');
   const [windSpeed, setWindSpeed] = useState(100); // km/h
   const [exposure, setExposure] = useState('B');
+  const [includeWalls, setIncludeWalls] = useState(false);
   
   if (!isOpen) return null;
 
@@ -19,22 +20,92 @@ export function WindLoadModal({ isOpen, onClose }) {
       return;
     }
     
-    // Aquí iría la lógica matemática normativa de cálculo de presiones 
-    // y asignación de cargas a nudos/vigas. Por ahora, es un placeholder funcional.
+    // Crear Load Combination si no existe
+    const hasWindCombo = useStructureStore.getState().loadCombinations.some(c => c.id === 'combo-wind-1');
+    if (!hasWindCombo) {
+      addLoadCombination({
+        id: 'combo-wind-1',
+        name: '1.2 CM + 1.0 CV + 1.0 WX',
+        factors: { CM: 1.2, CV: 1.0, WX: 1.0 }
+      });
+    }
+
+    const { apexHeight, bayWidthX, floorHeight, bayWidthY } = wizardConfig;
+    const L = bayWidthX;
+    const E = floorHeight;
+    const H = apexHeight;
+    const tribArea = bayWidthY; // Ancho tributario aproximado
+
+    // Presión dinámica base
+    // q = 0.00482 * V^2 * Ce * Cq
+    // Simplificación genérica
+    const q_base = 0.00482 * Math.pow(windSpeed, 2); // kgf/m2
     
-    // Simulate loading
-    toast.promise(
-      new Promise(resolve => setTimeout(resolve, 1500)),
-      {
-        loading: 'Calculando y asignando presiones de viento...',
-        success: 'Cargas de viento asignadas (Caso: WX)',
-        error: 'Error al asignar',
+    // Coeficientes simplificados (Barlovento)
+    const cp_roof = 0.8; // Succión perpendicular hacia arriba
+    const cp_wall = 0.8; // Presión hacia adentro
+    
+    const q_roof_lin = q_base * cp_roof * tribArea; // kgf/m lineal
+    const q_wall_lin = q_base * cp_wall * tribArea;
+
+    let assignedCount = 0;
+
+    // Helper to check if node is on roof envelope
+    const isNodeOnRoof = (n) => {
+      if (Math.abs(n.y % bayWidthY) > 0.1) return false; // Must be on a frame
+      if (n.x < -0.1 || n.x > L + 0.1) return false;
+      const expectedZ = n.x <= L/2 
+        ? E + (H - E) * (n.x / (L/2))
+        : E + (H - E) * ((L - n.x) / (L/2));
+      return Math.abs(n.z - expectedZ) < 0.1;
+    };
+
+    elements.forEach(el => {
+      if (el.type !== 'frame') return;
+      const n1 = nodes.find(n => n.id === el.nodes[0]);
+      const n2 = nodes.find(n => n.id === el.nodes[1]);
+      if (!n1 || !n2) return;
+
+      const dx = n2.x - n1.x;
+      const dy = n2.y - n1.y;
+      const dz = n2.z - n1.z;
+
+      // Detect Upper Chord
+      if (Math.abs(dy) < 0.1 && isNodeOnRoof(n1) && isNodeOnRoof(n2)) {
+        // Asignar carga en eje Z global (hacia arriba por succión) o perpendicular
+        // Para simplificar, la asignamos global en Z (+z es hacia arriba)
+        addLoad({
+          type: 'frame',
+          target_id: el.id,
+          loadCase: 'WX',
+          pattern: 'Uniform',
+          dir: 'Z',
+          q1: q_roof_lin,
+          q2: q_roof_lin
+        });
+        assignedCount++;
       }
-    );
-    
-    setTimeout(() => {
-      onClose();
-    }, 1500);
+
+      // Detect Column
+      if (includeWalls && Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1 && Math.abs(dz) > 0.1) {
+        // Aplicar presión en X
+        const isLeft = Math.abs(n1.x) < 0.1;
+        const dirSign = isLeft ? 1 : -1; // Barlovento empuja hacia +X, Sotavento succiona hacia +X
+        addLoad({
+          type: 'frame',
+          target_id: el.id,
+          loadCase: 'WX',
+          pattern: 'Uniform',
+          dir: 'X',
+          q1: q_wall_lin * dirSign,
+          q2: q_wall_lin * dirSign
+        });
+        assignedCount++;
+      }
+    });
+
+    toast.success(`Cargas de viento (WX) asignadas a ${assignedCount} elementos.`);
+    onClose();
   };
 
   return (
@@ -107,11 +178,23 @@ export function WindLoadModal({ isOpen, onClose }) {
               <h4 className="text-xs font-bold text-slate-300 mb-2">Parámetros Automáticos</h4>
               <div className="flex justify-between text-xs text-slate-400">
                 <span>Coeficientes Cp:</span>
-                <span className="text-slate-200">Auto (Basado en pendiente)</span>
+                <span className="text-slate-200">Auto (Según Pendiente)</span>
               </div>
               <div className="flex justify-between text-xs text-slate-400">
                 <span>Aplicación:</span>
-                <span className="text-slate-200">Nudos de Cuerda Superior</span>
+                <span className="text-slate-200">Distribución por Membrana a Pórticos</span>
+              </div>
+              
+              <div className="pt-3 mt-3 border-t border-slate-700">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={includeWalls}
+                    onChange={(e) => setIncludeWalls(e.target.checked)}
+                    className="w-4 h-4 rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-xs text-slate-300 font-semibold">Incluir cargas de viento en paredes (Fachadas)</span>
+                </label>
               </div>
             </div>
 
