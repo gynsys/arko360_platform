@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, Grid, GizmoHelper, GizmoViewport, Text, OrthographicCamera, PerspectiveCamera, Html } from '@react-three/drei';
+import { OrbitControls, Grid, GizmoHelper, GizmoViewport, Text, OrthographicCamera, PerspectiveCamera, Html, Billboard } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStructureStore } from './useStructureStore';
 import { SlabOpeningGenerator } from './SlabOpeningGenerator';
@@ -193,7 +193,7 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
 function FrameElement({ start, end, id, isShadow, isFaded }) {
   const { 
     selectedIds, toggleSelection, setRightClickedElementId, viewMode,
-    nodes, elements, shells, results, activeResultCombo, displacementScale
+    nodes, elements, shells, results, activeResultCombo, displacementScale, activeResultType
   } = useStructureStore();
   
   const isSelected = selectedIds.includes(id);
@@ -738,16 +738,19 @@ function FrameLoadGraphic({ element, load, nodes }) {
           return (
             <group key={i}>
               <arrowHelper args={[fdir, origin, arrowLength, 0xef4444, 0.3, 0.15]} />
-              <Text
+              <Billboard
                 position={[origin.x + fdir.x * (arrowLength / 2) + 0.15, origin.y + fdir.y * (arrowLength / 2) + 0.15, origin.z + fdir.z * (arrowLength / 2) + 0.15]}
-                fontSize={0.25}
-                color="#fca5a5"
-                font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
-                anchorX="center"
-                rotation={[Math.PI / 2, 0, 0]}
               >
-                {`${f.label}: ${Number(Math.abs(f.val).toFixed(2))} ${units}`}
-              </Text>
+                <Text
+                  fontSize={0.20}
+                  color="#fca5a5"
+                  font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
+                  anchorX="center"
+                  anchorY="middle"
+                >
+                  {isWindLoad ? `${Number(Math.abs(f.val).toFixed(2))} ${units}` : `${f.label}: ${Number(Math.abs(f.val).toFixed(2))} ${units}`}
+                </Text>
+              </Billboard>
             </group>
           );
         })}
@@ -780,16 +783,19 @@ function FrameLoadGraphic({ element, load, nodes }) {
               <line geometry={lineGeom}>
                 <lineBasicMaterial color={loadColor} linewidth={2} />
               </line>
-              <Text
+              <Billboard
                 position={[topPoints[Math.floor(numArrows/2)].x + fdir.x * (arrowLength / 2) + 0.15, topPoints[Math.floor(numArrows/2)].y + fdir.y * (arrowLength / 2) + 0.15, topPoints[Math.floor(numArrows/2)].z + fdir.z * (arrowLength / 2) + 0.15]}
-                fontSize={0.25}
-                color={textColor}
-                font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
-                anchorX="center"
-                rotation={[Math.PI / 2, 0, 0]}
               >
-                {`${f.label}: ${Number(Math.abs(f.val).toFixed(2))} ${units}/${lenUnit}`}
-              </Text>
+                <Text
+                  fontSize={0.18}
+                  color={textColor}
+                  font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf"
+                  anchorX="center"
+                  anchorY="middle"
+                >
+                  {isWindLoad ? `${Number(Math.abs(f.val).toFixed(2))} ${units}/${lenUnit}` : `${f.label}: ${Number(Math.abs(f.val).toFixed(2))} ${units}/${lenUnit}`}
+                </Text>
+              </Billboard>
             </group>
           );
         })}
