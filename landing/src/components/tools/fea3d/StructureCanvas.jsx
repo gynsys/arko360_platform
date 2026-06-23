@@ -209,7 +209,7 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     const ez = isFinite(end[2]) ? end[2] : 0;
     
     // In results mode (for non-shadow deformed elements), retrieve deformed shape
-    if (viewMode === 'results' && !isShadow && results && activeResultCombo && elements && nodes) {
+    if (viewMode === 'results' && activeResultType === 'deformed' && !isShadow && results && activeResultCombo && elements && nodes) {
       const elem = elements.find(el => el.id === id);
       if (elem) {
         const comboResults = results.results[activeResultCombo];

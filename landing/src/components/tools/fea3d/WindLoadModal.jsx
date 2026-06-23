@@ -128,10 +128,24 @@ export function WindLoadModal({ isOpen, onClose }) {
         const isBarlovento = midX <= L / 2 + 0.05;
         const p = isBarlovento ? pressures.roof_W_kgfm2 : pressures.roof_L_kgfm2;
         // Carga lineal sobre la correa = presión [kgf/m²] × espaciado horizontal entre correas [m]
-        const q_lin = Math.abs(p) * chordSpacingX;
-        // Succión (Cp<0): carga hacia arriba (+Z global); presión (Cp>0): hacia abajo (-Z)
-        const sign = p < 0 ? 1 : -1;
-        addLoad({ type: 'frame', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'Z', q1: q_lin * sign, q2: q_lin * sign });
+        
+        const theta = Math.atan2(H - E, L / 2); // ángulo de inclinación del techo
+        // Vector normal apuntando hacia adentro de la estructura:
+        // Lado izquierdo (Barlovento): normal = [sin(theta), 0, -cos(theta)]
+        // Lado derecho (Sotavento): normal = [-sin(theta), 0, -cos(theta)]
+        const nx = isBarlovento ? Math.sin(theta) : -Math.sin(theta);
+        const nz = -Math.cos(theta);
+
+        const q_lin = p * chordSpacingX; // p conserva su signo. (+) presiona hacia adentro, (-) succiona hacia afuera
+        const q_x = q_lin * nx;
+        const q_z = q_lin * nz;
+
+        if (Math.abs(q_x) > 1e-4) {
+          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'X', q1: q_x, q2: q_x });
+        }
+        if (Math.abs(q_z) > 1e-4) {
+          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'Z', q1: q_z, q2: q_z });
+        }
         wx_count++;
       }
 
@@ -147,7 +161,7 @@ export function WindLoadModal({ isOpen, onClose }) {
           const trib = tribForFrame(midY);
           const q_lin = Math.abs(cp) * trib;
           const sign = isBarlovento ? 1 : -1; // BV empuja +X, SV succiona → también +X (norma convención)
-          addLoad({ type: 'frame', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'X', q1: q_lin * sign, q2: q_lin * sign });
+          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'X', q1: q_lin * sign, q2: q_lin * sign });
           wx_count++;
         }
       }
@@ -161,7 +175,7 @@ export function WindLoadModal({ isOpen, onClose }) {
           const trib = L / 2; // ancho tributario en Y ≈ semiluz
           const q_lin = Math.abs(cp) * trib;
           const sign = isFront ? 1 : -1;
-          addLoad({ type: 'frame', target_id: el.id, loadCase: 'WY', pattern: 'Uniform', dir: 'Y', q1: q_lin * sign, q2: q_lin * sign });
+          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WY', pattern: 'Uniform', dir: 'Y', q1: q_lin * sign, q2: q_lin * sign });
           wy_count++;
         }
       }

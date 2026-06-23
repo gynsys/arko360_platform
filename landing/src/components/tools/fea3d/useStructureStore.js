@@ -977,10 +977,10 @@ export const useStructureStore = create((set, get) => ({
       id: 'A992Fy50', name: 'A992Fy50', type: 'Steel', color: '#00ffff',
       density: 7850,       // kgf/m³
       weightVol: 7850,     // kgf/m³
-      E: 20389324,        // kgf/m² per kg/cm²*10000/98.0665 = 2e9 Pa → ~20,389,000 kgf/m²
+      E: 20389324000,      // kgf/m²
       U: 0.3, A: 0.0000117,
-      G: 7842047,          // kgf/m²
-      Fy: 35182, Fu: 45872 // kgf/m² (345 MPa → 351.8 kgf/cm² * 10000)
+      G: 7842047000,       // kgf/m²
+      Fy: 35182000, Fu: 45872000 // kgf/m²
     };
 
     // Determine default base materials depending on selected system
@@ -1060,24 +1060,22 @@ export const useStructureStore = create((set, get) => ({
 
         // 5. Truss - Diagonals
         for (let i = 1; i <= P; i++) {
+          if (i === 1) continue; // Skip i=1 to avoid duplication with upper/lower chords
           // Left half
           if (trussType === 'Howe') {
-            // Howe: diagonals slope UP towards the center (Compression in diagonals, but tension in bottom chord).
-            // From LC_{i-1} to UC_i
+            // Howe: diagonals slope UP towards the center
             newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i-1].id, frame.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
           } else { // Pratt
             // Pratt: diagonals slope DOWN towards the center
-            // From UC_{i-1} to LC_i
             newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i-1].id, frame.lc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
           }
         }
         for (let i = P + 1; i <= 2*P; i++) {
+          if (i === 2 * P) continue; // Skip i=2P to avoid duplication with upper/lower chords
           // Right half
           if (trussType === 'Howe') {
-            // Howe: From LC_i to UC_{i-1}
             newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i].id, frame.uc[i-1].id], section_id: finalBeamSectionId, material_id: baseMatId });
           } else { // Pratt
-            // Pratt: From UC_i to LC_{i-1}
             newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i].id, frame.lc[i-1].id], section_id: finalBeamSectionId, material_id: baseMatId });
           }
         }
