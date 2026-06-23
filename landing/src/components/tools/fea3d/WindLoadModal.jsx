@@ -89,6 +89,26 @@ export function WindLoadModal({ isOpen, onClose }) {
     let wx_count = 0;
     let wy_count = 0;
 
+    // =========================================================
+    // LÓGICA ESTRUCTURAL DE TRANSFERENCIA
+    // =========================================================
+    // Membrana → Correas (purlins) → Cerchas (trusses) → Columnas
+    //
+    // Las correas son los elementos LONGITUDINALES (dy > 0) que conectan
+    // los pórticos a lo largo del eje Y. Ellas reciben la carga distribuida
+    // de viento como una carga por unidad de longitud (kgf/m) perpendicular
+    // a su eje (en la dirección normal a la cubierta, global Z o X).
+    //
+    // Cada correa está sobre la cubierta inclinada, así que:
+    //   - Las correas de barlovento (x ≤ L/2) reciben p_barlovento
+    //   - Las correas de sotavento  (x ≥ L/2) reciben p_sotavento
+    //
+    // La presión [kgf/m²] × espaciado de cuerdas [m] = carga lineal [kgf/m]
+    // El espaciado de cuerdas = L / (2 * roofPanels)
+
+    const roofPanels = wizardConfig.roofPanels || 4;
+    const chordSpacingX = (L / 2) / roofPanels; // espaciado entre nodos de la cuerda superior
+
     elements.forEach(el => {
       if (el.type !== 'frame') return;
       const n1 = nodes.find(n => n.id === el.nodes[0]);
@@ -98,64 +118,55 @@ export function WindLoadModal({ isOpen, onClose }) {
       const dx = n2.x - n1.x;
       const dy = n2.y - n1.y;
       const dz = n2.z - n1.z;
-
-      const midY = (n1.y + n2.y) / 2;
       const midX = (n1.x + n2.x) / 2;
-      const trib = tribForFrame(midY);
+      const midY = (n1.y + n2.y) / 2;
 
-      // ==== VIENTO EN X (perpendicular a cumbrera) ====
-      // Actúa sobre los pórticos (elementos en el plano XZ, dy≈0)
+      // ---- CORREAS: elementos longitudinales (dy > 0, dx ≈ 0) sobre la cubierta ----
+      const isCorrea = Math.abs(dy) > 0.5 && Math.abs(dx) < 0.5 && isNodeOnRoof(n1) && isNodeOnRoof(n2);
 
-      // Cuerda Superior - Barlovento (x ≤ L/2)
-      if (Math.abs(dy) < 0.1 && isNodeOnRoof(n1) && isNodeOnRoof(n2) && midX <= L / 2 + 0.1) {
-        // Carga lineal = presión * área tributaria
-        const q_lin = Math.abs(pressures.roof_W_kgfm2) * trib;
-        // Dirección: si Cp negativo → succión → carga hacia arriba (+Z), si positivo → presión → carga hacia abajo (-Z)
-        const sign = pressures.roof_W_kgfm2 < 0 ? 1 : -1; // succión sube (+Z)
+      if (isCorrea) {
+        const isBarlovento = midX <= L / 2 + 0.05;
+        const p = isBarlovento ? pressures.roof_W_kgfm2 : pressures.roof_L_kgfm2;
+        // Carga lineal sobre la correa = presión [kgf/m²] × espaciado horizontal entre correas [m]
+        const q_lin = Math.abs(p) * chordSpacingX;
+        // Succión (Cp<0): carga hacia arriba (+Z global); presión (Cp>0): hacia abajo (-Z)
+        const sign = p < 0 ? 1 : -1;
         addLoad({ type: 'frame', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'Z', q1: q_lin * sign, q2: q_lin * sign });
         wx_count++;
       }
 
-      // Cuerda Superior - Sotavento (x ≥ L/2)
-      if (Math.abs(dy) < 0.1 && isNodeOnRoof(n1) && isNodeOnRoof(n2) && midX >= L / 2 - 0.1) {
-        const q_lin = Math.abs(pressures.roof_L_kgfm2) * trib;
-        const sign = pressures.roof_L_kgfm2 < 0 ? 1 : -1;
-        addLoad({ type: 'frame', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'Z', q1: q_lin * sign, q2: q_lin * sign });
-        wx_count++;
-      }
-
-      // Columnas - Barlovento (x ≈ 0) y Sotavento (x ≈ L)
-      if (includeWalls && Math.abs(dy) < 0.1 && Math.abs(dx) < 0.1 && Math.abs(dz) > 0.5) {
+      // ---- COLUMNAS DE FACHADA (viento en X sobre paredes laterales) ----
+      const isColumn = Math.abs(dy) < 0.1 && Math.abs(dx) < 0.1 && Math.abs(dz) > 0.5;
+      if (includeWalls && isColumn) {
         const isBarlovento = Math.abs(n1.x) < 0.1 || Math.abs(n2.x) < 0.1;
-        const cp = isBarlovento ? pressures.wall_W_kgfm2 : pressures.wall_L_kgfm2;
-        const q_lin = Math.abs(cp) * trib;
-        const sign = isBarlovento ? 1 : 1; // barlovento empuja +X, sotavento succiona pero igual +X
-        addLoad({ type: 'frame', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'X', q1: q_lin * sign, q2: q_lin * sign });
-        wx_count++;
+        const isSotavento  = Math.abs(n1.x - L) < 0.1 || Math.abs(n2.x - L) < 0.1;
+        if (isBarlovento || isSotavento) {
+          const cp = isBarlovento ? pressures.wall_W_kgfm2 : pressures.wall_L_kgfm2;
+          // Área tributaria de la columna = baySpacing * (floorHeight / 2) aproximado
+          // Simplificación: usamos baySpacing como ancho tributario
+          const trib = tribForFrame(midY);
+          const q_lin = Math.abs(cp) * trib;
+          const sign = isBarlovento ? 1 : -1; // BV empuja +X, SV succiona → también +X (norma convención)
+          addLoad({ type: 'frame', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'X', q1: q_lin * sign, q2: q_lin * sign });
+          wx_count++;
+        }
       }
 
-      // ==== VIENTO EN Y (paralelo a cumbrera) ====
-      // Actúa sobre las fachadas laterales (elementos con dy ≠ 0 o paredes en Y)
-      // Columnas de fachada frontal (y ≈ 0) y trasera (y ≈ nBaysY*baySpacing)
-      if (includeWalls && Math.abs(dx) < 0.1 && Math.abs(dz) < 0.1 && Math.abs(dy) > 0.5) {
-        // Correa o viga longitudinal - las cargas de viento WY van en las fachadas, no en correas
-        // Por ahora solo columnas con dy=0
-      }
-
-      // Columnas en fachadas laterales Y (columnas en x=0..L que están en y=0 o y=max)
-      if (includeWalls && Math.abs(dy) < 0.1 && Math.abs(dx) < 0.1 && Math.abs(dz) > 0.5) {
-        const yPos = (n1.y + n2.y) / 2;
-        const isFrontFacade = Math.abs(yPos) < 0.1;
-        const isBackFacade  = Math.abs(yPos - nBaysY * baySpacing) < 0.1;
-        if (isFrontFacade || isBackFacade) {
-          const cp = isFrontFacade ? pressures.wall_W_kgfm2 : pressures.wall_L_kgfm2;
-          const q_lin = Math.abs(cp) * L / 2; // Cada columna de fachada toma la mitad del vano X
-          const sign = isFrontFacade ? 1 : 1;
+      // ---- VIENTO EN Y: columnas de fachadas frontales/traseras ----
+      if (includeWalls && isColumn) {
+        const isFront = Math.abs(midY) < 0.1;
+        const isBack  = Math.abs(midY - nBaysY * baySpacing) < 0.1;
+        if (isFront || isBack) {
+          const cp = isFront ? pressures.wall_W_kgfm2 : pressures.wall_L_kgfm2;
+          const trib = L / 2; // ancho tributario en Y ≈ semiluz
+          const q_lin = Math.abs(cp) * trib;
+          const sign = isFront ? 1 : -1;
           addLoad({ type: 'frame', target_id: el.id, loadCase: 'WY', pattern: 'Uniform', dir: 'Y', q1: q_lin * sign, q2: q_lin * sign });
           wy_count++;
         }
       }
     });
+
 
     toast.success(`✅ Viento COVENIN asignado: WX → ${wx_count} elementos | WY → ${wy_count} elementos`);
     onClose();

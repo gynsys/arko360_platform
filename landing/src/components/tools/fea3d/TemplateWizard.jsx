@@ -219,11 +219,14 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                 </>
               )}
               
-              <Input
-                label={config.type === 'beam' ? "Número de Vanos" : "Vanos en X"}
-                value={config.numBaysX}
-                onChange={v => setConfig({ ...config, numBaysX: v })}
-              />
+              {/* Vanos en X: solo visible para tipos que no son galpón */}
+              {config.type !== 'galpon' && (
+                <Input
+                  label={config.type === 'beam' ? "Número de Vanos" : "Vanos en X"}
+                  value={config.numBaysX}
+                  onChange={v => setConfig({ ...config, numBaysX: v })}
+                />
+              )}
               <Input
                 label={config.type === 'beam' ? `Longitud de Vano (${config.units?.split(',')[0] || 'm'})` : (config.type === 'galpon' ? "Luz Libre (Ancho)" : `Ancho de Vanos X (${config.units?.split(',')[0] || 'm'})`)}
                 value={config.bayWidthX}
@@ -241,7 +244,7 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                       panels = 8;
                       truss = 'Pratt';
                     }
-                    setConfig({ ...config, bayWidthX: v, trussType: truss, roofPanels: panels });
+                    setConfig({ ...config, bayWidthX: v, trussType: truss, roofPanels: panels, numBaysX: 1, systemMaterial: 'Steel' });
                   }
                 }}
               />
@@ -271,10 +274,12 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                           <option value="Pratt">Pratt</option>
                         </select>
                       </div>
-                      <Input
+                      {/* Nº Paneles con tooltip: valor auto-calculado */}
+                      <InputTooltip
                         label="Nº Paneles (Por mitad)"
                         value={config.roofPanels}
                         onChange={v => setConfig({ ...config, roofPanels: Math.max(2, Math.floor(v)) })}
+                        tooltip="Se calcula automáticamente según la Luz Libre. Puedes ajustarlo manualmente."
                       />
                     </>
                   )}
@@ -299,6 +304,13 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                 
                 <div className="mt-4">
                   <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Material Predominante (Sistema)</label>
+                  {/* Para Galpones: siempre Acero Estructural A-36 */}
+                  {config.type === 'galpon' ? (
+                    <div className="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-2 text-slate-400 text-sm flex items-center gap-2">
+                      <span className="text-sky-400">⚙</span>
+                      Acero Estructural A-36 (ASTM A36 / COVENIN)
+                    </div>
+                  ) : (
                   <div className="flex gap-2">
                     <select 
                       value={config.systemMaterial || 'Concrete'} 
@@ -342,6 +354,7 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mt-4">
@@ -415,6 +428,42 @@ function Input({ label, value, onChange }) {
         className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+      />
+    </div>
+  );
+}
+
+function InputTooltip({ label, value, onChange, tooltip }) {
+  const [show, setShow] = React.useState(false);
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-1 mb-1">
+        <label className="text-[10px] uppercase text-slate-500 font-bold">{label}</label>
+        <button
+          type="button"
+          onMouseEnter={() => setShow(true)}
+          onMouseLeave={() => setShow(false)}
+          className="text-slate-500 hover:text-sky-400 transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </button>
+        {show && (
+          <div className="absolute left-0 top-6 z-50 bg-slate-700 border border-slate-600 text-slate-200 text-[10px] rounded-lg px-3 py-2 w-52 shadow-xl">
+            {tooltip}
+          </div>
+        )}
+      </div>
+      <input
+        type="number"
+        step="1"
+        min="2"
+        className="w-full bg-slate-800 border border-sky-800 rounded-lg p-2 text-sky-300 text-sm focus:outline-none focus:border-sky-500"
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value) || 2)}
       />
     </div>
   );

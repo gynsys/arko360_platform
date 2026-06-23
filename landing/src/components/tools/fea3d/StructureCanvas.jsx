@@ -700,15 +700,29 @@ function FrameLoadGraphic({ element, load, nodes }) {
   const lenUnit = metadata?.units?.split(',')[0]?.trim() || 'm';
 
   const isSlabLoad = load.isSlabLoad;
-  const loadColor = isSlabLoad ? 0x06b6d4 : 0x3b82f6;
-  const textColor = isSlabLoad ? '#22d3ee' : '#93c5fd';
-  const arrowColor = isSlabLoad ? 0x06b6d4 : 0x3b82f6;
+  const isWindLoad = !!(load.loadCase && (load.loadCase.startsWith('WX') || load.loadCase.startsWith('WY')));
+  const loadColor = isSlabLoad ? 0x06b6d4 : isWindLoad ? 0x38bdf8 : 0x3b82f6;
+  const textColor = isSlabLoad ? '#22d3ee' : isWindLoad ? '#7dd3fc' : '#93c5fd';
+  const arrowColor = isSlabLoad ? 0x06b6d4 : isWindLoad ? 0x38bdf8 : 0x3b82f6;
 
-  const forces = [
-    { val: load.fx || 0, dir: new THREE.Vector3(1, 0, 0), label: isSlabLoad ? 'Fx (Losa)' : 'Fx' },
-    { val: load.fy || 0, dir: new THREE.Vector3(0, 1, 0), label: isSlabLoad ? 'Fy (Losa)' : 'Fy' },
-    { val: load.fz || 0, dir: new THREE.Vector3(0, 0, 1), label: isSlabLoad ? 'Fz (Losa)' : 'Fz' },
-  ].filter(f => f.val !== 0);
+  // Las cargas de viento usan dir + q1 en vez de fx/fy/fz
+  let forces = [];
+  if (load.dir && load.q1 !== undefined) {
+    const dirMap = {
+      'X': new THREE.Vector3(1, 0, 0),
+      'Y': new THREE.Vector3(0, 1, 0),
+      'Z': new THREE.Vector3(0, 0, 1),
+    };
+    const d = dirMap[load.dir];
+    if (d) forces = [{ val: load.q1, dir: d, label: isWindLoad ? `Viento (${load.loadCase})` : load.dir }];
+  } else {
+    forces = [
+      { val: load.fx || 0, dir: new THREE.Vector3(1, 0, 0), label: isSlabLoad ? 'Fx (Losa)' : 'Fx' },
+      { val: load.fy || 0, dir: new THREE.Vector3(0, 1, 0), label: isSlabLoad ? 'Fy (Losa)' : 'Fy' },
+      { val: load.fz || 0, dir: new THREE.Vector3(0, 0, 1), label: isSlabLoad ? 'Fz (Losa)' : 'Fz' },
+    ];
+  }
+  forces = forces.filter(f => f.val !== 0);
 
   if (forces.length === 0) return null;
 
@@ -1371,11 +1385,14 @@ export function StructureCanvas() {
       const comboResults = results.results[activeResultCombo];
       if (comboResults && comboResults.displacements && comboResults.displacements[nodeId]) {
         const d = comboResults.displacements[nodeId];
-        return [d[0] * displacementScale, d[1] * displacementScale, d[2] * displacementScale];
+        // autoDeformedScale normaliza la deformada al 12% de la estructura.
+        // El slider del usuario (1..500) se usa como multiplicador relativo: valor base = 100 → ×1.0
+        const finalScale = autoDeformedScale * (displacementScale / 100);
+        return [d[0] * finalScale, d[1] * finalScale, d[2] * finalScale];
       }
     }
     return [0, 0, 0];
-  }, [viewMode, results, activeResultCombo, activeResultType, displacementScale]);
+  }, [viewMode, results, activeResultCombo, activeResultType, displacementScale, autoDeformedScale]);
 
 
 
@@ -1417,6 +1434,37 @@ export function StructureCanvas() {
     const maxDim = Math.max(maxX - minX, maxY - minY, maxZ - minZ) || 10;
     const targetHeight = maxDim * 0.15; // 15% de la dimensión máxima de la estructura
     return targetHeight / maxAbsVal;
+  }, [results, activeResultCombo, activeResultType, viewMode, nodes]);
+
+  // Auto-escala para Deformada: limita el desplazamiento visual máximo al 12% de la estructura
+  const autoDeformedScale = useMemo(() => {
+    if (viewMode !== 'results' || !results || !activeResultCombo || activeResultType !== 'deformed') return 1;
+    const comboResults = results.results[activeResultCombo];
+    if (!comboResults?.displacements) return 1;
+
+    let maxDisp = 0;
+    Object.values(comboResults.displacements).forEach(d => {
+      const mag = Math.sqrt(d[0]*d[0] + d[1]*d[1] + d[2]*d[2]);
+      if (mag > maxDisp) maxDisp = mag;
+    });
+
+    if (maxDisp < 1e-10) return 1;
+
+    // Calcular dimensión máxima de la estructura
+    let minZ = Infinity, maxZ = -Infinity, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    nodes.forEach(n => {
+      if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
+      if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
+      if (n.z < minZ) minZ = n.z; if (n.z > maxZ) maxZ = n.z;
+    });
+    const maxDim = Math.max(maxX - minX, maxY - minY, maxZ - minZ) || 10;
+
+    // Desplazamiento visual máximo = 12% de la dimensión máxima
+    const targetDisp = maxDim * 0.12;
+    const baseScale = targetDisp / maxDisp;
+
+    // Aplicar el factor del usuario sobre la escala automática base
+    return baseScale;
   }, [results, activeResultCombo, activeResultType, viewMode, nodes]);
 
   const isElementActive = (n1, n2) => {
@@ -1606,7 +1654,8 @@ export function StructureCanvas() {
 
         {/* Nodos */}
         {nodes.map(n => {
-          const d = getDisplacement(n.id);
+          // Solo aplicar desplazamiento al nudo si estamos en vista Deformada
+          const d = activeResultType === 'deformed' ? getDisplacement(n.id) : [0, 0, 0];
           const active = isNodeActive(n);
           // En vista 2D: omitir completamente los nodos de otros niveles
           if (!active && cameraView !== '3D') return null;
@@ -1619,7 +1668,7 @@ export function StructureCanvas() {
             const targetNode = nodes.find(n => n.id === load.target_id);
             if (!targetNode || !isNodeActive(targetNode)) return null;
             return <PointLoadArrow key={load.id} node={targetNode} load={load} />;
-          } else if (load.type === 'distributed' || load.type === 'point_frame') {
+          } else if (load.type === 'distributed' || load.type === 'point_frame' || load.type === 'frame') {
             const targetElem = elements.find(e => e.id === load.target_id);
             if (!targetElem) return null;
             const n1 = nodes.find(n => n.id === targetElem.nodes[0]);
