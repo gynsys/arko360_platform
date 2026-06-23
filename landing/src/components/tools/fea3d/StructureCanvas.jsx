@@ -713,7 +713,7 @@ function FrameLoadGraphic({ element, load, nodes }) {
       'Y': new THREE.Vector3(0, 1, 0),
       'Z': new THREE.Vector3(0, 0, 1),
     };
-    const d = dirMap[load.dir];
+    const d = load.dir === 'Custom' && load.vector ? new THREE.Vector3(...load.vector) : dirMap[load.dir];
     if (d) forces = [{ val: load.q1, dir: d, label: isWindLoad ? `Viento (${load.loadCase})` : load.dir }];
   } else {
     forces = [
@@ -1669,8 +1669,48 @@ export function StructureCanvas() {
         })}
 
         {/* Cargas */}
-        {showLoads && loads.map(load => {
-          if (load.type === 'point') {
+        {showLoads && (() => {
+          const visualLoads = [];
+          const frameLoadsMap = new Map();
+
+          loads.forEach(load => {
+            if ((load.type !== 'distributed' && load.type !== 'frame') || !load.loadCase || !load.loadCase.startsWith('W')) {
+              visualLoads.push(load);
+              return;
+            }
+            const key = `${load.target_id}_${load.loadCase}`;
+            if (!frameLoadsMap.has(key)) frameLoadsMap.set(key, []);
+            frameLoadsMap.get(key).push(load);
+          });
+
+          frameLoadsMap.forEach((grp, key) => {
+            if (grp.length === 1) {
+              visualLoads.push(grp[0]);
+            } else {
+              let qx = 0, qy = 0, qz = 0;
+              grp.forEach(l => {
+                if (l.dir === 'X') qx += l.q1;
+                if (l.dir === 'Y') qy += l.q1;
+                if (l.dir === 'Z') qz += l.q1;
+              });
+              const vec = new THREE.Vector3(qx, qy, qz);
+              const val = vec.length();
+              if (val > 1e-4) {
+                vec.normalize();
+                visualLoads.push({
+                  ...grp[0],
+                  id: `grouped_${key}`,
+                  dir: 'Custom',
+                  vector: [vec.x, vec.y, vec.z],
+                  q1: val,
+                  q2: val
+                });
+              }
+            }
+          });
+
+          return visualLoads.map(load => {
+            if (load.type === 'point') {
             const targetNode = nodes.find(n => n.id === load.target_id);
             if (!targetNode || !isNodeActive(targetNode)) return null;
             return <PointLoadArrow key={load.id} node={targetNode} load={load} />;
@@ -1734,7 +1774,8 @@ export function StructureCanvas() {
             );
           }
           return null;
-        })}
+        });
+      })()}
 
         {/* Cargas Virtuales de Losas (Líneas de Rotura) */}
         {showLoads && shells.map(shell => {
