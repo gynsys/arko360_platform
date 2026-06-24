@@ -914,7 +914,9 @@ export const useStructureStore = create((set, get) => ({
           // Lower chord node (only internal, since 0 and 2P are eave nodes which are uc)
           if (!isEave) {
             const lc = { id: `N${nodeCount++}`, x: xPos, y: yPos, z: E, restraint: null };
-            newNodes.push(lc);
+            if (config.galponType !== 'Tapered') {
+              newNodes.push(lc);
+            }
             frameNodes.lc.push(lc);
           } else {
             // Push the eave node as lc as well for easy indexing
@@ -1143,10 +1145,10 @@ export const useStructureStore = create((set, get) => ({
           newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame2.base[1].id, frame1.uc[2*P].id], section_id: 'L_2X2X1_4', material_id: baseMatId });
 
           // Roof bracing (Rigidizadores de cubierta)
-          // Cross bracing between adjacent purlins (cruzando los paneles de cubierta)
-          for (let i = 0; i < 2*P; i++) {
-            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame1.uc[i].id, frame2.uc[i+1].id], section_id: 'ROD_5_8', material_id: baseMatId });
-            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame2.uc[i].id, frame1.uc[i+1].id], section_id: 'ROD_5_8', material_id: baseMatId });
+          // Cross bracing spanning two purlin spacings (cada dos correas)
+          for (let i = 0; i < 2*P - 1; i += 2) {
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame1.uc[i].id, frame2.uc[i+2].id], section_id: 'ROD_5_8', material_id: baseMatId });
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame2.uc[i].id, frame1.uc[i+2].id], section_id: 'ROD_5_8', material_id: baseMatId });
           }
         }
       }
