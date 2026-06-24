@@ -987,11 +987,18 @@ export const useStructureStore = create((set, get) => ({
     const defaultMaterials = get().materials.length > 0 ? get().materials : [matConcrete, matSteel];
     const baseMatId = config.materialId || (systemMaterial === 'Steel' ? 'A992Fy50' : '4000Psi');
 
-    const defaultSections = get().sections.length > 0 ? get().sections : [
+    let currentSections = get().sections.length > 0 ? [...get().sections] : [
       { id: 'COL_DEF', name: 'COL_40x40', type: 'Rectangular', material_id: '4000Psi', A: 0.16, Ix: 0.002133, Iy: 0.002133, J: 0.004266, params: { b: 0.4, h: 0.4 } },
       { id: 'BEAM_DEF', name: 'VIGA_30x40', type: 'Rectangular', material_id: '4000Psi', A: 0.12, Ix: 0.0016, Iy: 0.0009, J: 0.0025, params: { b: 0.3, h: 0.4 } },
       { id: 'W14X90', name: 'W14X90', type: 'I/Wide Flange', material_id: 'A992Fy50', A: 0.0171, Ix: 0.000416, Iy: 0.00015, J: 0.000001, params: { ht: 0.356, t3: 0.018, t2: 0.011, w2: 0.369, w3: 0.369 } }
     ];
+
+    if (!currentSections.some(s => s.id === 'L_2X2X1_4')) {
+      currentSections.push({ id: 'L_2X2X1_4', name: 'L2x2x1/4', type: 'Angle', material_id: 'A992Fy50', A: 0.000609, Ix: 0.00000016, Iy: 0.00000016, J: 0.00000001, params: { d: 0.0508, b: 0.0508, t: 0.00635 } });
+    }
+    if (!currentSections.some(s => s.id === 'ROD_5_8')) {
+      currentSections.push({ id: 'ROD_5_8', name: 'Rod 5/8"', type: 'Circular Solid', material_id: 'A992Fy50', A: 0.000198, Ix: 0.000000003, Iy: 0.000000003, J: 0.000000006, params: { d: 0.015875 } });
+    }
 
     const finalColSectionId = colSectionId || (systemMaterial === 'Steel' ? 'W14X90' : 'COL_DEF');
     const finalBeamSectionId = beamSectionId || (systemMaterial === 'Steel' ? 'W14X90' : 'BEAM_DEF');
@@ -1090,6 +1097,27 @@ export const useStructureStore = create((set, get) => ({
         for (let i = 0; i <= 2*P; i++) {
           newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
         }
+
+        // 7. Bracing (Cruces de San Andrés y Rigidizadores de Cubierta) en el primer y último vano
+        const isFirstBay = y === 0;
+        const isLastBay = y === config.numBaysY - 1;
+        
+        if (isFirstBay || isLastBay) {
+          // Wall cross bracing (Left wall: nodes base[0] and uc[0])
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame1.base[0].id, frame2.uc[0].id], section_id: 'L_2X2X1_4', material_id: baseMatId });
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame2.base[0].id, frame1.uc[0].id], section_id: 'L_2X2X1_4', material_id: baseMatId });
+
+          // Wall cross bracing (Right wall: nodes base[1] and uc[2*P])
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame1.base[1].id, frame2.uc[2*P].id], section_id: 'L_2X2X1_4', material_id: baseMatId });
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame2.base[1].id, frame1.uc[2*P].id], section_id: 'L_2X2X1_4', material_id: baseMatId });
+
+          // Roof bracing (Rigidizadores de cubierta)
+          // Cross bracing between adjacent purlins (cruzando los paneles de cubierta)
+          for (let i = 0; i < 2*P; i++) {
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame1.uc[i].id, frame2.uc[i+1].id], section_id: 'ROD_5_8', material_id: baseMatId });
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame2.uc[i].id, frame1.uc[i+1].id], section_id: 'ROD_5_8', material_id: baseMatId });
+          }
+        }
       }
       
       // Cleanup temp reference
@@ -1103,7 +1131,7 @@ export const useStructureStore = create((set, get) => ({
       loads: [], // Limpiar cargas viejas
       combinations: [], // Limpiar combinaciones
       metadata: { ...get().metadata, units: config.units || 'm, kgf, C' },
-      sections: defaultSections,
+      sections: currentSections,
       materials: defaultMaterials,
       wizardConfig: config,
       results: null,
