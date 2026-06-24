@@ -264,23 +264,38 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                   {config.type === 'galpon' && (
                     <>
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Tipo de Cercha</label>
+                        <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Tipo de Pórtico</label>
                         <select 
-                          value={config.trussType} 
-                          onChange={(e) => setConfig({ ...config, trussType: e.target.value })}
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                          value={config.galponType || 'Cercha'} 
+                          onChange={(e) => setConfig({ ...config, galponType: e.target.value })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500 mb-3"
                         >
-                          <option value="Howe">Howe</option>
-                          <option value="Pratt">Pratt</option>
+                          <option value="Cercha">Con Cerchas (Truss)</option>
+                          <option value="Tapered">Alma Llena Variable (Tapered)</option>
                         </select>
                       </div>
-                      {/* Nº Paneles con tooltip: valor auto-calculado */}
-                      <InputTooltip
-                        label="Nº Paneles (Por mitad)"
-                        value={config.roofPanels}
-                        onChange={v => setConfig({ ...config, roofPanels: Math.max(2, Math.floor(v)) })}
-                        tooltip="Se calcula automáticamente según la Luz Libre. Puedes ajustarlo manualmente."
-                      />
+                      {(!config.galponType || config.galponType === 'Cercha') && (
+                        <>
+                          <div>
+                            <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Tipo de Cercha</label>
+                            <select 
+                              value={config.trussType} 
+                              onChange={(e) => setConfig({ ...config, trussType: e.target.value })}
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                            >
+                              <option value="Howe">Howe</option>
+                              <option value="Pratt">Pratt</option>
+                            </select>
+                          </div>
+                          {/* Nº Paneles con tooltip: valor auto-calculado */}
+                          <InputTooltip
+                            label="Nº Paneles (Por mitad)"
+                            value={config.roofPanels}
+                            onChange={v => setConfig({ ...config, roofPanels: Math.max(2, Math.floor(v)) })}
+                            tooltip="Se calcula automáticamente según la Luz Libre. Puedes ajustarlo manualmente."
+                          />
+                        </>
+                      )}
                     </>
                   )}
                 </>

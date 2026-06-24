@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
-from app.engine.fem_frame import get_3d_frame_local_stiffness, get_rotation_matrix
+from app.engine.fem_frame import get_3d_frame_local_stiffness, get_tapered_3d_frame_local_stiffness, get_rotation_matrix
 from app.schemas.fea3d import LoadType, Topology
 import time
 import json
@@ -130,7 +130,17 @@ class StructuralSolver:
             p2 = np.array([n2.x, n2.y, n2.z])
             L = np.linalg.norm(p2 - p1)
             
-            k_loc = get_3d_frame_local_stiffness(mat.E, mat.G, sec.A, sec.J, sec.Iy, sec.Ix, L)
+            if getattr(sec, 'type', '') == 'Tapered I/Wide Flange' or sec.id.startswith('TAPERED_'):
+                # Note: schema.Section might not have type defined in backend, so we check ID or type
+                p_dict = sec.params or {}
+                ht_start = p_dict.get('ht_start', 0.5)
+                ht_end = p_dict.get('ht_end', 0.5)
+                w = p_dict.get('w2', 0.2)
+                t_f = p_dict.get('t3', 0.015)
+                t_w = p_dict.get('t2', 0.01)
+                k_loc = get_tapered_3d_frame_local_stiffness(mat.E, mat.G, L, ht_start, ht_end, w, t_f, t_w)
+            else:
+                k_loc = get_3d_frame_local_stiffness(mat.E, mat.G, sec.A, sec.J, sec.Iy, sec.Ix, L)
             T = get_rotation_matrix(p1, p2, elem.beta_angle)
             k_glob_elem = T.T @ k_loc @ T
             

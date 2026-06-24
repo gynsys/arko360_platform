@@ -75,3 +75,50 @@ def get_rotation_matrix(node_i, node_j, beta=0):
         T[i*3:(i+1)*3, i*3:(i+1)*3] = T_final
         
     return T
+
+def get_tapered_3d_frame_local_stiffness(E, G, L, ht_start, ht_end, w, t_f, t_w, N=10):
+    """
+    Genera la matriz de rigidez local 12x12 para un elemento de alma variable.
+    Discretiza internamente el elemento en N segmentos prismáticos y usa 
+    condensación estática para eliminar los grados de libertad internos.
+    """
+    num_nodes = N + 1
+    K_total = np.zeros((num_nodes * 6, num_nodes * 6))
+    L_seg = L / N
+    
+    for i in range(N):
+        # Punto medio del segmento
+        x_c = (i + 0.5) * L_seg
+        ht_x = ht_start + (ht_end - ht_start) * (x_c / L)
+        hw_x = ht_x - 2 * t_f
+        
+        # Propiedades seccionales en x_c
+        A_x = 2 * (w * t_f) + hw_x * t_w
+        # Inercia eje débil (Iy local)
+        Iy_x = 2 * (t_f * w**3 / 12) + (hw_x * t_w**3 / 12)
+        # Inercia eje fuerte (Iz local = Ix en el front)
+        Iz_x = 2 * (w * t_f**3 / 12 + w * t_f * ((ht_x - t_f) / 2)**2) + (t_w * hw_x**3 / 12)
+        # Constante torsional (aproximación para perfiles abiertos)
+        J_x = (2 * w * t_f**3 + hw_x * t_w**3) / 3.0
+        
+        # Matriz 12x12 del segmento
+        k_seg = get_3d_frame_local_stiffness(E, G, A_x, J_x, Iy_x, Iz_x, L_seg)
+        
+        # Ensamblaje en la matriz total (N segmentos colineales)
+        idx = [i*6 + d for d in range(6)] + [(i+1)*6 + d for d in range(6)]
+        for r in range(12):
+            for c in range(12):
+                K_total[idx[r], idx[c]] += k_seg[r, c]
+                
+    # Nodos externos: 0 (inicio) y N (fin). Nodos internos: 1 a N-1
+    ext_dofs = list(range(6)) + list(range(N*6, (N+1)*6))
+    int_dofs = list(range(6, N*6))
+    
+    K_ee = K_total[np.ix_(ext_dofs, ext_dofs)]
+    K_ei = K_total[np.ix_(ext_dofs, int_dofs)]
+    K_ie = K_total[np.ix_(int_dofs, ext_dofs)]
+    K_ii = K_total[np.ix_(int_dofs, int_dofs)]
+    
+    # Condensación estática: K_eq = K_ee - K_ei * K_ii^-1 * K_ie
+    K_condensed = K_ee - K_ei @ np.linalg.solve(K_ii, K_ie)
+    return K_condensed

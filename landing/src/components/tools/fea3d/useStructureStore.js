@@ -1046,44 +1046,75 @@ export const useStructureStore = create((set, get) => ({
       for (let y = 0; y <= config.numBaysY; y++) {
         const frame = config._galponNodes[y];
         
-        // 1. Columns
-        newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.base[0].id, frame.uc[0].id], section_id: finalColSectionId, material_id: baseMatId });
-        newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.base[1].id, frame.uc[2*P].id], section_id: finalColSectionId, material_id: baseMatId });
-
-        // 2. Truss - Upper Chord
-        for (let i = 0; i < 2*P; i++) {
-          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: finalBeamSectionId, material_id: baseMatId });
-        }
-
-        // 3. Truss - Lower Chord
-        for (let i = 0; i < 2*P; i++) {
-          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i].id, frame.lc[i+1].id], section_id: finalBeamSectionId, material_id: baseMatId });
-        }
-
-        // 4. Truss - Verticals (Montantes)
-        for (let i = 1; i < 2*P; i++) {
-          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i].id, frame.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
-        }
-
-        // 5. Truss - Diagonals
-        for (let i = 1; i <= P; i++) {
-          if (i === 1) continue; // Skip i=1 to avoid duplication with upper/lower chords
-          // Left half
-          if (trussType === 'Howe') {
-            // Howe: diagonals slope UP towards the center
-            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i-1].id, frame.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
-          } else { // Pratt
-            // Pratt: diagonals slope DOWN towards the center
-            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i-1].id, frame.lc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
+        if (config.galponType === 'Tapered') {
+          // Columns
+          const colSecId = 'TAP_COL';
+          if (!currentSections.some(s => s.id === colSecId)) {
+            currentSections.push({ id: colSecId, name: 'COL_TAPERED', type: 'Tapered I/Wide Flange', material_id: baseMatId, A: 0.02, Ix: 0.001, Iy: 0.0001, J: 0.000001, params: { ht_start: 0.4, ht_end: 0.8, w2: 0.2, w3: 0.2, t2: 0.01, t3: 0.015 } });
           }
-        }
-        for (let i = P + 1; i <= 2*P; i++) {
-          if (i === 2 * P) continue; // Skip i=2P to avoid duplication with upper/lower chords
-          // Right half
-          if (trussType === 'Howe') {
-            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i].id, frame.uc[i-1].id], section_id: finalBeamSectionId, material_id: baseMatId });
-          } else { // Pratt
-            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i].id, frame.lc[i-1].id], section_id: finalBeamSectionId, material_id: baseMatId });
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.base[0].id, frame.uc[0].id], section_id: colSecId, material_id: baseMatId });
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.base[1].id, frame.uc[2*P].id], section_id: colSecId, material_id: baseMatId });
+
+          // Roof beams (Tapered)
+          for (let i = 0; i < P; i++) {
+             const ht_start = 0.8 - (0.4 * i / P);
+             const ht_end = 0.8 - (0.4 * (i+1) / P);
+             const secId = `TAP_ROOF_L_${i}`;
+             if (!currentSections.some(s => s.id === secId)) {
+                currentSections.push({ id: secId, name: `TAP_ROOF_L_${i}`, type: 'Tapered I/Wide Flange', material_id: baseMatId, A: 0.02, Ix: 0.001, Iy: 0.0001, J: 0.000001, params: { ht_start, ht_end, w2: 0.2, w3: 0.2, t2: 0.01, t3: 0.015 } });
+             }
+             newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: secId, material_id: baseMatId });
+          }
+          for (let i = P; i < 2*P; i++) {
+             const j = i - P;
+             const ht_start = 0.4 + (0.4 * j / P);
+             const ht_end = 0.4 + (0.4 * (j+1) / P);
+             const secId = `TAP_ROOF_R_${j}`;
+             if (!currentSections.some(s => s.id === secId)) {
+                currentSections.push({ id: secId, name: `TAP_ROOF_R_${j}`, type: 'Tapered I/Wide Flange', material_id: baseMatId, A: 0.02, Ix: 0.001, Iy: 0.0001, J: 0.000001, params: { ht_start, ht_end, w2: 0.2, w3: 0.2, t2: 0.01, t3: 0.015 } });
+             }
+             newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: secId, material_id: baseMatId });
+          }
+        } else {
+          // 1. Columns
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.base[0].id, frame.uc[0].id], section_id: finalColSectionId, material_id: baseMatId });
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.base[1].id, frame.uc[2*P].id], section_id: finalColSectionId, material_id: baseMatId });
+
+          // 2. Truss - Upper Chord
+          for (let i = 0; i < 2*P; i++) {
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: finalBeamSectionId, material_id: baseMatId });
+          }
+
+          // 3. Truss - Lower Chord
+          for (let i = 0; i < 2*P; i++) {
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i].id, frame.lc[i+1].id], section_id: finalBeamSectionId, material_id: baseMatId });
+          }
+
+          // 4. Truss - Verticals (Montantes)
+          for (let i = 1; i < 2*P; i++) {
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i].id, frame.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
+          }
+
+          // 5. Truss - Diagonals
+          for (let i = 1; i <= P; i++) {
+            if (i === 1) continue; // Skip i=1 to avoid duplication with upper/lower chords
+            // Left half
+            if (trussType === 'Howe') {
+              // Howe: diagonals slope UP towards the center
+              newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i-1].id, frame.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
+            } else { // Pratt
+              // Pratt: diagonals slope DOWN towards the center
+              newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i-1].id, frame.lc[i].id], section_id: finalBeamSectionId, material_id: baseMatId });
+            }
+          }
+          for (let i = P + 1; i <= 2*P; i++) {
+            if (i === 2 * P) continue; // Skip i=2P to avoid duplication with upper/lower chords
+            // Right half
+            if (trussType === 'Howe') {
+              newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.lc[i].id, frame.uc[i-1].id], section_id: finalBeamSectionId, material_id: baseMatId });
+            } else { // Pratt
+              newElements.push({ id: `E${elemCount++}`, type: 'frame', nodes: [frame.uc[i].id, frame.lc[i-1].id], section_id: finalBeamSectionId, material_id: baseMatId });
+            }
           }
         }
       }
