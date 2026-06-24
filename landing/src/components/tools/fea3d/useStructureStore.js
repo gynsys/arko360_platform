@@ -40,6 +40,7 @@ export const useStructureStore = create((set, get) => ({
   activeResultType: 'deformed', // 'deformed', 'P', 'V2', 'V3', 'M2', 'M3'
   displacementScale: 100, // Factor de exageración
   diagramScale: 1.0, // Multiplicador para diagramas de esfuerzos
+  showExtruded: false, // Toggle para vista extruida 3D
   selectedIds: [],
   rightClickedElementId: null, // ID para modal de diagrama de elemento
   wizardConfig: null,
@@ -346,6 +347,8 @@ export const useStructureStore = create((set, get) => ({
   setDisplacementScale: (scale) => set({ displacementScale: scale }),
   setDiagramScale: (scale) => set({ diagramScale: scale }),
   setActiveResultCombo: (comboId) => set({ activeResultCombo: comboId }),
+  toggleExtruded: () => set(state => ({ showExtruded: !state.showExtruded })),
+  setWizardConfig: (config) => set({ wizardConfig: config }),
   setActiveResultType: (type) => set({ activeResultType: type }),
 
   // --- MODO DIBUJO ---

@@ -6,6 +6,7 @@ import { useStructureStore } from './useStructureStore';
 import { SlabOpeningGenerator } from './SlabOpeningGenerator';
 import { ShellMeshVisualizer } from './ShellMeshVisualizer';
 import { diagnoseShellRizado, quickCheckDoubleRendering, exportMeshDebugData } from './ShellMeshDiagnostic';
+import { SectionExtrusionGenerator } from './SectionExtrusionGenerator';
 import toast from 'react-hot-toast';
 
 function CoordinateTracker() {
@@ -193,7 +194,8 @@ function ShellMesh({ id, nodeIds, getDisplacement, isFaded, mesh, results, activ
 function FrameElement({ start, end, id, isShadow, isFaded }) {
   const { 
     selectedIds, toggleSelection, setRightClickedElementId, viewMode,
-    nodes, elements, shells, results, activeResultCombo, displacementScale, activeResultType
+    nodes, elements, shells, results, activeResultCombo, displacementScale, activeResultType,
+    showExtruded, sections
   } = useStructureStore();
   
   const isSelected = selectedIds.includes(id);
@@ -362,6 +364,73 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     return geo;
   }, [start[0], start[1], start[2], end[0], end[1], end[2], viewMode, isShadow, id, elements, nodes, shells, results, activeResultCombo, displacementScale]);
+
+  const renderExtruded = showExtruded && !isResultsMode && !isShadow && !isFaded;
+
+  const extrudedGeometry = useMemo(() => {
+    if (!renderExtruded) return null;
+    const elem = elements.find(el => el.id === id);
+    if (!elem) return null;
+    const section = sections.find(s => s.id === elem.section_id);
+    const p1 = new THREE.Vector3(...start);
+    const p2 = new THREE.Vector3(...end);
+    const L = p1.distanceTo(p2);
+    return SectionExtrusionGenerator.createGeometry(section, L);
+  }, [renderExtruded, elements, id, sections, start, end]);
+
+  const extrudedMatrix = useMemo(() => {
+    if (!renderExtruded) return null;
+    const p1 = new THREE.Vector3(...start);
+    const p2 = new THREE.Vector3(...end);
+    const elem = elements.find(el => el.id === id);
+    const dirX = new THREE.Vector3().subVectors(p2, p1).normalize();
+    const dirY = new THREE.Vector3();
+    const dirZ = new THREE.Vector3();
+
+    if (Math.abs(dirX.x) < 1e-6 && Math.abs(dirX.y) < 1e-6) {
+      const m = dirX.z > 0 ? 1 : -1;
+      dirY.set(0, 1, 0);
+      dirZ.set(-m, 0, 0);
+    } else {
+      const D = Math.sqrt(dirX.x * dirX.x + dirX.y * dirX.y);
+      dirY.set(-dirX.y / D, dirX.x / D, 0);
+      dirZ.set(-dirX.x * dirX.z / D, -dirX.y * dirX.z / D, D);
+    }
+
+    const betaRad = ((elem?.beta_angle || 0) * Math.PI) / 180;
+    const cosBeta = Math.cos(betaRad);
+    const sinBeta = Math.sin(betaRad);
+
+    const dirY_final = new THREE.Vector3().copy(dirY).multiplyScalar(cosBeta).addScaledVector(dirZ, sinBeta);
+    const dirZ_final = new THREE.Vector3().copy(dirY).multiplyScalar(-sinBeta).addScaledVector(dirZ, cosBeta);
+
+    const mat = new THREE.Matrix4();
+    mat.makeBasis(dirX, dirY_final, dirZ_final);
+    const midPoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+    mat.setPosition(midPoint);
+    return mat;
+  }, [renderExtruded, elements, id, start, end]);
+
+  if (renderExtruded && extrudedGeometry && extrudedMatrix) {
+    return (
+      <mesh 
+        geometry={extrudedGeometry} 
+        matrix={extrudedMatrix}
+        matrixAutoUpdate={false}
+        onClick={(e) => { 
+          if (e.delta > 5) return;
+          e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
+        }}
+      >
+        <meshStandardMaterial 
+          color={isSelected ? '#facc15' : '#94a3b8'} 
+          metalness={0.2} 
+          roughness={0.5} 
+          side={THREE.DoubleSide} 
+        />
+      </mesh>
+    );
+  }
 
   return (
     <line 

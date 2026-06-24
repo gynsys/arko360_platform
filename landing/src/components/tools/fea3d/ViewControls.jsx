@@ -49,12 +49,24 @@ export function ViewControls() {
         </button>
         <button
           onClick={() => setCameraView('YZ')}
-          className={`px-3 py-1.5 text-xs font-bold transition-all flex items-center gap-1 ${
+          className={`px-3 py-1.5 text-xs font-bold transition-all border-r border-slate-700 flex items-center gap-1 ${
             cameraView === 'YZ' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'
           }`}
           title="Vista en Elevación YZ"
         >
           <Columns size={14} /> Elev YZ
+        </button>
+        <button
+          onClick={() => {
+             const { showExtruded, toggleExtruded } = useStructureStore.getState();
+             toggleExtruded();
+          }}
+          className={`px-3 py-1.5 text-xs font-bold transition-all flex items-center gap-1 ${
+            useStructureStore(s => s.showExtruded) ? 'bg-orange-500 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+          }`}
+          title="Alternar Vista Extruida (Solid)"
+        >
+          <Box size={14} /> Extruido
         </button>
       </div>
 
