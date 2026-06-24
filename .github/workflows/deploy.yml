@@ -27,6 +27,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Inject Production Environment Variables
+        run: |
+          echo "VITE_API_URL=/api/v1" > landing/.env.production
+          echo "VITE_API_URL=/api/v1" > admin/.env.production
+          echo "VITE_API_URL=/api/v1" > super-admin-frontend/.env.production
+
       - name: Build and push Backend
         uses: docker/build-push-action@v5
         with:
