@@ -1065,7 +1065,7 @@ export const useStructureStore = create((set, get) => ({
              const ht_end = 0.8 - (0.4 * (i+1) / P);
              const secId = `TAP_ROOF_L_${i}`;
              if (!currentSections.some(s => s.id === secId)) {
-                currentSections.push({ id: secId, name: `TAP_ROOF_L_${i}`, type: 'Tapered I/Wide Flange', material_id: baseMatId, A: 0.02, Ix: 0.001, Iy: 0.0001, J: 0.000001, params: { ht_start, ht_end, w2: 0.2, w3: 0.2, t2: 0.01, t3: 0.015 } });
+                currentSections.push({ id: secId, name: `TAP_ROOF_L_${i}`, type: 'Tapered I/Wide Flange', material_id: baseMatId, A: 0.02, Ix: 0.001, Iy: 0.0001, J: 0.000001, params: { ht_start, ht_end, w2: 0.2, w3: 0.2, t2: 0.01, t3: 0.015, alignment: 'Top Center' } });
              }
              newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: secId, material_id: baseMatId });
           }
@@ -1075,7 +1075,7 @@ export const useStructureStore = create((set, get) => ({
              const ht_end = 0.4 + (0.4 * (j+1) / P);
              const secId = `TAP_ROOF_R_${j}`;
              if (!currentSections.some(s => s.id === secId)) {
-                currentSections.push({ id: secId, name: `TAP_ROOF_R_${j}`, type: 'Tapered I/Wide Flange', material_id: baseMatId, A: 0.02, Ix: 0.001, Iy: 0.0001, J: 0.000001, params: { ht_start, ht_end, w2: 0.2, w3: 0.2, t2: 0.01, t3: 0.015 } });
+                currentSections.push({ id: secId, name: `TAP_ROOF_R_${j}`, type: 'Tapered I/Wide Flange', material_id: baseMatId, A: 0.02, Ix: 0.001, Iy: 0.0001, J: 0.000001, params: { ht_start, ht_end, w2: 0.2, w3: 0.2, t2: 0.01, t3: 0.015, alignment: 'Top Center' } });
              }
              newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: secId, material_id: baseMatId });
           }
@@ -1159,19 +1159,37 @@ export const useStructureStore = create((set, get) => ({
           const slope = (H - E) / (L / 2);
           const slopeDeg = Math.atan(slope) * 180 / Math.PI;
           
-          // Left side slopes UP (dirY tilts towards -X), Right side slopes DOWN
-          const beta_angle = 90 + (i <= P ? slopeDeg : -slopeDeg);
+          if (i === P) {
+            // Apex node: Create two purlins, each offset by 10cm along the roof slope
+            const beta_left = 90 - slopeDeg;
+            const beta_right = 90 + slopeDeg;
+            newElements.push({ 
+              id: `E${elemCount++}`, type: 'frame', elementRole: 'purlin', 
+              beta_angle: beta_left, visual_offset_y: y_offset, visual_offset_z: -0.1, 
+              nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId 
+            });
+            newElements.push({ 
+              id: `E${elemCount++}`, type: 'frame', elementRole: 'purlin', 
+              beta_angle: beta_right, visual_offset_y: y_offset, visual_offset_z: 0.1, 
+              nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId 
+            });
+          } else {
+            // Regular purlins
+            // Left side slopes UP, right side slopes DOWN. 
+            // We want the purlin web (Y axis) to be perpendicular to the roof.
+            const beta_angle = i < P ? 90 - slopeDeg : 90 + slopeDeg;
 
-          newElements.push({ 
-            id: `E${elemCount++}`, 
-            type: 'frame', 
-            elementRole: 'purlin', 
-            beta_angle: beta_angle,
-            visual_offset_y: y_offset,
-            nodes: [frame1.uc[i].id, frame2.uc[i].id], 
-            section_id: finalBeamSectionId, 
-            material_id: baseMatId 
-          });
+            newElements.push({ 
+              id: `E${elemCount++}`, 
+              type: 'frame', 
+              elementRole: 'purlin', 
+              beta_angle: beta_angle,
+              visual_offset_y: y_offset,
+              nodes: [frame1.uc[i].id, frame2.uc[i].id], 
+              section_id: finalBeamSectionId, 
+              material_id: baseMatId 
+            });
+          }
         }
 
         // 7. Bracing (Cruces de San Andrés y Rigidizadores de Cubierta) en el primer y último vano

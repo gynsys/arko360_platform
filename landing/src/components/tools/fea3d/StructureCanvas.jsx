@@ -411,6 +411,9 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     if (elem?.visual_offset_y) {
        midPoint.addScaledVector(dirY_final, elem.visual_offset_y);
     }
+    if (elem?.visual_offset_z) {
+       midPoint.addScaledVector(dirZ_final, elem.visual_offset_z);
+    }
     
     mat.setPosition(midPoint);
     return mat;
@@ -419,9 +422,9 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
   if (renderExtruded && extrudedGeometry && extrudedMatrix) {
     const elem = elements.find(el => el.id === id);
     let roleColor = '#94a3b8';
-    if (elem?.elementRole === 'column') roleColor = '#1e3a8a'; // Azul oscuro
+    if (elem?.elementRole === 'column') roleColor = '#0284c7'; // Azul celeste
     else if (elem?.elementRole === 'rafter') roleColor = '#0284c7'; // Azul celeste
-    else if (elem?.elementRole === 'purlin') roleColor = '#d97706'; // Naranja / Óxido
+    else if (elem?.elementRole === 'purlin') roleColor = '#06b6d4'; // Cyan
     else if (elem?.elementRole === 'bracing') roleColor = '#f8fafc'; // Blanco perlado
 
     return (

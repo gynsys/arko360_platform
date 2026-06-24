@@ -111,9 +111,23 @@ export class SectionExtrusionGenerator {
       const x0 = -length/2;
       const x1 = length/2;
 
-      addBox(-w3/2, w3/2, -h1/2, -h1/2+t3, -h2/2, -h2/2+t3, x0, x1);
-      addBox(-w2/2, w2/2, h1/2-t3, h1/2, h2/2-t3, h2/2, x0, x1);
-      addBox(-t2/2, t2/2, -h1/2+t3, h1/2-t3, -h2/2+t3, h2/2-t3, x0, x1);
+      let offsetY1 = 0;
+      let offsetY2 = 0;
+      const align = p.alignment || 'Center';
+      if (align === 'Top Center') {
+         offsetY1 = -h1/2; 
+         offsetY2 = -h2/2;
+      } else if (align === 'Bottom Center') {
+         offsetY1 = h1/2;
+         offsetY2 = h2/2;
+      }
+
+      // Bottom flange
+      addBox(-w3/2, w3/2, offsetY1 -h1/2, offsetY1 -h1/2+t3, offsetY2 -h2/2, offsetY2 -h2/2+t3, x0, x1);
+      // Top flange
+      addBox(-w2/2, w2/2, offsetY1 + h1/2-t3, offsetY1 + h1/2, offsetY2 + h2/2-t3, offsetY2 + h2/2, x0, x1);
+      // Web
+      addBox(-t2/2, t2/2, offsetY1 -h1/2+t3, offsetY1 + h1/2-t3, offsetY2 -h2/2+t3, offsetY2 + h2/2-t3, x0, x1);
 
       geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
       geom.setIndex(indices);
