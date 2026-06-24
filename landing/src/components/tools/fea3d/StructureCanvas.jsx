@@ -375,7 +375,7 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     const p1 = new THREE.Vector3(...start);
     const p2 = new THREE.Vector3(...end);
     const L = p1.distanceTo(p2);
-    return SectionExtrusionGenerator.createGeometry(section, L, sections);
+    return SectionExtrusionGenerator.createGeometry(section, L, sections, elem);
   }, [renderExtruded, elements, id, sections, start, end]);
 
   const extrudedMatrix = useMemo(() => {

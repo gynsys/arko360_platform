@@ -1056,8 +1056,8 @@ export const useStructureStore = create((set, get) => ({
           if (!currentSections.some(s => s.id === colSecId)) {
             currentSections.push({ id: colSecId, name: 'COL_TAPERED', type: 'Tapered I/Wide Flange', material_id: baseMatId, A: 0.02, Ix: 0.001, Iy: 0.0001, J: 0.000001, params: { ht_start: 0.4, ht_end: 0.8, w2: 0.2, w3: 0.2, t2: 0.01, t3: 0.015 } });
           }
-          newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'column', beta_angle: 90, nodes: [frame.base[0].id, frame.uc[0].id], section_id: colSecId, material_id: baseMatId });
-          newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'column', beta_angle: 90, nodes: [frame.base[1].id, frame.uc[2*P].id], section_id: colSecId, material_id: baseMatId });
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'column', beta_angle: 90, top_slope: -slopeDeg, nodes: [frame.base[0].id, frame.uc[0].id], section_id: colSecId, material_id: baseMatId });
+          newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'column', beta_angle: 90, top_slope: slopeDeg, nodes: [frame.base[1].id, frame.uc[2*P].id], section_id: colSecId, material_id: baseMatId });
 
           // Roof beams (Tapered)
           for (let i = 0; i < P; i++) {
@@ -1132,11 +1132,13 @@ export const useStructureStore = create((set, get) => ({
         for (let i = 0; i <= 2*P; i++) {
           let h_rafter = 0;
           let h_purlin = 0.4; // fallback default
+          let w_purlin = 0.2; // fallback width
           
-          // Obtain purlin height
+          // Obtain purlin height and width
           const purlinSection = currentSections.find(s => s.id === finalBeamSectionId);
           if (purlinSection && purlinSection.params) {
               h_purlin = purlinSection.params.ht || purlinSection.params.h || purlinSection.params.d || 0.4;
+              w_purlin = purlinSection.params.b || purlinSection.params.w2 || purlinSection.params.d || 0.2;
           }
 
           // Obtain rafter height at this node
@@ -1149,8 +1151,11 @@ export const useStructureStore = create((set, get) => ({
               h_rafter = rafterSection.params.ht || rafterSection.params.h || rafterSection.params.d || 0.4;
             }
           }
-          
-          const y_offset = (h_rafter / 2) + (h_purlin / 2);
+
+          // If the rafter is Top Center aligned (Tapered Galpon), the node is already at the top flange.
+          // The purlin needs to sit on top, so we only offset by half the purlin's height.
+          // Otherwise, we offset by half of both to clear the center.
+          const y_offset = config.galponType === 'Tapered' ? (h_purlin / 2) : ((h_rafter + h_purlin) / 2);
           
           // Calculate beta_angle for roof slope
           const H = config.apexHeight;
@@ -1160,17 +1165,19 @@ export const useStructureStore = create((set, get) => ({
           const slopeDeg = Math.atan(slope) * 180 / Math.PI;
           
           if (i === P) {
-            // Apex node: Create two purlins, each offset by 10cm along the roof slope
+            // Apex node: Create two purlins, dynamically offset so flanges don't overlap + 10cm gap
+            const apex_spacing = (w_purlin / 2) + 0.1;
             const beta_left = 90 - slopeDeg;
             const beta_right = 90 + slopeDeg;
+            
             newElements.push({ 
               id: `E${elemCount++}`, type: 'frame', elementRole: 'purlin', 
-              beta_angle: beta_left, visual_offset_y: y_offset, visual_offset_z: -0.1, 
+              beta_angle: beta_left, visual_offset_y: y_offset, visual_offset_z: -apex_spacing, 
               nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId 
             });
             newElements.push({ 
               id: `E${elemCount++}`, type: 'frame', elementRole: 'purlin', 
-              beta_angle: beta_right, visual_offset_y: y_offset, visual_offset_z: 0.1, 
+              beta_angle: beta_right, visual_offset_y: y_offset, visual_offset_z: apex_spacing, 
               nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId 
             });
           } else {

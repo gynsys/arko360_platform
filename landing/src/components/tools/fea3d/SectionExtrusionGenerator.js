@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export class SectionExtrusionGenerator {
-  static createGeometry(section, length) {
+  static createGeometry(section, length, allSections = [], elem = null) {
     if (!section || !section.type) {
       const geo = new THREE.CylinderGeometry(0.05, 0.05, length, 8);
       geo.rotateZ(-Math.PI / 2); // Align with X
@@ -88,10 +88,20 @@ export class SectionExtrusionGenerator {
       const indices = [];
       let vIdx = 0;
 
+      // top_slope support for slant columns
+      let end_slope_dy = 0;
+      if (elem && elem.top_slope) {
+         end_slope_dy = Math.tan(elem.top_slope * Math.PI / 180);
+      }
+
       const addBox = (z1_val, z2_val, y1_start, y2_start, y1_end, y2_end, x_start, x_end) => {
+        // slant ends using end_slope_dy applied to y
+        const dx1 = end_slope_dy * y1_end;
+        const dx2 = end_slope_dy * y2_end;
+        
         const pts = [
           [x_start, y1_start, z1_val], [x_start, y1_start, z2_val], [x_start, y2_start, z2_val], [x_start, y2_start, z1_val],
-          [x_end, y1_end, z1_val], [x_end, y1_end, z2_val], [x_end, y2_end, z2_val], [x_end, y2_end, z1_val]
+          [x_end + dx1, y1_end, z1_val], [x_end + dx1, y1_end, z2_val], [x_end + dx2, y2_end, z2_val], [x_end + dx2, y2_end, z1_val]
         ];
         const base = vIdx;
         pts.forEach(pt => vertices.push(...pt));
