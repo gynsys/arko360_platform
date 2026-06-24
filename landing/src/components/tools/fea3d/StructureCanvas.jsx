@@ -770,9 +770,8 @@ function FrameLoadGraphic({ element, load, nodes }) {
           for (let j = 0; j <= numArrows; j++) {
             const fraction = j / numArrows;
             const pos = p1.clone().add(dir.clone().multiplyScalar(length * fraction));
-            const origin = load.isPull ? pos.clone() : pos.clone().sub(fdir.clone().multiplyScalar(arrowLength));
-            const tipOrTail = load.isPull ? pos.clone().add(fdir.clone().multiplyScalar(arrowLength)) : origin;
-            topPoints.push(tipOrTail);
+            const origin = pos.clone().sub(fdir.clone().multiplyScalar(arrowLength));
+            topPoints.push(origin);
             arrows.push(<arrowHelper key={j} args={[fdir, origin, arrowLength, arrowColor, 0.2, 0.1]} />);
           }
 
