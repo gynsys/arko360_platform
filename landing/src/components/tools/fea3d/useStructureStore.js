@@ -1213,6 +1213,15 @@ export const useStructureStore = create((set, get) => ({
             // Left side slopes UP, right side slopes DOWN. 
             // We want the purlin web (Y axis) to be perpendicular to the roof.
             const beta_angle = i < P ? 90 - slopeDeg : 90 + slopeDeg;
+            
+            // To ensure purlin spacing is equal everywhere (d1=d2=d3=d4), we apply a proportional visual_offset_z.
+            const apex_spacing = (w_purlin / 2) + 0.1;
+            let current_offset_z = 0;
+            if (i < P) {
+               current_offset_z = -apex_spacing * (i / P);
+            } else {
+               current_offset_z = apex_spacing * ((2*P - i) / P);
+            }
 
             newElements.push({ 
               id: `E${elemCount++}`, 
@@ -1220,6 +1229,7 @@ export const useStructureStore = create((set, get) => ({
               elementRole: 'purlin', 
               beta_angle: beta_angle,
               visual_offset_y: y_offset,
+              visual_offset_z: current_offset_z,
               nodes: [frame1.uc[i].id, frame2.uc[i].id], 
               section_id: finalBeamSectionId, 
               material_id: baseMatId 

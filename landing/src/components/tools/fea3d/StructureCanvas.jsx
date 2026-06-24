@@ -1446,8 +1446,82 @@ function GridAxes() {
           </group>
         );
       })}
-    </group>
   );
+}
+
+function ConnectionDetails() {
+  const { config, elements, nodes, renderExtruded, viewMode } = useStructureStore();
+  
+  if (config?.type !== 'galpon' || config?.galponType !== 'Tapered' || !renderExtruded || viewMode === 'results') return null;
+
+  const connections = [];
+  const P = config.roofPanels || 4;
+  
+  const plateMat = new THREE.MeshStandardMaterial({ color: "#334155", metalness: 0.7, roughness: 0.3 });
+  const boltMat = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.9, roughness: 0.2 });
+  
+  const baseBox = new THREE.BoxGeometry(0.5, 0.5, 0.03);
+  const boltCyl = new THREE.CylinderGeometry(0.015, 0.015, 0.15);
+  const leftPlateGeo = new THREE.BoxGeometry(0.02, 0.22, 0.9);
+  const rightPlateGeo = new THREE.BoxGeometry(0.02, 0.22, 0.9);
+  const apexPlate = new THREE.BoxGeometry(0.03, 0.22, 0.5);
+  const diagStiffener = new THREE.BoxGeometry(0.2, 0.01, 0.5);
+
+  for (let y = 0; y <= config.numBaysY; y++) {
+    const frame = config._galponNodes?.[y];
+    if (!frame) continue;
+
+    // Base Plates
+    [frame.base[0], frame.base[1]].forEach(bn => {
+      if (!bn) return;
+      connections.push(
+        <mesh key={`bp_${bn.id}_${y}`} position={[bn.x, bn.y, bn.z + 0.015]} geometry={baseBox} material={plateMat} />
+      );
+      [[-0.18, 0.18], [0.18, 0.18], [-0.18, -0.18], [0.18, -0.18]].forEach((off, i) => {
+        connections.push(
+          <mesh key={`blt_${bn.id}_${y}_${i}`} position={[bn.x + off[0], bn.y + off[1], bn.z + 0.075]} rotation={[Math.PI/2, 0, 0]} geometry={boltCyl} material={boltMat} />
+        );
+      });
+    });
+
+    // Knee End Plates
+    const kneeL = frame.uc[0];
+    if (kneeL) {
+       connections.push(
+         <mesh key={`ep_l_${kneeL.id}_${y}`} position={[kneeL.x, kneeL.y, kneeL.z - 0.4]} geometry={leftPlateGeo} material={plateMat} />
+       );
+       // Diagonal Knee Stiffener
+       const diagMesh = <mesh key={`stf_l_${kneeL.id}_${y}`} position={[kneeL.x + 0.1, kneeL.y, kneeL.z - 0.4]} rotation={[0, -Math.PI/4, 0]} geometry={diagStiffener} material={plateMat} />;
+       connections.push(diagMesh);
+    }
+    
+    const kneeR = frame.uc[2*P];
+    if (kneeR) {
+       connections.push(
+         <mesh key={`ep_r_${kneeR.id}_${y}`} position={[kneeR.x, kneeR.y, kneeR.z - 0.4]} geometry={rightPlateGeo} material={plateMat} />
+       );
+       const diagMesh = <mesh key={`stf_r_${kneeR.id}_${y}`} position={[kneeR.x - 0.1, kneeR.y, kneeR.z - 0.4]} rotation={[0, Math.PI/4, 0]} geometry={diagStiffener} material={plateMat} />;
+       connections.push(diagMesh);
+    }
+    
+    // Apex Connections
+    const apex = frame.uc[P];
+    if (apex) {
+       connections.push(
+         <mesh key={`apx_${apex.id}_${y}`} position={[apex.x, apex.y, apex.z - 0.22]} geometry={apexPlate} material={plateMat} />
+       );
+       // Horizontal Stiffeners at Apex
+       const horizStiff = new THREE.BoxGeometry(0.3, 0.2, 0.01);
+       connections.push(
+         <mesh key={`stf_a1_${apex.id}_${y}`} position={[apex.x, apex.y, apex.z - 0.15]} geometry={horizStiff} material={plateMat} />
+       );
+       connections.push(
+         <mesh key={`stf_a2_${apex.id}_${y}`} position={[apex.x, apex.y, apex.z - 0.35]} geometry={horizStiff} material={plateMat} />
+       );
+    }
+  }
+
+  return <group>{connections}</group>;
 }
 
 export function StructureCanvas() {
@@ -1730,6 +1804,7 @@ export function StructureCanvas() {
         
         <GlobalAxes />
         <GridAxes />
+        <ConnectionDetails />
 
         {/* Sombra (Wireframe original) - Solo en modo resultados */}
         {viewMode === 'results' && (
