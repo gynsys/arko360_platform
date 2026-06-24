@@ -111,7 +111,7 @@ export function DefineSectionsModal({ onClose }) {
       <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div className="bg-slate-50 text-slate-800 border border-slate-300 rounded-md shadow-2xl w-[600px] flex flex-col">
           <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between rounded-t-md">
-            <div className="font-bold text-sm">Frame Section Property Data</div>
+            <div className="font-bold text-sm">Datos de Propiedad de Sección</div>
             <button onClick={() => setEditingSec(null)} className="hover:text-blue-200"><X size={16} /></button>
           </div>
           
@@ -120,13 +120,13 @@ export function DefineSectionsModal({ onClose }) {
               {/* Columna Izquierda: General */}
               <div className="space-y-4">
                 <div className="border border-slate-300 p-3 rounded relative">
-                  <span className="absolute -top-2.5 left-2 bg-slate-50 px-1 text-blue-700 font-semibold text-xs">General Data</span>
+                  <span className="absolute -top-2.5 left-2 bg-slate-50 px-1 text-blue-700 font-semibold text-xs">Datos Generales</span>
                   <div className="mb-2">
-                    <label className="block mb-1">Section Name</label>
+                    <label className="block mb-1">Nombre de la Sección</label>
                     <input type="text" name="name" value={formData.name || ''} onChange={handleChange} className="border border-slate-300 px-2 py-1 w-full" />
                   </div>
                   <div className="mb-2">
-                    <label className="block mb-1">Section ID</label>
+                    <label className="block mb-1">ID de Sección</label>
                     <input type="text" name="id" value={formData.id || ''} onChange={handleChange} disabled={editingSec !== 'new'} className="border border-slate-300 px-2 py-1 w-full bg-slate-100" />
                   </div>
                   <div className="mb-2">
@@ -138,12 +138,12 @@ export function DefineSectionsModal({ onClose }) {
                     </select>
                   </div>
                   <div>
-                    <label className="block mb-1">Shape Type</label>
+                    <label className="block mb-1">Tipo de Forma</label>
                     <select name="type" value={formData.type || 'Rectangular'} onChange={handleChange} className="border border-slate-300 px-2 py-1 w-full">
                       <option value="Rectangular">Rectangular</option>
                       <option value="Circular">Circular</option>
-                      <option value="I-Shape">I-Shape / Wide Flange</option>
-                      <option value="Non-Prismatic">Non-Prismatic (Variable)</option>
+                      <option value="I-Shape">Perfil I / Ala Ancha</option>
+                      <option value="Non-Prismatic">No Prismática (Variable)</option>
                     </select>
                   </div>
                 </div>
@@ -152,16 +152,16 @@ export function DefineSectionsModal({ onClose }) {
               {/* Columna Derecha: Dimensiones */}
               <div className="space-y-4">
                 <div className="border border-slate-300 p-3 rounded relative h-full">
-                  <span className="absolute -top-2.5 left-2 bg-slate-50 px-1 text-blue-700 font-semibold text-xs">Dimensions</span>
+                  <span className="absolute -top-2.5 left-2 bg-slate-50 px-1 text-blue-700 font-semibold text-xs">Dimensiones</span>
                   
                   {formData.type === 'Rectangular' && (
                     <>
                       <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                        <label>Depth (t3), h</label>
+                        <label>Peralte (t3), h</label>
                         <input type="number" name="h" value={formData.params?.h || 0} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                       </div>
                       <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                        <label>Width (t2), b</label>
+                        <label>Ancho (t2), b</label>
                         <input type="number" name="b" value={formData.params?.b || 0} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                       </div>
                     </>
@@ -169,7 +169,7 @@ export function DefineSectionsModal({ onClose }) {
 
                   {formData.type === 'Circular' && (
                     <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                      <label>Diameter, d</label>
+                      <label>Diámetro, d</label>
                       <input type="number" name="d" value={formData.params?.d || 0} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                     </div>
                   )}
@@ -177,19 +177,19 @@ export function DefineSectionsModal({ onClose }) {
                   {formData.type === 'I-Shape' && (
                     <>
                       <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                        <label>Total Depth (t3)</label>
+                        <label>Peralte Total (t3)</label>
                         <input type="number" name="h" value={formData.params?.h || 0} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                       </div>
                       <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                        <label>Top Flange Width (t2)</label>
+                        <label>Ancho Ala Superior (t2)</label>
                         <input type="number" name="b" value={formData.params?.b || 0} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                       </div>
                       <div className="grid grid-cols-[2fr_1fr] gap-2 items-center mb-2">
-                        <label>Top Flange Thickness</label>
+                        <label>Espesor Ala Superior (tf)</label>
                         <input type="number" name="tf" value={formData.params?.tf || 0} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                       </div>
                       <div className="grid grid-cols-[2fr_1fr] gap-2 items-center">
-                        <label>Web Thickness (tw)</label>
+                        <label>Espesor del Alma (tw)</label>
                         <input type="number" name="tw" value={formData.params?.tw || 0} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                       </div>
                     </>
@@ -198,64 +198,90 @@ export function DefineSectionsModal({ onClose }) {
                   {formData.type === 'Non-Prismatic' && (
                     <div className="space-y-3">
                       <div>
-                        <label className="block mb-1 font-semibold text-blue-800">Definition Method</label>
+                        <label className="block mb-1 font-semibold text-blue-800">Método de Definición</label>
                         <select 
                           name="defType" 
                           value={formData.params?.defType || 'Cartela'} 
                           onChange={handleParamChange} 
                           className="border border-slate-300 px-2 py-1 w-full bg-blue-50"
                         >
-                          <option value="Cartela">Fabricate Haunch from Profile</option>
-                          <option value="Interpolate">Interpolate Two Sections</option>
+                          <option value="Cartela">Fabricar Cartela desde Perfil</option>
+                          <option value="Interpolate">Interpolar Dos Secciones</option>
                         </select>
                       </div>
 
                       {formData.params?.defType === 'Interpolate' ? (
                         <>
                           <div className="grid grid-cols-[1fr_2fr] gap-2 items-center mb-2">
-                            <label>Start Section</label>
+                            <label>Sección Inicial</label>
                             <select name="start_section_id" value={formData.params?.start_section_id || ''} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
-                              <option value="">-- Select --</option>
+                              <option value="">-- Seleccionar --</option>
                               {sections.filter(s => s.type === 'I-Shape').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
                             </select>
                           </div>
                           <div className="grid grid-cols-[1fr_2fr] gap-2 items-center mb-2">
-                            <label>End Section</label>
+                            <label>Sección Final</label>
                             <select name="end_section_id" value={formData.params?.end_section_id || ''} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
-                              <option value="">-- Select --</option>
+                              <option value="">-- Seleccionar --</option>
                               {sections.filter(s => s.type === 'I-Shape').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
                             </select>
+                          </div>
+                          
+                          {/* SVG Visualizer Interpolate */}
+                          <div className="mt-4 border border-slate-200 bg-white rounded flex justify-center items-center h-[90px]">
+                            <svg width="200" height="70" viewBox="0 0 200 70">
+                              <polygon points="10,20 190,30 190,50 10,60" fill="#0284c7" opacity="0.8" />
+                              <line x1="10" y1="10" x2="10" y2="70" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
+                              <line x1="190" y1="10" x2="190" y2="70" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
+                              <text x="10" y="10" fontSize="10" fill="#64748b" textAnchor="middle">Start</text>
+                              <text x="190" y="10" fontSize="10" fill="#64748b" textAnchor="middle">End</text>
+                            </svg>
                           </div>
                         </>
                       ) : (
                         <>
                           <div className="grid grid-cols-[1.5fr_2fr] gap-2 items-center mb-2">
-                            <label>Base Profile</label>
+                            <label>Perfil Base</label>
                             <select name="base_section_id" value={formData.params?.base_section_id || ''} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
-                              <option value="">-- Select --</option>
+                              <option value="">-- Seleccionar --</option>
                               {sections.filter(s => s.type === 'I-Shape').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
                             </select>
                           </div>
                           <div className="grid grid-cols-[1.5fr_2fr] gap-2 items-center mb-2">
-                            <label>Haunch Depth (+)</label>
-                            <input type="number" name="haunch_h" value={formData.params?.haunch_h || 0} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 text-right w-full" placeholder="e.g. 0.4" />
+                            <label>Peralte Cartela (+)</label>
+                            <input type="number" name="haunch_h" value={formData.params?.haunch_h || 0} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 text-right w-full" placeholder="ej. 0.4" />
                           </div>
                           <div className="grid grid-cols-[1.5fr_2fr] gap-2 items-center mb-2">
-                            <label>Haunch Location</label>
+                            <label>Ubicación Cartela</label>
                             <select name="haunch_pos" value={formData.params?.haunch_pos || 'start'} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
-                              <option value="start">At Start Node</option>
-                              <option value="end">At End Node</option>
+                              <option value="start">En Nodo Inicial</option>
+                              <option value="end">En Nodo Final</option>
                             </select>
+                          </div>
+                          
+                          {/* SVG Visualizer Haunch */}
+                          <div className="mt-4 border border-slate-200 bg-white rounded flex justify-center items-center h-[90px]">
+                            <svg width="200" height="70" viewBox="0 0 200 70">
+                              {formData.params?.haunch_pos === 'start' ? (
+                                <polygon points="10,20 190,20 190,40 70,40 10,65" fill="#0284c7" opacity="0.8" />
+                              ) : (
+                                <polygon points="10,20 190,20 190,65 130,40 10,40" fill="#0284c7" opacity="0.8" />
+                              )}
+                              <line x1="10" y1="10" x2="10" y2="70" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
+                              <line x1="190" y1="10" x2="190" y2="70" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
+                              <text x="10" y="10" fontSize="10" fill="#64748b" textAnchor="middle">Start</text>
+                              <text x="190" y="10" fontSize="10" fill="#64748b" textAnchor="middle">End</text>
+                            </svg>
                           </div>
                         </>
                       )}
 
                       <div className="border-t border-slate-200 mt-2 pt-2">
-                        <label className="block mb-1 font-semibold">Geometric Alignment (Insertion)</label>
+                        <label className="block mb-1 font-semibold">Alineación Geométrica (Inserción)</label>
                         <select name="alignment" value={formData.params?.alignment || 'Center'} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
-                          <option value="Top Center">Top Center (Flat Top)</option>
-                          <option value="Center">Center (Centered)</option>
-                          <option value="Bottom Center">Bottom Center (Flat Bottom)</option>
+                          <option value="Top Center">Centro Superior (Tope Plano)</option>
+                          <option value="Center">Centro (Centrado)</option>
+                          <option value="Bottom Center">Centro Inferior (Fondo Plano)</option>
                         </select>
                       </div>
                     </div>
@@ -266,22 +292,22 @@ export function DefineSectionsModal({ onClose }) {
 
             {/* Properties (Read Only) */}
             <div className="border border-slate-300 p-3 rounded relative bg-slate-100">
-              <span className="absolute -top-2.5 left-2 bg-slate-100 px-1 text-blue-700 font-semibold text-xs">Calculated Properties</span>
+              <span className="absolute -top-2.5 left-2 bg-slate-100 px-1 text-blue-700 font-semibold text-xs">Propiedades Calculadas</span>
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <label className="text-[10px] text-slate-500">Cross-section Area</label>
+                  <label className="text-[10px] text-slate-500">Área de Sección</label>
                   <div className="font-mono">{formData.A?.toExponential(4)}</div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500">Moment of Inertia 3</label>
+                  <label className="text-[10px] text-slate-500">Momento de Inercia 3</label>
                   <div className="font-mono">{formData.Ix?.toExponential(4)}</div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500">Moment of Inertia 2</label>
+                  <label className="text-[10px] text-slate-500">Momento de Inercia 2</label>
                   <div className="font-mono">{formData.Iy?.toExponential(4)}</div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500">Torsional Constant</label>
+                  <label className="text-[10px] text-slate-500">Constante Torsional</label>
                   <div className="font-mono">{formData.J?.toExponential(4)}</div>
                 </div>
               </div>
@@ -303,14 +329,14 @@ export function DefineSectionsModal({ onClose }) {
       <div className="bg-slate-50 text-slate-800 border border-slate-300 rounded-md shadow-2xl w-[500px] flex flex-col">
         {/* Header */}
         <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between rounded-t-md">
-          <div className="font-bold text-sm">Frame Properties</div>
+          <div className="font-bold text-sm">Propiedades de Frame</div>
           <button onClick={onClose} className="hover:text-blue-200"><X size={16} /></button>
         </div>
         
         <div className="p-4 flex gap-4 h-[350px]">
           {/* List */}
           <div className="flex-1 border border-slate-300 bg-white overflow-y-auto">
-            <div className="bg-slate-100 px-2 py-1 border-b border-slate-300 text-xs font-bold text-blue-800">Properties</div>
+            <div className="bg-slate-100 px-2 py-1 border-b border-slate-300 text-xs font-bold text-blue-800">Propiedades</div>
             {sections.map(s => (
               <div 
                 key={s.id} 
@@ -325,9 +351,9 @@ export function DefineSectionsModal({ onClose }) {
 
           {/* Actions */}
           <div className="w-[180px] flex flex-col gap-2">
-            <div className="text-xs text-blue-800 font-bold mb-1">Click to:</div>
+            <div className="text-xs text-blue-800 font-bold mb-1">Click para:</div>
             <button onClick={handleAdd} className="w-full text-left bg-slate-200 border border-slate-300 hover:bg-slate-300 px-3 py-1.5 rounded text-sm flex items-center gap-2">
-              <Plus size={14} className="text-green-600"/> Add New Property...
+              <Plus size={14} className="text-green-600"/> Agregar Nueva...
             </button>
             <div className="flex-1"></div>
             <button 
@@ -374,7 +400,7 @@ export function DefineSectionsModal({ onClose }) {
               }} 
               className="w-full text-left bg-slate-200 border border-slate-300 hover:bg-red-100 hover:border-red-300 px-3 py-1.5 rounded text-sm flex items-center gap-2"
             >
-              <Trash2 size={14} className="text-red-600"/> Delete Property
+              <Trash2 size={14} className="text-red-600"/> Eliminar Propiedad
             </button>
           </div>
         </div>

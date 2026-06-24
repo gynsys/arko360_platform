@@ -988,8 +988,35 @@ export const useStructureStore = create((set, get) => ({
       Fy: 35182000, Fu: 45872000 // kgf/m²
     };
 
+    // Steel A36 Fy=36ksi
+    const matA36 = isUS ? {
+      id: 'A36', name: 'A36', type: 'Steel', color: '#ffaaaa',
+      density: 0.000490,   // kip/ft³
+      weightVol: 0.490,    // kip/ft³
+      E: 27888.011,        // kip/ft²
+      U: 0.3, A: 0.0000117, 
+      G: 10726.158,        // kip/ft²
+      Fy: 5.184, Fu: 8.352 // kip/ft²
+    } : isSI ? {
+      id: 'A36', name: 'A36', type: 'Steel', color: '#ffaaaa',
+      density: 76.981,     // kN/m³
+      weightVol: 76.981,   // kN/m³
+      E: 200000000,        // kN/m²
+      U: 0.3, A: 0.0000117,
+      G: 76923077,         // kN/m²
+      Fy: 250000, Fu: 400000 // kN/m²
+    } : {
+      id: 'A36', name: 'A36', type: 'Steel', color: '#ffaaaa',
+      density: 7850,       // kgf/m³
+      weightVol: 7850,     // kgf/m³
+      E: 20389324000,      // kgf/m²
+      U: 0.3, A: 0.0000117,
+      G: 7842047000,       // kgf/m²
+      Fy: 25492900, Fu: 40788600 // kgf/m²
+    };
+    
     // Determine default base materials depending on selected system
-    const defaultMaterials = get().materials.length > 0 ? get().materials : [matConcrete, matSteel];
+    const defaultMaterials = get().materials.length > 0 ? get().materials : [matConcrete, matSteel, matA36];
     const baseMatId = config.materialId || (systemMaterial === 'Steel' ? 'A992Fy50' : '4000Psi');
 
     let currentSections = get().sections.length > 0 ? [...get().sections] : [
