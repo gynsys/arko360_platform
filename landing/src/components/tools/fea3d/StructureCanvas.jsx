@@ -1768,7 +1768,7 @@ export function StructureCanvas() {
   }, [viewMode, activeResultCombo, activeResultType, results, shells]);
 
   return (
-    <div className="w-full h-screen bg-slate-900 relative">
+    <div className="w-full h-screen bg-black relative">
       <Canvas 
         onPointerMissed={() => {
           if (!isDrawingShell && viewMode !== 'results') clearSelection();
@@ -1782,7 +1782,7 @@ export function StructureCanvas() {
         <CameraController />
         <CoordinateTracker />
         
-        <color attach="background" args={['#0f172a']} />
+        <color attach="background" args={['#000000']} />
         <Grid infiniteGrid fadeDistance={cameraView === '3D' ? 40 : 100} cellColor="#1e293b" sectionColor="#334155" rotation={gridRotation} position={gridPosition} />
         
         {/* Plano invisible para capturar clics en Quick Draw Area */}
