@@ -90,15 +90,23 @@ export function DefineSectionsModal({ onClose }) {
         if (newParams.defType === 'Interpolate') {
           sec1 = sections.find(s => s.id === newParams.start_section_id);
           sec2 = sections.find(s => s.id === newParams.end_section_id);
+          if (sec1 && sec2) {
+            newSec.A = ((sec1.A || 0) + (sec2.A || 0)) / 2;
+            newSec.Ix = ((sec1.Ix || 0) + (sec2.Ix || 0)) / 2;
+            newSec.Iy = ((sec1.Iy || 0) + (sec2.Iy || 0)) / 2;
+            newSec.J = ((sec1.J || 0) + (sec2.J || 0)) / 2;
+          }
         } else {
           sec1 = sections.find(s => s.id === newParams.base_section_id);
-          sec2 = sec1;
-        }
-        if (sec1 && sec2) {
-          newSec.A = ((sec1.A || 0) + (sec2.A || 0)) / 2;
-          newSec.Ix = ((sec1.Ix || 0) + (sec2.Ix || 0)) / 2;
-          newSec.Iy = ((sec1.Iy || 0) + (sec2.Iy || 0)) / 2;
-          newSec.J = ((sec1.J || 0) + (sec2.J || 0)) / 2;
+          if (sec1) {
+            const h_base = sec1.params?.h || sec1.params?.ht || sec1.params?.d || 0.4;
+            const haunch_h = parseFloat(newParams.haunch_h) || 0;
+            const ratio = (h_base + haunch_h / 2) / h_base;
+            newSec.A = (sec1.A || 0) * (1 + (haunch_h/2)/h_base * 0.5); // Approx web area increase
+            newSec.Ix = (sec1.Ix || 0) * Math.pow(ratio, 2);
+            newSec.Iy = (sec1.Iy || 0);
+            newSec.J = (sec1.J || 0) * ratio;
+          }
         }
       }
       
@@ -216,23 +224,34 @@ export function DefineSectionsModal({ onClose }) {
                             <label>Sección Inicial</label>
                             <select name="start_section_id" value={formData.params?.start_section_id || ''} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
                               <option value="">-- Seleccionar --</option>
-                              {sections.filter(s => s.type === 'I-Shape').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
+                              {sections.filter(s => s.type !== 'Non-Prismatic').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
                             </select>
                           </div>
                           <div className="grid grid-cols-[1fr_2fr] gap-2 items-center mb-2">
                             <label>Sección Final</label>
                             <select name="end_section_id" value={formData.params?.end_section_id || ''} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
                               <option value="">-- Seleccionar --</option>
-                              {sections.filter(s => s.type === 'I-Shape').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
+                              {sections.filter(s => s.type !== 'Non-Prismatic').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
                             </select>
                           </div>
                           
                           {/* SVG Visualizer Interpolate */}
-                          <div className="mt-4 border border-slate-200 bg-white rounded flex justify-center items-center h-[90px]">
+                          <div className="mt-4 border border-slate-200 bg-white rounded flex justify-center items-center h-[90px] relative">
                             <svg width="200" height="70" viewBox="0 0 200 70">
-                              <polygon points="10,20 190,30 190,50 10,60" fill="#0284c7" opacity="0.8" />
-                              <line x1="10" y1="10" x2="10" y2="70" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
-                              <line x1="190" y1="10" x2="190" y2="70" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
+                              {(() => {
+                                const sec1 = sections.find(s => s.id === formData.params?.start_section_id);
+                                const sec2 = sections.find(s => s.id === formData.params?.end_section_id);
+                                const h1 = sec1?.params?.h || sec1?.params?.ht || sec1?.params?.d || 0.4;
+                                const h2 = sec2?.params?.h || sec2?.params?.ht || sec2?.params?.d || 0.4;
+                                const maxH = Math.max(h1, h2, 0.1);
+                                const scale = 40 / maxH;
+                                const yTop = 15;
+                                const yBot1 = yTop + (h1 * scale);
+                                const yBot2 = yTop + (h2 * scale);
+                                return <polygon points={`10,${yTop} 190,${yTop} 190,${yBot2} 10,${yBot1}`} fill="#0284c7" opacity="0.8" />;
+                              })()}
+                              <line x1="10" y1="5" x2="10" y2="65" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
+                              <line x1="190" y1="5" x2="190" y2="65" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
                               <text x="10" y="10" fontSize="10" fill="#64748b" textAnchor="middle">Start</text>
                               <text x="190" y="10" fontSize="10" fill="#64748b" textAnchor="middle">End</text>
                             </svg>
@@ -244,7 +263,7 @@ export function DefineSectionsModal({ onClose }) {
                             <label>Perfil Base</label>
                             <select name="base_section_id" value={formData.params?.base_section_id || ''} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
                               <option value="">-- Seleccionar --</option>
-                              {sections.filter(s => s.type === 'I-Shape').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
+                              {sections.filter(s => s.type !== 'Non-Prismatic').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
                             </select>
                           </div>
                           <div className="grid grid-cols-[1.5fr_2fr] gap-2 items-center mb-2">
@@ -260,15 +279,31 @@ export function DefineSectionsModal({ onClose }) {
                           </div>
                           
                           {/* SVG Visualizer Haunch */}
-                          <div className="mt-4 border border-slate-200 bg-white rounded flex justify-center items-center h-[90px]">
+                          <div className="mt-4 border border-slate-200 bg-white rounded flex justify-center items-center h-[90px] relative">
                             <svg width="200" height="70" viewBox="0 0 200 70">
-                              {formData.params?.haunch_pos === 'start' ? (
-                                <polygon points="10,20 190,20 190,40 70,40 10,65" fill="#0284c7" opacity="0.8" />
-                              ) : (
-                                <polygon points="10,20 190,20 190,65 130,40 10,40" fill="#0284c7" opacity="0.8" />
-                              )}
-                              <line x1="10" y1="10" x2="10" y2="70" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
-                              <line x1="190" y1="10" x2="190" y2="70" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
+                              {(() => {
+                                const haunchPos = formData.params?.haunch_pos || 'start';
+                                const haunchH = parseFloat(formData.params?.haunch_h) || 0;
+                                const baseSec = sections.find(s => s.id === formData.params?.base_section_id);
+                                const baseH = baseSec?.params?.h || baseSec?.params?.ht || baseSec?.params?.d || 0.4;
+                                const totalH = baseH + haunchH;
+                                
+                                const scale = 40 / Math.max(totalH, 0.1); 
+                                const h1 = baseH * scale;
+                                const h2 = totalH * scale;
+                                
+                                const yTop = 15;
+                                const yBotBase = yTop + h1;
+                                const yBotHaunch = yTop + h2;
+                                
+                                if (haunchPos === 'start') {
+                                  return <polygon points={`10,${yTop} 190,${yTop} 190,${yBotBase} 70,${yBotBase} 10,${yBotHaunch}`} fill="#0284c7" opacity="0.8" />;
+                                } else {
+                                  return <polygon points={`10,${yTop} 190,${yTop} 190,${yBotHaunch} 130,${yBotBase} 10,${yBotBase}`} fill="#0284c7" opacity="0.8" />;
+                                }
+                              })()}
+                              <line x1="10" y1="5" x2="10" y2="65" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
+                              <line x1="190" y1="5" x2="190" y2="65" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 2"/>
                               <text x="10" y="10" fontSize="10" fill="#64748b" textAnchor="middle">Start</text>
                               <text x="190" y="10" fontSize="10" fill="#64748b" textAnchor="middle">End</text>
                             </svg>
