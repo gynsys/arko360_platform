@@ -770,8 +770,9 @@ function FrameLoadGraphic({ element, load, nodes }) {
           for (let j = 0; j <= numArrows; j++) {
             const fraction = j / numArrows;
             const pos = p1.clone().add(dir.clone().multiplyScalar(length * fraction));
-            const origin = pos.clone().sub(fdir.clone().multiplyScalar(arrowLength));
-            topPoints.push(origin);
+            const origin = load.isPull ? pos.clone() : pos.clone().sub(fdir.clone().multiplyScalar(arrowLength));
+            const tipOrTail = load.isPull ? pos.clone().add(fdir.clone().multiplyScalar(arrowLength)) : origin;
+            topPoints.push(tipOrTail);
             arrows.push(<arrowHelper key={j} args={[fdir, origin, arrowLength, arrowColor, 0.2, 0.1]} />);
           }
 
@@ -784,7 +785,7 @@ function FrameLoadGraphic({ element, load, nodes }) {
                 <lineBasicMaterial color={loadColor} linewidth={2} />
               </line>
               <Billboard
-                position={[topPoints[Math.floor(numArrows/2)].x + fdir.x * (arrowLength / 2) + 0.15, topPoints[Math.floor(numArrows/2)].y + fdir.y * (arrowLength / 2) + 0.15, topPoints[Math.floor(numArrows/2)].z + fdir.z * (arrowLength / 2) + 0.15]}
+                position={[topPoints[Math.floor(numArrows/2)].x + fdir.x * 0.15, topPoints[Math.floor(numArrows/2)].y + fdir.y * 0.15, topPoints[Math.floor(numArrows/2)].z + fdir.z * 0.15]}
               >
                 <Text
                   fontSize={0.18}

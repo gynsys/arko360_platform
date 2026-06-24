@@ -140,11 +140,12 @@ export function WindLoadModal({ isOpen, onClose }) {
         const q_x = q_lin * nx;
         const q_z = q_lin * nz;
 
+        const isPull = p < 0;
         if (Math.abs(q_x) > 1e-4) {
-          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'X', q1: q_x, q2: q_x });
+          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'X', q1: q_x, q2: q_x, isPull });
         }
         if (Math.abs(q_z) > 1e-4) {
-          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'Z', q1: q_z, q2: q_z });
+          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'Z', q1: q_z, q2: q_z, isPull });
         }
         wx_count++;
       }
@@ -156,12 +157,13 @@ export function WindLoadModal({ isOpen, onClose }) {
         const isSotavento  = Math.abs(n1.x - L) < 0.1 || Math.abs(n2.x - L) < 0.1;
         if (isBarlovento || isSotavento) {
           const cp = isBarlovento ? pressures.wall_W_kgfm2 : pressures.wall_L_kgfm2;
-          // Área tributaria de la columna = baySpacing * (floorHeight / 2) aproximado
-          // Simplificación: usamos baySpacing como ancho tributario
           const trib = tribForFrame(midY);
           const q_lin = Math.abs(cp) * trib;
-          const sign = isBarlovento ? 1 : -1; // BV empuja +X, SV succiona → también +X (norma convención)
-          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'X', q1: q_lin * sign, q2: q_lin * sign });
+          // Ambos lados empujan/succionan en la dirección +X
+          // Barlovento (presión) empuja en +X. Sotavento (succión) tira en +X.
+          const sign = 1; 
+          const isPull = isSotavento;
+          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WX', pattern: 'Uniform', dir: 'X', q1: q_lin * sign, q2: q_lin * sign, isPull });
           wx_count++;
         }
       }
@@ -174,8 +176,9 @@ export function WindLoadModal({ isOpen, onClose }) {
           const cp = isFront ? pressures.wall_W_kgfm2 : pressures.wall_L_kgfm2;
           const trib = L / 2; // ancho tributario en Y ≈ semiluz
           const q_lin = Math.abs(cp) * trib;
-          const sign = isFront ? 1 : -1;
-          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WY', pattern: 'Uniform', dir: 'Y', q1: q_lin * sign, q2: q_lin * sign });
+          const sign = 1; // Viento +Y empuja pared frontal y succiona pared trasera, ambas fuerzas van en +Y
+          const isPull = isBack;
+          addLoad({ type: 'distributed', target_id: el.id, loadCase: 'WY', pattern: 'Uniform', dir: 'Y', q1: q_lin * sign, q2: q_lin * sign, isPull });
           wy_count++;
         }
       }
