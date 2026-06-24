@@ -65,11 +65,14 @@ export function DefineSectionsModal({ onClose }) {
   };
 
   const handleParamChange = (e) => {
-    const { name, value } = e.target;
-    const numValue = parseFloat(value) || 0;
+    const { name, value, type } = e.target;
+    let finalValue = value;
+    if (type === 'number') {
+      finalValue = value === '' ? 0 : parseFloat(value);
+    }
     
     setFormData(prev => {
-      const newParams = { ...prev.params, [name]: numValue };
+      const newParams = { ...prev.params, [name]: finalValue };
       const newSec = { ...prev, params: newParams };
       
       // Auto-calcular propiedades groseras si es rectangular
@@ -79,6 +82,24 @@ export function DefineSectionsModal({ onClose }) {
         newSec.Ix = (b * Math.pow(h, 3)) / 12;
         newSec.Iy = (h * Math.pow(b, 3)) / 12;
         newSec.J = newSec.Ix + newSec.Iy; // Aproximación
+      }
+      
+      // Auto-calcular si es Non-Prismatic
+      if (newSec.type === 'Non-Prismatic') {
+        let sec1, sec2;
+        if (newParams.defType === 'Interpolate') {
+          sec1 = sections.find(s => s.id === newParams.start_section_id);
+          sec2 = sections.find(s => s.id === newParams.end_section_id);
+        } else {
+          sec1 = sections.find(s => s.id === newParams.base_section_id);
+          sec2 = sec1;
+        }
+        if (sec1 && sec2) {
+          newSec.A = ((sec1.A || 0) + (sec2.A || 0)) / 2;
+          newSec.Ix = ((sec1.Ix || 0) + (sec2.Ix || 0)) / 2;
+          newSec.Iy = ((sec1.Iy || 0) + (sec2.Iy || 0)) / 2;
+          newSec.J = ((sec1.J || 0) + (sec2.J || 0)) / 2;
+        }
       }
       
       return newSec;
@@ -122,6 +143,7 @@ export function DefineSectionsModal({ onClose }) {
                       <option value="Rectangular">Rectangular</option>
                       <option value="Circular">Circular</option>
                       <option value="I-Shape">I-Shape / Wide Flange</option>
+                      <option value="Non-Prismatic">Non-Prismatic (Variable)</option>
                     </select>
                   </div>
                 </div>
@@ -171,6 +193,72 @@ export function DefineSectionsModal({ onClose }) {
                         <input type="number" name="tw" value={formData.params?.tw || 0} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 text-right w-full" />
                       </div>
                     </>
+                  )}
+
+                  {formData.type === 'Non-Prismatic' && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block mb-1 font-semibold text-blue-800">Definition Method</label>
+                        <select 
+                          name="defType" 
+                          value={formData.params?.defType || 'Cartela'} 
+                          onChange={handleParamChange} 
+                          className="border border-slate-300 px-2 py-1 w-full bg-blue-50"
+                        >
+                          <option value="Cartela">Fabricate Haunch from Profile</option>
+                          <option value="Interpolate">Interpolate Two Sections</option>
+                        </select>
+                      </div>
+
+                      {formData.params?.defType === 'Interpolate' ? (
+                        <>
+                          <div className="grid grid-cols-[1fr_2fr] gap-2 items-center mb-2">
+                            <label>Start Section</label>
+                            <select name="start_section_id" value={formData.params?.start_section_id || ''} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
+                              <option value="">-- Select --</option>
+                              {sections.filter(s => s.type === 'I-Shape').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
+                            </select>
+                          </div>
+                          <div className="grid grid-cols-[1fr_2fr] gap-2 items-center mb-2">
+                            <label>End Section</label>
+                            <select name="end_section_id" value={formData.params?.end_section_id || ''} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
+                              <option value="">-- Select --</option>
+                              {sections.filter(s => s.type === 'I-Shape').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
+                            </select>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-[1.5fr_2fr] gap-2 items-center mb-2">
+                            <label>Base Profile</label>
+                            <select name="base_section_id" value={formData.params?.base_section_id || ''} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
+                              <option value="">-- Select --</option>
+                              {sections.filter(s => s.type === 'I-Shape').map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
+                            </select>
+                          </div>
+                          <div className="grid grid-cols-[1.5fr_2fr] gap-2 items-center mb-2">
+                            <label>Haunch Depth (+)</label>
+                            <input type="number" name="haunch_h" value={formData.params?.haunch_h || 0} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 text-right w-full" placeholder="e.g. 0.4" />
+                          </div>
+                          <div className="grid grid-cols-[1.5fr_2fr] gap-2 items-center mb-2">
+                            <label>Haunch Location</label>
+                            <select name="haunch_pos" value={formData.params?.haunch_pos || 'start'} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
+                              <option value="start">At Start Node</option>
+                              <option value="end">At End Node</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="border-t border-slate-200 mt-2 pt-2">
+                        <label className="block mb-1 font-semibold">Geometric Alignment (Insertion)</label>
+                        <select name="alignment" value={formData.params?.alignment || 'Center'} onChange={handleParamChange} className="border border-slate-300 px-2 py-1 w-full">
+                          <option value="Top Center">Top Center (Flat Top)</option>
+                          <option value="Center">Center (Centered)</option>
+                          <option value="Bottom Center">Bottom Center (Flat Bottom)</option>
+                        </select>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

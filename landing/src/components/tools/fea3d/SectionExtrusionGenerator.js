@@ -88,14 +88,7 @@ export class SectionExtrusionGenerator {
       const indices = [];
       let vIdx = 0;
 
-      // We want X to be the length axis.
-      // x_start to x_end.
-      // y is height.
-      // z is width.
       const addBox = (z1_val, z2_val, y1_start, y2_start, y1_end, y2_end, x_start, x_end) => {
-        // pts order: 8 vertices
-        // Back face (at x_start)
-        // 0: bottom-left, 1: bottom-right, 2: top-right, 3: top-left (looking from +X)
         const pts = [
           [x_start, y1_start, z1_val], [x_start, y1_start, z2_val], [x_start, y2_start, z2_val], [x_start, y2_start, z1_val],
           [x_end, y1_end, z1_val], [x_end, y1_end, z2_val], [x_end, y2_end, z2_val], [x_end, y2_end, z1_val]
@@ -105,27 +98,112 @@ export class SectionExtrusionGenerator {
         vIdx += 8;
 
         const faces = [
-          [0,2,1], [0,3,2], // Back (x_start)
-          [4,5,6], [4,6,7], // Front (x_end)
+          [0,2,1], [0,3,2], // Back
+          [4,5,6], [4,6,7], // Front
           [0,1,5], [0,5,4], // Bottom
           [3,6,2], [3,7,6], // Top
           [0,4,7], [0,7,3], // Left
           [1,2,6], [1,6,5]  // Right
         ];
-        faces.forEach(f => {
-          indices.push(base+f[0], base+f[1], base+f[2]);
-        });
+        faces.forEach(f => { indices.push(base+f[0], base+f[1], base+f[2]); });
+      };
+
+      const x0 = -length/2;
+      const x1 = length/2;
+
+      addBox(-w3/2, w3/2, -h1/2, -h1/2+t3, -h2/2, -h2/2+t3, x0, x1);
+      addBox(-w2/2, w2/2, h1/2-t3, h1/2, h2/2-t3, h2/2, x0, x1);
+      addBox(-t2/2, t2/2, -h1/2+t3, h1/2-t3, -h2/2+t3, h2/2-t3, x0, x1);
+
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geom.setIndex(indices);
+      geom.computeVertexNormals();
+      return geom;
+    }
+
+    if (section.type === 'Non-Prismatic') {
+      let sec1, sec2;
+      const defType = p.defType || 'Cartela';
+      
+      if (defType === 'Interpolate') {
+        sec1 = allSections.find(s => s.id === p.start_section_id);
+        sec2 = allSections.find(s => s.id === p.end_section_id);
+      } else {
+        sec1 = allSections.find(s => s.id === p.base_section_id);
+        sec2 = sec1;
+      }
+      
+      if (!sec1 || !sec2) {
+         const geo = new THREE.CylinderGeometry(0.05, 0.05, length, 8);
+         geo.rotateZ(-Math.PI / 2);
+         return geo;
+      }
+      
+      let h1 = sec1.params?.h || 0.4, h2 = sec2.params?.h || 0.4;
+      let w2_1 = sec1.params?.b || 0.2, w2_2 = sec2.params?.b || 0.2;
+      let w3_1 = sec1.params?.b || 0.2, w3_2 = sec2.params?.b || 0.2;
+      let tf1 = sec1.params?.tf || 0.01, tf2 = sec2.params?.tf || 0.01;
+      let tw1 = sec1.params?.tw || 0.01, tw2 = sec2.params?.tw || 0.01;
+      
+      if (defType === 'Cartela') {
+         const haunch_h = p.haunch_h || 0;
+         if (p.haunch_pos === 'start') {
+           h1 += haunch_h;
+         } else {
+           h2 += haunch_h;
+         }
+      }
+      
+      let offsetY1 = 0;
+      let offsetY2 = 0;
+      
+      const align = p.alignment || 'Center';
+      if (align === 'Top Center') {
+         offsetY1 = -h1/2; 
+         offsetY2 = -h2/2;
+      } else if (align === 'Bottom Center') {
+         offsetY1 = h1/2;
+         offsetY2 = h2/2;
+      }
+      
+      const geom = new THREE.BufferGeometry();
+      const vertices = [];
+      const indices = [];
+      let vIdx = 0;
+
+      const addBox = (z1_1, z2_1, z1_2, z2_2, y1_1, y2_1, y1_2, y2_2, x_start, x_end) => {
+        const pts = [
+          [x_start, y1_1, z1_1], [x_start, y1_1, z2_1], [x_start, y2_1, z2_1], [x_start, y2_1, z1_1],
+          [x_end, y1_2, z1_2], [x_end, y1_2, z2_2], [x_end, y2_2, z2_2], [x_end, y2_2, z1_2]
+        ];
+        const base = vIdx;
+        pts.forEach(pt => vertices.push(...pt));
+        vIdx += 8;
+        const faces = [
+          [0,2,1], [0,3,2], [4,5,6], [4,6,7], [0,1,5], [0,5,4],
+          [3,6,2], [3,7,6], [0,4,7], [0,7,3], [1,2,6], [1,6,5]
+        ];
+        faces.forEach(f => { indices.push(base+f[0], base+f[1], base+f[2]); });
       };
 
       const x0 = -length/2;
       const x1 = length/2;
 
       // Bottom flange
-      addBox(-w3/2, w3/2, -h1/2, -h1/2+t3, -h2/2, -h2/2+t3, x0, x1);
+      addBox(-w3_1/2, w3_1/2, -w3_2/2, w3_2/2, 
+             offsetY1 -h1/2, offsetY1 -h1/2+tf1, 
+             offsetY2 -h2/2, offsetY2 -h2/2+tf2, 
+             x0, x1);
       // Top flange
-      addBox(-w2/2, w2/2, h1/2-t3, h1/2, h2/2-t3, h2/2, x0, x1);
+      addBox(-w2_1/2, w2_1/2, -w2_2/2, w2_2/2, 
+             offsetY1 + h1/2-tf1, offsetY1 + h1/2, 
+             offsetY2 + h2/2-tf2, offsetY2 + h2/2, 
+             x0, x1);
       // Web
-      addBox(-t2/2, t2/2, -h1/2+t3, h1/2-t3, -h2/2+t3, h2/2-t3, x0, x1);
+      addBox(-tw1/2, tw1/2, -tw2/2, tw2/2, 
+             offsetY1 -h1/2+tf1, offsetY1 + h1/2-tf1, 
+             offsetY2 -h2/2+tf2, offsetY2 + h2/2-tf2, 
+             x0, x1);
 
       geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
       geom.setIndex(indices);
