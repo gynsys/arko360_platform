@@ -80,6 +80,9 @@ jobs:
             # Pull new code (specifically to get the latest docker-compose.prod.yml if changed)
             git pull origin main
             
+            # Free up disk space by removing old docker images and stopped containers
+            docker system prune -af
+            
             # Pull the new images
             docker compose -f docker-compose.prod.yml pull
             
@@ -88,3 +91,6 @@ jobs:
             
             # Run database migrations
             docker compose -f docker-compose.prod.yml exec -T backend python init_db.py
+            
+            # Clean up again just in case
+            docker image prune -af
