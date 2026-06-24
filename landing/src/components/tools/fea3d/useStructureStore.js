@@ -1074,6 +1074,12 @@ export const useStructureStore = create((set, get) => ({
       const { roofPanels, trussType } = config;
       const P = roofPanels;
       
+      const H = config.apexHeight;
+      const E = config.floorHeight;
+      const L = config.bayWidthX;
+      const slope = (H - E) / (L / 2);
+      const slopeDeg = Math.atan(slope) * 180 / Math.PI;
+
       for (let y = 0; y <= config.numBaysY; y++) {
         const frame = config._galponNodes[y];
         
@@ -1184,12 +1190,7 @@ export const useStructureStore = create((set, get) => ({
           // Otherwise, we offset by half of both to clear the center.
           const y_offset = config.galponType === 'Tapered' ? (h_purlin / 2) : ((h_rafter + h_purlin) / 2);
           
-          // Calculate beta_angle for roof slope
-          const H = config.apexHeight;
-          const E = config.floorHeight;
-          const L = config.bayWidthX;
-          const slope = (H - E) / (L / 2);
-          const slopeDeg = Math.atan(slope) * 180 / Math.PI;
+          // slopeDeg is now calculated at the beginning of the galpon block
           
           if (i === P) {
             // Apex node: Create two purlins, dynamically offset so flanges don't overlap + 10cm gap
