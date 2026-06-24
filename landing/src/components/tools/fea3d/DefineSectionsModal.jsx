@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { X, Plus, Copy, Trash2 } from 'lucide-react';
+import { X, Plus, Copy, Trash2, Database } from 'lucide-react';
 import { useStructureStore } from './useStructureStore';
 import toast from 'react-hot-toast';
+import { ProfileDatabase } from './data/ProfileDatabase';
 
 export function DefineSectionsModal({ onClose }) {
   const { sections, materials, addSection, updateSection, deleteSection } = useStructureStore();
   const [editingSec, setEditingSec] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFamily, setImportFamily] = useState('IPE');
 
   const [formData, setFormData] = useState({});
 
@@ -54,6 +57,27 @@ export function DefineSectionsModal({ onClose }) {
       deleteSection(id);
       toast.success('Sección eliminada.');
     }
+  };
+
+  const handleImportProfile = (profile) => {
+    if (sections.find(s => s.id === profile.id)) {
+      toast.error('Esta sección ya está en tu modelo.');
+      return;
+    }
+    const newSec = {
+      id: profile.id,
+      name: profile.name,
+      type: profile.type,
+      material_id: materials.length > 0 ? materials[0].id : '',
+      params: profile.params,
+      A: profile.A,
+      Ix: profile.Ix,
+      Iy: profile.Iy,
+      J: profile.J
+    };
+    addSection(newSec);
+    toast.success(`${profile.name} importado correctamente.`);
+    setShowImportModal(false);
   };
 
   const handleChange = (e) => {
@@ -109,10 +133,58 @@ export function DefineSectionsModal({ onClose }) {
           }
         }
       }
-      
       return newSec;
     });
   };
+
+  if (showImportModal) {
+    return (
+      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="bg-slate-50 text-slate-800 border border-slate-300 rounded-md shadow-2xl w-[700px] flex flex-col max-h-[80vh]">
+          <div className="bg-emerald-600 text-white px-4 py-2 flex items-center justify-between rounded-t-md">
+            <div className="font-bold text-sm flex items-center gap-2"><Database size={16} /> Importar de Base de Datos</div>
+            <button onClick={() => setShowImportModal(false)} className="hover:text-emerald-200"><X size={16} /></button>
+          </div>
+          <div className="p-4 flex flex-col gap-4 flex-1 overflow-hidden">
+            <div>
+              <label className="block mb-1 font-semibold">Familia de Perfiles</label>
+              <select className="border border-slate-300 px-3 py-2 w-full rounded" value={importFamily} onChange={e => setImportFamily(e.target.value)}>
+                {Object.keys(ProfileDatabase).map(fam => (
+                  <option key={fam} value={fam}>{fam}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1 overflow-y-auto border border-slate-200 rounded">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-100 sticky top-0">
+                  <tr>
+                    <th className="p-2 border-b">Nombre</th>
+                    <th className="p-2 border-b">Tipo</th>
+                    <th className="p-2 border-b text-right">Área (m²)</th>
+                    <th className="p-2 border-b text-right">Inercia X (m⁴)</th>
+                    <th className="p-2 border-b text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ProfileDatabase[importFamily].map(prof => (
+                    <tr key={prof.id} className="border-b hover:bg-slate-50">
+                      <td className="p-2 font-medium">{prof.name}</td>
+                      <td className="p-2">{prof.type}</td>
+                      <td className="p-2 text-right">{prof.A.toExponential(2)}</td>
+                      <td className="p-2 text-right">{prof.Ix.toExponential(2)}</td>
+                      <td className="p-2 text-center">
+                        <button onClick={() => handleImportProfile(prof)} className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">Importar</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (editingSec) {
     return (
@@ -389,6 +461,9 @@ export function DefineSectionsModal({ onClose }) {
             <div className="text-xs text-blue-800 font-bold mb-1">Click para:</div>
             <button onClick={handleAdd} className="w-full text-left bg-slate-200 border border-slate-300 hover:bg-slate-300 px-3 py-1.5 rounded text-sm flex items-center gap-2">
               <Plus size={14} className="text-green-600"/> Agregar Nueva...
+            </button>
+            <button onClick={() => setShowImportModal(true)} className="w-full text-left bg-emerald-100 border border-emerald-300 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm flex items-center gap-2 text-emerald-800 font-medium mt-1">
+              <Database size={14} className="text-emerald-600"/> Importar de BD
             </button>
             <div className="flex-1"></div>
             <button 

@@ -201,6 +201,37 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
 
+  const handleDoubleClick = (e) => {
+    if (e.delta > 5 || isResultsMode || isShadow || isFaded) return;
+    e.stopPropagation();
+    
+    const elem = elements.find(el => el.id === id);
+    if (!elem || !elem.elementRole) return;
+    
+    const role = elem.elementRole;
+    const candidates = elements.filter(el => el.elementRole === role);
+    const toSelect = new Set();
+    
+    const traverse = (currentElem, directionNodeIdx) => {
+      toSelect.add(currentElem.id);
+      const searchNodeId = currentElem.nodes[directionNodeIdx];
+      const neighbor = candidates.find(el => el.id !== currentElem.id && !toSelect.has(el.id) && el.nodes.includes(searchNodeId));
+      if (neighbor) {
+        // Collinear check isn't strictly necessary since elements with the same role 
+        // connected node-to-node (like a continuous rafter) are meant to be selected together.
+        traverse(neighbor, neighbor.nodes[0] === searchNodeId ? 1 : 0);
+      }
+    };
+    
+    traverse(elem, 0);
+    traverse(elem, 1);
+    
+    const state = useStructureStore.getState();
+    const newSelected = new Set(e.shiftKey || e.ctrlKey ? state.selectedIds : []);
+    toSelect.forEach(i => newSelected.add(i));
+    useStructureStore.setState({ selectedIds: Array.from(newSelected) });
+  };
+
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
     const sx = isFinite(start[0]) ? start[0] : 0;
@@ -436,6 +467,7 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
           if (e.delta > 5) return;
           e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
         }}
+        onDoubleClick={handleDoubleClick}
       >
         <meshStandardMaterial 
           color={isSelected ? '#facc15' : roleColor} 
@@ -456,6 +488,7 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
         if (e.delta > 5) return; // Ignorar si fue un drag (ej. selección por ventana)
         e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
       }}
+      onDoubleClick={handleDoubleClick}
       onContextMenu={isResultsMode && !isShadow && !isFaded ? (e) => {
         e.stopPropagation();
         setRightClickedElementId(id);
