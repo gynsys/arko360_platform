@@ -407,11 +407,23 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     const mat = new THREE.Matrix4();
     mat.makeBasis(dirX, dirY_final, dirZ_final);
     const midPoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+    
+    if (elem?.visual_offset_y) {
+       midPoint.addScaledVector(dirY_final, elem.visual_offset_y);
+    }
+    
     mat.setPosition(midPoint);
     return mat;
   }, [renderExtruded, elements, id, start, end]);
 
   if (renderExtruded && extrudedGeometry && extrudedMatrix) {
+    const elem = elements.find(el => el.id === id);
+    let roleColor = '#94a3b8';
+    if (elem?.elementRole === 'column') roleColor = '#1e3a8a'; // Azul oscuro
+    else if (elem?.elementRole === 'rafter') roleColor = '#0284c7'; // Azul celeste
+    else if (elem?.elementRole === 'purlin') roleColor = '#d97706'; // Naranja / Óxido
+    else if (elem?.elementRole === 'bracing') roleColor = '#f8fafc'; // Blanco perlado
+
     return (
       <mesh 
         geometry={extrudedGeometry} 
@@ -423,9 +435,11 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
         }}
       >
         <meshStandardMaterial 
-          color={isSelected ? '#facc15' : '#94a3b8'} 
-          metalness={0.2} 
-          roughness={0.5} 
+          color={isSelected ? '#facc15' : roleColor} 
+          metalness={0.6} 
+          roughness={0.2} 
+          transparent={true}
+          opacity={0.85}
           side={THREE.DoubleSide} 
         />
       </mesh>
