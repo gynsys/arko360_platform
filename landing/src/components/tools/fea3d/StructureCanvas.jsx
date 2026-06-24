@@ -201,35 +201,44 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
   const isSelected = selectedIds.includes(id);
   const isResultsMode = viewMode === 'results';
 
-  const handleDoubleClick = (e) => {
+  const lastClickTime = useRef(0);
+
+  const handleUnifiedClick = (e) => {
     if (e.delta > 5 || isResultsMode || isShadow || isFaded) return;
     e.stopPropagation();
-    
-    const elem = elements.find(el => el.id === id);
-    if (!elem || !elem.elementRole) return;
-    
-    const role = elem.elementRole;
-    const candidates = elements.filter(el => el.elementRole === role);
-    const toSelect = new Set();
-    
-    const traverse = (currentElem, directionNodeIdx) => {
-      toSelect.add(currentElem.id);
-      const searchNodeId = currentElem.nodes[directionNodeIdx];
-      const neighbor = candidates.find(el => el.id !== currentElem.id && !toSelect.has(el.id) && el.nodes.includes(searchNodeId));
-      if (neighbor) {
-        // Collinear check isn't strictly necessary since elements with the same role 
-        // connected node-to-node (like a continuous rafter) are meant to be selected together.
-        traverse(neighbor, neighbor.nodes[0] === searchNodeId ? 1 : 0);
-      }
-    };
-    
-    traverse(elem, 0);
-    traverse(elem, 1);
-    
-    const state = useStructureStore.getState();
-    const newSelected = new Set(e.shiftKey || e.ctrlKey ? state.selectedIds : []);
-    toSelect.forEach(i => newSelected.add(i));
-    useStructureStore.setState({ selectedIds: Array.from(newSelected) });
+
+    const now = Date.now();
+    if (now - lastClickTime.current < 400) {
+      // Double click
+      lastClickTime.current = 0; // Reset
+      const elem = elements.find(el => el.id === id);
+      if (!elem || !elem.elementRole) return;
+      
+      const role = elem.elementRole;
+      const candidates = elements.filter(el => el.elementRole === role);
+      const toSelect = new Set();
+      
+      const traverse = (currentElem, directionNodeIdx) => {
+        toSelect.add(currentElem.id);
+        const searchNodeId = currentElem.nodes[directionNodeIdx];
+        const neighbor = candidates.find(el => el.id !== currentElem.id && !toSelect.has(el.id) && el.nodes.includes(searchNodeId));
+        if (neighbor) {
+          traverse(neighbor, neighbor.nodes[0] === searchNodeId ? 1 : 0);
+        }
+      };
+      
+      traverse(elem, 0);
+      traverse(elem, 1);
+      
+      const state = useStructureStore.getState();
+      const newSelected = new Set(e.shiftKey || e.ctrlKey ? state.selectedIds : []);
+      toSelect.forEach(i => newSelected.add(i));
+      useStructureStore.setState({ selectedIds: Array.from(newSelected) });
+    } else {
+      // Single click
+      lastClickTime.current = now;
+      toggleSelection(id, e.shiftKey || e.ctrlKey);
+    }
   };
 
   const geometry = useMemo(() => {
@@ -463,11 +472,7 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
         geometry={extrudedGeometry} 
         matrix={extrudedMatrix}
         matrixAutoUpdate={false}
-        onClick={(e) => { 
-          if (e.delta > 5) return;
-          e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
-        }}
-        onDoubleClick={handleDoubleClick}
+        onClick={handleUnifiedClick}
       >
         <meshStandardMaterial 
           color={isSelected ? '#facc15' : roleColor} 
@@ -484,11 +489,7 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
   return (
     <line 
       geometry={geometry} 
-      onClick={isResultsMode || isShadow || isFaded ? undefined : (e) => { 
-        if (e.delta > 5) return; // Ignorar si fue un drag (ej. selección por ventana)
-        e.stopPropagation(); toggleSelection(id, e.shiftKey || e.ctrlKey); 
-      }}
-      onDoubleClick={handleDoubleClick}
+      onClick={isResultsMode || isShadow || isFaded ? undefined : handleUnifiedClick}
       onContextMenu={isResultsMode && !isShadow && !isFaded ? (e) => {
         e.stopPropagation();
         setRightClickedElementId(id);
