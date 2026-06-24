@@ -1,10 +1,10 @@
 @echo off
 echo ==========================================
-echo    Despliegue de Arko360 Platform
+echo    Despliegue de Arko360 Platform (CI/CD)
 echo ==========================================
 
 echo.
-echo [1/3] Añadiendo cambios a Git...
+echo [1/2] Añadiendo cambios a Git...
 git add .
 set /p commit_msg="Ingresa el mensaje del commit (deja vacio para 'Actualizacion'): "
 if "%commit_msg%"=="" set commit_msg=Actualizacion
@@ -12,15 +12,17 @@ if "%commit_msg%"=="" set commit_msg=Actualizacion
 git commit -m "%commit_msg%"
 
 echo.
-echo [2/3] Subiendo cambios a GitHub (git push)...
+echo [2/2] Subiendo cambios a GitHub (git push)...
 git push
 
 echo.
-echo [3/3] Actualizando y reconstruyendo contenedores en DigitalOcean...
-python ssh_runner.py "cd /var/www/arko360_platform && git pull origin main && docker compose pull && docker compose up -d --build && docker compose exec backend python init_db.py"
-
+echo ==========================================
+echo    ¡Despliegue iniciado en GitHub Actions!
+echo ==========================================
+echo El proceso de compilacion y despliegue en DigitalOcean 
+echo ahora se esta ejecutando automaticamente en la nube de GitHub.
 echo.
-echo ==========================================
-echo    Despliegue finalizado exitosamente!
-echo ==========================================
+echo Puedes ver el progreso en tiempo real aqui:
+echo https://github.com/gynsys/arko360_platform/actions
+echo.
 pause

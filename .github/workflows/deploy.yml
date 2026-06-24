@@ -1,0 +1,84 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:latest
+
+      - name: Build and push Landing Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./landing
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/landing-frontend:latest
+
+      - name: Build and push Admin Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./admin
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/admin-frontend:latest
+
+      - name: Build and push Super Admin Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./super-admin-frontend
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/super-admin-frontend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to DigitalOcean
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          password: ${{ secrets.DO_PASSWORD }}
+          script: |
+            cd /var/www/arko360_platform
+            
+            # Login to GitHub Container Registry using the GitHub token
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull new code (specifically to get the latest docker-compose.prod.yml if changed)
+            git pull origin main
+            
+            # Pull the new images
+            docker compose -f docker-compose.prod.yml pull
+            
+            # Restart containers with the new images
+            docker compose -f docker-compose.prod.yml up -d
+            
+            # Run database migrations
+            docker compose -f docker-compose.prod.yml exec -T backend python init_db.py
