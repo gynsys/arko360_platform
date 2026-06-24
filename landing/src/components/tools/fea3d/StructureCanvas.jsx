@@ -1446,6 +1446,7 @@ function GridAxes() {
           </group>
         );
       })}
+    </group>
   );
 }
 
