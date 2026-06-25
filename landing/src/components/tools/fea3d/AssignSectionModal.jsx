@@ -4,7 +4,7 @@ import { useStructureStore } from './useStructureStore';
 import toast from 'react-hot-toast';
 
 export function AssignSectionModal({ onClose }) {
-  const { sections, selectedIds, elements, updateElement, clearSelection } = useStructureStore();
+  const { sections, selectedIds, elements, nodes, updateElement, clearSelection } = useStructureStore();
   
   // Filtrar solo los frames seleccionados
   const selectedFrameIds = selectedIds.filter(id => elements.some(e => e.id === id));
