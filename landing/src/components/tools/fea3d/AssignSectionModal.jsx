@@ -10,6 +10,7 @@ export function AssignSectionModal({ onClose }) {
   const selectedFrameIds = selectedIds.filter(id => elements.some(e => e.id === id));
   
   const [targetSectionId, setTargetSectionId] = useState(sections[0]?.id || '');
+  const [applyToSymmetric, setApplyToSymmetric] = useState(true);
 
   const handleAssign = () => {
     if (!targetSectionId) {
@@ -20,15 +21,47 @@ export function AssignSectionModal({ onClose }) {
     const section = sections.find(s => s.id === targetSectionId);
     if (!section) return;
 
-    // Asignar sección y material (la sección tiene un material_id asociado)
-    selectedFrameIds.forEach(id => {
+    // Obtener elementos seleccionados reales
+    const selectedElements = selectedFrameIds.map(id => elements.find(e => e.id === id));
+    
+    // Set final a aplicar
+    const elementsToUpdate = new Set(selectedFrameIds);
+
+    if (applyToSymmetric) {
+      // Para cada elemento seleccionado, encontrar equivalentes en otros pórticos (mismo X, Z)
+      selectedElements.forEach(selEl => {
+        const n1 = nodes.find(n => n.id === selEl.nodes[0]);
+        const n2 = nodes.find(n => n.id === selEl.nodes[1]);
+        if (!n1 || !n2) return;
+        
+        const midX = (n1.x + n2.x) / 2;
+        const midZ = (n1.z + n2.z) / 2;
+        
+        elements.forEach(el => {
+           if (el.type !== 'frame') return;
+           const en1 = nodes.find(n => n.id === el.nodes[0]);
+           const en2 = nodes.find(n => n.id === el.nodes[1]);
+           if (!en1 || !en2) return;
+           
+           const eMidX = (en1.x + en2.x) / 2;
+           const eMidZ = (en1.z + en2.z) / 2;
+           
+           if (Math.abs(midX - eMidX) < 1e-3 && Math.abs(midZ - eMidZ) < 1e-3) {
+             elementsToUpdate.add(el.id);
+           }
+        });
+      });
+    }
+
+    // Asignar sección y material
+    elementsToUpdate.forEach(id => {
       updateElement(id, { 
         section_id: targetSectionId,
         material_id: section.material_id 
       });
     });
 
-    toast.success(`Sección ${section.name} asignada a ${selectedFrameIds.length} elementos`);
+    toast.success(`Sección ${section.name} asignada a ${elementsToUpdate.size} elementos`);
     clearSelection();
     onClose();
   };
@@ -76,6 +109,19 @@ export function AssignSectionModal({ onClose }) {
                 </div>
               ))}
             </div>
+          </div>
+          
+          <div className="flex items-center gap-2 mt-2 bg-slate-100 p-2 border border-slate-200 rounded">
+            <input 
+              type="checkbox" 
+              id="applyToSymmetric" 
+              checked={applyToSymmetric} 
+              onChange={(e) => setApplyToSymmetric(e.target.checked)} 
+              className="w-4 h-4 text-blue-600 rounded border-slate-300"
+            />
+            <label htmlFor="applyToSymmetric" className="text-xs font-semibold text-slate-700 cursor-pointer">
+              Propagar a todos los pórticos paralelos
+            </label>
           </div>
         </div>
 
