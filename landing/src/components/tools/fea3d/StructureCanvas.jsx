@@ -457,20 +457,25 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
         const rafterSec = sections.find(s => s.id === rafter.section_id);
         const purlinSec = sections.find(s => s.id === elem.section_id);
         
-        // Extract heights
-        const h_rafter = rafterSec?.params?.h || rafterSec?.params?.d || rafterSec?.params?.ht_start || 0.4;
-        const h_purlin = purlinSec?.params?.h || purlinSec?.params?.d || 0.15;
+        // Extract heights — support all profile param conventions: d (IPE/HEB), h (Rectangular), ht_start (Tapered), bf/w2
+        const h_rafter = rafterSec?.params?.d || rafterSec?.params?.ht || rafterSec?.params?.h || rafterSec?.params?.ht_start || 0.4;
+        const h_purlin = purlinSec?.params?.d || purlinSec?.params?.ht || purlinSec?.params?.h || 0.15;
         
-        const rAlign = rafterSec?.params?.alignment || 'Center';
-        const pAlign = purlinSec?.params?.alignment || 'Center';
+        // alignment is stored on the ELEMENT, not the section params
+        const rAlign = rafter.alignment || rafterSec?.params?.alignment || 'Center';
+        const pAlign = elem.alignment || purlinSec?.params?.alignment || 'Center';
         
+        // How far is the top surface of rafter from its centroid node?
         let rTop = 0;
-        if (rAlign === 'Center') rTop = h_rafter / 2;
-        else if (rAlign === 'Bottom Center') rTop = h_rafter;
+        if (rAlign === 'Top Center') rTop = 0;       // node IS the top surface
+        else if (rAlign === 'Bottom Center') rTop = h_rafter; // node is bottom
+        else rTop = h_rafter / 2;                    // Center: node is centroid
         
+        // How far is the bottom surface of purlin from its centroid node?
         let pBot = 0;
-        if (pAlign === 'Center') pBot = h_purlin / 2;
-        else if (pAlign === 'Top Center') pBot = h_purlin;
+        if (pAlign === 'Bottom Center') pBot = 0;    // node IS the bottom surface
+        else if (pAlign === 'Top Center') pBot = h_purlin; // node is top
+        else pBot = h_purlin / 2;                   // Center: node is centroid
         
         final_offset_y = rTop + pBot;
       }
@@ -495,22 +500,29 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     else if (elem?.elementRole === 'purlin') roleColor = '#06b6d4'; // Cyan
     else if (elem?.elementRole === 'bracing') roleColor = '#f8fafc'; // Blanco perlado
 
+    const edgesGeo = new THREE.EdgesGeometry(extrudedGeometry, 15);
+
     return (
-      <mesh 
-        geometry={extrudedGeometry} 
-        matrix={extrudedMatrix}
-        matrixAutoUpdate={false}
-        onClick={handleUnifiedClick}
-      >
-        <meshStandardMaterial 
-          color={isSelected ? '#facc15' : roleColor} 
-          metalness={0.6} 
-          roughness={0.2} 
-          transparent={true}
-          opacity={0.85}
-          side={THREE.DoubleSide} 
-        />
-      </mesh>
+      <group matrix={extrudedMatrix} matrixAutoUpdate={false} onClick={handleUnifiedClick}>
+        <mesh geometry={extrudedGeometry}>
+          <meshStandardMaterial 
+            color={isSelected ? '#facc15' : roleColor} 
+            metalness={0.6} 
+            roughness={0.2} 
+            transparent={true}
+            opacity={0.85}
+            side={THREE.DoubleSide} 
+          />
+        </mesh>
+        <lineSegments geometry={edgesGeo}>
+          <lineBasicMaterial
+            color={isSelected ? '#fef08a' : '#e2e8f0'}
+            transparent={true}
+            opacity={0.55}
+            depthWrite={false}
+          />
+        </lineSegments>
+      </group>
     );
   }
 
