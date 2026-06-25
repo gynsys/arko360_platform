@@ -1060,12 +1060,12 @@ export const useStructureStore = create((set, get) => ({
             if (x < numBaysX) {
               const n1 = newNodes.find(n => n.x === x*bayWidthX && n.y === y*bayWidthY && n.z === z*floorHeight);
               const n2 = newNodes.find(n => n.x === (x+1)*bayWidthX && n.y === y*bayWidthY && n.z === z*floorHeight);
-              newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, nodes: [n1.id, n2.id], section_id: finalBeamSectionId, material_id: baseMatId });
+              newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, alignment: 'Top Center', nodes: [n1.id, n2.id], section_id: finalBeamSectionId, material_id: baseMatId });
             }
             if (y < numBaysY) {
               const n1 = newNodes.find(n => n.x === x*bayWidthX && n.y === y*bayWidthY && n.z === z*floorHeight);
               const n2 = newNodes.find(n => n.x === x*bayWidthX && n.y === (y+1)*bayWidthY && n.z === z*floorHeight);
-              newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, nodes: [n1.id, n2.id], section_id: finalBeamSectionId, material_id: baseMatId });
+              newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, alignment: 'Top Center', nodes: [n1.id, n2.id], section_id: finalBeamSectionId, material_id: baseMatId });
             }
           }
         }
@@ -1100,7 +1100,7 @@ export const useStructureStore = create((set, get) => ({
              if (!currentSections.some(s => s.id === secId)) {
                 currentSections.push({ id: secId, name: `TAP_ROOF_L_${i}`, type: 'Tapered I/Wide Flange', material_id: baseMatId, A: 0.02, Ix: 0.001, Iy: 0.0001, J: 0.000001, params: { ht_start, ht_end, w2: 0.2, w3: 0.2, t2: 0.01, t3: 0.015, alignment: 'Top Center' } });
              }
-             newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: secId, material_id: baseMatId });
+             newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, alignment: 'Top Center', nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: secId, material_id: baseMatId });
           }
           for (let i = P; i < 2*P; i++) {
              const j = i - P;
@@ -1110,7 +1110,7 @@ export const useStructureStore = create((set, get) => ({
              if (!currentSections.some(s => s.id === secId)) {
                 currentSections.push({ id: secId, name: `TAP_ROOF_R_${j}`, type: 'Tapered I/Wide Flange', material_id: baseMatId, A: 0.02, Ix: 0.001, Iy: 0.0001, J: 0.000001, params: { ht_start, ht_end, w2: 0.2, w3: 0.2, t2: 0.01, t3: 0.015, alignment: 'Top Center' } });
              }
-             newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: secId, material_id: baseMatId });
+             newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, alignment: 'Top Center', nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: secId, material_id: baseMatId });
           }
         } else {
           // 1. Columns
@@ -1119,7 +1119,7 @@ export const useStructureStore = create((set, get) => ({
 
           // 2. Truss - Upper Chord
           for (let i = 0; i < 2*P; i++) {
-            newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: finalBeamSectionId, material_id: baseMatId });
+            newElements.push({ id: `E${elemCount++}`, type: 'frame', elementRole: 'rafter', beta_angle: 90, alignment: 'Top Center', nodes: [frame.uc[i].id, frame.uc[i+1].id], section_id: finalBeamSectionId, material_id: baseMatId });
           }
 
           // 3. Truss - Lower Chord
@@ -1163,34 +1163,11 @@ export const useStructureStore = create((set, get) => ({
         
         // Purlins at upper chord nodes
         for (let i = 0; i <= 2*P; i++) {
-          let h_rafter = 0;
-          let h_purlin = 0.4; // fallback default
           let w_purlin = 0.2; // fallback width
-          
-          // Obtain purlin height and width
           const purlinSection = currentSections.find(s => s.id === finalBeamSectionId);
           if (purlinSection && purlinSection.params) {
-              h_purlin = purlinSection.params.ht || purlinSection.params.h || purlinSection.params.d || 0.4;
               w_purlin = purlinSection.params.b || purlinSection.params.w2 || purlinSection.params.d || 0.2;
           }
-
-          // Obtain rafter height at this node
-          if (config.galponType === 'Tapered') {
-            if (i <= P) h_rafter = 0.8 - (0.4 * i / P);
-            else h_rafter = 0.4 + (0.4 * (i - P) / P);
-          } else {
-            const rafterSection = currentSections.find(s => s.id === finalBeamSectionId);
-            if (rafterSection && rafterSection.params) {
-              h_rafter = rafterSection.params.ht || rafterSection.params.h || rafterSection.params.d || 0.4;
-            }
-          }
-
-          // If the rafter is Top Center aligned (Tapered Galpon), the node is already at the top flange.
-          // The purlin needs to sit on top, so we only offset by half the purlin's height.
-          // Otherwise, we offset by half of both to clear the center.
-          const y_offset = config.galponType === 'Tapered' ? (h_purlin / 2) : ((h_rafter + h_purlin) / 2);
-          
-          // slopeDeg is now calculated at the beginning of the galpon block
           
           if (i === P) {
             // Apex node: Create two purlins, dynamically offset so flanges don't overlap + 10cm gap
@@ -1200,12 +1177,12 @@ export const useStructureStore = create((set, get) => ({
             
             newElements.push({ 
               id: `E${elemCount++}`, type: 'frame', elementRole: 'purlin', 
-              beta_angle: beta_left, visual_offset_y: y_offset, visual_offset_z: -apex_spacing, 
+              beta_angle: beta_left, alignment: 'Bottom Center', visual_offset_z: -apex_spacing, 
               nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId 
             });
             newElements.push({ 
               id: `E${elemCount++}`, type: 'frame', elementRole: 'purlin', 
-              beta_angle: beta_right, visual_offset_y: y_offset, visual_offset_z: apex_spacing, 
+              beta_angle: beta_right, alignment: 'Bottom Center', visual_offset_z: apex_spacing, 
               nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId 
             });
           } else {
@@ -1219,7 +1196,7 @@ export const useStructureStore = create((set, get) => ({
               type: 'frame', 
               elementRole: 'purlin', 
               beta_angle: beta_angle,
-              visual_offset_y: y_offset,
+              alignment: 'Bottom Center',
               nodes: [frame1.uc[i].id, frame2.uc[i].id], 
               section_id: finalBeamSectionId, 
               material_id: baseMatId 

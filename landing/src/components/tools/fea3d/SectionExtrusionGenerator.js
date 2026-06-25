@@ -11,15 +11,26 @@ export class SectionExtrusionGenerator {
     const p = section.params || {};
 
     if (section.type === 'Rectangular') {
-      const b = p.b || 0.3;
-      const h = p.h || 0.4;
+      const b = p.b || p.bf || 0.3;
+      const h = p.h || p.d || p.ht || 0.4;
+      
       // BoxGeometry(width(X), height(Y), depth(Z))
       // We want length along X, height along Y, width along Z
-      return new THREE.BoxGeometry(length, h, b);
+      const geo = new THREE.BoxGeometry(length, h, b);
+      
+      const align = (elem && elem.alignment) ? elem.alignment : (p.alignment || 'Center');
+      if (align === 'Top Center') {
+         geo.translate(0, -h/2, 0);
+      } else if (align === 'Bottom Center') {
+         geo.translate(0, h/2, 0);
+      }
+      return geo;
     }
 
-    if (section.type === 'Circular Solid') {
-      const d = p.d || 0.3;
+    if (section.type === 'Circular Solid' || section.type === 'Circular') {
+      const d = p.d || p.D || 0.3;
+      // If it's just 'Circular', it should be a hollow tube, but for 3D lines cylinder is fine unless we really need hollow.
+      // To keep it simple, we draw a solid cylinder for both.
       const geo = new THREE.CylinderGeometry(d/2, d/2, length, 16);
       geo.rotateZ(-Math.PI / 2); // Align with X
       return geo;
@@ -46,12 +57,12 @@ export class SectionExtrusionGenerator {
       return geo;
     }
 
-    if (section.type === 'I/Wide Flange') {
-      const ht = p.ht || 0.4;
-      const w2 = p.w2 || 0.2;
-      const w3 = p.w3 || 0.2;
-      const t2 = p.t2 || 0.01; 
-      const t3 = p.t3 || 0.015; 
+    if (section.type === 'I/Wide Flange' || section.type === 'I-Shape') {
+      const ht = p.ht || p.d || p.h || 0.4;
+      const w2 = p.w2 || p.bf || p.b || 0.2;
+      const w3 = p.w3 || p.bf || p.b || 0.2;
+      const t2 = p.t2 || p.tw || 0.01; 
+      const t3 = p.t3 || p.tf || 0.015; 
       
       const shape = new THREE.Shape();
       shape.moveTo(-w3/2, -ht/2);
@@ -70,8 +81,49 @@ export class SectionExtrusionGenerator {
 
       const extrudeSettings = { depth: length, bevelEnabled: false };
       const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      
+      const align = (elem && elem.alignment) ? elem.alignment : (p.alignment || 'Center');
       geo.center();
+      if (align === 'Top Center') {
+         geo.translate(0, -ht/2, 0);
+      } else if (align === 'Bottom Center') {
+         geo.translate(0, ht/2, 0);
+      }
+      
       geo.rotateY(Math.PI / 2); // Align extrusion (Z) to X
+      return geo;
+    }
+
+    if (section.type === 'Channel') {
+      const d = p.d || p.h || 0.2;
+      const bf = p.bf || p.b || 0.1;
+      const tw = p.tw || p.t || 0.01;
+      const tf = p.tf || p.t || 0.015;
+      
+      const shape = new THREE.Shape();
+      // Start at bottom left
+      shape.moveTo(-bf/2, -d/2);
+      shape.lineTo(bf/2, -d/2);
+      shape.lineTo(bf/2, -d/2 + tf);
+      shape.lineTo(-bf/2 + tw, -d/2 + tf);
+      shape.lineTo(-bf/2 + tw, d/2 - tf);
+      shape.lineTo(bf/2, d/2 - tf);
+      shape.lineTo(bf/2, d/2);
+      shape.lineTo(-bf/2, d/2);
+      shape.lineTo(-bf/2, -d/2);
+
+      const extrudeSettings = { depth: length, bevelEnabled: false };
+      const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      
+      const align = (elem && elem.alignment) ? elem.alignment : (p.alignment || 'Center');
+      geo.center();
+      if (align === 'Top Center') {
+         geo.translate(0, -d/2, 0);
+      } else if (align === 'Bottom Center') {
+         geo.translate(0, d/2, 0);
+      }
+
+      geo.rotateY(Math.PI / 2);
       return geo;
     }
 
@@ -123,7 +175,7 @@ export class SectionExtrusionGenerator {
 
       let offsetY1 = 0;
       let offsetY2 = 0;
-      const align = p.alignment || 'Center';
+      const align = (elem && elem.alignment) ? elem.alignment : (p.alignment || 'Center');
       if (align === 'Top Center') {
          offsetY1 = -h1/2; 
          offsetY2 = -h2/2;
