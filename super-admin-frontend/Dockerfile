@@ -1,8 +1,8 @@
 # Build stage
 FROM node:18-alpine AS build
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
+COPY package.json ./
+RUN npm install --no-package-lock
 COPY . .
 RUN npm run build
 
