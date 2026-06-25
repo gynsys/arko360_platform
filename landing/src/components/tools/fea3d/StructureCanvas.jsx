@@ -448,8 +448,36 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     mat.makeBasis(dirX, dirY_final, dirZ_final);
     const midPoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
     
-    if (elem?.visual_offset_y) {
-       midPoint.addScaledVector(dirY_final, elem.visual_offset_y);
+    let final_offset_y = elem?.visual_offset_y || 0;
+    
+    // Dynamic intelligent offset for purlins based on the rafter they sit on
+    if (elem?.elementRole === 'purlin') {
+      const rafter = elements.find(el => el.elementRole === 'rafter' && (el.nodes.includes(elem.nodes[0]) || el.nodes.includes(elem.nodes[1])));
+      if (rafter) {
+        const rafterSec = sections.find(s => s.id === rafter.section_id);
+        const purlinSec = sections.find(s => s.id === elem.section_id);
+        
+        // Extract heights
+        const h_rafter = rafterSec?.params?.h || rafterSec?.params?.d || rafterSec?.params?.ht_start || 0.4;
+        const h_purlin = purlinSec?.params?.h || purlinSec?.params?.d || 0.15;
+        
+        const rAlign = rafterSec?.params?.alignment || 'Center';
+        const pAlign = purlinSec?.params?.alignment || 'Center';
+        
+        let rTop = 0;
+        if (rAlign === 'Center') rTop = h_rafter / 2;
+        else if (rAlign === 'Bottom Center') rTop = h_rafter;
+        
+        let pBot = 0;
+        if (pAlign === 'Center') pBot = h_purlin / 2;
+        else if (pAlign === 'Top Center') pBot = h_purlin;
+        
+        final_offset_y = rTop + pBot;
+      }
+    }
+    
+    if (final_offset_y) {
+       midPoint.addScaledVector(dirY_final, final_offset_y);
     }
     if (elem?.visual_offset_z) {
        midPoint.addScaledVector(dirZ_final, elem.visual_offset_z);
@@ -457,7 +485,7 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     
     mat.setPosition(midPoint);
     return mat;
-  }, [renderExtruded, elements, id, start, end]);
+  }, [renderExtruded, elements, id, start, end, sections]);
 
   if (renderExtruded && extrudedGeometry && extrudedMatrix) {
     const elem = elements.find(el => el.id === id);
