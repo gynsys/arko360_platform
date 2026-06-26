@@ -16,9 +16,10 @@ export function useSolver(projectId) {
   });
 
   // Mutación para ejecutar el análisis estructural (FastAPI Backend)
+  // TanStack Query v5 passes { signal } in the second arg of mutationFn when using mutateAsync(vars, { signal })
   const solveMutation = useMutation({
-    mutationFn: (topology) => 
-      axios.post(`${API_URL}/${projectId}/solve`, topology),
+    mutationFn: ({ topology, signal }) =>
+      axios.post(`${API_URL}/${projectId}/solve`, topology, { signal }),
   });
 
   // Query para obtener resultados (polling)

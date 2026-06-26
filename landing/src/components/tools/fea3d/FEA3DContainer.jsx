@@ -124,6 +124,7 @@ export default function FEA3DContainer() {
 
   const { solveMutation } = useSolver('project-001');
   const [isSolving, setIsSolving] = useState(false);
+  const solveAbortRef = React.useRef(null); // AbortController for cancelling hung solve requests
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -236,6 +237,17 @@ export default function FEA3DContainer() {
 
   const handleRunAnalysis = async () => {
     setIsSolving(true);
+    
+    // Create a fresh AbortController for this run
+    const controller = new AbortController();
+    solveAbortRef.current = controller;
+    
+    // Hard timeout: automatically abort after 90 seconds
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      toast.error('El cálculo superó los 90 segundos y fue cancelado automáticamente.');
+    }, 90000);
+    
     try {
       const state = useStructureStore.getState();
       
@@ -266,7 +278,7 @@ export default function FEA3DContainer() {
         combinations: state.loadCombinations || []
       };
       
-      const res = await solveMutation.mutateAsync(payload);
+      const res = await solveMutation.mutateAsync({ topology: payload, signal: controller.signal });
       if (res && res.data) {
         setResultsMode(res.data);
         toast.success('Análisis estructural completado con éxito.');
@@ -274,11 +286,24 @@ export default function FEA3DContainer() {
         toast.error('Error al interpretar los resultados.');
       }
     } catch (err) {
-      toast.error('Ocurrió un error al ejecutar el análisis.');
-      toast.error('Error de conexión con el motor de cálculo en el servidor.');
+      if (err?.name === 'AbortError' || err?.code === 'ERR_CANCELED') {
+        toast.error('Cálculo cancelado por el usuario.');
+      } else {
+        toast.error('Error de conexión con el motor de cálculo en el servidor.');
+      }
     } finally {
+      clearTimeout(timeoutId);
+      solveAbortRef.current = null;
       setIsSolving(false);
     }
+  };
+
+  const handleStopSolve = () => {
+    if (solveAbortRef.current) {
+      solveAbortRef.current.abort();
+    }
+    setIsSolving(false);
+    toast('Cálculo detenido.', { icon: '🛑' });
   };
 
   const handleProjectSelect = (project) => {
@@ -555,22 +580,30 @@ export default function FEA3DContainer() {
           )}
           
           {!isResultsMode && (
-            <button
-              onClick={handleRunAnalysis}
-              disabled={isSolving || totalElements === 0}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold shadow-lg transition-all ${
-                isSolving || totalElements === 0 
-                  ? 'bg-slate-600 text-slate-400 cursor-not-allowed' 
-                  : 'bg-green-600 hover:bg-green-500 text-white'
-              }`}
-            >
-              {isSolving ? (
-                <span className="animate-spin">⌛</span>
-              ) : (
+            isSolving ? (
+              // STOP button — visible and pulsing while solving
+              <button
+                onClick={handleStopSolve}
+                className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold shadow-lg transition-all bg-red-600 hover:bg-red-500 text-white animate-pulse"
+                title="Cancelar cálculo en curso"
+              >
+                <span>⏹</span>
+                STOP
+              </button>
+            ) : (
+              <button
+                onClick={handleRunAnalysis}
+                disabled={totalElements === 0}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold shadow-lg transition-all ${
+                  totalElements === 0
+                    ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-500 text-white'
+                }`}
+              >
                 <Play size={16} />
-              )}
-              {isSolving ? 'CALCULANDO...' : 'RUN'}
-            </button>
+                RUN
+              </button>
+            )
           )}
 
           <div className="w-px h-6 bg-slate-700 mx-1"></div>
