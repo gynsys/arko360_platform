@@ -45,10 +45,6 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "https://www.gynsys.net"
     BACKEND_URL: str = "https://api.gynsys.net"
 
-    # Resend Email Configuration
-    RESEND_API_KEY: Optional[str] = "re_XGUjBcS7_MMBj24bU9393ezTnV7wMCbxX"
-    RESEND_FROM_EMAIL: str = "Arko360 <info@arko360.net>"
-
     # Google OAuth
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
@@ -74,16 +70,15 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: Union[str, List[str]] = [
-        "https://arko360.net",
-        "https://www.arko360.net",
-        "https://admin.arko360.net",
-        "https://superadmin.arko360.net",
-        "https://api.arko360.net",
+        "https://gynsys.net",
+        "https://www.gynsys.net",
+        "https://api.gynsys.net",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://localhost:5174", 
-        "http://127.0.0.1:5174"
+        "http://127.0.0.1:5174",
+        "https://gynsys.netlify.app"
     ]
 
     @field_validator("CORS_ORIGINS", mode="before")
@@ -100,11 +95,9 @@ class Settings(BaseSettings):
         
         # Enforce Production Domains (Safety Net against outdated .env)
         required_origins = [
-            "https://arko360.net",
-            "https://www.arko360.net",
-            "https://admin.arko360.net",
-            "https://superadmin.arko360.net",
-            "https://api.arko360.net",
+            "https://gynsys.net",
+            "https://www.gynsys.net",
+            "https://api.gynsys.net",
            
             "http://localhost",
             "capacitor://localhost"
@@ -143,6 +136,8 @@ class Settings(BaseSettings):
     SMTP_USER: str | None = "multitenant.app@gmail.com"
     SMTP_PASSWORD: str | None = "tu_password"
     
+    # Resend
+    RESEND_API_KEY: str | None = os.getenv("RESEND_API_KEY")
     # Force verified domain sender
     EMAILS_FROM_EMAIL: str | None = "info@gynsys.net" 
     EMAILS_FROM_NAME: str = "GynSys Notificaciones"

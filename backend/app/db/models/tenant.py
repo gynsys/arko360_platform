@@ -56,4 +56,4 @@ class Tenant(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    # Removed tenant_modules to avoid conflict with Doctor model which uses TenantModule
+    tenant_modules = relationship("TenantModule", back_populates="tenant", cascade="all, delete-orphan")

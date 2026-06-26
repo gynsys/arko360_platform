@@ -1,7 +1,7 @@
 """
 Authentication endpoints for login, registration, and OAuth.
 """
-from fastapi import APIRouter, Depends, HTTPException, Request, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import Annotated, Union, Optional
@@ -25,8 +25,11 @@ from app.core.security import (
     create_access_token,
     verify_access_token
 )
-from app.services.email import send_reset_password_email
-# apply_doctor_template_async removed temporarily or moved to valid location
+from app.tasks.email_tasks import (
+    send_new_tenant_notification, 
+    send_reset_password_email,
+    apply_doctor_template_async
+)
 
 from app.crud.admin import seed_tenant_data
 from app.core.limiter import limiter
@@ -130,22 +133,22 @@ async def register(
     db.commit()
     db.refresh(db_doctor)
     
-    # Async: Apply Mariel Herrera template (disabled for now)
-    # try:
-    #     apply_doctor_template_async.delay(db_doctor.id)
-    # except Exception as e:
-    #     print(f"[WARNING] Failed to queue template task: {e}")
+    # Async: Apply Mariel Herrera template
+    try:
+        apply_doctor_template_async.delay(db_doctor.id)
+    except Exception as e:
+        print(f"[WARNING] Failed to queue template task: {e}")
     
-    # Send notification to admin (disabled for now)
-    # try:
-    #     send_new_tenant_notification.delay({
-    #         "nombre_completo": db_doctor.nombre_completo,
-    #         "email": db_doctor.email,
-    #         "plan_id": db_doctor.plan_id,
-    #         "payment_reference": db_doctor.payment_reference
-    #     })
-    # except Exception as e:
-    #     logger.error(f"Failed to queue new tenant notification for doctor {db_doctor.id}: {e}", exc_info=True)
+    # Send notification to admin
+    try:
+        send_new_tenant_notification.delay({
+            "nombre_completo": db_doctor.nombre_completo,
+            "email": db_doctor.email,
+            "plan_id": db_doctor.plan_id,
+            "payment_reference": db_doctor.payment_reference
+        })
+    except Exception as e:
+        logger.error(f"Failed to queue new tenant notification for doctor {db_doctor.id}: {e}", exc_info=True)
     
     return db_doctor
 
@@ -736,67 +739,3 @@ async def activate_patient_account(
             "is_cycle_user": True,
         }
     }
-
-
-@router.post("/forgot-password")
-async def forgot_password(
-    request: PasswordResetRequest,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
-):
-    from app.core.config import settings
-    
-    doctor = get_user_by_email(db, request.email)
-    if not doctor:
-        # Return 200 anyway to prevent email enumeration
-        return {"message": "Si el correo está registrado, se enviará un enlace de recuperación."}
-    
-    # Generate token
-    token = secrets.token_urlsafe(32)
-    doctor.reset_password_token = token
-    doctor.reset_password_expires = datetime.now(timezone.utc) + timedelta(hours=24)
-    db.commit()
-    
-    # Generate reset link
-    reset_link = f"{settings.CORS_ORIGINS[0]}/admin/reset-password?token={token}"
-    if len(settings.CORS_ORIGINS) > 2:
-        # Try to use admin.arko360.net if available
-        for origin in settings.CORS_ORIGINS:
-            if 'admin' in origin:
-                reset_link = f"{origin}/reset-password?token={token}"
-                break
-    
-    # Send email
-    background_tasks.add_task(
-        send_reset_password_email,
-        user_email=doctor.email,
-        user_name=doctor.nombre_completo,
-        reset_link=reset_link,
-        logo_url=doctor.logo_url
-    )
-    
-    return {"message": "Si el correo está registrado, se enviará un enlace de recuperación."}
-
-@router.post("/reset-password")
-async def reset_password(
-    request: PasswordResetConfirm,
-    db: Session = Depends(get_db)
-):
-    # Find doctor by token
-    from app.db.models.doctor import Doctor
-    doctor = db.query(Doctor).filter(Doctor.reset_password_token == request.token).first()
-    
-    if not doctor:
-        raise HTTPException(status_code=400, detail="Token inválido o expirado")
-        
-    # Check expiration (make datetime timezone aware)
-    if doctor.reset_password_expires.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
-        raise HTTPException(status_code=400, detail="El enlace ha expirado")
-        
-    # Update password
-    doctor.password_hash = hash_password(request.new_password)
-    doctor.reset_password_token = None
-    doctor.reset_password_expires = None
-    db.commit()
-    
-    return {"message": "Contraseña actualizada exitosamente"}
