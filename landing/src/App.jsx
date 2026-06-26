@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Link, useLocation, useParams } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import Hero from './components/Hero.jsx';
@@ -13,12 +13,26 @@ import EngineeringTools from './components/EngineeringTools.jsx';
 
 import BiblioGrid from './components/BiblioGrid.jsx';
 import BiblioArticle from './components/BiblioArticle.jsx';
-import MixDesignCalculator from './components/tools/MixDesignCalculator.jsx';
-import FEA3DContainer from './components/tools/fea3d/FEA3DContainer.jsx';
 import { getSiteConfig } from './services/api.js';
 import { Toaster } from 'react-hot-toast';
 
 import TemplateConstruccion from './templates/construccion/TemplateConstruccion.jsx';
+
+// Lazy-loaded heavy components — Three.js engine (~2.8 MB) only downloads
+// when the user actually navigates to /arko3d, not on the landing page.
+const FEA3DContainer = lazy(() => import('./components/tools/fea3d/FEA3DContainer.jsx'));
+const MixDesignCalculator = lazy(() => import('./components/tools/MixDesignCalculator.jsx'));
+
+// Full-screen loading spinner shown while lazy chunks are downloading
+function LazyLoader() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100vh', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a' }}>
+      <div style={{ width: '48px', height: '48px', border: '4px solid rgba(255,255,255,0.1)', borderLeftColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <p style={{ color: '#94a3b8', fontSize: '14px', fontFamily: 'sans-serif' }}>Cargando herramienta…</p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
 
 export const SiteConfigContext = React.createContext(null);
 // basePath is the slug prefix for cloned sites (e.g. '/pablo-milano')
@@ -132,8 +146,12 @@ export default function App() {
           <Route path="/biblio" element={<BiblioPage />} />
           <Route path="/biblio/:slug" element={<BiblioArticle />} />
           <Route path="/herramientas" element={<ToolsPage />} />
-          <Route path="/herramientas/diseno-de-mezclas" element={<MixDesignCalculator />} />
-          <Route path="/arko3d" element={<FEA3DContainer />} />
+          <Route path="/herramientas/diseno-de-mezclas" element={
+            <Suspense fallback={<LazyLoader />}><MixDesignCalculator /></Suspense>
+          } />
+          <Route path="/arko3d" element={
+            <Suspense fallback={<LazyLoader />}><FEA3DContainer /></Suspense>
+          } />
           {/* Cloned landing sites served under their slug */}
           <Route path="/:slug" element={<SlugLandingPage />} />
         </Routes>
