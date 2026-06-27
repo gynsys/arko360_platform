@@ -673,7 +673,17 @@ class StructuralSolver:
                 p2 = np.array([n2.x, n2.y, n2.z])
                 l = np.linalg.norm(p2 - p1)
                 
-                k_loc = get_3d_frame_local_stiffness(mat.E, mat.G, sec.A, sec.J, sec.Iy, sec.Ix, l)
+                if getattr(sec, 'type', '') == 'Tapered I/Wide Flange' or sec.id.startswith('TAPERED_'):
+                    p_dict = sec.params or {}
+                    ht_start = p_dict.get('ht_start', 0.5)
+                    ht_end = p_dict.get('ht_end', 0.5)
+                    w = p_dict.get('w2', 0.2)
+                    t_f = p_dict.get('t3', 0.015)
+                    t_w = p_dict.get('t2', 0.01)
+                    from app.engine.fem_frame import get_tapered_3d_frame_local_stiffness
+                    k_loc = get_tapered_3d_frame_local_stiffness(mat.E, mat.G, l, ht_start, ht_end, w, t_f, t_w)
+                else:
+                    k_loc = get_3d_frame_local_stiffness(mat.E, mat.G, sec.A, sec.J, sec.Iy, sec.Ix, l)
                 T = get_rotation_matrix(p1, p2, elem.beta_angle)
                 
                 idx1 = self.node_map[n1.id] * 6
