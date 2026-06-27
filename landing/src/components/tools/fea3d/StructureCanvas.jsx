@@ -500,7 +500,9 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
     else if (elem?.elementRole === 'purlin') roleColor = '#06b6d4'; // Cyan
     else if (elem?.elementRole === 'bracing') roleColor = '#f8fafc'; // Blanco perlado
 
-    const edgesGeo = new THREE.EdgesGeometry(extrudedGeometry, 15);
+    const edgesGeo = useMemo(() => {
+      return extrudedGeometry ? new THREE.EdgesGeometry(extrudedGeometry, 15) : null;
+    }, [extrudedGeometry]);
 
     return (
       <group matrix={extrudedMatrix} matrixAutoUpdate={false} onClick={handleUnifiedClick}>
