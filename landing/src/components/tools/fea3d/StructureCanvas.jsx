@@ -516,10 +516,10 @@ function FrameElement({ start, end, id, isShadow, isFaded }) {
         </mesh>
         <lineSegments geometry={edgesGeo}>
           <lineBasicMaterial
-            color={isSelected ? '#fef08a' : '#e2e8f0'}
+            color={isSelected ? '#ca8a04' : '#1e293b'}
             transparent={true}
-            opacity={0.55}
-            depthWrite={false}
+            opacity={0.9}
+            depthTest={true}
           />
         </lineSegments>
       </group>
