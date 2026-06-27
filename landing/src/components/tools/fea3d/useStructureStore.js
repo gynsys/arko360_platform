@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { generateMesh } from './mesher';
 import { SlabOpeningGenerator, OpeningType } from './SlabOpeningGenerator';
 import toast from 'react-hot-toast';
+import { ProfileDatabase } from './data/ProfileDatabase';
 
 // Helper para limpiar nudos huérfanos (que no pertenecen a ningún elemento ni losa)
 const cleanupOrphans = (nodes, elements, shells, openings = []) => {
@@ -1034,6 +1035,34 @@ export const useStructureStore = create((set, get) => ({
 
     const finalColSectionId = colSectionId || (systemMaterial === 'Steel' ? 'W14X90' : 'COL_DEF');
     const finalBeamSectionId = beamSectionId || (systemMaterial === 'Steel' ? 'W14X90' : 'BEAM_DEF');
+    const finalPurlinSectionId = config.purlinSectionId || 'IPE160';
+
+    // Helper to add missing section from ProfileDatabase
+    const ensureSectionExists = (secId) => {
+      if (!currentSections.some(s => s.id === secId)) {
+        const allProfiles = Object.values(ProfileDatabase).flat();
+        const found = allProfiles.find(p => p.id === secId);
+        if (found) {
+          currentSections.push({
+            id: found.id,
+            name: found.name,
+            type: found.type,
+            material_id: baseMatId,
+            params: found.params,
+            A: found.A,
+            Ix: found.Ix,
+            Iy: found.Iy,
+            J: found.J
+          });
+        }
+      }
+    };
+    
+    if (type === 'galpon') {
+      ensureSectionExists(finalColSectionId);
+      ensureSectionExists(finalBeamSectionId);
+      ensureSectionExists(finalPurlinSectionId);
+    }
 
     if (type === 'beam') {
       // Vigas de Viga Continua
@@ -1164,7 +1193,7 @@ export const useStructureStore = create((set, get) => ({
         // Purlins at upper chord nodes
         for (let i = 0; i <= 2*P; i++) {
           let w_purlin = 0.2; // fallback width
-          const purlinSection = currentSections.find(s => s.id === finalBeamSectionId);
+          const purlinSection = currentSections.find(s => s.id === finalPurlinSectionId);
           if (purlinSection && purlinSection.params) {
               w_purlin = purlinSection.params.b || purlinSection.params.w2 || purlinSection.params.d || 0.2;
           }
@@ -1178,12 +1207,12 @@ export const useStructureStore = create((set, get) => ({
             newElements.push({ 
               id: `E${elemCount++}`, type: 'frame', elementRole: 'purlin', 
               beta_angle: beta_left, alignment: 'Bottom Center', visual_offset_z: -apex_spacing, 
-              nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId 
+              nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalPurlinSectionId, material_id: baseMatId 
             });
             newElements.push({ 
               id: `E${elemCount++}`, type: 'frame', elementRole: 'purlin', 
               beta_angle: beta_right, alignment: 'Bottom Center', visual_offset_z: apex_spacing, 
-              nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalBeamSectionId, material_id: baseMatId 
+              nodes: [frame1.uc[i].id, frame2.uc[i].id], section_id: finalPurlinSectionId, material_id: baseMatId 
             });
           } else {
             // Regular purlins
@@ -1198,7 +1227,7 @@ export const useStructureStore = create((set, get) => ({
               beta_angle: beta_angle,
               alignment: 'Bottom Center',
               nodes: [frame1.uc[i].id, frame2.uc[i].id], 
-              section_id: finalBeamSectionId, 
+              section_id: finalPurlinSectionId, 
               material_id: baseMatId 
             });
           }

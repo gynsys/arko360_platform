@@ -45,5 +45,9 @@ Para garantizar la escalabilidad, ARKO3D aplica un **Patrón Strategy (Strategy 
   - `aisc_360.py` (Fase 2): Diseño de acero para fluencia, pandeo local, pandeo flexotorsional (LTB).
 - **Salida Escalable:** Una tabla de "Ratios de Utilización" de Demanda/Capacidad (Demanda / $\phi R_n$).
 
+### 3.3 Formulaciones Especiales (Tapered y Secciones de Catálogo)
+- **Elementos de Sección Variable (Tapered):** Para pórticos de "Alma Llena", se formulan matrices de rigidez locales $[k_{loc}]$ que consideran la variación inercial a lo largo de la longitud del elemento (integración hermítica adaptada o promediado para pequeñas variaciones). Durante la recuperación de fuerzas internas (fuerzas en los extremos), es imperativo emplear esta misma matriz de rigidez variable para garantizar el equilibrio nodal y diagramas de momento continuos.
+- **Catálogo Dinámico de Perfiles:** Las secciones estándar europeas (IPE, HEB) y venezolanas (ECO CONDUVEN Tubulares Cuadrados/Rectangulares, Vigas de Perfil VP de Properca) se gestionan a través de una base de datos local (`ProfileDatabase`). Los elementos del FEA inyectan dinámicamente estas propiedades al store global, independizando la UI del Core.
+
 ## 4. Expansión Futura y Documentación Viva
 Cualquier desarrollador que integre una nueva teoría matemática, tipo de carga, o código constructivo deberá documentar sus asunciones fundamentales en este archivo, agregando subsecciones a los Módulos A y B.

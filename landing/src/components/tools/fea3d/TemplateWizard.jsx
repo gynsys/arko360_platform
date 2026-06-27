@@ -8,17 +8,19 @@ const DEFAULT_CONFIG = {
   type: '3d_frame',
   numFloors: 2,
   numBaysX: 2,
-  numBaysY: 2,
-  floorHeight: 3.0,
-  bayWidthX: 5.0,
-  bayWidthY: 5.0,
+  numBaysY: 6,
+  floorHeight: 6.0,
+  bayWidthX: 20.0,
+  bayWidthY: 6.0,
   units: 'm, kgf, C',
   systemMaterial: 'Concrete', // 'Concrete' or 'Steel'
-  colSectionId: '',
-  beamSectionId: '',
+  colSectionId: 'IPE240',
+  beamSectionId: 'IPE180',
+  purlinSectionId: 'IPE160',
   trussType: 'Howe',
   roofPanels: 4,
-  apexHeight: 4.5
+  apexHeight: 8.0,
+  galponType: 'Cercha'
 };
 
 export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
@@ -133,7 +135,7 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
             />
             <TemplateType
               active={config.type === 'galpon'}
-              onClick={() => setConfig({ ...config, type: 'galpon', systemMaterial: 'Steel' })}
+              onClick={() => setConfig({ ...config, type: 'galpon', systemMaterial: 'Steel', colSectionId: 'IPE240', beamSectionId: 'IPE180', purlinSectionId: 'IPE160', numBaysY: 6, floorHeight: 6.0, apexHeight: 8.0, bayWidthX: 20.0, bayWidthY: 6.0, galponType: 'Cercha' })}
               icon={<Warehouse size={18} />}
               label="Galpón Industrial"
             />
@@ -270,8 +272,8 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                           onChange={(e) => setConfig({ ...config, galponType: e.target.value })}
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500 mb-3"
                         >
-                          <option value="Cercha">Con Cerchas (Truss)</option>
-                          <option value="Tapered">Alma Llena Variable (Tapered)</option>
+                          <option value="Cercha">Cerchas</option>
+                          <option value="Tapered">Alma Llena</option>
                         </select>
                       </div>
                       {(!config.galponType || config.galponType === 'Cercha') && (
@@ -317,63 +319,57 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                   </select>
                 </div>
                 
-                <div className="mt-4">
-                  <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Material Predominante (Sistema)</label>
-                  {/* Para Galpones: siempre Acero Estructural A-36 */}
-                  {config.type === 'galpon' ? (
-                    <div className="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-2 text-slate-400 text-sm flex items-center gap-2">
-                      <span className="text-sky-400">⚙</span>
-                      Acero Estructural A-36 (ASTM A36 / COVENIN)
+                {config.type !== 'galpon' && (
+                  <div className="mt-4">
+                    <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Material Predominante (Sistema)</label>
+                    <div className="flex gap-2">
+                      <select 
+                        value={config.systemMaterial || 'Concrete'} 
+                        onChange={(e) => {
+                          const mat = e.target.value;
+                          setConfig({ 
+                            ...config, 
+                            systemMaterial: mat,
+                            materialId: '', // Reset material when system changes
+                            colSectionId: mat === 'Steel' ? 'W14X90' : 'COL_DEF',
+                            beamSectionId: mat === 'Steel' ? 'W14X90' : 'BEAM_DEF'
+                          });
+                        }}
+                        className="w-1/2 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="Concrete">Concreto Armado</option>
+                        <option value="Steel">Acero Estructural</option>
+                      </select>
+                      
+                      {config.systemMaterial === 'Concrete' && (
+                        <div className="flex w-1/2 gap-1">
+                          <select 
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                            value={config.materialId || (materials.filter(m => m.type === 'Concrete').length > 0 ? materials.filter(m => m.type === 'Concrete')[0].id : '')}
+                            onChange={(e) => setConfig({ ...config, materialId: e.target.value })}
+                          >
+                            {materials.filter(m => m.type === 'Concrete').map(m => (
+                              <option key={m.id} value={m.id}>{m.name}</option>
+                            ))}
+                            {materials.filter(m => m.type === 'Concrete').length === 0 && (
+                              <option value="">Por defecto (f'c 280)</option>
+                            )}
+                          </select>
+                          <button 
+                            onClick={() => window.dispatchEvent(new Event('open-materials-modal'))}
+                            className="bg-slate-700 hover:bg-slate-600 text-white rounded-lg px-3 flex items-center justify-center font-bold"
+                            title="Definir Materiales"
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                  <div className="flex gap-2">
-                    <select 
-                      value={config.systemMaterial || 'Concrete'} 
-                      onChange={(e) => {
-                        const mat = e.target.value;
-                        setConfig({ 
-                          ...config, 
-                          systemMaterial: mat,
-                          materialId: '', // Reset material when system changes
-                          colSectionId: mat === 'Steel' ? 'W14X90' : 'COL_DEF',
-                          beamSectionId: mat === 'Steel' ? 'W14X90' : 'BEAM_DEF'
-                        });
-                      }}
-                      className="w-1/2 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="Concrete">Concreto Armado</option>
-                      <option value="Steel">Acero Estructural</option>
-                    </select>
-                    
-                    {config.systemMaterial === 'Concrete' && (
-                      <div className="flex w-1/2 gap-1">
-                        <select 
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                          value={config.materialId || (materials.filter(m => m.type === 'Concrete').length > 0 ? materials.filter(m => m.type === 'Concrete')[0].id : '')}
-                          onChange={(e) => setConfig({ ...config, materialId: e.target.value })}
-                        >
-                          {materials.filter(m => m.type === 'Concrete').map(m => (
-                            <option key={m.id} value={m.id}>{m.name}</option>
-                          ))}
-                          {materials.filter(m => m.type === 'Concrete').length === 0 && (
-                            <option value="">Por defecto (f'c 280)</option>
-                          )}
-                        </select>
-                        <button 
-                          onClick={() => window.dispatchEvent(new Event('open-materials-modal'))}
-                          className="bg-slate-700 hover:bg-slate-600 text-white rounded-lg px-3 flex items-center justify-center font-bold"
-                          title="Definir Materiales"
-                        >
-                          +
-                        </button>
-                      </div>
-                    )}
                   </div>
-                  )}
-                </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4 mt-4">
-                  {config.type !== 'beam' && (
+                  {config.type !== 'beam' && config.type !== 'galpon' && (
                   <div>
                     <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Sección de Columnas</label>
                     <select 
@@ -392,6 +388,7 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                     </select>
                   </div>
                   )}
+                  {config.type !== 'galpon' && (
                   <div className={config.type === 'beam' ? 'col-span-2' : ''}>
                     <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Sección de Vigas</label>
                     <select 
@@ -408,6 +405,11 @@ export function TemplateWizard({ isOpen, onClose, onProjectSelect }) {
                       )}
                     </select>
                   </div>
+                  )}
+
+                  {config.type === 'galpon' && (
+                    <GalponSectionsSelects config={config} setConfig={setConfig} />
+                  )}
                 </div>
               </>
             )}
@@ -492,5 +494,88 @@ function TemplateType({ icon, label, active, onClick }) {
     >
       {icon} <span className="text-sm font-medium">{label}</span>
     </button>
+  );
+}
+
+function GalponSectionsSelects({ config, setConfig }) {
+  // Generar listas desde un listado hardcodeado de los solicitados por el usuario
+  const ipeOptions = [160, 180, 200, 220, 240, 270, 300, 330].map(s => ({ id: `IPE${s}`, name: `IPE ${s}` }));
+  const conduvenCols = [175, 200, 220, 260].map(s => {
+    const t = s === 175 ? '5_5' : s === 200 ? '7_0' : '9_0';
+    return { id: `ECO_CUAD_${s}x${s}x${t}`, name: `CONDUVEN ${s}x${s}` };
+  });
+  const conduvenBeams = [
+    { id: 'ECO_180x65x4_0', name: 'CONDUVEN 180x65' },
+    { id: 'ECO_200x70x4_3', name: 'CONDUVEN 200x70' },
+    { id: 'ECO_220x90x4_5', name: 'CONDUVEN 220x90' },
+    { id: 'ECO_260x90x5_5', name: 'CONDUVEN 260x90' },
+    { id: 'ECO_300x100x7_0', name: 'CONDUVEN 300x100' },
+    { id: 'ECO_320x120x7_0', name: 'CONDUVEN 320x120' }
+  ];
+  const vpOptions = [
+    { id: 'VP_150x75', name: 'VP 150x75' },
+    { id: 'VP_200x100', name: 'VP 200x100' },
+    { id: 'VP_250x125', name: 'VP 250x125' },
+    { id: 'VP_300x150', name: 'VP 300x150' },
+    { id: 'VP_350x175', name: 'VP 350x175' },
+    { id: 'VP_400x200', name: 'VP 400x200' },
+    { id: 'VP_450x200', name: 'VP 450x200' },
+    { id: 'VP_500x200', name: 'VP 500x200' }
+  ];
+
+  return (
+    <div className="col-span-2 grid grid-cols-3 gap-4">
+      <div>
+        <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Sección Columnas</label>
+        <select 
+          value={config.colSectionId || 'IPE240'} 
+          onChange={(e) => setConfig({ ...config, colSectionId: e.target.value })}
+          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+        >
+          <optgroup label="Perfiles IPE">
+            {ipeOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </optgroup>
+          <optgroup label="CONDUVEN (Cuadrados)">
+            {conduvenCols.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </optgroup>
+          <optgroup label="Perfiles VP (Properca)">
+            {vpOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </optgroup>
+        </select>
+      </div>
+      <div>
+        <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Sección Vigas</label>
+        <select 
+          value={config.beamSectionId || 'IPE180'} 
+          onChange={(e) => setConfig({ ...config, beamSectionId: e.target.value })}
+          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+        >
+          <optgroup label="Perfiles IPE">
+            {ipeOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </optgroup>
+          <optgroup label="CONDUVEN (Rectangulares)">
+            {conduvenBeams.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </optgroup>
+          <optgroup label="Perfiles VP (Properca)">
+            {vpOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </optgroup>
+        </select>
+      </div>
+      <div>
+        <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Sección Correas</label>
+        <select 
+          value={config.purlinSectionId || 'IPE160'} 
+          onChange={(e) => setConfig({ ...config, purlinSectionId: e.target.value })}
+          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+        >
+          <optgroup label="Perfiles IPE">
+            {ipeOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </optgroup>
+          <optgroup label="CONDUVEN (Rectangulares)">
+            {conduvenBeams.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </optgroup>
+        </select>
+      </div>
+    </div>
   );
 }
