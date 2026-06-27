@@ -103,7 +103,7 @@ class Doctor(Base):
     locations = relationship("Location", back_populates="doctor", cascade="all, delete-orphan")
     services = relationship("Service", back_populates="doctor", cascade="all, delete-orphan")
     certifications = relationship("DoctorCertification", back_populates="doctor", cascade="all, delete-orphan")
-    blog_posts = relationship("BlogPost", back_populates="doctor", cascade="all, delete-orphan")
+    # blog_posts = relationship("BlogPost", back_populates="doctor", cascade="all, delete-orphan")
     cycle_users = relationship("CycleUser", back_populates="doctor", cascade="all, delete-orphan")
     
     # Missing relationships for complete cleanup

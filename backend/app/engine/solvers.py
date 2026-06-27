@@ -711,11 +711,8 @@ class StructuralSolver:
                     V3 = -f_loc_end[2] + qz * x
                     T_tors = -f_loc_end[3]
                     
-                    # Classic internal force sign convention:
-                    # M2 = f_loc_end[4] + f_loc_end[2]*x - qz*x^2/2
-                    # M3 = f_loc_end[5] - f_loc_end[1]*x + qy*x^2/2
-                    M2 = f_loc_end[4] + f_loc_end[2] * x - qz * (x**2) / 2
-                    M3 = f_loc_end[5] - f_loc_end[1] * x + qy * (x**2) / 2
+                    M2 = -f_loc_end[4] - f_loc_end[2] * x + qz * (x**2) / 2
+                    M3 = -f_loc_end[5] - f_loc_end[1] * x + qy * (x**2) / 2
                     
                     for pt in point_loads:
                         if x > pt["a"]:
@@ -723,7 +720,7 @@ class StructuralSolver:
                             P += pt["px"]
                             V2 += pt["py"]
                             V3 += pt["pz"]
-                            M2 -= pt["pz"] * dist
+                            M2 += pt["pz"] * dist
                             M3 += pt["py"] * dist
                     
                     # Deflexión local (Funciones de forma de Hermite)
