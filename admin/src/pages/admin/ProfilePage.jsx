@@ -1329,7 +1329,8 @@ export default function ProfilePage() {
                 { key: 'showProcess', label: 'Metodología (Pasos del Flujo de Trabajo)' },
                 { key: 'showTestimonials', label: 'Testimonios (Reseñas de Clientes Satisfechos)' },
                 { key: 'showBiblio', label: 'Biblioteca Biblioteca BiblioARKO' },
-                { key: 'showTools', label: 'Calculadoras de Ingeniería (Herramientas Técnicas)' }
+                { key: 'showTools', label: 'Calculadoras de Ingeniería (Herramientas Técnicas)' },
+                { key: 'showCotizador', label: 'Cotizador Interactivo' }
               ].map((sec) => (
                 <div key={sec.key} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
                   <span className="text-sm font-semibold text-gray-800">{sec.label}</span>
@@ -1363,7 +1364,10 @@ export default function ProfilePage() {
                 { key: 'showElectrica', label: 'Calculadora Eléctrica' },
                 { key: 'showEscaleras', label: 'Calculadora de Escaleras' },
                 { key: 'showLosas', label: 'Calculadora de Losas' },
-                { key: 'showArko3D', label: 'Módulo ARKO3D (Cálculo FEM)' }
+                { key: 'showArko3D', label: 'Módulo ARKO3D (Cálculo FEM)' },
+                { key: 'showCotizadorPorcelanato', label: 'Cotizador de Instalación de Porcelanato' },
+                { key: 'showCotizadorBano', label: 'Cotizador de Remodelación de Baño' },
+                { key: 'showCotizadorVinil', label: 'Cotizador de Pisos de Vinil SPC' }
               ].map((calc) => (
                 <div key={calc.key} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
                   <span className="text-sm font-semibold text-gray-800">{calc.label}</span>

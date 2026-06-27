@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BudgetCalculatorModal from '../../components/budget/BudgetCalculatorModal.jsx';
+import { SiteConfigContext } from '../../App.jsx';
 
 const promos = [
   {
@@ -42,9 +43,26 @@ const promos = [
   }
 ];
 
+const promoConfigMap = {
+  'porcelanato': 'showCotizadorPorcelanato',
+  'bano': 'showCotizadorBano',
+  'vinil': 'showCotizadorVinil',
+  'losa': 'showArko3D', // Mapped to the main 3D module toggle
+  'mezcla': 'showDisenoMezclas'
+};
+
 export default function Promotions() {
   const [selectedPromo, setSelectedPromo] = useState(null);
   const navigate = useNavigate();
+  const config = useContext(SiteConfigContext);
+  
+  // Filter promos based on the tools configuration
+  const activePromos = promos.filter(promo => {
+    const configKey = promoConfigMap[promo.id];
+    return config?.tools?.[configKey] !== false;
+  });
+
+  if (activePromos.length === 0) return null;
 
   return (
     <section className="section bg-slate-50" id="promociones">
@@ -96,7 +114,7 @@ export default function Promotions() {
         <div style={{ overflow: 'hidden', margin: '0 -16px', padding: '0 16px' }}>
           <div className="promo-track">
             {/* Duplicamos los promos para que el carrusel se vea lleno y tenga suficiente contenido para desplazarse */}
-            {[...promos, ...promos].map((promo, i) => (
+            {[...activePromos, ...activePromos].map((promo, i) => (
               <div key={`${promo.id}-${i}`} className="promo-card">
               <div style={{ height: '200px', width: '100%', overflow: 'hidden' }}>
                 <img 

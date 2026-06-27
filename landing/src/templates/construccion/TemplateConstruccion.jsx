@@ -26,7 +26,7 @@ export default function TemplateConstruccion() {
   return (
     <main>
       <Hero />
-      <Promotions />
+      {sections.showCotizador !== false && <Promotions />}
       {sections.showServices !== false && <Services />}
       {sections.showPortfolio !== false && <Portfolio />}
       {sections.showAbout !== false && <About />}
