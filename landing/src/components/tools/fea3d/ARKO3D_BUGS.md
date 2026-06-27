@@ -120,3 +120,59 @@ const onPointerUp = (e) => {
 | Navegación 2D | `ViewControls.jsx`, `useStructureStore.js` | Botones Planta / Elev XZ / Elev YZ con navegación por niveles (↑↓) |
 | Sin footer/header en /arko3d | `App.jsx` | La ruta /arko3d oculta el Navbar y Footer del sitio |
 | Selección acumulativa | `StructureCanvas.jsx` | Shift/Ctrl + ventana suma a la selección existente |
+
+---
+
+## 🐛 BUG #003 — Loop Infinito en Frontend (requestAnimationFrame)
+
+**Fecha:** 2026-06-27  
+**Estado:** ✅ Resuelto  
+**Archivos afectados:** `StructureCanvas.jsx`
+
+### Síntomas
+- Al ejecutar el análisis, la pantalla se congelaba y el navegador reportaba violaciones de `requestAnimationFrame` que tomaban >60ms.
+- El servidor remoto cerraba la conexión por timeout (90s) porque el cliente dejaba de responder.
+
+### Causa Raíz
+La generación de la geometría de los bordes (`THREE.EdgesGeometry(extrudedGeometry, 15)`) para visualizar los perfiles 3D se estaba recalculando en cada frame renderizado (unas 60 veces por segundo) para cientos de elementos. Esto saturaba por completo el hilo principal del navegador.
+
+### Solución
+Se envolvió el cálculo de la geometría en un hook `useMemo` para asegurar que solo se calcule una vez por elemento cuando se renderiza por primera vez.
+
+---
+
+## 🐛 BUG #004 — Frontend de Producción apuntando a localhost:8000
+
+**Fecha:** 2026-06-27  
+**Estado:** ✅ Resuelto  
+**Archivos afectados:** `.env` en droplet, `api.js`
+
+### Síntomas
+- Error CORS y `ERR_CONNECTION_REFUSED` al intentar hacer login o fetch de la API.
+- La consola mostraba peticiones apuntando a `localhost:8000` a pesar de estar en producción (`arko360.net`).
+
+### Causa Raíz
+Los frontends en Vite (landing y admin) "hornean" las variables de entorno (`VITE_API_URL`) en el JavaScript estático al momento de ejecutar `npm run build`. El contenedor del droplet se construyó sin un archivo `.env` local, por lo que usó los valores por defecto (localhost).
+
+### Solución
+Se crearon archivos `.env` en los directorios correspondientes del servidor con `VITE_API_URL=https://api.arko360.net/api/v1` y se ordenó una reconstrucción de la imagen y contenedores de docker para el frontend.
+
+---
+
+## 🐛 BUG #005 — Diagramas de Momento discontinuos ("en zig-zag") y columnas sin momentos en Galpones Tapered
+
+**Fecha:** 2026-06-27  
+**Estado:** ✅ Resuelto  
+**Archivos afectados:** `backend/app/engine/solvers.py`
+
+### Síntomas
+- Al calcular un galpón con secciones de alma variable (Tapered), el diagrama de momento en las vigas del techo no era continuo (formaba una serie de "corbatines" o zig-zags saltando de +25 a -20 abruptamente en cada nudo).
+- Las columnas mostraban momentos casi nulos a pesar de estar rígidamente conectadas a la viga de techo.
+
+### Causa Raíz
+El motor ensamblaba la matriz global usando la rigidez exacta (`get_tapered_3d_frame_local_stiffness`) a partir de una condensación estática, obteniendo deformaciones (`u_loc`) precisas. 
+Sin embargo, **al recuperar las fuerzas internas** (`f_loc_end = k_loc @ u_loc`), el solver estaba usando erróneamente la matriz prismática genérica (`get_3d_frame_local_stiffness`). 
+Como el frontend inicializaba las secciones tapered con valores prismáticos mínimos por defecto (`A: 0.02, Ix: 0.001`), el solver multiplicaba desplazamientos reales por una rigidez casi nula, rompiendo por completo el equilibrio de fuerzas estáticas en el nudo y provocando discontinuidades matemáticas.
+
+### Solución
+Se modificó `solvers.py` para usar exactamente la misma función `get_tapered_3d_frame_local_stiffness` durante la recuperación de fuerzas para cualquier sección de tipo `Tapered`. Esto garantizó el equilibrio nodal y restauró la continuidad perfecta de los diagramas de momento y cortante.

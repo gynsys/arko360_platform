@@ -28,31 +28,37 @@ Este documento registra el estado actual del proyecto y los pasos pendientes par
    - **Bug de formato restraint:** El Wizard generaba `{ dofs: [...] }` pero NodePoint esperaba `{ ux, uy, uz, rx, ry, rz }`. Corregido en `generateStructure`.
    - **Documentación técnica:** Creado `landing/src/components/tools/fea3d/ARKO3D_BUGS.md` con registro detallado de bugs.
 
-2. **Backend desarrollado** - Endpoints completos en `backend/app/api/v1/endpoints/arko.py`:
+4. **ARKO3D — Sesión 2026-06-27 (Optimización y Corrección Matemática FEA):**
+   - **Bug crítico de Loop Infinito (requestAnimationFrame):** Se envolvió `THREE.EdgesGeometry` en un `useMemo` en `StructureCanvas.jsx` para evitar el recálculo a 60fps de los bordes 3D, lo cual congelaba el navegador y generaba un timeout del servidor.
+   - **CORS y API apuntando a localhost:** Se inyectó `VITE_API_URL` en los archivos `.env` de producción para los frontends en Docker, forzando un re-build y asegurando que las peticiones se dirijan correctamente a `api.arko360.net`.
+   - **Diagramas de Esfuerzos Discontinuos (Galpones Tapered):** Corregida la recuperación de fuerzas internas (`f_loc_end`) en `solvers.py`. Anteriormente se ensamblaba con la rigidez de Tapered, pero se recuperaban fuerzas usando la rigidez de viga prismática con parámetros base diminutos. Ahora se utiliza consistentemente `get_tapered_3d_frame_local_stiffness`, restaurando el equilibrio de nudos y mostrando diagramas de momento continuos reales (y momentos precisos en columnas).
+   - Todo documentado detalladamente en `ARKO3D_BUGS.md`.
+
+5. **Backend desarrollado** - Endpoints completos en `backend/app/api/v1/endpoints/arko.py`:
    - CRUD de blog (GET, POST, PUT, DELETE /api/v1/arko/admin/posts)
    - Autenticación (POST /api/v1/arko/auth/login)
    - Configuración del sitio (GET /api/v1/arko/config, PUT /api/v1/arko/admin/config)
    - Upload de imágenes (POST /api/v1/arko/admin/upload)
 
-2. **Panel Admin frontend** - Implementado con:
+6. **Panel Admin frontend** - Implementado con:
    - Navegación lateral (Gestión Blog, Mi Perfil)
    - Página de gestión de blog con lista de artículos
    - Página de perfil con pestañas (Identidad, Apariencia, Contacto, Contenido, Módulos)
    - Botón de guardar en configuración de colores
    - Colores dinámicos conectados a configuración del sitio
 
-3. **Landing Page frontend** - Desplegado con diseño moderno y responsive
+7. **Landing Page frontend** - Desplegado con diseño moderno y responsive
 
-4. **Corrección de URLs** - Error de `/api/v1/api/v1/` duplicado corregido en App.jsx y ProfilePage.jsx
+8. **Corrección de URLs** - Error de `/api/v1/api/v1/` duplicado corregido en App.jsx y ProfilePage.jsx
 
-5. **Docker configuration** - docker-compose.yml actualizado con:
+9. **Docker configuration** - docker-compose.yml actualizado con:
    - Servicio admin-frontend (puerto 3001)
    - Servicio landing-frontend (puerto 3000)
    - Servicio backend (puerto 8001)
    - Servicio nginx principal (puertos 80, 443)
    - Base de datos PostgreSQL (puerto 5434)
 
-6. **Nginx configuration** - nginx.conf creado para:
+10. **Nginx configuration** - nginx.conf creado para:
    - Servir landing page en arko360.net
    - Servir panel admin en admin.arko360.net
    - Proxy de API al backend
