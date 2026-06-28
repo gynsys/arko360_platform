@@ -1,0 +1,457 @@
+import React, { useRef } from 'react';
+import { FiMaximize2, FiEdit3, FiPlusCircle, FiCopy, FiCheck, FiTrash2, FiRefreshCw, FiLayers, FiImage } from 'react-icons/fi';
+import { SVGIcons } from '../lib/svgIcons';
+
+// Function to get SVG path for each icon type
+const getIconPath = (iconType) => {
+  const iconPaths = {
+    arrow: "M16.01 11H4v2h12.01v3L20 12l-3.99-4z",
+    arrowLeft: "M7.99 11H20v2H7.99v3L4 12l3.99-4z",
+    arrowUp: "M13 7.99V20h-2V7.99H8L12 4l4 3.99z",
+    arrowDown: "M11 16.01V4h2v12.01h3L12 20l-4-3.99z",
+    star: "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
+    heart: "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z",
+    bubble: "M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z",
+    bulletCheck: "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z",
+    stetho: "M12 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4zm8-10h-2c0-4.4-3.6-8-8-8s-8 3.6-8 8H2c0 5.5 4.5 10 10 10s10-4.5 10-10z",
+    dna: "M18.8 15.6c-.6-.6-1.5-.6-2.1 0l-1.1 1.1-1.1-1.1c-.6-.6-1.5-.6-2.1 0s-.6 1.5 0 2.1l1.1 1.1-1.1 1.1c-.6.6-.6 1.5 0 2.1.3.3.7.4 1.1.4s.8-.1 1.1-.4l1.1-1.1 1.1 1.1c.3.3.7.4 1.1.4s.8-.1 1.1-.4c.6-.6.6-1.5 0-2.1l-1.1-1.1 1.1-1.1c.5-.6.5-1.5-.1-2.1zM5.2 8.4c.6.6 1.5.6 2.1 0l1.1-1.1 1.1 1.1c.6.6 1.5.6 2.1 0s.6-1.5 0-2.1l-1.1-1.1 1.1-1.1c.6-.6.6-1.5 0-2.1-.3-.3-.7-.4-1.1-.4s-.8.1-1.1.4l-1.1 1.1-1.1-1.1c-.3-.3-.7-.4-1.1-.4s-.8.1-1.1.4c-.6.6-.6 1.5 0 2.1l1.1 1.1-1.1 1.1c-.6.6-.6 1.5 0 2.1z",
+    utero: "M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8 0-1.5.4-2.8 1.1-4 .6 1.1 1.6 2 2.9 2.6-.1.5-.2 1.1-.2 1.6 0 2.2 1.8 4 4 4s4-1.8 4-4c0-.5-.1-1.1-.2-1.6 1.3-.6 2.3-1.5 2.9-2.6.7 1.2 1.1 2.5 1.1 4 0 4.4-3.6 8-8 8z",
+    blob1: "M44.7,-76.4C58.1,-69.2,69.2,-58.1,76.4,-44.7C83.7,-31.3,87.1,-15.7,85.2,-0.9C83.3,13.8,76.1,27.7,67.6,40.1C59.1,52.5,49.3,63.5,37.3,71.1C25.3,78.7,11.1,82.9,-3.4,88.7C-17.9,94.5,-32.7,101.9,-45.3,97.7C-57.9,93.5,-68.3,77.7,-76.1,62.3C-83.9,46.9,-89.1,31.9,-90.1,16.8C-91.1,1.7,-87.9,-13.5,-82,-27.1C-76.1,-40.7,-67.5,-52.7,-56.3,-62C-45.1,-71.3,-31.3,-77.9,-17.1,-80.9C-2.9,-83.9,11.7,-83.3,44.7,-76.4Z",
+    sparkle: "M12 2l2.4 7.2L22 11.6l-7.6 2.4L12 22l-2.4-7.6L2 11.6l7.6-2.4L12 2z",
+    circle: "M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z",
+    square: "M2 2h20v20H2z",
+    roundedSquare: "M2 2h20v20H2z",
+    line: "M2 11h20v2H2z",
+    bullet: "M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"
+  };
+  return iconPaths[iconType] || iconPaths.circle;
+};
+
+const parseHighlightedText = (text, highlightColor, highlightSize) => {
+  if (!text) return '';
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <span 
+          key={i} 
+          style={{ 
+            color: highlightColor || '#ff0000', 
+            fontSize: highlightSize ? highlightSize + 'px' : 'inherit',
+            fontStyle: 'italic', 
+            fontWeight: '900' 
+          }}
+        >
+          {part.slice(2, -2)}
+        </span>
+      );
+    }
+    return part;
+  });
+};
+
+export const SlideCanvas = ({
+  slide,
+  index,
+  isPreview,
+  isExport = false,
+  doctor,
+  doctorLogo,
+  design,
+  canvas,
+  transform,
+  handlers,
+  watermark,
+  onEdit,
+  onPreview,
+  onCopy,
+  onRemove,
+  onAddImage,
+  onRemoveImage,
+  isVideoMode = false
+}) => {
+  const containerRef = useRef(null);
+  const isSelected = !isPreview && !isExport && (canvas.currentSlidePage === index || isVideoMode);
+  
+  const { 
+    imagePositions, imageSizes, imageRotations, 
+    contentPositions, contentRotations 
+  } = transform;
+
+  const { 
+    fontSize, titleFontSize, titleColor, contentColor, headerColor, headerFontSize,
+    logoPos, doctorNamePos, dividerPos, dividerColor, dividerHeight, dividerWidth,
+    imageBorderRadius
+  } = design;
+
+  const {
+    extraElements, selectElement, selectedExtraId, selectedImageId, selectedContentIndex,
+    selectedLogo, selectedDoctorName
+  } = canvas;
+
+  const { handleDragStart, handleTransformStart } = handlers;
+
+  return (
+    <div 
+      ref={containerRef}
+      className={`relative w-[410px] ${isVideoMode ? 'h-[728px]' : 'h-[410px]'} overflow-visible shadow-2xl transition-all duration-500 ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-4 ring-offset-gray-50' : ''}`}
+      style={{ 
+        background: design.useBgGradient 
+          ? `linear-gradient(to bottom right, ${design.bgColor}, ${design.bgColor2}, ${design.bgColor3})` 
+          : design.bgColor,
+        userSelect: isSelected ? 'none' : 'auto'
+      }}
+      onClick={() => isSelected && selectElement(null, null)}
+    >
+      {/* Inner container for slide content */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Logo Section */}
+        {doctorLogo && !isVideoMode && (
+        <div 
+          className={`absolute z-30 transition-shadow ${isSelected && selectedLogo ? 'border-[1.5px] border-dashed border-indigo-500 rounded-xl p-2 bg-white/5' : ''}`}
+          style={{
+            left: logoPos.x + '%',
+            top: logoPos.y + '%',
+            transform: 'translate(-50%, -50%)',
+            cursor: isSelected ? 'grab' : 'default',
+          }}
+          onMouseDown={(e) => isSelected && handleDragStart(e, index, 'logo', 'global-logo', containerRef.current, logoPos)}
+          onTouchStart={(e) => { 
+            if (isSelected) {
+              selectElement('logo', 'global-logo');
+              handleDragStart(e, index, 'logo', 'global-logo', containerRef.current, logoPos);
+            }
+          }}
+          onClick={(e) => { e.stopPropagation(); isSelected && selectElement('logo', 'global-logo'); }}
+        >
+          <div 
+          className="w-[2.5rem] h-[2.5rem] bg-contain bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url(${doctorLogo})`,
+            backgroundSize: 'contain'
+          }}
+        />
+        </div>
+      )}
+
+      {/* Doctor Name Section */}
+      {!isVideoMode && (
+        <div 
+          className={`absolute z-30 transition-shadow ${isSelected && selectedDoctorName ? 'border-[1.5px] border-dashed border-indigo-500 rounded-xl p-2 bg-white/5' : ''}`}
+        style={{
+          left: doctorNamePos.x + '%',
+          top: doctorNamePos.y + '%',
+          transform: 'translate(-50%, -50%)',
+          cursor: isSelected ? 'grab' : 'default',
+        }}
+        onMouseDown={(e) => isSelected && handleDragStart(e, index, 'doctorName', 'global-name', containerRef.current, doctorNamePos)}
+          onTouchStart={(e) => {
+            if (isSelected) {
+              selectElement('doctorName', 'global-name');
+              handleDragStart(e, index, 'doctorName', 'global-name', containerRef.current, doctorNamePos);
+            }
+          }}
+        onClick={(e) => { e.stopPropagation(); isSelected && selectElement('doctorName', 'global-name'); }}
+      >
+        <span className="font-black tracking-tighter uppercase whitespace-nowrap" style={{ color: headerColor, fontSize: headerFontSize + 'px' }}>
+          {doctor?.name || 'Dra. Mariel Herrera'}
+        </span>
+      </div>
+      )}
+
+      {/* Divider Section */}
+      {!isVideoMode && (
+        <div 
+          className={`absolute z-30 transition-shadow ${isSelected && canvas.selectedDivider ? 'border-[1.5px] border-dashed border-indigo-500 p-2 bg-white/5' : ''}`}
+        style={{
+          left: dividerPos.x + '%',
+          top: dividerPos.y + '%',
+          width: dividerWidth + '%',
+          transform: 'translate(-50%, -50%)',
+          cursor: isSelected ? 'grab' : 'default',
+        }}
+        onMouseDown={(e) => isSelected && handleDragStart(e, index, 'divider', 'global-divider', containerRef.current, dividerPos)}
+          onTouchStart={(e) => {
+            if (isSelected) {
+              selectElement('divider', 'global-divider');
+              handleDragStart(e, index, 'divider', 'global-divider', containerRef.current, dividerPos);
+            }
+          }}
+        onClick={(e) => { e.stopPropagation(); isSelected && selectElement('divider', 'global-divider'); }}
+      >
+        <div 
+          style={{ 
+            height: dividerHeight + 'px', 
+            backgroundColor: dividerColor,
+            width: '100%'
+          }} 
+        />
+      </div>
+      )}
+
+      {/* Content Section */}
+      <div 
+        className={`absolute z-10 transition-shadow pointer-events-auto w-[calc(100%-4rem)] px-4 ${isSelected && selectedContentIndex === index ? 'border-[1.5px] border-dashed border-indigo-500 rounded-2xl p-4 bg-white/10 backdrop-blur-sm' : ''}`}
+        style={{
+          left: (contentPositions[index]?.x ?? 50) + '%',
+          top: (contentPositions[index]?.y ?? (isVideoMode ? 50 : 60)) + '%',
+          transform: `translate(-50%, -50%) rotate(${contentRotations[index] || 0}deg)`,
+          cursor: isSelected ? 'grab' : 'default',
+        }}
+        onMouseDown={(e) => isSelected && handleDragStart(e, index, 'content', index, containerRef.current, contentPositions[index] || { x: 50, y: 60 })}
+          onTouchStart={(e) => {
+            if (isSelected) {
+              selectElement('content', index);
+              handleDragStart(e, index, 'content', index, containerRef.current, contentPositions[index] || { x: 50, y: 60 });
+            }
+          }}
+        onClick={(e) => { e.stopPropagation(); isSelected && selectElement('content', index); }}
+      >
+        <div className="text-center relative" style={{ fontFamily: design.fontFamily || 'Manrope' }}>
+          <h4 className="font-black mb-3 uppercase leading-tight" style={{ fontSize: titleFontSize + 'px', color: titleColor }}>
+            {parseHighlightedText(slide?.title || '', design.headerColor, design.headerFontSize)}
+          </h4>
+          <div className="h-1 w-12 bg-indigo-600/30 mb-3 rounded-full mx-auto"></div>
+          <p className="font-bold leading-relaxed whitespace-pre-wrap" style={{ fontSize: fontSize + 'px', color: contentColor }}>
+            {parseHighlightedText(slide?.content || slide?.text || '', design.headerColor, design.headerFontSize)}
+          </p>
+          {slide?.overlayText && (
+            <p className="mt-4 font-bold tracking-tight opacity-80 whitespace-pre-wrap" style={{ fontSize: Math.max(14, fontSize * 0.4) + 'px', color: contentColor }}>
+              {slide.overlayText}
+            </p>
+          )}
+        </div>
+      </div>
+      
+      {/* Images Layer */}
+      {slide?.customImages?.map((img, imgIdx) => {
+        const imgId = `${index}-${imgIdx}`;
+        const pos = imagePositions[imgId] || { x: 50, y: 70 };
+        const size = imageSizes[imgId] || 100;
+        const rot = imageRotations[imgId] || 0;
+        
+        return (
+          <div
+            key={imgId}
+            data-element="image"
+            data-slide-element="true"
+            className={`absolute transition-shadow ${isSelected && selectedImageId === imgId ? 'border-[2px] border-indigo-500 ring-4 ring-indigo-500/20 shadow-xl' : ''}`}
+            style={{
+              zIndex: pos.zIndex !== undefined ? pos.zIndex : 20,
+              opacity: pos.opacity !== undefined ? pos.opacity : 1,
+              left: pos.x + '%',
+              top: pos.y + '%',
+              width: size + 'px',
+              height: size + 'px',
+              transform: `translate(-50%, -50%) rotate(${rot}deg)`,
+              cursor: isSelected ? 'grab' : 'default',
+              borderRadius: imageBorderRadius,
+              overflow: 'hidden'
+            }}
+            onMouseDown={(e) => isSelected && handleDragStart(e, index, 'image', imgId, containerRef.current, pos)}
+            onTouchStart={(e) => {
+              if (isSelected) {
+                selectElement('image', imgId);
+                handleDragStart(e, index, 'image', imgId, containerRef.current, pos);
+              }
+            }}
+            onClick={(e) => { e.stopPropagation(); isSelected && selectElement('image', imgId); }}
+          >
+            <img src={img} alt="Custom" className="w-full h-full object-contain" style={{ borderRadius: imageBorderRadius }} />
+            
+            {isSelected && selectedImageId === imgId && (
+              <>
+                {/* Rotate */}
+                <div className="absolute -top-3 -left-3 w-6 h-6 bg-white rounded-full shadow-lg border-2 border-indigo-500 flex items-center justify-center cursor-alias text-indigo-600 z-50 hover:scale-110 transition-transform" 
+                  onMouseDown={(e) => handleTransformStart(e, index, 'rotate', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}
+                  onTouchStart={(e) => handleTransformStart(e, index, 'rotate', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}><FiRefreshCw size={12}/></div>
+                
+                {/* Resize Handle (Invisible Icon) */}
+                <div className="absolute -bottom-3 -right-3 w-8 h-8 flex items-center justify-center cursor-se-resize z-50 group" 
+                  onMouseDown={(e) => handleTransformStart(e, index, 'resize', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}
+                  onTouchStart={(e) => handleTransformStart(e, index, 'resize', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}>
+                  <div className="w-4 h-4 bg-indigo-600 rounded-full border-2 border-white shadow-lg transition-transform group-hover:scale-125"></div>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Extra Elements Layer */}
+      {(extraElements[index] || []).map((el) => {
+        const elId = `${index}-${el.id}`;
+        const isElSelected = isSelected && selectedExtraId === elId;
+        const IconComp = (el.type === 'shape' || el.type === 'icon') ? SVGIcons[el.content] : null;
+
+        return (
+          <div
+            key={elId}
+            data-element="extra"
+            data-slide-element="true"
+            className={`absolute transition-all ${isElSelected ? 'border-[2px] border-indigo-500 ring-4 ring-indigo-500/20 bg-white/5' : ''}`}
+            style={{
+              zIndex: el.zIndex || 30,
+              left: el.fullWidth ? '0px' : (el.x + '%'),
+              top: el.y + '%',
+              transform: el.fullWidth ? `translateY(-50%) rotate(${el.rotation}deg)` : `translate(-50%, -50%) rotate(${el.rotation}deg)`,
+              cursor: isSelected ? 'grab' : 'default',
+              width: el.fullWidth ? '410px' : (el.width + 'px'),
+              height: el.height + 'px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseDown={(e) => isSelected && handleDragStart(e, index, 'extra', elId, containerRef.current, { x: el.x, y: el.y })}
+            onTouchStart={(e) => {
+              if (isSelected) {
+                selectElement('extra', elId);
+                handleDragStart(e, index, 'extra', elId, containerRef.current, { x: el.x, y: el.y });
+              }
+            }}
+            onClick={(e) => { e.stopPropagation(); isSelected && selectElement('extra', elId); }}
+
+          >
+            {el.type === 'text' ? (
+              <div 
+                contentEditable={isElSelected}
+                suppressContentEditableWarning={true}
+                className="font-bold whitespace-nowrap outline-none px-2"
+                style={{ 
+                  fontSize: (el.height * 0.8) + 'px', 
+                  color: el.color,
+                  background: el.useGradient ? `linear-gradient(${el.gradientDir}, ${el.color}, ${el.color2}, ${el.color3})` : 'transparent',
+                  WebkitBackgroundClip: el.useGradient ? 'text' : 'initial',
+                  WebkitTextFillColor: el.useGradient ? 'transparent' : 'initial',
+                  fontWeight: el.bold ? '900' : '500',
+                  fontStyle: el.italic ? 'italic' : 'normal',
+                  fontFamily: el.fontFamily || 'Arial',
+                  cursor: isElSelected ? 'text' : 'default'
+                }}
+                onBlur={(e) => {
+                  if (isElSelected && canvas.updateExtraElement) {
+                    const newContent = e.target.innerText || e.target.textContent;
+                    canvas.updateExtraElement(parseInt(index), el.id, { content: newContent });
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.target.blur();
+                  }
+                }}
+                dangerouslySetInnerHTML={{ __html: el.content }}
+              />
+            ) : (
+              <div style={{ width: '100%', height: '100%', color: el.color }} className="flex items-center justify-center">
+                {(() => {
+                  // Check if this is a React Icon component (new icons) or SVG path (original icons)
+                  const isReactIcon = ['check', 'x', 'alertTriangle', 'bell', 'calendar', 'clock', 'mail', 'phone', 'user', 'mapPin', 'home', 'briefcase', 'heartIcon', 'starIcon', 'trendingUp', 'activity', 'zap', 'sun', 'moon', 'cloud', 'umbrella', 'target', 'compass', 'navigation', 'flag', 'bookmark', 'messageSquare', 'share2', 'refreshCw', 'cpu', 'database', 'wifi', 'bluetooth', 'battery', 'volume2', 'volumeX', 'play', 'pause', 'skipBack', 'skipForward', 'repeat'].includes(el.content);
+                  
+                  if (isReactIcon && IconComp) {
+                    // Render React Icon component directly
+                    return (
+                      <div 
+                        className="w-full h-full flex items-center justify-center"
+                        style={{ 
+                          color: el.useGradient ? `url(#grad-${elId})` : el.color,
+                          fontSize: `${Math.min(el.width, el.height) * 0.8}px`
+                        }}
+                      >
+                        {el.useGradient && (
+                          <defs>
+                            <linearGradient id={`grad-${elId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" style={{stopColor: el.color}} />
+                              <stop offset="50%" style={{stopColor: el.color2 || el.color}} />
+                              <stop offset="100%" style={{stopColor: el.color3 || el.color}} />
+                            </linearGradient>
+                          </defs>
+                        )}
+                        <IconComp style={{ width: '100%', height: '100%' }} />
+                      </div>
+                    );
+                  } else {
+                    // Render original SVG icons
+                    return (
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width="100%" 
+                        height="100%" 
+                        viewBox="0 0 24 24"
+                        className="w-full h-full"
+                        preserveAspectRatio="none"
+                        style={{ display: 'block' }}
+                      >
+                        {el.useGradient ? (
+                          <>
+                            <defs>
+                              <linearGradient id={`grad-${elId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style={{stopColor: el.color}} />
+                                <stop offset="50%" style={{stopColor: el.color2 || el.color}} />
+                                <stop offset="100%" style={{stopColor: el.color3 || el.color}} />
+                              </linearGradient>
+                            </defs>
+                            <path 
+                              d={getIconPath(el.content)}
+                              fill={`url(#grad-${elId})`}
+                            />
+                          </>
+                        ) : (
+                          <path 
+                            d={getIconPath(el.content)}
+                            fill={el.color}
+                          />
+                        )}
+                      </svg>
+                    );
+                  }
+                })()}
+              </div>
+            )}
+
+            {isElSelected && (
+              <>
+                {/* Transform Handles */}
+                <div className="absolute -top-4 -left-4 w-7 h-7 bg-white rounded-full shadow-lg border-2 border-indigo-500 flex items-center justify-center cursor-alias text-indigo-600 z-50 hover:scale-110 transition-transform" 
+                  onMouseDown={(e) => handleTransformStart(e, index, 'rotate', 'extra', elId, containerRef.current, { x: el.x, y: el.y, width: el.width, height: el.height, rotation: el.rotation })}
+                  onTouchStart={(e) => handleTransformStart(e, index, 'rotate', 'extra', elId, containerRef.current, { x: el.x, y: el.y, width: el.width, height: el.height, rotation: el.rotation })}><FiRefreshCw size={12}/></div>
+                
+                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-indigo-500 rounded-full border-2 border-white cursor-ne-resize z-50 shadow-md"
+                  onMouseDown={(e) => handleTransformStart(e, index, 'resize', 'extra', elId, containerRef.current, { x: el.x, y: el.y, width: el.width, height: el.height, rotation: el.rotation })}
+                  onTouchStart={(e) => handleTransformStart(e, index, 'resize', 'extra', elId, containerRef.current, { x: el.x, y: el.y, width: el.width, height: el.height, rotation: el.rotation })}></div>
+
+                {/* Resize Handle (Invisible Icon) */}
+                <div className="absolute bottom-0 right-0 translate-y-1/2 translate-x-1/2 w-8 h-8 flex items-center justify-center cursor-se-resize z-50 group" 
+                  onMouseDown={(e) => handleTransformStart(e, index, 'resize', 'extra', elId, containerRef.current, { x: el.x, y: el.y, width: el.width, height: el.height, rotation: el.rotation })}
+                  onTouchStart={(e) => handleTransformStart(e, index, 'resize', 'extra', elId, containerRef.current, { x: el.x, y: el.y, width: el.width, height: el.height, rotation: el.rotation })}>
+                  <div className="w-4 h-4 bg-indigo-600 rounded-full border-2 border-white shadow-lg transition-transform group-hover:scale-125"></div>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Watermark Section */}
+      {watermark && (
+        <div className="absolute bottom-4 left-4 z-40 opacity-30 pointer-events-none">
+          <img src={watermark} alt="WM" className="w-12 h-12 object-contain" />
+        </div>
+      )}
+
+      {isSelected && (
+        <div className="absolute bottom-4 right-4 slide-actions z-[60] flex flex-col gap-1 pointer-events-auto">
+          <button onClick={(e) => { e.stopPropagation(); onPreview(index); }} className="p-2 bg-white text-indigo-600 rounded-xl hover:bg-indigo-50 shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Vista Previa"><FiMaximize2 size={14}/></button>
+          <button onClick={(e) => { e.stopPropagation(); onEdit(index); }} className="p-2 bg-white text-amber-500 rounded-xl hover:bg-amber-50 shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Editar Contenido"><FiEdit3 size={14}/></button>
+          <label className="p-2 bg-white text-indigo-400 rounded-xl hover:bg-indigo-50 shadow-xl border border-gray-100 cursor-pointer transition-all transform hover:scale-110" title="Insertar Imagen">
+            <FiPlusCircle size={14} />
+            <input type="file" className="hidden" accept="image/*" onChange={onAddImage} />
+          </label>
+          <button onClick={(e) => { e.stopPropagation(); onCopy(index); }} className="p-2 bg-white text-gray-400 rounded-xl hover:bg-gray-50 shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Duplicar Diapositiva"><FiCopy size={14} /></button>
+          <button onClick={(e) => { e.stopPropagation(); onRemove(index); }} className="p-2 bg-white text-red-400 hover:bg-red-500 hover:text-white rounded-xl shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Eliminar"><FiTrash2 size={14} /></button>
+        </div>
+      )}
+      </div>
+    </div>
+  );
+};

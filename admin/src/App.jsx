@@ -8,6 +8,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AdminLayout from './components/layout/AdminLayout.jsx';
 import BlogManagementPage from './pages/admin/BlogManagementPage.jsx';
+import SocialGeneratorPage from './modules/biblioarko/pages/social-generator';
 import ProfilePage from './pages/admin/ProfilePage.jsx';
 import { API_URL } from './services/api';
 import { Toaster } from 'react-hot-toast';
@@ -78,6 +79,7 @@ function App() {
             >
               <Route index element={<Navigate to="/admin/profile" replace />} />
               <Route path="blog" element={<BlogManagementPage />} />
+              <Route path="blog/social-generator/:id" element={<SocialGeneratorPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
 
@@ -94,6 +96,7 @@ function App() {
             >
               <Route index element={<Navigate to="profile" replace />} />
               <Route path="blog" element={<BlogManagementPage />} />
+              <Route path="blog/social-generator/:id" element={<SocialGeneratorPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
           </Routes>
@@ -104,3 +107,4 @@ function App() {
 }
 
 export default App;
+

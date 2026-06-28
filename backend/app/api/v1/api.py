@@ -10,6 +10,7 @@ from app.api.v1.endpoints import calculadora
 from app.api.v1.endpoints import arko_app
 from app.api.v1.endpoints import contact
 from app.api.v1.endpoints import leads
+from app.blog import router as blog_router
 
 api_router = APIRouter()
 
@@ -33,4 +34,7 @@ api_router.include_router(
 )
 api_router.include_router(
     arko_app.router, prefix="/arko_app", tags=["arko_app"]
+)
+api_router.include_router(
+    blog_router, prefix="/blog", tags=["blog"]
 )
