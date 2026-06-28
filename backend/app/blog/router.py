@@ -3,8 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, File, Up
 from sqlalchemy.orm import Session
 
 from app.db.base import get_db
-from app.db.models.ArkoAdmin import ArkoAdmin
-from app.db.models.service import Service
+from app.db.models.arko import ArkoAdmin
 from app.blog import crud, schemas
 from app.blog.models import BlogPost
 from app.api.v1.endpoints.arko import get_current_arko_admin as get_current_user
@@ -288,7 +287,7 @@ def read_post_public(
         raise HTTPException(status_code=404, detail="Post not found")
         
     # Check if this post is content for a service
-    service_link = db.query(Service).filter(Service.blog_slug == post.slug).first()
+    service_link = None
     if service_link:
         post.is_service_content = True
     else:
@@ -501,6 +500,8 @@ def delete_post(
         raise HTTPException(status_code=403, detail="Not authorized to delete this post")
     
     return crud.delete_post(db=db, post_id=post_id)
+
+
 
 
 
