@@ -1,12 +1,13 @@
+import { isCapacitor, downloadFile } from '../../../../../utils/platform';
 
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
-import { useToastStore } from '../../../../../store/toastStore';
+import toast from 'react-hot-toast';
 import { blogService } from '../../../services/blogService';
-import { isCapacitor, downloadFile } from '../../../../../utils/platform';
+
 
 export const useExport = (selectedPost, designer, generatedContent) => {
-  const { showToast } = useToastStore();
+  const showToast = (msg, type) => type === 'error' ? toast.error(msg) : toast.success(msg);
 
   const downloadCarousel = async () => {
     if (!generatedContent?.slides || generatedContent.slides.length === 0) return;
@@ -99,3 +100,6 @@ export const useExport = (selectedPost, designer, generatedContent) => {
 
   return { downloadCarousel };
 };
+
+
+

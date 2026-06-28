@@ -28,3 +28,4 @@ export const SLIDE_TRANSITIONS = {
   duration: 3000, // 3 seconds per slide default
   fadeTime: 500
 };
+

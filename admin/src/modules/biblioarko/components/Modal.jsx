@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { useDarkMode } from '../../hooks/useDarkMode'
+const useDarkMode = () => [false, () => {}];
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md', darkMode = false, fullScreenOnMobile = false }) {
   const [isDarkMode] = useDarkMode()
@@ -90,4 +90,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', d
     </Transition>
   )
 }
+
+
+
 

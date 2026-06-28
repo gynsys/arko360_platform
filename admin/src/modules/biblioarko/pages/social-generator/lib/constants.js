@@ -21,3 +21,4 @@ export const Z_INDEX = {
 };
 
 export const CANVAS_SIZE = 410; // Base size in pixels
+

@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import SocialLinks from '../../../components/common/SocialLinks'
+const SocialLinks = () => null;
 import { getImageUrl } from '../../../lib/imageUtils'
 
 export default function BlogCard({ post, doctor, shadow = true }) {
@@ -51,3 +51,6 @@ export default function BlogCard({ post, doctor, shadow = true }) {
     </div>
   )
 }
+
+
+

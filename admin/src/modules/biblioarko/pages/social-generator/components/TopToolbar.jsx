@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiUpload, FiTrash2, FiLayers, FiSave, FiChevronDown, FiFolder, FiDownload, FiPlusSquare, FiSquare, FiCircle, FiCornerUpRight, FiType, FiBold, FiItalic, FiCornerUpLeft } from 'react-icons/fi';
 import { SHAPES_CONFIG } from '../lib/svgIcons';
-import Modal from '../../../../../components/common/Modal';
+const Modal = ({ isOpen, onClose, title, children }) => isOpen ? (<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"><div className="bg-white p-6 rounded-lg"><h2>{title}</h2>{children}<button onClick={onClose}>Cerrar</button></div></div>) : null;
 
 export const TopToolbar = ({ 
   design, 
@@ -410,3 +410,5 @@ export const TopToolbar = ({
     </div>
   );
 };
+
+

@@ -22,3 +22,4 @@ export const useVideoPlayback = (activeTab, generatedContent, isExporting, slide
     setIsPlaying
   };
 };
+

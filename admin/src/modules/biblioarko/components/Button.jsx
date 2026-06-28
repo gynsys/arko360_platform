@@ -1,5 +1,5 @@
 import { useState, forwardRef } from 'react'
-import { useAuthStore } from '../../store/authStore'
+const useAuthStore = () => ({ user: { theme_primary_color: '#000000' } });
 
 const Button = forwardRef(({
   children,
@@ -84,4 +84,7 @@ const Button = forwardRef(({
 Button.displayName = 'Button'
 
 export default Button
+
+
+
 

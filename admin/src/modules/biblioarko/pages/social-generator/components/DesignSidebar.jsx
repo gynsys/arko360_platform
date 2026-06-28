@@ -63,3 +63,5 @@ export const DesignSidebar = ({ currentSlide, onAddElement }) => {
     </div>
   );
 };
+
+

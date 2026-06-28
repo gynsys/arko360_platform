@@ -5,12 +5,12 @@ import ImageResize from 'quill-image-resize-module-react'
 import { FiCpu, FiPlus, FiSave, FiX, FiInfo } from 'react-icons/fi'
 import { blogService } from '../services/blogService'
 import Button from './Button'
-import DragDropUpload from '../../../components/features/DragDropUpload'
-import { useAuthStore } from '../../../store/authStore'
+import DragDropUpload from './DragDropUpload'
+const useAuthStore = () => ({ user: { id: 1, theme_primary_color: '#000000' } });
 import toast from 'react-hot-toast';
 import Modal from './Modal'
 import SEOConfiguration from './SEOConfiguration'
-import Spinner from '../../../components/common/Spinner'
+const Spinner = () => <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>;
 
 // Custom Image Blot to persist inline styles (alignment) and dimensions
 const BaseImage = Quill.import('formats/image')
@@ -460,4 +460,8 @@ export default function BlogEditor({ post, onSave, onCancel }) {
     </form>
   )
 }
+
+
+
+
 

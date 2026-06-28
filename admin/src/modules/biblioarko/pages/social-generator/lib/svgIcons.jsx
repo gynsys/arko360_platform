@@ -203,3 +203,5 @@ export const REACT_ICONS_CONFIG = [
   { id: 'skipForward', label: 'Adelantar', icon: <SVGIcons.skipForward className="w-8 h-8" /> },
   { id: 'repeat', label: 'Repetir', icon: <SVGIcons.repeat className="w-8 h-8" /> }
 ];
+
+

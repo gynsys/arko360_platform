@@ -45,3 +45,5 @@ export const PreviewModal = ({ isOpen, currentIndex, total, slides, renderSlide,
     </div>
   );
 };
+
+

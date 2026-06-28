@@ -12,3 +12,5 @@ import SocialGenerator from './social-generator';
 export default function SocialGeneratorPage() {
   return <SocialGenerator />;
 }
+
+

@@ -24,7 +24,7 @@ import { SlideCanvas } from './components/SlideCanvas';
 import { SlidePaginator } from './components/SlidePaginator';
 import { PreviewModal } from './components/PreviewModal';
 import { EnhancedSidebar } from './components/EnhancedSidebar';
-import Modal from '../../../../components/common/Modal';
+const Modal = ({ isOpen, onClose, title, children }) => isOpen ? (<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"><div className="bg-white p-6 rounded-lg"><h2>{title}</h2>{children}<button onClick={onClose}>Cerrar</button></div></div>) : null;
 
 import { MobileLayout } from './components/MobileLayout';
 import { ArticleSelector } from './components/ArticleSelector';
@@ -819,4 +819,6 @@ export default function SocialGenerator() {
     </div>
   );
 }
+
+
 

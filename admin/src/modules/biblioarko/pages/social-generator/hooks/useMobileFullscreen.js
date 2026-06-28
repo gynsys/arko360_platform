@@ -62,3 +62,4 @@ export const useMobileFullscreen = (isMobile, generatedContent) => {
     exitMobileFullscreen
   };
 };
+
