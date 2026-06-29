@@ -228,13 +228,7 @@ def get_mega_menu(
     """
     Get lightweight menu items for the mega menu.
     """
-    # Arko360 is single-tenant, fetch the main admin
-    admin_user = db.query(ArkoAdmin).filter(ArkoAdmin.is_active == True).first()
-    if not admin_user:
-        raise HTTPException(status_code=404, detail="ArkoAdmin not found")
-    
     menu_items = db.query(BlogPost).filter(
-        BlogPost.admin_id == admin_user.id,
         BlogPost.is_published == True,
         BlogPost.is_in_menu == True
     ).order_by(BlogPost.menu_weight.desc()).all()
@@ -254,12 +248,10 @@ def get_public_posts(
     """
     Get published blog posts for a specific ArkoAdmin (public).
     """
-    # Arko360 is single-tenant, fetch the main admin
-    admin_user = db.query(ArkoAdmin).filter(ArkoAdmin.is_active == True).first()
-    if not admin_user:
-        raise HTTPException(status_code=404, detail="ArkoAdmin not found")
-    
-    posts = crud.get_published_posts_by_ArkoAdmin(db, admin_id=admin_user.id, skip=skip, limit=limit)
+    # Arko360 is single-tenant, fetch all published posts
+    posts = db.query(BlogPost).filter(
+        BlogPost.is_published == True
+    ).order_by(BlogPost.created_at.desc()).offset(skip).limit(limit).all()
     
     # Arko360 doesn't have a specific Service model right now, so we just return the posts
     for post in posts:
