@@ -241,7 +241,7 @@ def get_mega_menu(
     return menu_items
 
 @router.get("/public/{ArkoAdmin_slug}", response_model=List[schemas.BlogPostResponse])
-def read_ArkoAdmin_posts(
+def get_public_posts(
     ArkoAdmin_slug: str,
     skip: int = 0,
     limit: int = 100,
@@ -250,25 +250,15 @@ def read_ArkoAdmin_posts(
     """
     Get published blog posts for a specific ArkoAdmin (public).
     """
-    ArkoAdmin = db.query(ArkoAdmin).filter(ArkoAdmin.slug_url == ArkoAdmin_slug).first()
-    if not ArkoAdmin:
+    admin_user = db.query(ArkoAdmin).filter(ArkoAdmin.slug_url == ArkoAdmin_slug).first()
+    if not admin_user:
         raise HTTPException(status_code=404, detail="ArkoAdmin not found")
     
-    posts = crud.get_published_posts_by_ArkoAdmin(db, admin_id=ArkoAdmin.id, skip=skip, limit=limit)
+    posts = crud.get_published_posts_by_ArkoAdmin(db, admin_id=admin_user.id, skip=skip, limit=limit)
     
-    # Get all service blog slugs for this ArkoAdmin
-    service_slugs = [
-        slug for (slug,) in db.query(Service.blog_slug)
-        .filter(Service.admin_id == ArkoAdmin.id, Service.blog_slug.isnot(None))
-        .all()
-    ]
-    
-    # Mark posts that are service content
+    # Arko360 doesn't have a specific Service model right now, so we just return the posts
     for post in posts:
-        if post.slug in service_slugs:
-            post.is_service_content = True
-        else:
-            post.is_service_content = False
+        post.is_service_content = False
             
     return posts
 
