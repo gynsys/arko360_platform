@@ -3,6 +3,7 @@ from app.db.models.calculadora import LosaCalculationRun
 from app.db.models.lead import ArkoLead
 from app.db.models.landing_site import LandingSite, LandingSitePost
 from app.blog.models import BlogPost, SocialCarousel, SocialAudio, BlogPostSEO, Comment
+from app.db.models.llm_provider import LLMProvider
 
 __all__ = [
     "ArkoPost",
@@ -16,6 +17,6 @@ __all__ = [
     "SocialCarousel",
     "SocialAudio",
     "BlogPostSEO",
-    "Comment"
+    "Comment",
+    "LLMProvider"
 ]
-
