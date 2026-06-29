@@ -5,7 +5,7 @@ from pathlib import Path
 # Add the parent directory of app to the Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from app.db.session import SessionLocal
+from app.db.base import SessionLocal
 from app.db.models.llm_provider import LLMProvider
 from app.crud.llm import decrypt_api_key
 
