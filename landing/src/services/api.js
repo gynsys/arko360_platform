@@ -71,3 +71,14 @@ export async function getSiteConfig() {
   }
   return response.json();
 }
+
+export async function getRecentArticles(slug = 'arko360', limit = 3) {
+  try {
+    const response = await fetch(`${API_URL}/blog/public/${slug}?limit=${limit}`);
+    if (!response.ok) return [];
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching recent articles:", error);
+    return [];
+  }
+}

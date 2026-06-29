@@ -3,6 +3,7 @@ import { Menu, X } from 'lucide-react';
 import { FaUserShield } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { getRecentArticles } from '../services/api.js';
 import { SiteConfigContext, BasePathContext } from '../App.jsx';
 import { useContext } from 'react';
 import { useStructureStore } from './tools/fea3d/useStructureStore';
@@ -14,6 +15,18 @@ export default function Navbar() {
   const navigate = useNavigate();
   const siteConfig = useContext(SiteConfigContext);
   const basePath = useContext(BasePathContext); // '' for main site, '/slug' for clones
+
+  const [recentArticles, setRecentArticles] = useState([]);
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      const slug = siteConfig?.slug || 'arko360';
+      const articles = await getRecentArticles(slug, 3);
+      setRecentArticles(articles);
+    };
+    fetchArticles();
+  }, [siteConfig]);
 
   // Build nav links using the correct base path
   const NAV_LINKS = [
@@ -93,13 +106,62 @@ export default function Navbar() {
 
             <ul className="navbar-links">
               {NAV_LINKS.map((link) => (
-                <li key={link.label}>
+                <li 
+                  key={link.label}
+                  className={link.label === 'BiblioARKO' ? 'has-megamenu' : ''}
+                  onMouseEnter={() => link.label === 'BiblioARKO' && setIsMegaMenuOpen(true)}
+                  onMouseLeave={() => link.label === 'BiblioARKO' && setIsMegaMenuOpen(false)}
+                >
                   <Link 
                     to={link.href} 
                     onClick={(e) => handleLinkClick(e, link.href)}
                   >
                     {link.label}
                   </Link>
+                  
+                  {/* Megamenu for BiblioARKO */}
+                  {link.label === 'BiblioARKO' && isMegaMenuOpen && (
+                    <motion.div 
+                      className="megamenu-container"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <div className="megamenu-inner">
+                        <div className="megamenu-header">
+                          <h4>Últimos Artículos</h4>
+                          <Link to="/biblio" onClick={() => setIsMegaMenuOpen(false)}>
+                            Ver todos &rarr;
+                          </Link>
+                        </div>
+                        <div className="megamenu-grid">
+                          {recentArticles.length > 0 ? (
+                            recentArticles.map(article => (
+                              <Link 
+                                to={`/biblio/${article.slug || article.id}`} 
+                                key={article.id}
+                                className="megamenu-card"
+                                onClick={() => setIsMegaMenuOpen(false)}
+                              >
+                                <div className="megamenu-img-wrapper">
+                                  {article.cover_image ? (
+                                    <img src={article.cover_image} alt={article.title} />
+                                  ) : (
+                                    <div className="megamenu-img-placeholder">ARKO360</div>
+                                  )}
+                                </div>
+                                <h5>{article.title}</h5>
+                                <span>{new Date(article.published_at || article.created_at).toLocaleDateString()}</span>
+                              </Link>
+                            ))
+                          ) : (
+                            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>No hay artículos recientes.</p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </li>
               ))}
               {siteConfig?.tools?.showArko3D !== false && (
