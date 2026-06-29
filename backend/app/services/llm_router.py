@@ -114,10 +114,10 @@ def _call_openai_compatible(provider: LLMProvider, prompt: str, expect_json: boo
             {
                 "role": "system",
                 "content": (
-                    "Eres un experto en diseño de contenido médico para redes sociales. "
+                    "Eres un experto en diseño estructural y contenido arquitectónico para redes sociales. "
                     "Debes responder SIEMPRE en formato JSON cuando se te pida."
                     if expect_json
-                    else "Eres un experto en redacción médica."
+                    else "Eres un experto en redacción sobre arquitectura e ingeniería."
                 ),
             },
             {"role": "user", "content": prompt},

@@ -235,7 +235,7 @@ export default function BlogEditor({ post, onSave, onCancel }) {
                   value={aiForm.topic}
                   onChange={(e) => setAiForm({...aiForm, topic: e.target.value})}
                   className="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2.5 border"
-                  placeholder="Ej: Beneficios de la ecografía 4D"
+                  placeholder="Ej: Tendencias de diseño arquitectónico 2026"
                 />
               </div>
 

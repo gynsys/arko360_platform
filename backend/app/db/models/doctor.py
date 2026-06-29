@@ -88,35 +88,35 @@ class Doctor(Base):
     staff_doctors = relationship("Doctor", back_populates="clinic", cascade="all, delete-orphan")
     
     # Relationships with full cascade for tenant deletion
-    tenant_modules = relationship("TenantModule", back_populates="tenant", cascade="all, delete-orphan", foreign_keys="[TenantModule.tenant_id]")
-    appointments = relationship("Appointment", back_populates="doctor", cascade="all, delete-orphan", foreign_keys="[Appointment.doctor_id]")
-    assigned_appointments = relationship("Appointment", back_populates="assigned_staff", foreign_keys="[Appointment.assigned_staff_id]")
-    patients = relationship("Patient", back_populates="doctor", cascade="all, delete-orphan")
+    # tenant_modules = relationship("TenantModule", back_populates="tenant", cascade="all, delete-orphan", foreign_keys="[TenantModule.tenant_id]")
+    # appointments = relationship("Appointment", back_populates="doctor", cascade="all, delete-orphan", foreign_keys="[Appointment.doctor_id]")
+    # assigned_appointments = relationship("Appointment", back_populates="assigned_staff", foreign_keys="[Appointment.assigned_staff_id]")
+    # patients = relationship("Patient", back_populates="doctor", cascade="all, delete-orphan")
 
     # Content # Analytics
     visitor_count = Column(Integer, default=0, nullable=False)
     
-    faqs = relationship("FAQ", back_populates="doctor", cascade="all, delete-orphan")
-    consultations = relationship("Consultation", back_populates="doctor", cascade="all, delete-orphan")
-    testimonials = relationship("Testimonial", back_populates="doctor", cascade="all, delete-orphan")
-    gallery_images = relationship("GalleryImage", back_populates="doctor", cascade="all, delete-orphan")
-    locations = relationship("Location", back_populates="doctor", cascade="all, delete-orphan")
-    services = relationship("Service", back_populates="doctor", cascade="all, delete-orphan")
-    certifications = relationship("DoctorCertification", back_populates="doctor", cascade="all, delete-orphan")
+    # faqs = relationship("FAQ", back_populates="doctor", cascade="all, delete-orphan")
+    # consultations = relationship("Consultation", back_populates="doctor", cascade="all, delete-orphan")
+    # testimonials = relationship("Testimonial", back_populates="doctor", cascade="all, delete-orphan")
+    # gallery_images = relationship("GalleryImage", back_populates="doctor", cascade="all, delete-orphan")
+    # locations = relationship("Location", back_populates="doctor", cascade="all, delete-orphan")
+    # services = relationship("Service", back_populates="doctor", cascade="all, delete-orphan")
+    # certifications = relationship("DoctorCertification", back_populates="doctor", cascade="all, delete-orphan")
     # blog_posts = relationship("BlogPost", back_populates="doctor", cascade="all, delete-orphan")
-    cycle_users = relationship("CycleUser", back_populates="doctor", cascade="all, delete-orphan")
+    # cycle_users = relationship("CycleUser", back_populates="doctor", cascade="all, delete-orphan")
     
     # Missing relationships for complete cleanup
-    notification_rules = relationship("NotificationRule", back_populates="doctor", cascade="all, delete-orphan")
-    notification_logs = relationship("NotificationLog", back_populates="doctor", cascade="all, delete-orphan")
-    pending_notifications = relationship("PendingNotification", back_populates="doctor", cascade="all, delete-orphan")
-    push_subscriptions = relationship("PushSubscription", back_populates="doctor", cascade="all, delete-orphan")
-    online_settings = relationship("OnlineConsultationSettings", back_populates="doctor", cascade="all, delete-orphan", uselist=False)
-    recommendations = relationship("Recommendation", back_populates="tenant", cascade="all, delete-orphan")
-    preconsultation_questions = relationship("PreconsultationQuestion", back_populates="doctor", cascade="all, delete-orphan")
-    cycle_logs = relationship("CycleLog", back_populates="doctor", cascade="all, delete-orphan")
-    symptom_logs = relationship("SymptomLog", back_populates="doctor", cascade="all, delete-orphan")
-    endometriosis_results = relationship("EndometriosisResult", back_populates="doctor", cascade="all, delete-orphan")
+    # notification_rules = relationship("NotificationRule", back_populates="doctor", cascade="all, delete-orphan")
+    # notification_logs = relationship("NotificationLog", back_populates="doctor", cascade="all, delete-orphan")
+    # pending_notifications = relationship("PendingNotification", back_populates="doctor", cascade="all, delete-orphan")
+    # push_subscriptions = relationship("PushSubscription", back_populates="doctor", cascade="all, delete-orphan")
+    # online_settings = relationship("OnlineConsultationSettings", back_populates="doctor", cascade="all, delete-orphan", uselist=False)
+    # recommendations = relationship("Recommendation", back_populates="tenant", cascade="all, delete-orphan")
+    # preconsultation_questions = relationship("PreconsultationQuestion", back_populates="doctor", cascade="all, delete-orphan")
+    # cycle_logs = relationship("CycleLog", back_populates="doctor", cascade="all, delete-orphan")
+    # symptom_logs = relationship("SymptomLog", back_populates="doctor", cascade="all, delete-orphan")
+    # endometriosis_results = relationship("EndometriosisResult", back_populates="doctor", cascade="all, delete-orphan")
 
     @property
     def enabled_module_codes(self):

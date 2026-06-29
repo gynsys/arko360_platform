@@ -25,14 +25,14 @@ def generate_blog_content(
     source_text: str = None,
 ) -> dict:
     """
-    Genera contenido para un artículo de blog médico.
+    Genera contenido para un artículo de blog.
     Usa el router de LLM configurado en /admin/llm-providers.
     """
     final_context = ""
     if source_text:
         final_context = (
             f"\n- Texto extraído del documento adjunto:\n{source_text}\n\n"
-            "(IMPORTANTE: Utiliza este texto como tu única fuente de información médica. "
+            "(IMPORTANTE: Utiliza este texto como tu única fuente de información. "
             "Si el texto adjunto no contiene suficiente información para alcanzar la longitud "
             "solicitada, es preferible que entregues un artículo más corto. Bajo ninguna "
             "solicitada, es preferible que entregues un artículo más corto. Bajo ninguna "
