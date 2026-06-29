@@ -237,6 +237,12 @@ def get_mega_menu(
         item.is_service_content = False
         
     return menu_items
+    
+@router.get("/debug/columns")
+def debug_columns(db: Session = Depends(get_db)):
+    from sqlalchemy import text
+    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'blog_posts'")).fetchall()
+    return {"columns": [row[0] for row in result]}
 
 @router.get("/public/{ArkoAdmin_slug}", response_model=List[schemas.BlogPostResponse])
 def get_public_posts(
