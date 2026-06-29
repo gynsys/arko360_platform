@@ -40,8 +40,8 @@ class Tenant(Base):
     theme_primary_color = Column(String, nullable=True)  # Hex color code
 
     # Subscription and billing
-    plan_id = Column(Integer, ForeignKey("plans.id"), nullable=True)
-    plan = relationship("Plan", backref="tenants")
+    # plan_id = Column(Integer, ForeignKey("plans.id"), nullable=True)
+    # plan = relationship("Plan", backref="tenants")
 
     # Account status
     status = Column(Enum(TenantStatus), default=TenantStatus.ACTIVE)
