@@ -228,7 +228,8 @@ def get_mega_menu(
     """
     Get lightweight menu items for the mega menu.
     """
-    admin_user = db.query(ArkoAdmin).filter(ArkoAdmin.slug_url == ArkoAdmin_slug).first()
+    # Arko360 is single-tenant, fetch the main admin
+    admin_user = db.query(ArkoAdmin).filter(ArkoAdmin.is_active == True).first()
     if not admin_user:
         raise HTTPException(status_code=404, detail="ArkoAdmin not found")
     
@@ -238,6 +239,9 @@ def get_mega_menu(
         BlogPost.is_in_menu == True
     ).order_by(BlogPost.menu_weight.desc()).all()
     
+    for item in menu_items:
+        item.is_service_content = False
+        
     return menu_items
 
 @router.get("/public/{ArkoAdmin_slug}", response_model=List[schemas.BlogPostResponse])
@@ -250,7 +254,8 @@ def get_public_posts(
     """
     Get published blog posts for a specific ArkoAdmin (public).
     """
-    admin_user = db.query(ArkoAdmin).filter(ArkoAdmin.slug_url == ArkoAdmin_slug).first()
+    # Arko360 is single-tenant, fetch the main admin
+    admin_user = db.query(ArkoAdmin).filter(ArkoAdmin.is_active == True).first()
     if not admin_user:
         raise HTTPException(status_code=404, detail="ArkoAdmin not found")
     
