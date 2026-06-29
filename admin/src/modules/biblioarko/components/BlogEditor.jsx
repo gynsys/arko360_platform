@@ -127,10 +127,10 @@ export default function BlogEditor({ post, onSave, onCancel }) {
           uploadData.append('file', file);
           const response = await api.post('/arko/admin/upload', uploadData);
           
-          if (response.data && response.data.url) {
+          if (response.data && response.data.image_url) {
             const quill = quillRef.current.getEditor();
             const range = quill.getSelection();
-            quill.insertEmbed(range.index, 'image', response.data.url);
+            quill.insertEmbed(range.index, 'image', response.data.image_url);
             quill.setSelection(range.index + 1);
             toast.success('Imagen subida', { id: loadingToast });
           } else {
