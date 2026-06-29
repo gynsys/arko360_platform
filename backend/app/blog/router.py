@@ -220,7 +220,7 @@ def generate_social_from_content_ai(
         logger.error(f"Error en generación social desde contenido: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno al generar contenido social.")
 
-@router.get("/menu/mega/{ArkoAdmin_slug}", response_model=List[schemas.MegaMenuItem])
+@router.get("/menu/mega/{ArkoAdmin_slug}", response_model=List[schemas.BlogPostResponse])
 def get_mega_menu(
     ArkoAdmin_slug: str,
     db: Session = Depends(get_db)

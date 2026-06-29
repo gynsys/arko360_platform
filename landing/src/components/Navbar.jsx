@@ -3,7 +3,7 @@ import { Menu, X } from 'lucide-react';
 import { FaUserShield } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getRecentArticles } from '../services/api.js';
+import { getMegaMenu } from '../services/api.js';
 import { SiteConfigContext, BasePathContext } from '../App.jsx';
 import { useContext } from 'react';
 import { useStructureStore } from './tools/fea3d/useStructureStore';
@@ -22,7 +22,7 @@ export default function Navbar() {
   useEffect(() => {
     const fetchArticles = async () => {
       const slug = siteConfig?.slug || 'arko360';
-      const articles = await getRecentArticles(slug, 3);
+      const articles = await getMegaMenu(slug);
       setRecentArticles(articles);
     };
     fetchArticles();
@@ -129,12 +129,6 @@ export default function Navbar() {
                       transition={{ duration: 0.2 }}
                     >
                       <div className="megamenu-inner">
-                        <div className="megamenu-header">
-                          <h4>Últimos Artículos</h4>
-                          <Link to="/biblio" onClick={() => setIsMegaMenuOpen(false)}>
-                            Ver todos &rarr;
-                          </Link>
-                        </div>
                         <div className="megamenu-grid">
                           {recentArticles.length > 0 ? (
                             recentArticles.map(article => (

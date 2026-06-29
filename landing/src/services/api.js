@@ -82,3 +82,14 @@ export async function getRecentArticles(slug = 'arko360', limit = 3) {
     return [];
   }
 }
+
+export async function getMegaMenu(slug = 'arko360') {
+  try {
+    const response = await fetch(`${API_URL}/blog/menu/mega/${slug}`);
+    if (!response.ok) return [];
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching mega menu:", error);
+    return [];
+  }
+}
