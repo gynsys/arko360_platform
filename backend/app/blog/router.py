@@ -228,12 +228,12 @@ def get_mega_menu(
     """
     Get lightweight menu items for the mega menu.
     """
-    ArkoAdmin = db.query(ArkoAdmin).filter(ArkoAdmin.slug_url == ArkoAdmin_slug).first()
-    if not ArkoAdmin:
+    admin_user = db.query(ArkoAdmin).filter(ArkoAdmin.slug_url == ArkoAdmin_slug).first()
+    if not admin_user:
         raise HTTPException(status_code=404, detail="ArkoAdmin not found")
     
     menu_items = db.query(BlogPost).filter(
-        BlogPost.admin_id == ArkoAdmin.id,
+        BlogPost.admin_id == admin_user.id,
         BlogPost.is_published == True,
         BlogPost.is_in_menu == True
     ).order_by(BlogPost.menu_weight.desc()).all()
