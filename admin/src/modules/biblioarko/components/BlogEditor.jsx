@@ -272,10 +272,10 @@ export default function BlogEditor({ post, onSave, onCancel }) {
                   onChange={(e) => setAiForm({...aiForm, target_audience: e.target.value})}
                   className="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2.5 border"
                 >
-                  <option>Pacientes generales</option>
-                  <option>Mujeres embarazadas</option>
-                  <option>Adolescentes</option>
-                  <option>Colegas médicos</option>
+                  <option>Público en general</option>
+                  <option>Ingenieros y Arquitectos</option>
+                  <option>Constructores y Contratistas</option>
+                  <option>Estudiantes de ingeniería</option>
                 </select>
               </div>
 

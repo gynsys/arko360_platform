@@ -8,11 +8,7 @@ from fastapi.staticfiles import StaticFiles
 import logging
 logger = logging.getLogger(__name__)
 
-import pkgutil
-import importlib
 import app.db.models
-for _, module_name, _ in pkgutil.iter_modules(app.db.models.__path__):
-    importlib.import_module(f"app.db.models.{module_name}")
 
 # Configurar Base de Datos para Arko
 logger.info("Initializing Arko360 database tables...")
