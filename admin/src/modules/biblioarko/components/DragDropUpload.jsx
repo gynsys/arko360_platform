@@ -131,7 +131,7 @@ export default function DragDropUpload({
       } else if (type === 'testimonial-photo') {
         endpoint = '/uploads/testimonial-photo'
       } else if (type === 'blog-cover') {
-        endpoint = '/uploads/blog-cover'
+        endpoint = '/arko/admin/upload'
       } else if (type === 'service-image') {
         endpoint = '/uploads/service-image'
       } else if (type === 'recommendation-image') {

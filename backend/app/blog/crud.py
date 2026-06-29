@@ -81,7 +81,7 @@ def get_posts_by_ArkoAdmin(db: Session, admin_id: int, skip: int = 0, limit: int
     return db.query(BlogPost).filter(BlogPost.admin_id == admin_id).offset(skip).limit(limit).all()
 
 def get_published_posts_by_ArkoAdmin(db: Session, admin_id: int, skip: int = 0, limit: int = 100):
-    return db.query(BlogPost).filter(BlogPost.admin_id == admin_id, BlogPost.is_published == True).offset(skip).limit(limit).all()
+    return db.query(BlogPost).filter(BlogPost.admin_id == admin_id, BlogPost.is_published == True).order_by(BlogPost.created_at.desc()).offset(skip).limit(limit).all()
 
 def create_post(db: Session, post: BlogPostCreate, admin_id: int):
     slug = slugify(post.title)
