@@ -237,7 +237,23 @@ def get_mega_menu(
         item.is_service_content = False
         
     return menu_items
-    
+
+@router.get("/debug/create")
+def debug_create_post(db: Session = Depends(get_db)):
+    try:
+        post_data = {
+            "title": "Debug Test Post",
+            "content": "<p>test</p>",
+            "admin_id": 1
+        }
+        db_post = BlogPost(**post_data, slug="debug-test-post")
+        db.add(db_post)
+        db.commit()
+        return {"status": "success", "id": db_post.id}
+    except Exception as e:
+        import traceback
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
 @router.get("/debug/columns")
 def debug_columns(db: Session = Depends(get_db)):
     from sqlalchemy import text
