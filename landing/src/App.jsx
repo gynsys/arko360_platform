@@ -86,7 +86,7 @@ function SlugLandingPage() {
   const [config, setConfig] = React.useState(null);
 
   React.useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || 'https://api.arko360.net/api/v1'}/arko/landing_sites/config/${slug}`)
+    fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/arko/landing_sites/config/${slug}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setConfig({ ...data, slug }); })
       .catch(() => {});

@@ -79,7 +79,7 @@ export default function LandingSitesList() {
         
         if (!uploadRes.ok) throw new Error('Error al subir el logo');
         const uploadJson = await uploadRes.json();
-        payload.logo_url = `https://api.arko360.net${uploadJson.image_url}`;
+        payload.logo_url = `/api/v1${uploadJson.image_url}`;
       }
       
       const response = await fetch(`${API_URL}/arko/landing_sites/`, {

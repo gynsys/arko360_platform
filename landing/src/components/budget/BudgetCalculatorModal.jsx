@@ -134,7 +134,7 @@ export default function BudgetCalculatorModal({ promo, onClose }) {
     
     // Simulate API call for now or call real endpoint
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.arko360.net/api/v1'}/leads/`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/leads/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
