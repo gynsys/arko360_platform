@@ -238,28 +238,6 @@ def get_mega_menu(
         
     return menu_items
 
-@router.get("/debug/create")
-def debug_create_post(db: Session = Depends(get_db)):
-    try:
-        post_data = {
-            "title": "Debug Test Post",
-            "content": "<p>test</p>",
-            "admin_id": 1
-        }
-        db_post = BlogPost(**post_data, slug="debug-test-post")
-        db.add(db_post)
-        db.commit()
-        return {"status": "success", "id": db_post.id}
-    except Exception as e:
-        import traceback
-        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
-
-@router.get("/debug/columns")
-def debug_columns(db: Session = Depends(get_db)):
-    from sqlalchemy import text
-    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'blog_posts'")).fetchall()
-    return {"columns": [row[0] for row in result]}
-
 @router.get("/public/{ArkoAdmin_slug}", response_model=List[schemas.BlogPostResponse])
 def get_public_posts(
     ArkoAdmin_slug: str,
