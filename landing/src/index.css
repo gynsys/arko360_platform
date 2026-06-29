@@ -1880,3 +1880,17 @@ textarea.form-input {
   font-weight: 500;
 }
 
+
+/* Article Content Styles */
+.article-content h2 { font-size: 1.8em; color: var(--secondary); margin-top: 1.5em; margin-bottom: 0.5em; font-weight: 800; font-family: var(--font-heading); }
+.article-content h3 { font-size: 1.4em; color: var(--secondary); margin-top: 1.2em; margin-bottom: 0.5em; font-weight: 700; font-family: var(--font-heading); }
+.article-content p { margin-bottom: 1.2em; }
+.article-content ul, .article-content ol { padding-left: 1.5em; margin-bottom: 1.2em; }
+.article-content li { margin-bottom: 0.5em; }
+.article-content table { width: 100%; border-collapse: collapse; margin: 1.5em 0; }
+.article-content th, .article-content td { padding: 12px; border-bottom: 1px solid var(--border); text-align: left; }
+.article-content th { background: var(--surface); font-weight: 700; color: var(--secondary); }
+.article-content hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+.article-content blockquote { border-left: 4px solid var(--primary); padding-left: 1em; margin: 1.5em 0; font-style: italic; color: var(--text-muted); }
+.article-content strong { color: var(--secondary); }
+

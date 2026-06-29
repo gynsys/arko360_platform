@@ -93,3 +93,14 @@ export async function getMegaMenu(slug = 'arko360') {
     return [];
   }
 }
+
+export async function getArticleBySlug(slug) {
+  try {
+    const response = await fetch(`${API_URL}/blog/public/post/${slug}`);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching article:', error);
+    return null;
+  }
+}
