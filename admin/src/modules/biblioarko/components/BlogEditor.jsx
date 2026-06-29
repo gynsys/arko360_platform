@@ -4,6 +4,7 @@ import 'react-quill/dist/quill.snow.css'
 import ImageResize from 'quill-image-resize-module-react'
 import { FiCpu, FiPlus, FiSave, FiX, FiInfo } from 'react-icons/fi'
 import { blogService } from '../services/blogService'
+import { api } from '../services/apiClient'
 import Button from './Button'
 import DragDropUpload from './DragDropUpload'
 const useAuthStore = () => ({ user: { id: 1, theme_primary_color: '#000000' } });
@@ -50,16 +51,18 @@ Quill.register(ImageBlot, true)
 Quill.register('modules/imageResize', ImageResize)
 
 const modules = {
-  toolbar: [
-    [{ 'header': [1, 2, 3, false] }],
-    ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-    [{ 'color': [] }, { 'background': [] }],
-    [{ 'script': 'sub' }, { 'script': 'super' }],
-    [{ 'align': [] }],
-    [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
-    ['link', 'image', 'video'],
-    ['clean']
-  ],
+  toolbar: {
+    container: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'script': 'sub' }, { 'script': 'super' }],
+      [{ 'align': [] }],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
+      ['link', 'image', 'video'],
+      ['clean']
+    ],
+  },
   imageResize: {
     parchment: Quill.import('parchment'),
     modules: ['Resize', 'DisplaySize', 'Toolbar']
@@ -107,6 +110,46 @@ export default function BlogEditor({ post, onSave, onCancel }) {
     social_description: '',
     social_image: ''
   })
+
+  // Custom Image Handler for Quill
+  const imageHandler = () => {
+    const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    input.click();
+
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (file) {
+        const loadingToast = toast.loading('Subiendo imagen...');
+        try {
+          const uploadData = new FormData();
+          uploadData.append('file', file);
+          const response = await api.post('/arko/admin/upload', uploadData);
+          
+          if (response.data && response.data.url) {
+            const quill = quillRef.current.getEditor();
+            const range = quill.getSelection();
+            quill.insertEmbed(range.index, 'image', response.data.url);
+            quill.setSelection(range.index + 1);
+            toast.success('Imagen subida', { id: loadingToast });
+          } else {
+            throw new Error('No url in response');
+          }
+        } catch (error) {
+          console.error('Error uploading image:', error);
+          toast.error('Error al subir imagen', { id: loadingToast });
+        }
+      }
+    };
+  };
+
+  useEffect(() => {
+    if (quillRef.current) {
+      const quill = quillRef.current.getEditor();
+      quill.getModule('toolbar').addHandler('image', imageHandler);
+    }
+  }, []);
 
   useEffect(() => {
     if (post) {
