@@ -72,10 +72,7 @@ export default function SocialGenerator() {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const token = localStorage.getItem('arko_admin_token');
-        const response = await fetch(`${API_URL}/arko/admin/config`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await fetch(`${API_URL}/arko/config`);
         if (response.ok) {
            const data = await response.json();
            setSiteConfig(data);
