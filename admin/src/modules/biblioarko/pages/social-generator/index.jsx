@@ -4,6 +4,7 @@ import { FiCpu, FiInstagram, FiLoader, FiFolder, FiZap, FiVideo, FiImage, FiSave
 
 // Config & Services
 import { blogService } from '../../services/blogService';
+import { API_URL } from '../../../../services/api';
 const ArkoLoader = () => <div className="p-8 text-center">Cargando...</div>;;
 import toast from 'react-hot-toast';;
 const getImageUrl = (url) => url;;
@@ -66,6 +67,25 @@ export default function SocialGenerator() {
   const [saveProgress, setSaveProgress] = useState(0);
   const [lastGeneratedBlogContent, setLastGeneratedBlogContent] = useState(null);
   const saveProgressRef = useRef(null);
+  const [siteConfig, setSiteConfig] = useState(null);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const token = localStorage.getItem('arko_admin_token');
+        const response = await fetch(`${API_URL}/arko/admin/config`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+           const data = await response.json();
+           setSiteConfig(data);
+        }
+      } catch (err) {
+        console.error('Error fetching config:', err);
+      }
+    };
+    fetchConfig();
+  }, []);
 
   // --- Refs ---
   const editorWrapperRef = useRef(null);
@@ -651,6 +671,7 @@ export default function SocialGenerator() {
                           slide={activeTab === 'video' ? generatedContent.video_slides?.[designer.canvas.currentSlidePage] : generatedContent.slides?.[designer.canvas.currentSlidePage]}
                           index={designer.canvas.currentSlidePage}
                           doctor={doctor} doctorLogo={doctorLogoBase64}
+                          siteConfig={siteConfig}
                           design={designer.design} canvas={designer.canvas}
                           transform={transformer.state} handlers={transformer.handlers}
                           watermark={watermarkImage} onEdit={setEditingIndex}
@@ -771,7 +792,7 @@ export default function SocialGenerator() {
         total={generatedContent?.slides?.length || 0} slides={generatedContent?.slides || []}
         onClose={() => setPreviewIndex(null)} onNavigate={setPreviewIndex}
         renderSlide={(slide, i, isPrev) => (
-          <SlideCanvas slide={slide} index={i} isPreview={isPrev} doctor={doctor} doctorLogo={doctorLogoBase64} design={designer.design} canvas={designer.canvas} transform={transformer.state} watermark={watermarkImage} handlers={transformer.handlers} />
+          <SlideCanvas slide={slide} index={i} isPreview={isPrev} doctor={doctor} doctorLogo={doctorLogoBase64} siteConfig={siteConfig} design={designer.design} canvas={designer.canvas} transform={transformer.state} watermark={watermarkImage} handlers={transformer.handlers} />
         )}
       />
 

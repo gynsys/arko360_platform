@@ -503,6 +503,54 @@ export default function ProfilePage() {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-bold text-gray-950 mb-4">Generador de Redes Sociales (Carruseles)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Autor</label>
+                  <input
+                    type="text"
+                    value={siteConfig.socialAuthorName || ''}
+                    onChange={(e) => updateConfigValue('socialAuthorName', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    placeholder="Ej. Ing. Pablo"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fondo Actual</label>
+                  <input
+                    type="text"
+                    value={siteConfig.socialBackgroundImage || ''}
+                    onChange={(e) => updateConfigValue('socialBackgroundImage', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-gray-50 text-gray-500"
+                    disabled
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-indigo-500 transition-colors">
+                <div className="flex flex-col items-center">
+                  {siteConfig.socialBackgroundImage ? (
+                    <img src={siteConfig.socialBackgroundImage} alt="Fondo Redes" className="h-32 object-contain mb-4 bg-gray-50 p-2 rounded border" />
+                  ) : (
+                    <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <FiGrid className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                  <p className="text-sm text-gray-600 mb-2">Sube una nueva imagen de fondo para los carruseles</p>
+                  <label className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium cursor-pointer">
+                    <FiUpload className="inline mr-2" /> Seleccionar Fondo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, 'socialBackgroundImage')}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-lg font-bold text-gray-950 mb-4">Pie de Página (Footer)</h3>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Descripción del Footer</label>

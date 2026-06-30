@@ -9,24 +9,43 @@ import { getRecentArticles } from '../services/api.js';
 export default function BiblioGrid({ limit = null }) {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 12;
 
   const siteConfig = useContext(SiteConfigContext);
 
   useEffect(() => {
     const fetchArticles = async () => {
+      if (page > 0) setLoadingMore(true);
       try {
         const slug = siteConfig?.slug || 'arko360';
-        const fetchedArticles = await getRecentArticles(slug, limit || 100);
-        setArticles(fetchedArticles);
+        const fetchedArticles = await getRecentArticles(slug, limit || PAGE_SIZE, page * (limit || PAGE_SIZE));
+        if (fetchedArticles.length < (limit || PAGE_SIZE)) {
+          setHasMore(false);
+        }
+        if (page === 0) {
+          setArticles(fetchedArticles);
+        } else {
+          setArticles(prev => [...prev, ...fetchedArticles]);
+        }
       } catch (err) {
         console.error("Error fetching articles:", err);
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     };
 
     fetchArticles();
-  }, [limit, siteConfig]);
+  }, [limit, siteConfig, page]);
+
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      setPage(prev => prev + 1);
+    }
+  };
 
   if (loading) return <div className="text-center py-12">Cargando artículos...</div>;
 
@@ -95,6 +114,28 @@ export default function BiblioGrid({ limit = null }) {
           </div>
         </motion.div>
       ))}
+      
+      {hasMore && !limit && (
+        <div style={{ gridColumn: '1 / -1', textAlign: 'center', marginTop: '24px' }}>
+          <button 
+            onClick={loadMore}
+            disabled={loadingMore}
+            style={{
+              padding: '12px 24px',
+              background: 'var(--primary)',
+              color: 'var(--white)',
+              borderRadius: '8px',
+              border: 'none',
+              fontWeight: 600,
+              cursor: loadingMore ? 'wait' : 'pointer',
+              opacity: loadingMore ? 0.7 : 1,
+              transition: 'all 0.3s'
+            }}
+          >
+            {loadingMore ? 'Cargando...' : 'Cargar más artículos'}
+          </button>
+        </div>
+      )}
       <style dangerouslySetInnerHTML={{__html: `
         .card:hover .article-img {
           transform: scale(1.05);

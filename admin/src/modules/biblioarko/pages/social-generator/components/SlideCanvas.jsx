@@ -57,6 +57,7 @@ export const SlideCanvas = ({
   isExport = false,
   doctor,
   doctorLogo,
+  siteConfig,
   design,
   canvas,
   transform,
@@ -96,9 +97,11 @@ export const SlideCanvas = ({
       ref={containerRef}
       className={`relative w-[410px] ${isVideoMode ? 'h-[728px]' : 'h-[410px]'} overflow-visible shadow-2xl transition-all duration-500 ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-4 ring-offset-gray-50' : ''}`}
       style={{ 
-        background: design.useBgGradient 
-          ? `linear-gradient(to bottom right, ${design.bgColor}, ${design.bgColor2}, ${design.bgColor3})` 
-          : design.bgColor,
+        background: siteConfig?.socialBackgroundImage 
+          ? `url(${siteConfig.socialBackgroundImage}) center/cover no-repeat` 
+          : (design.useBgGradient 
+            ? `linear-gradient(to bottom right, ${design.bgColor}, ${design.bgColor2}, ${design.bgColor3})` 
+            : design.bgColor),
         userSelect: isSelected ? 'none' : 'auto'
       }}
       onClick={() => isSelected && selectElement(null, null)}
@@ -154,7 +157,7 @@ export const SlideCanvas = ({
         onClick={(e) => { e.stopPropagation(); isSelected && selectElement('doctorName', 'global-name'); }}
       >
         <span className="font-black tracking-tighter uppercase whitespace-nowrap" style={{ color: headerColor, fontSize: headerFontSize + 'px' }}>
-          {doctor?.name || 'Dra. Mariel Herrera'}
+          {siteConfig?.socialAuthorName || 'Ingeniería Arko360'}
         </span>
       </div>
       )}

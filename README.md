@@ -84,3 +84,18 @@ Al ejecutar comandos remotos desde el entorno local de Windows usando `ssh_runne
    - *Solución:* Crear un script `.sql` local, usar `python ssh_runner.py --upload script.sql /ruta/script.sql`, copiarlo al contenedor (`docker cp`) y ejecutarlo allí (`docker exec ... psql ... -f script.sql`).
 2. **Ejecución de Scripts de Python vía Piped stdin:** Evitar usar tuberías (`cat script.py | docker compose exec -T backend python -`) desde Windows. El comando `cat` en PowerShell (`Get-Content`) envía saltos de línea con codificaciones incompatibles o se pierden variables de entorno como `PYTHONPATH`, arrojando errores de `ModuleNotFoundError`.
    - *Solución:* Modificar directamente la base de datos con SQL si es rápido, o en su defecto subir el archivo `.py` correctamente al servidor y ejecutarlo localmente dentro del contenedor indicando la ruta.
+
+## Migración del Social Generator (GynSys a Arko360)
+
+Durante la mañana se abordó la portabilidad de la interfaz y la lógica del Generador de Carruseles (heredado de GynSys) hacia Arko360. A continuación, las iteraciones y problemas resueltos:
+
+1. **Migración de UI y Lógica:** Se confirmó la necesidad de traer el código fuente del generador desde GynSys hacia Arko360 (`admin/src/modules/biblioarko/pages/social-generator`).
+2. **Vestigios de GynSys (Hardcoded Data):** La plantilla del carrusel (`SlideCanvas.jsx`) mantenía incrustado el nombre "Dra. Mariel Herrera" como autor por defecto en el header.
+   - *Solución:* Se extrajo la configuración hacia el panel de administración global.
+3. **Configuración Dinámica en Panel Admin:**
+   - Se modificó `ProfilePage.jsx` para incluir un panel de "Generador de Redes Sociales" que permite establecer el `socialAuthorName` y subir una imagen de `socialBackgroundImage`.
+   - Se trasladó la imagen `Arko 3.png` a la carpeta `admin/public/` para integrarla al sistema.
+   - Se conectó `social-generator/index.jsx` para que descargara la configuración real (`siteConfig`) del endpoint `/arko/admin/config` en lugar de usar datos simulados (mock store).
+4. **Problemas Técnicos de Inyección de Código (Python vs PowerShell):**
+   - *Problema:* Al intentar inyectar un nuevo bloque JSX en `ProfilePage.jsx` usando un script `python -c` de una línea, el símbolo de comillas triples (`'''`) fue malinterpretado por PowerShell, causando un `SyntaxError`.
+   - *Solución:* Se abandonó el enfoque del comando `python -c` y se utilizaron herramientas nativas de reemplazo de texto (`replace_file_content`) logrando inyectar el nuevo componente UI de forma atómica y segura.

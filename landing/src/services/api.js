@@ -72,9 +72,9 @@ export async function getSiteConfig() {
   return response.json();
 }
 
-export async function getRecentArticles(slug = 'arko360', limit = 3) {
+export async function getRecentArticles(slug = 'arko360', limit = 12, skip = 0) {
   try {
-    const response = await fetch(`${API_URL}/blog/public/${slug}?limit=${limit}`);
+    const response = await fetch(`${API_URL}/blog/public/${slug}?limit=${limit}&skip=${skip}`);
     if (!response.ok) return [];
     return await response.json();
   } catch (error) {
