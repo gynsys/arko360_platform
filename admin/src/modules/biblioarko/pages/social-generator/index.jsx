@@ -142,7 +142,7 @@ export default function SocialGenerator() {
     if (doctor?.logo_url) {
       fetchLogoAsBase64();
     }
-  }, [doctor]);
+  }, [doctor?.id, doctor?.logo_url]);
 
   // --- Responsive Logic ---
   useEffect(() => {
