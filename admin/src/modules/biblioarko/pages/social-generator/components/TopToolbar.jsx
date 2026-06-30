@@ -338,7 +338,7 @@ export const TopToolbar = ({
               <div className="text-[10px] font-black uppercase text-indigo-400">Configuración de Nombre</div>
               <p className="text-xs text-indigo-500/70 font-bold">Puedes arrastrar el nombre a cualquier lugar de la diapositiva.</p>
               <div className="ml-auto text-[10px] font-black uppercase text-indigo-500 bg-white px-4 py-2 rounded-xl border border-indigo-100">
-                Nombre del Médico Seleccionado
+                Autor / Especialista
               </div>
             </div>
           )}

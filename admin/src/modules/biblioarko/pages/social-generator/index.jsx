@@ -4,7 +4,7 @@ import { FiCpu, FiInstagram, FiLoader, FiFolder, FiZap, FiVideo, FiImage, FiSave
 
 // Config & Services
 import { blogService } from '../../services/blogService';
-const GynSysLoader = () => <div className="p-8 text-center">Cargando...</div>;;
+const ArkoLoader = () => <div className="p-8 text-center">Cargando...</div>;;
 import toast from 'react-hot-toast';;
 const getImageUrl = (url) => url;;
 const useAuthStore = () => ({ user: { id: 1 } });;
@@ -189,7 +189,7 @@ export default function SocialGenerator() {
     setGenerating(true);
     try {
       const result = await blogService.generateSocialContent(selectedPost.id, genType, instructions, generatedContent);
-      console.log(`[GynSys] AI Result (${genType}):`, result);
+      console.log(`[Arko360] AI Result (${genType}):`, result);
       
       setGeneratedContent(result);
       setCurrentVideoSlide(0);
@@ -224,7 +224,7 @@ export default function SocialGenerator() {
           topic: aiFormOptions.topic,
           pdf_file: aiFormOptions.pdf_file,
           tone: aiFormOptions.tone || 'Profesional',
-          target_audience: 'Pacientes generales',
+          target_audience: 'Arquitectos e Ingenieros',
           max_words: 500
         });
         setLastGeneratedBlogContent(blogContent);
@@ -255,7 +255,7 @@ export default function SocialGenerator() {
       
       showToast('¡Contenido social creado con éxito!', 'success');
     } catch (error) {
-      console.error('[GynSys] Error in handleAiGenerateSocial:', error);
+      console.error('[Arko360] Error in handleAiGenerateSocial:', error);
       showToast(error.response?.data?.detail || 'Error al generar contenido con IA', 'error');
     } finally {
       setGenerating(false);
@@ -342,7 +342,7 @@ export default function SocialGenerator() {
         showToast('No se pudo actualizar el proyecto', 'error');
       }
     } catch (error) {
-      console.error('[GynSys] Error updating project:', error);
+      console.error('[Arko360] Error updating project:', error);
       stopSaveProgress(false);
       showToast('Error crítico al actualizar el proyecto', 'error');
     }
@@ -374,7 +374,7 @@ export default function SocialGenerator() {
         showToast('No se pudo crear el nuevo proyecto', 'error');
       }
     } catch (error) {
-      console.error('[GynSys] Error creating new project:', error);
+      console.error('[Arko360] Error creating new project:', error);
       stopSaveProgress(false);
       showToast('Error crítico al crear el nuevo proyecto', 'error');
     }
@@ -475,7 +475,7 @@ export default function SocialGenerator() {
       <div className="max-w-[1480px] mx-auto px-4 pt-6">
         <header className="mb-8">
           <h1 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-            <FiCpu className="text-indigo-600" /> Editor GynSys
+            <FiCpu className="text-indigo-600" /> Editor Arko360
           </h1>
         </header>
 
@@ -620,7 +620,7 @@ export default function SocialGenerator() {
 
           {generating && (
             <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-gray-800 rounded-[40px] shadow-sm border border-gray-100 dark:border-gray-700">
-              <GynSysLoader fullScreen={false} text="Cargando..." />
+              <ArkoLoader fullScreen={false} text="Cargando..." />
             </div>
           )}
 

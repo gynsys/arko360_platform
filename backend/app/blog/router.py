@@ -238,7 +238,7 @@ def get_mega_menu(
         
     return menu_items
 
-@router.get("/public/{ArkoAdmin_slug}", response_model=List[schemas.BlogPostResponse])
+@router.get("/public/{ArkoAdmin_slug}", response_model=List[schemas.BlogPostListResponse])
 def get_public_posts(
     ArkoAdmin_slug: str,
     skip: int = 0,

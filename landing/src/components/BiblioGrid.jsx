@@ -47,6 +47,7 @@ export default function BiblioGrid({ limit = null }) {
             <img 
               src={article.cover_image || article.imageUrl || article.image} 
               alt={article.title} 
+              loading="lazy"
               style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} 
               className="article-img"
             />

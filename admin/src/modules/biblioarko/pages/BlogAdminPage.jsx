@@ -5,7 +5,7 @@ import { blogService } from '../services/blogService'
 
 import BlogEditor from '../components/BlogEditor'
 import Button from '../components/Button'
-const GynSysLoader = () => <div className="p-8 text-center">Cargando...</div>;
+const ArkoLoader = () => <div className="p-8 text-center">Cargando...</div>;
 import Modal from '../components/Modal'
 import toast from 'react-hot-toast';
 const useAuthStore = () => ({ user: { id: 1 } });
@@ -93,7 +93,7 @@ export default function BlogAdminPage() {
     }
   }
 
-  if (loading && !posts.length) return <GynSysLoader />
+  if (loading && !posts.length) return <ArkoLoader />
 
   if (isEditing) {
     return (
@@ -183,6 +183,16 @@ export default function BlogAdminPage() {
                     >
                       Editar
                     </Button>
+                    <Link to={`/admin/blog/social-generator/${post.id}`}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        primaryColor={doctor?.theme_primary_color}
+                      >
+                        Generar Redes
+                      </Button>
+                    </Link>
                     <Button
                       onClick={() => handleDeleteClick(post)}
                       variant="primary"

@@ -80,9 +80,9 @@ def generate_social_content(
 
         {instructions_prompt}
 
-        REGLAS DE RIGOR MÉDICO (CRÍTICAS):
-        1. Si el CONTENIDO ORIGINAL es muy breve, vago o sólo un título, DEBES actuar como ginecólogo e investigarlo usando tus conocimientos médicos (Medicina Basada en la Evidencia) para completar la información antes de armar el guion.
-        2. Mantén alta precisión clínica y no inventes tratamientos no avalados.
+        REGLAS DE RIGOR TÉCNICO (CRÍTICAS):
+        1. Si el CONTENIDO ORIGINAL es muy breve, vago o sólo un título, DEBES actuar como ingeniero civil/arquitecto e investigarlo usando tus conocimientos técnicos (Normativas como ACI, AISC, ASCE) para completar la información antes de armar el guion.
+        2. Mantén alta precisión técnica y no inventes procedimientos constructivos no avalados.
 
         REGLAS DE ORO PARA EL GUION (REEL):
         1. LÍMITE DE PALABRAS ESTRICTO: Cada diapositiva DEBE tener entre 8 y 12 palabras.
@@ -102,7 +102,7 @@ def generate_social_content(
         """
     else:
         prompt = f"""
-        Actúa como un ingeniero civil experto, especialista en marketing técnico yInstagram experto en contenido médico y visualización de datos.
+        Actúa como un ingeniero civil experto, especialista en marketing técnico y experto en contenido de ingeniería y visualización de datos en Instagram.
         Crea un carrusel de 5-10 diapositivas atractivo, profesional, fácil de leer y científicamente riguroso.
 
         ARTÍCULO:
@@ -111,9 +111,9 @@ def generate_social_content(
 
         {instructions_prompt}
 
-        REGLAS DE RIGOR MÉDICO (CRÍTICAS):
-        1. Si el ARTÍCULO es muy breve, vago o sólo un título, DEBES actuar como ginecólogo e investigarlo usando tus conocimientos médicos (Medicina Basada en la Evidencia) para completarlo antes de diseñar el carrusel.
-        2. Mantén alta precisión clínica y no inventes tratamientos no avalados.
+        REGLAS DE RIGOR TÉCNICO (CRÍTICAS):
+        1. Si el ARTÍCULO es muy breve, vago o sólo un título, DEBES actuar como ingeniero civil/arquitecto e investigarlo usando tus conocimientos técnicos (Normativas como ACI, AISC, ASCE) para completarlo antes de diseñar el carrusel.
+        2. Mantén alta precisión técnica y no inventes procedimientos constructivos no avalados.
 
         REGLAS DE FORMATO CRÍTICAS PARA "content":
         1. LISTAS: Si incluyes una lista, CADA ITEM DEBE IR EN UNA LÍNEA NUEVA (usa \\n).

@@ -36,6 +36,23 @@ class BlogPostUpdate(BaseModel):
     pregenerated_reel: Optional[Any] = None
     pregenerated_carousel: Optional[Any] = None
 
+
+class BlogPostListResponse(BaseModel):
+    id: int
+    title: str
+    slug: str
+    summary: Optional[str] = None
+    cover_image: Optional[str] = None
+    is_published: bool = False
+    published_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    admin_id: int
+    is_service_content: bool = False
+
+    class Config:
+        from_attributes = True
+
 class BlogPostResponse(BlogPostBase):
     id: int
     slug: str

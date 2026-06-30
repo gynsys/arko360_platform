@@ -129,7 +129,7 @@ export const ArticleSelector = ({
                     className="block w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white p-2.5 border text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
                   >
                     <option value="reel">Reel / Video IA</option>
-                    <option value="carousel">Carrusel Médico</option>
+                    <option value="carousel">Carrusel Técnico</option>
                   </select>
                 </div>
                 <div>
@@ -248,7 +248,7 @@ export const ArticleSelector = ({
                   </span>
                 )}
               </div>
-              <p className="text-lg font-black uppercase tracking-tight">GynSys Reel IA</p>
+              <p className="text-lg font-black uppercase tracking-tight">Arko360 Reel IA</p>
             </div>
           </button>
           
@@ -270,7 +270,7 @@ export const ArticleSelector = ({
                   </span>
                 )}
               </div>
-              <p className="text-lg font-black uppercase tracking-tight">Carrusel Médico</p>
+              <p className="text-lg font-black uppercase tracking-tight">Carrusel Técnico</p>
             </div>
           </button>
 

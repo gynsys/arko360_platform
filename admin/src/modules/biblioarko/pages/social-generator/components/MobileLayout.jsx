@@ -130,7 +130,7 @@ export const MobileLayout = ({
       <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-            <FiCpu className="text-indigo-600" /> GynSys
+            <FiCpu className="text-indigo-600" /> Arko360
           </h1>
           <button 
             onClick={() => setShowProjects(true)}

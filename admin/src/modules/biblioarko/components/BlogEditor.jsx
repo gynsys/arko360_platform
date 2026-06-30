@@ -82,7 +82,7 @@ export default function BlogEditor({ post, onSave, onCancel }) {
     topic: '',
     pdf_file: null,
     tone: 'Profesional',
-    target_audience: 'Pacientes generales',
+    target_audience: 'Arquitectos e Ingenieros',
     max_words: 500
   })
 
