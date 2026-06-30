@@ -98,7 +98,7 @@ export const SlideCanvas = ({
       className={`relative w-[410px] ${isVideoMode ? 'h-[728px]' : 'h-[410px]'} overflow-visible shadow-2xl transition-all duration-500 ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-4 ring-offset-gray-50' : ''}`}
       style={{ 
         background: siteConfig?.socialBackgroundImage 
-          ? `url(${siteConfig.socialBackgroundImage}) center/cover no-repeat` 
+          ? `url(${siteConfig.socialBackgroundImage}) center/100% 100% no-repeat` 
           : (design.useBgGradient 
             ? `linear-gradient(to bottom right, ${design.bgColor}, ${design.bgColor2}, ${design.bgColor3})` 
             : design.bgColor),
@@ -135,61 +135,6 @@ export const SlideCanvas = ({
           }}
         />
         </div>
-      )}
-
-      {/* Doctor Name Section */}
-      {!isVideoMode && (
-        <div 
-          className={`absolute z-30 transition-shadow ${isSelected && selectedDoctorName ? 'border-[1.5px] border-dashed border-indigo-500 rounded-xl p-2 bg-white/5' : ''}`}
-        style={{
-          left: doctorNamePos.x + '%',
-          top: doctorNamePos.y + '%',
-          transform: 'translate(-50%, -50%)',
-          cursor: isSelected ? 'grab' : 'default',
-        }}
-        onMouseDown={(e) => isSelected && handleDragStart(e, index, 'doctorName', 'global-name', containerRef.current, doctorNamePos)}
-          onTouchStart={(e) => {
-            if (isSelected) {
-              selectElement('doctorName', 'global-name');
-              handleDragStart(e, index, 'doctorName', 'global-name', containerRef.current, doctorNamePos);
-            }
-          }}
-        onClick={(e) => { e.stopPropagation(); isSelected && selectElement('doctorName', 'global-name'); }}
-      >
-        <span className="font-black tracking-tighter uppercase whitespace-nowrap" style={{ color: headerColor, fontSize: headerFontSize + 'px' }}>
-          {siteConfig?.socialAuthorName || 'Ingeniería Arko360'}
-        </span>
-      </div>
-      )}
-
-      {/* Divider Section */}
-      {!isVideoMode && (
-        <div 
-          className={`absolute z-30 transition-shadow ${isSelected && canvas.selectedDivider ? 'border-[1.5px] border-dashed border-indigo-500 p-2 bg-white/5' : ''}`}
-        style={{
-          left: dividerPos.x + '%',
-          top: dividerPos.y + '%',
-          width: dividerWidth + '%',
-          transform: 'translate(-50%, -50%)',
-          cursor: isSelected ? 'grab' : 'default',
-        }}
-        onMouseDown={(e) => isSelected && handleDragStart(e, index, 'divider', 'global-divider', containerRef.current, dividerPos)}
-          onTouchStart={(e) => {
-            if (isSelected) {
-              selectElement('divider', 'global-divider');
-              handleDragStart(e, index, 'divider', 'global-divider', containerRef.current, dividerPos);
-            }
-          }}
-        onClick={(e) => { e.stopPropagation(); isSelected && selectElement('divider', 'global-divider'); }}
-      >
-        <div 
-          style={{ 
-            height: dividerHeight + 'px', 
-            backgroundColor: dividerColor,
-            width: '100%'
-          }} 
-        />
-      </div>
       )}
 
       {/* Content Section */}
