@@ -11,7 +11,7 @@ from datetime import datetime
 
 from app.db.base import get_db
 from app.db.models.doctor import Doctor
-from app.api.v1.endpoints.auth import get_current_user
+from app.api.v1.endpoints.arko import get_current_arko_admin as get_current_user
 from app.core.config import settings
 
 router = APIRouter()

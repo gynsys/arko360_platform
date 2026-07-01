@@ -28,7 +28,6 @@ from app.core.security import (
 from app.services.email import send_reset_password_email
 # apply_doctor_template_async removed temporarily or moved to valid location
 
-from app.crud.admin import seed_tenant_data
 from app.core.limiter import limiter
 
 router = APIRouter()
