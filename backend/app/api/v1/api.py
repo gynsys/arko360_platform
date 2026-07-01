@@ -21,6 +21,11 @@ api_router.include_router(
     arko_landing_sites.router, prefix="/arko/landing_sites", tags=["arko_admin_landing_sites"]
 )
 from app.api.v1.endpoints import solver
+from app.api.v1.endpoints import uploads
+
+api_router.include_router(
+    uploads.router, prefix="/uploads", tags=["uploads"]
+)
 
 api_router.include_router(
     calculadora.router, prefix="/calculadora-losas", tags=["calculadora_losas"]
