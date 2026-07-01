@@ -262,7 +262,7 @@ async def upload_social_audio(
         name=file.filename,
         url=audio_url
     )
-    db_audio = crud.create_social_audio(db=db, audio=audio_data, doctor_id=current_user.id)
+    db_audio = crud.create_social_audio(db=db, audio=audio_data, admin_id=current_user.id)
     
     return {
         "message": "Audio uploaded successfully",
