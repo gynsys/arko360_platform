@@ -764,33 +764,7 @@ export const EnhancedSidebar = ({
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  {!isVideoMode && (
-                    <button
-                      onClick={onConvertToVideo}
-                      className="w-full p-3 bg-amber-500 text-white rounded-xl text-xs font-black hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 shadow-sm"
-                    >
-                      <FiVideo size={16} />
-                      ✨ Convertir a Video
-                    </button>
-                  )}
-                  <button
-                    onClick={onDownload}
-                    disabled={isExporting}
-                    className="relative w-full p-3 bg-indigo-600 text-white rounded-xl text-xs font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 overflow-hidden disabled:opacity-80"
-                  >
-                    {isExporting && (
-                      <span 
-                        className="absolute inset-0 bg-white/20 transition-all duration-300 origin-left"
-                        style={{ transform: `scaleX(${exportProgress / 100})` }}
-                      />
-                    )}
-                    <span className="relative flex items-center gap-2">
-                      {isExporting ? <FiRefreshCw className="animate-spin" size={16} /> : (isVideoMode ? <FiVideo size={16} /> : <FiDownload size={16} />)}
-                      {isExporting ? `Generando... ${exportProgress}%` : (isVideoMode ? 'Generar MP4' : 'Descargar ZIP')}
-                    </span>
-                  </button>
-                </div>
+
               </div>
             )}
 
@@ -864,6 +838,37 @@ export const EnhancedSidebar = ({
           </>
         )}
       </div>
+      
+      {/* Fixed Action Buttons at the bottom */}
+      {!isCollapsed && (
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2 bg-gray-50/50 dark:bg-gray-800/50 mt-auto">
+          {!isVideoMode && (
+            <button
+              onClick={onConvertToVideo}
+              className="w-full p-3 bg-amber-500 text-white rounded-xl text-xs font-black hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 shadow-sm"
+            >
+              <FiVideo size={16} />
+              ✨ Convertir a Video
+            </button>
+          )}
+          <button
+            onClick={onDownload}
+            disabled={isExporting}
+            className="relative w-full p-3 bg-indigo-600 text-white rounded-xl text-xs font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 overflow-hidden disabled:opacity-80"
+          >
+            {isExporting && (
+              <span 
+                className="absolute inset-0 bg-white/20 transition-all duration-300 origin-left"
+                style={{ transform: `scaleX(${exportProgress / 100})` }}
+              />
+            )}
+            <span className="relative flex items-center gap-2 z-10">
+              {isExporting ? <FiRefreshCw className="animate-spin" size={16} /> : (isVideoMode ? <FiVideo size={16} /> : <FiDownload size={16} />)}
+              {isExporting ? `Generando... ${exportProgress}%` : (isVideoMode ? 'Generar MP4' : 'Descargar ZIP')}
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

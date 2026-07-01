@@ -151,13 +151,18 @@ export default function SocialGenerator() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    const handleResize = (width) => {
-      const s = Math.min(1, (width - 50) / 410);
+    const handleResize = (width, height) => {
+      let s;
+      if (activeTab === 'video') {
+        s = Math.min(1, (width - 20) / 410, (height - 50) / 728);
+      } else {
+        s = Math.min(1, (width - 50) / 410);
+      }
       setScale(Math.max(0.4, s));
     };
 
     const ro = new ResizeObserver((entries) => {
-      for (let entry of entries) handleResize(entry.contentRect.width);
+      for (let entry of entries) handleResize(entry.contentRect.width, entry.contentRect.height);
     });
 
     if (editorWrapperRef.current) ro.observe(editorWrapperRef.current);
