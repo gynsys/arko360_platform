@@ -47,7 +47,7 @@ export const useVideoExport = (
         // Capturamos su hijo directo (el SlideCanvas real, sin escala CSS) para fidelidad pixel-perfect.
         const slideNode = container?.firstElementChild || container;
         if (!slideNode) {
-          console.warn('[GynSys] No se encontró el SlideCanvas para el slide', i);
+          console.warn('[Arko360] No se encontró el SlideCanvas para el slide', i);
           capturedFrames.push(null);
           continue;
         }
@@ -97,7 +97,7 @@ export const useVideoExport = (
             audioRef.current.currentTime = 0;
             const playPromise = audioRef.current.play();
             if (playPromise !== undefined) {
-              playPromise.catch(e => console.log('[GynSys] Audio play prevented:', e));
+              playPromise.catch(e => console.log('[Arko360] Audio play prevented:', e));
             }
             const audioStream = audioRef.current.captureStream
               ? audioRef.current.captureStream()
@@ -108,7 +108,7 @@ export const useVideoExport = (
             ]);
           }
         } catch (audioErr) {
-          console.error('[GynSys] Error setting up audio:', audioErr);
+          console.error('[Arko360] Error setting up audio:', audioErr);
           combinedStream = videoStream;
         }
       }
@@ -150,7 +150,7 @@ export const useVideoExport = (
           setExportStatus('done');
           setTimeout(() => setExportStatus('idle'), 5000);
         } catch (err) {
-          console.error('[GynSys] Download error:', err);
+          console.error('[Arko360] Download error:', err);
           downloadFile(blob, filename);
           setExportStatus('done');
           setTimeout(() => setExportStatus('idle'), 5000);
@@ -224,7 +224,7 @@ export const useVideoExport = (
 
       recorder.stop();
     } catch (err) {
-      console.error('[GynSys] Error al exportar video:', err);
+      console.error('[Arko360] Error al exportar video:', err);
       setIsExporting(false);
       showToast('Error al renderizar el video', 'error');
     }

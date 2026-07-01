@@ -3,7 +3,7 @@ import { DEFAULT_DESIGN } from '../lib/constants';
 import { blogService } from '../../../services/blogService';
 import { toast } from 'react-hot-toast';
 
-const TEMPLATE_STORAGE_KEY = 'gynsys_carousel_templates';
+const TEMPLATE_STORAGE_KEY = 'arko360_carousel_templates';
 
 export const useSlideDesigner = () => {
   // ... existing state definitions ...
@@ -178,7 +178,7 @@ export const useSlideDesigner = () => {
         await blogService.deleteCarouselProject(id);
       } else {
         const updated = projects.filter(p => p.id !== id);
-        localStorage.setItem('gynsys_carousel_projects', JSON.stringify(updated));
+        localStorage.setItem('arko360_carousel_projects', JSON.stringify(updated));
       }
       toast.success('Proyecto eliminado correctamente');
       return true;

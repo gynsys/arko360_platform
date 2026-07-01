@@ -85,7 +85,7 @@ export const useExport = (selectedPost, designer, generatedContent) => {
           showToast('¡Descarga iniciada!', 'success');
           return;
         } catch (proxyErr) {
-          console.error('[GynSys] Proxy Download Error:', proxyErr);
+          console.error('[Arko360] Proxy Download Error:', proxyErr);
         }
       }
 

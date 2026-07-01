@@ -1,5 +1,5 @@
 """
-Social Media Content Generation Service for GynSys.
+Social Media Content Generation Service for Arko360.
 Delegates to llm_router for provider selection, fallback, and caching.
 """
 import json
@@ -85,19 +85,19 @@ def generate_social_content(
         2. Mantén alta precisión técnica y no inventes procedimientos constructivos no avalados.
 
         REGLAS DE ORO PARA EL GUION (REEL):
-        1. LÍMITE DE PALABRAS ESTRICTO: Cada diapositiva DEBE tener entre 8 y 12 palabras.
+        1. DESCRIPTIVO Y DETALLADO: A diferencia de otros reels, queremos proveer valor real y contexto. Cada diapositiva DEBE tener entre 15 y 30 palabras explicando conceptos técnicos o datos clave.
         2. GANCHO (HOOK): La primera diapositiva debe ser un gancho irresistible.
-        3. RESALTADO: Envuelve las 1 o 2 palabras más importantes entre asteriscos (**palabra**).
+        3. RESALTADO: Envuelve las palabras clave o frases más importantes entre asteriscos (**palabra**).
         4. ESTRUCTURA: Genera exactamente entre 6 y 9 escenas.
 
         Responde EXCLUSIVAMENTE con un objeto JSON válido con esta estructura:
         {{
           "video_slides": [
-            {{ "text": "Frase de 8 a 12 palabras exactamente" }}
+            {{ "text": "Frase de 15 a 30 palabras exactamente con buen nivel de detalle técnico..." }}
           ],
           "music_suggestion": "Tipo de música específico",
-          "duration_per_slide": 3,
-          "total_duration": 25
+          "duration_per_slide": 5,
+          "total_duration": 40
         }}
         """
     else:
@@ -153,18 +153,18 @@ def pregenerate_social_content_async(post_id: int) -> None:
     from app.db.base import SessionLocal
     from app.blog.models import BlogPost
 
-    logger.info(f"[GynSys-Pregeneration] Starting background pre-generation for post {post_id}")
+    logger.info(f"[Arko360-Pregeneration] Starting background pre-generation for post {post_id}")
 
     db = SessionLocal()
     try:
         post = db.query(BlogPost).filter(BlogPost.id == post_id).first()
         if not post:
-            logger.warning(f"[GynSys-Pregeneration] Post {post_id} not found.")
+            logger.warning(f"[Arko360-Pregeneration] Post {post_id} not found.")
             return
 
         # 1. Pregenerate Reel
         try:
-            logger.info(f"[GynSys-Pregeneration] Generating Reel for post {post_id}")
+            logger.info(f"[Arko360-Pregeneration] Generating Reel for post {post_id}")
             reel_data = generate_social_content(
                 post_title=post.title,
                 post_content=post.content,
@@ -174,13 +174,13 @@ def pregenerate_social_content_async(post_id: int) -> None:
                 reel_data["type"] = "reel"
             post.pregenerated_reel = reel_data
             db.commit()
-            logger.info(f"[GynSys-Pregeneration] Reel saved for post {post_id}")
+            logger.info(f"[Arko360-Pregeneration] Reel saved for post {post_id}")
         except Exception as e:
-            logger.error(f"[GynSys-Pregeneration] Error pregenerating Reel for post {post_id}: {e}", exc_info=True)
+            logger.error(f"[Arko360-Pregeneration] Error pregenerating Reel for post {post_id}: {e}", exc_info=True)
 
         # 2. Pregenerate Carousel
         try:
-            logger.info(f"[GynSys-Pregeneration] Generating Carousel for post {post_id}")
+            logger.info(f"[Arko360-Pregeneration] Generating Carousel for post {post_id}")
             carousel_data = generate_social_content(
                 post_title=post.title,
                 post_content=post.content,
@@ -190,13 +190,13 @@ def pregenerate_social_content_async(post_id: int) -> None:
                 carousel_data["type"] = "carousel"
             post.pregenerated_carousel = carousel_data
             db.commit()
-            logger.info(f"[GynSys-Pregeneration] Carousel saved for post {post_id}")
+            logger.info(f"[Arko360-Pregeneration] Carousel saved for post {post_id}")
         except Exception as e:
-            logger.error(f"[GynSys-Pregeneration] Error pregenerating Carousel for post {post_id}: {e}", exc_info=True)
+            logger.error(f"[Arko360-Pregeneration] Error pregenerating Carousel for post {post_id}: {e}", exc_info=True)
 
     except Exception as e:
         db.rollback()
-        logger.error(f"[GynSys-Pregeneration] General error for post {post_id}: {e}", exc_info=True)
+        logger.error(f"[Arko360-Pregeneration] General error for post {post_id}: {e}", exc_info=True)
     finally:
         db.close()
 

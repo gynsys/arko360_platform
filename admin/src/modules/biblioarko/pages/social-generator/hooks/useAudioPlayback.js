@@ -9,6 +9,7 @@ export const useAudioPlayback = (activeTab, isPlaying, setIsPlaying, showToast) 
   const [prelisteningTrack, setPrelisteningTrack] = useState(null);
   const [userAudios, setUserAudios] = useState([]);
   const [loadingAudios, setLoadingAudios] = useState(false);
+  const [volume, setVolume] = useState(0.5); // Default volume to 50%
   
   const audioRef = useRef(null);
   const previewAudioRef = useRef(null);
@@ -30,24 +31,24 @@ export const useAudioPlayback = (activeTab, isPlaying, setIsPlaying, showToast) 
   };
 
   const handleUploadAudio = async (e) => {
-    console.log("[GynSys] handleUploadAudio triggered");
+    console.log("[Arko360] handleUploadAudio triggered");
     const file = e.target.files?.[0];
     if (!file) {
-      console.log("[GynSys] No file selected");
+      console.log("[Arko360] No file selected");
       return;
     }
-    console.log("[GynSys] File selected:", file.name);
+    console.log("[Arko360] File selected:", file.name);
     try {
       showToast('Subiendo audio...', 'info');
       const response = await blogService.uploadSocialAudio(file);
-      console.log("[GynSys] Upload response:", response);
+      console.log("[Arko360] Upload response:", response);
       showToast('Audio subido con éxito', 'success');
       
       const newAudio = response.audio || response; // Fallback if direct object returned
-      console.log("[GynSys] New audio object:", newAudio);
+      console.log("[Arko360] New audio object:", newAudio);
       
       if (!newAudio || !newAudio.id) {
-        console.error("[GynSys] Invalid response structure:", response);
+        console.error("[Arko360] Invalid response structure:", response);
         throw new Error("Invalid response structure");
       }
       
@@ -59,7 +60,7 @@ export const useAudioPlayback = (activeTab, isPlaying, setIsPlaying, showToast) 
       
       return newAudio;
     } catch (error) {
-      console.error("[GynSys] Error in handleUploadAudio:", error);
+      console.error("[Arko360] Error in handleUploadAudio:", error);
       showToast('Error al subir audio', 'error');
       throw error;
     }
@@ -101,7 +102,7 @@ export const useAudioPlayback = (activeTab, isPlaying, setIsPlaying, showToast) 
           const playPromise = audioRef.current.play();
           if (playPromise !== undefined) {
             playPromise.catch(error => {
-              console.log("[GynSys] Autoplay prevented");
+              console.log("[Arko360] Autoplay prevented");
             });
           }
         }
@@ -138,6 +139,16 @@ export const useAudioPlayback = (activeTab, isPlaying, setIsPlaying, showToast) 
     }
   }, [prelisteningTrack]);
 
+  // Sync volume state with actual audio elements
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+    if (previewAudioRef.current) {
+      previewAudioRef.current.volume = volume;
+    }
+  }, [volume]);
+
   return {
     audioRef,
     previewAudioRef,
@@ -151,7 +162,9 @@ export const useAudioPlayback = (activeTab, isPlaying, setIsPlaying, showToast) 
     userAudios,
     loadingAudios,
     handleUploadAudio,
-    handleDeleteAudio
+    handleDeleteAudio,
+    volume,
+    setVolume
   };
 };
 

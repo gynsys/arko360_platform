@@ -114,7 +114,8 @@ export default function SocialGenerator() {
   const { 
     audioRef, previewAudioRef, selectedAudio, setSelectedAudio, 
     customAudioUrl, setCustomAudioUrl, prelisteningTrack, setPrelisteningTrack, 
-    getActiveAudioSrc, userAudios, loadingAudios, handleUploadAudio, handleDeleteAudio
+    getActiveAudioSrc, userAudios, loadingAudios, handleUploadAudio, handleDeleteAudio,
+    volume, setVolume
   } = useAudioPlayback(activeTab, isPlaying, setIsPlaying, showToast);
 
 
@@ -703,12 +704,37 @@ export default function SocialGenerator() {
                           <>
                             <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
                             <button
+                              onClick={() => {
+                                setIsPlaying(false);
+                                designer.canvas.setCurrentSlidePage(0);
+                                setCurrentVideoSlide(0);
+                              }}
+                              className="p-1.5 rounded-full transition-all text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20 active:scale-95"
+                              title="Detener y volver al inicio"
+                            >
+                              <div className="w-3 h-3 bg-current rounded-sm"></div>
+                            </button>
+                            <button
                               onClick={() => setIsPlaying(!isPlaying)}
-                              className={`p-1.5 rounded-full transition-all ${isPlaying ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'} shadow-md transform hover:scale-105 active:scale-95`}
+                              className={`p-2 rounded-full transition-all ${isPlaying ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'} shadow-md transform hover:scale-105 active:scale-95`}
                               title={isPlaying ? "Pausar" : "Reproducir"}
                             >
-                              {isPlaying ? <FiPause size={12} /> : <FiPlay size={12} />}
+                              {isPlaying ? <FiPause size={16} /> : <FiPlay size={16} />}
                             </button>
+                            
+                            <div className="flex items-center gap-2 ml-2">
+                              <span className="text-[10px] font-bold text-gray-500 uppercase">Vol:</span>
+                              <input 
+                                type="range" 
+                                min="0" 
+                                max="1" 
+                                step="0.05"
+                                value={volume}
+                                onChange={(e) => setVolume(parseFloat(e.target.value))}
+                                className="w-16 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                title={`Volumen: ${Math.round(volume * 100)}%`}
+                              />
+                            </div>
                           </>
                         )}
                       </div>
