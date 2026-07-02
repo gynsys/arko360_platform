@@ -86,7 +86,7 @@ def generate_social_content(
 
         REGLAS DE ORO PARA EL GUION (REEL):
         1. DESCRIPTIVO Y DETALLADO: El usuario solicitó explícitamente que los reels NO sean resumidos. Necesitan tener profundidad y explicación sustancial. Desarrolla los conceptos.
-        2. ESTRUCTURA DE DIAPOSITIVA: Cada diapositiva debe tener un "title" (corto y muy llamativo) y un "content" con la explicación detallada (entre 30 y 60 palabras por escena).
+        2. ESTRUCTURA DE DIAPOSITIVA: Cada diapositiva debe tener la propiedad "text" con la explicación detallada (entre 30 y 60 palabras por escena). Puedes incluir un título llamativo al inicio del texto.
         3. GANCHO (HOOK): La primera diapositiva debe ser un gancho irresistible.
         4. RESALTADO: Envuelve las palabras clave o frases más importantes del contenido entre asteriscos (**palabra**).
         5. CANTIDAD: Genera exactamente entre 6 y 9 escenas.
@@ -95,8 +95,7 @@ def generate_social_content(
         {{
           "video_slides": [
             {{ 
-              "title": "TÍTULO CORTO Y LLAMATIVO (Máx 5 palabras)", 
-              "content": "Explicación técnica, profunda y detallada del concepto. No resumas demasiado. (30 a 60 palabras)" 
+              "text": "TÍTULO LLAMATIVO: Explicación técnica, profunda y detallada del concepto. No resumas demasiado. (30 a 60 palabras)" 
             }}
           ],
           "music_suggestion": "Tipo de música específico",
