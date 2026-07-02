@@ -81,7 +81,7 @@ def generate_social_content(
         {instructions_prompt}
 
         REGLAS DE RIGOR TÉCNICO (CRÍTICAS):
-        1. Si el CONTENIDO ORIGINAL es muy breve, vago o sólo un título, DEBES actuar como ingeniero civil/arquitecto e investigarlo usando tus conocimientos técnicos (Normativas como ACI, AISC, ASCE) para completar la información antes de armar el guion.
+        1. BÁSATE ESTRICTAMENTE EN EL CONTENIDO ORIGINAL. Si el usuario pide ampliar, expande los conceptos mencionados usando tu conocimiento técnico, pero NUNCA te desvíes del tema central ni inventes información no relacionada.
         2. Mantén alta precisión técnica y no inventes procedimientos constructivos no avalados.
 
         REGLAS DE ORO PARA EL GUION (REEL):
@@ -115,7 +115,7 @@ def generate_social_content(
         {instructions_prompt}
 
         REGLAS DE RIGOR TÉCNICO (CRÍTICAS):
-        1. Si el ARTÍCULO es muy breve, vago o sólo un título, DEBES actuar como ingeniero civil/arquitecto e investigarlo usando tus conocimientos técnicos (Normativas como ACI, AISC, ASCE) para completarlo antes de diseñar el carrusel.
+        1. BÁSATE ESTRICTAMENTE EN EL CONTENIDO ORIGINAL. Si el usuario pide ampliar, expande los conceptos mencionados usando tu conocimiento técnico, pero NUNCA te desvíes del tema central ni inventes información no relacionada.
         2. Mantén alta precisión técnica y no inventes procedimientos constructivos no avalados.
 
         REGLAS DE FORMATO CRÍTICAS PARA "content":
