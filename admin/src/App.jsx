@@ -79,7 +79,7 @@ function App() {
             >
               <Route index element={<Navigate to="/admin/profile" replace />} />
               <Route path="blog" element={<BlogManagementPage />} />
-              <Route path="blog/social-generator/:id" element={<SocialGeneratorPage />} />
+              <Route path="social-generator" element={<SocialGeneratorPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
 
@@ -96,7 +96,7 @@ function App() {
             >
               <Route index element={<Navigate to="profile" replace />} />
               <Route path="blog" element={<BlogManagementPage />} />
-              <Route path="blog/social-generator/:id" element={<SocialGeneratorPage />} />
+              <Route path="social-generator" element={<SocialGeneratorPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
           </Routes>

@@ -183,16 +183,7 @@ export default function BlogAdminPage() {
                     >
                       Editar
                     </Button>
-                    <Link to={`/admin/blog/social-generator/${post.id}`}>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        primaryColor={doctor?.theme_primary_color}
-                      >
-                        Generar Redes
-                      </Button>
-                    </Link>
+
                     <Button
                       onClick={() => handleDeleteClick(post)}
                       variant="primary"
