@@ -87,9 +87,10 @@ def generate_social_content(
         REGLAS DE ORO PARA EL GUION (REEL):
         1. DESCRIPTIVO Y DETALLADO: El usuario solicitó explícitamente que los reels NO sean resumidos. Necesitan tener profundidad y explicación sustancial. Desarrolla los conceptos.
         2. ESTRUCTURA DE DIAPOSITIVA: Cada diapositiva debe tener la propiedad "text" con la explicación detallada (entre 30 y 60 palabras por escena). Puedes incluir un título llamativo al inicio del texto.
-        3. GANCHO (HOOK): La primera diapositiva debe ser un gancho irresistible.
-        4. RESALTADO: Envuelve las palabras clave o frases más importantes del contenido entre asteriscos (**palabra**).
-        5. CANTIDAD: Genera exactamente entre 6 y 9 escenas.
+        3. IDIOMA ESTRICTO: Responde 100% en ESPAÑOL. NO uses palabras, jerga o términos técnicos en inglés a menos que sea estrictamente necesario (ej. nombres propios).
+        4. GANCHO (HOOK): La primera diapositiva debe ser un gancho irresistible.
+        5. RESALTADO: Envuelve las palabras clave o frases más importantes del contenido entre asteriscos (**palabra**).
+        6. CANTIDAD: Genera exactamente entre 6 y 9 escenas.
 
         Responde EXCLUSIVAMENTE con un objeto JSON válido con esta estructura:
         {{
@@ -122,6 +123,7 @@ def generate_social_content(
         1. LISTAS: Si incluyes una lista, CADA ITEM DEBE IR EN UNA LÍNEA NUEVA (usa \\n).
         2. VIÑETAS: Usa viñetas modernas como '•' para listas de puntos.
         3. LIMPIEZA: NUNCA amontones varios puntos en un párrafo.
+        4. IDIOMA ESTRICTO: Responde 100% en ESPAÑOL. NO uses palabras en inglés.
 
         Responde EXCLUSIVAMENTE con un objeto JSON válido con esta estructura:
         {{

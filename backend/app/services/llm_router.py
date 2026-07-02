@@ -87,8 +87,18 @@ def _call_gemini(provider: LLMProvider, prompt: str, expect_json: bool) -> str:
     if expect_json:
         gen_config_kwargs["response_mime_type"] = "application/json"
 
+    system_instruction = (
+        "Eres un ingeniero civil experto y creador de contenido arquitectónico. "
+        "Debes responder SIEMPRE en formato JSON cuando se te pida. "
+        "IMPORTANTE: NUNCA alucines información y RESPONDE SIEMPRE 100% EN ESPAÑOL."
+    ) if expect_json else (
+        "Eres un experto en redacción sobre arquitectura e ingeniería. "
+        "IMPORTANTE: NUNCA alucines información y RESPONDE SIEMPRE 100% EN ESPAÑOL."
+    )
+
     model = genai.GenerativeModel(
         provider.model_name,
+        system_instruction=system_instruction,
         generation_config=genai.GenerationConfig(**gen_config_kwargs) if gen_config_kwargs else None,
     )
     response = model.generate_content(prompt)
