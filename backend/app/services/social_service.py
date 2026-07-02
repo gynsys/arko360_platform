@@ -85,15 +85,19 @@ def generate_social_content(
         2. Mantén alta precisión técnica y no inventes procedimientos constructivos no avalados.
 
         REGLAS DE ORO PARA EL GUION (REEL):
-        1. DESCRIPTIVO Y DETALLADO: A diferencia de otros reels, queremos proveer valor real y contexto. Cada diapositiva DEBE tener entre 15 y 30 palabras explicando conceptos técnicos o datos clave.
-        2. GANCHO (HOOK): La primera diapositiva debe ser un gancho irresistible.
-        3. RESALTADO: Envuelve las palabras clave o frases más importantes entre asteriscos (**palabra**).
-        4. ESTRUCTURA: Genera exactamente entre 6 y 9 escenas.
+        1. DESCRIPTIVO Y DETALLADO: El usuario solicitó explícitamente que los reels NO sean resumidos. Necesitan tener profundidad y explicación sustancial. Desarrolla los conceptos.
+        2. ESTRUCTURA DE DIAPOSITIVA: Cada diapositiva debe tener un "title" (corto y muy llamativo) y un "content" con la explicación detallada (entre 30 y 60 palabras por escena).
+        3. GANCHO (HOOK): La primera diapositiva debe ser un gancho irresistible.
+        4. RESALTADO: Envuelve las palabras clave o frases más importantes del contenido entre asteriscos (**palabra**).
+        5. CANTIDAD: Genera exactamente entre 6 y 9 escenas.
 
         Responde EXCLUSIVAMENTE con un objeto JSON válido con esta estructura:
         {{
           "video_slides": [
-            {{ "text": "Frase de 15 a 30 palabras exactamente con buen nivel de detalle técnico..." }}
+            {{ 
+              "title": "TÍTULO CORTO Y LLAMATIVO (Máx 5 palabras)", 
+              "content": "Explicación técnica, profunda y detallada del concepto. No resumas demasiado. (30 a 60 palabras)" 
+            }}
           ],
           "music_suggestion": "Tipo de música específico",
           "duration_per_slide": 5,
