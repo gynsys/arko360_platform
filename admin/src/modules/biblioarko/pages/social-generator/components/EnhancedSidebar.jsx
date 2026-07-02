@@ -772,7 +772,7 @@ export const EnhancedSidebar = ({
             {activeTab === 'audio' && isVideoMode && (
               <div className="p-4 space-y-6">
                 <div>
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3">Música de Fondo</h3>
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3">Pistas de Audio</h3>
                   <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                     {/* None option */}
                     <button
@@ -798,29 +798,24 @@ export const EnhancedSidebar = ({
                       </button>
                     ))}
                     {/* User Audios */}
-                    {userAudios?.length > 0 && (
-                      <div className="pt-2 mt-2 border-t border-gray-100 dark:border-gray-700">
-                        <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Tus Audios</p>
-                        {userAudios.map(audio => (
-                          <div key={audio.id} className="flex gap-1 mb-2">
-                            <button
-                              onClick={() => setSelectedAudio(`User-${audio.id}`)}
-                              className={`flex-1 text-left px-3 py-2 rounded-xl text-sm transition-all flex justify-between items-center ${
-                                selectedAudio === `User-${audio.id}` ? 'bg-indigo-50 text-indigo-700 font-bold border-2 border-indigo-500' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-2 border-transparent'
-                              }`}
-                            >
-                              <span className="flex items-center gap-2 truncate max-w-[140px]"><FiVolume2 className={selectedAudio === `User-${audio.id}` ? 'text-indigo-500' : 'text-gray-400'} /> {audio.original_name || audio.name || audio.filename || 'Audio sin nombre'}</span>
-                            </button>
-                            <button
-                              onClick={() => handleDeleteAudio(audio.id)}
-                              className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
-                            >
-                              <FiTrash2 size={14} />
-                            </button>
-                          </div>
-                        ))}
+                    {userAudios?.map(audio => (
+                      <div key={audio.id} className="flex gap-1 mb-2">
+                        <button
+                          onClick={() => setSelectedAudio(`User-${audio.id}`)}
+                          className={`flex-1 text-left px-3 py-2 rounded-xl text-sm transition-all flex justify-between items-center ${
+                            selectedAudio === `User-${audio.id}` ? 'bg-indigo-50 text-indigo-700 font-bold border-2 border-indigo-500' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-2 border-transparent'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 truncate max-w-[140px]"><FiVolume2 className={selectedAudio === `User-${audio.id}` ? 'text-indigo-500' : 'text-gray-400'} /> {audio.original_name || audio.name || audio.filename || 'Audio sin nombre'}</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAudio(audio.id)}
+                          className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+                        >
+                          <FiTrash2 size={14} />
+                        </button>
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
 

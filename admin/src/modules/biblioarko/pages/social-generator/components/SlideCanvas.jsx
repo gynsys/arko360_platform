@@ -163,7 +163,6 @@ export const SlideCanvas = ({
           <h4 className="font-black mb-3 uppercase leading-tight" style={{ fontSize: titleFontSize + 'px', color: titleColor }}>
             {parseHighlightedText(slide?.title || '', design.headerColor, design.headerFontSize)}
           </h4>
-          <div className="h-1 w-12 bg-indigo-600/30 mb-3 rounded-full mx-auto"></div>
           <p className="font-bold leading-relaxed whitespace-pre-wrap" style={{ fontSize: fontSize + 'px', color: contentColor }}>
             {parseHighlightedText(slide?.content || slide?.text || '', design.headerColor, design.headerFontSize)}
           </p>
