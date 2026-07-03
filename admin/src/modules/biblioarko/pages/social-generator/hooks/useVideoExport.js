@@ -142,20 +142,20 @@ export const useVideoExport = (
         setExportStatus('downloading');
 
         const blob = new Blob(chunks, { type: blobType });
-        const filename = `video_gynsys_${selectedPost?.id || 'export'}.${extension}`;
+        const filename = `video_arko360_${selectedPost?.id || 'export'}.${extension}`;
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         try {
           if (isCapacitor()) {
             const { file_id, extension } = await blogService.uploadForDownload(blob, filename);
             const apiBase = (
-              import.meta.env.VITE_API_BASE_URL || 'https://api.gynsys.net/api/v1'
+              import.meta.env.VITE_API_BASE_URL || 'https://api.arko360.net/api/v1'
             ).replace(/\/$/, '');
             openExternalFile(`${apiBase}/blog/download/${file_id}?ext=${extension}`);
           } else if (isMobile) {
             const { file_id, extension } = await blogService.uploadForDownload(blob, filename);
             const apiBase = (
-              import.meta.env.VITE_API_BASE_URL || 'https://api.gynsys.net/api/v1'
+              import.meta.env.VITE_API_BASE_URL || 'https://api.arko360.net/api/v1'
             ).replace(/\/$/, '');
             window.location.href = `${apiBase}/blog/download/${file_id}?ext=${extension}`;
           } else {

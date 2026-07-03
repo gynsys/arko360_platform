@@ -307,20 +307,28 @@ export const SlideCanvas = ({
                       <div 
                         className="w-full h-full flex items-center justify-center"
                         style={{ 
-                          color: el.useGradient ? `url(#grad-${elId})` : el.color,
+                          color: el.useGradient ? 'inherit' : (el.color || 'inherit'),
                           fontSize: `${Math.min(el.width, el.height) * 0.8}px`
                         }}
                       >
                         {el.useGradient && (
-                          <defs>
-                            <linearGradient id={`grad-${elId}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                              <stop offset="0%" style={{stopColor: el.color}} />
-                              <stop offset="50%" style={{stopColor: el.color2 || el.color}} />
-                              <stop offset="100%" style={{stopColor: el.color3 || el.color}} />
-                            </linearGradient>
-                          </defs>
+                          <svg width="0" height="0" style={{ position: 'absolute' }}>
+                            <defs>
+                              <linearGradient id={`grad-${elId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style={{stopColor: el.color}} />
+                                <stop offset="50%" style={{stopColor: el.color2 || el.color}} />
+                                <stop offset="100%" style={{stopColor: el.color3 || el.color}} />
+                              </linearGradient>
+                            </defs>
+                          </svg>
                         )}
-                        <IconComp style={{ width: '100%', height: '100%' }} />
+                        <IconComp 
+                          style={{ 
+                            width: '100%', 
+                            height: '100%',
+                            fill: el.useGradient ? `url(#grad-${elId})` : undefined
+                          }} 
+                        />
                       </div>
                     );
                   } else {
@@ -393,7 +401,7 @@ export const SlideCanvas = ({
       )}
 
       {isSelected && (
-        <div className="absolute bottom-4 right-4 slide-actions z-[60] flex flex-col gap-1 pointer-events-auto">
+        <div className="absolute top-1/2 right-4 -translate-y-1/2 slide-actions z-[60] flex flex-col gap-1 pointer-events-auto">
           <button onClick={(e) => { e.stopPropagation(); onPreview(index); }} className="p-2 bg-white text-indigo-600 rounded-xl hover:bg-indigo-50 shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Vista Previa"><FiMaximize2 size={14}/></button>
           <button onClick={(e) => { e.stopPropagation(); onEdit(index); }} className="p-2 bg-white text-amber-500 rounded-xl hover:bg-amber-50 shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Editar Contenido"><FiEdit3 size={14}/></button>
           <label className="p-2 bg-white text-indigo-400 rounded-xl hover:bg-indigo-50 shadow-xl border border-gray-100 cursor-pointer transition-all transform hover:scale-110" title="Insertar Imagen">

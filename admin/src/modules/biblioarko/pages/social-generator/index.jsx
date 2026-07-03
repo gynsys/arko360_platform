@@ -404,10 +404,22 @@ export default function SocialGenerator() {
   };
 
   const handleRemoveSlide = (index) => {
-    if (generatedContent.slides.length <= 1) return;
-    const newSlides = generatedContent.slides.filter((_, i) => i !== index);
-    setGeneratedContent({ ...generatedContent, slides: newSlides });
+    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+    const arr = generatedContent[slidesProp];
+    if (arr.length <= 1) return;
+    const newSlides = arr.filter((_, i) => i !== index);
+    setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
     designer.canvas.setCurrentSlidePage(Math.max(0, designer.canvas.currentSlidePage - 1));
+  };
+
+  const handleCopySlide = (index) => {
+    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+    const arr = generatedContent[slidesProp];
+    const newSlides = [...arr];
+    const slideToCopy = JSON.parse(JSON.stringify(arr[index])); // deep copy
+    newSlides.splice(index + 1, 0, slideToCopy);
+    setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+    designer.canvas.setCurrentSlidePage(index + 1);
   };
 
   const handleAddImage = (index, e) => {
@@ -679,7 +691,7 @@ export default function SocialGenerator() {
                             design={designer.design} canvas={designer.canvas}
                             transform={transformer.state} handlers={transformer.handlers}
                             watermark={watermarkImage} onEdit={setEditingIndex}
-                            onPreview={setPreviewIndex} onRemove={handleRemoveSlide}
+                            onPreview={setPreviewIndex} onRemove={handleRemoveSlide} onCopy={handleCopySlide}
                             onAddImage={(e) => activeTab === 'video' ? handleAddImageToVideoSlide(designer.canvas.currentSlidePage, e) : handleAddImage(designer.canvas.currentSlidePage, e)}
                             isVideoMode={activeTab === 'video'}
                           />
@@ -799,12 +811,13 @@ export default function SocialGenerator() {
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Contenido</label>
                 <textarea 
                   rows={5}
-                  value={generatedContent.slides[editingIndex]?.content || ''}
+                  value={activeTab === 'video' ? (generatedContent.video_slides[editingIndex]?.content || '') : (generatedContent.slides[editingIndex]?.content || '')}
                   onChange={(e) => {
-                    const newSlides = [...generatedContent.slides];
+                    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+                    const newSlides = [...generatedContent[slidesProp]];
                     if (newSlides[editingIndex]) {
                       newSlides[editingIndex].content = e.target.value;
-                      setGeneratedContent({ ...generatedContent, slides: newSlides });
+                      setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
                     }
                   }}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm leading-relaxed"
@@ -823,7 +836,8 @@ export default function SocialGenerator() {
 
       <PreviewModal 
         isOpen={previewIndex !== null} currentIndex={previewIndex}
-        total={generatedContent?.slides?.length || 0} slides={generatedContent?.slides || []}
+        total={activeTab === 'video' ? (generatedContent?.video_slides?.length || 0) : (generatedContent?.slides?.length || 0)} 
+        slides={activeTab === 'video' ? (generatedContent?.video_slides || []) : (generatedContent?.slides || [])}
         onClose={() => setPreviewIndex(null)} onNavigate={setPreviewIndex}
         renderSlide={(slide, i, isPrev) => (
           <SlideCanvas slide={slide} index={i} isPreview={isPrev} doctor={doctor} doctorLogo={doctorLogoBase64} siteConfig={siteConfig} design={designer.design} canvas={designer.canvas} transform={transformer.state} watermark={watermarkImage} handlers={transformer.handlers} />
