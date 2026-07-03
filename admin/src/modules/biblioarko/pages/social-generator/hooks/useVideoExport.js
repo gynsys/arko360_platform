@@ -97,8 +97,10 @@ export const useVideoExport = (
             audioRef.current.currentTime = 0;
             const playPromise = audioRef.current.play();
             if (playPromise !== undefined) {
-              playPromise.catch(e => console.log('[Arko360] Audio play prevented:', e));
+              await playPromise.catch(e => console.log('[Arko360] Audio play prevented:', e));
             }
+            // Pequeña pausa para asegurar que el buffer de audio haya iniciado
+            await new Promise(r => setTimeout(r, 150));
             const audioStream = audioRef.current.captureStream
               ? audioRef.current.captureStream()
               : audioRef.current.mozCaptureStream();
@@ -113,9 +115,21 @@ export const useVideoExport = (
         }
       }
 
-      const recorder = new MediaRecorder(combinedStream, {
-        mimeType: 'video/webm;codecs=vp9,opus',
-      });
+      let mimeType = 'video/webm;codecs=vp9,opus';
+      let extension = 'webm';
+      let blobType = 'video/webm';
+      
+      if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1,mp4a.40.2')) {
+        mimeType = 'video/mp4;codecs=avc1,mp4a.40.2';
+        extension = 'mp4';
+        blobType = 'video/mp4';
+      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+        mimeType = 'video/mp4';
+        extension = 'mp4';
+        blobType = 'video/mp4';
+      }
+
+      const recorder = new MediaRecorder(combinedStream, { mimeType });
       const chunks = [];
       recorder.ondataavailable = e => chunks.push(e.data);
 
@@ -127,8 +141,8 @@ export const useVideoExport = (
         setIsExporting(false);
         setExportStatus('downloading');
 
-        const blob = new Blob(chunks, { type: 'video/mp4' });
-        const filename = `video_gynsys_${selectedPost?.id || 'export'}.mp4`;
+        const blob = new Blob(chunks, { type: blobType });
+        const filename = `video_gynsys_${selectedPost?.id || 'export'}.${extension}`;
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         try {

@@ -55,7 +55,8 @@ TEMPLATE_CONFIGS = {
             "showElectrica": True,
             "showEscaleras": True,
             "showLosas": True,
-            "showArko3D": True
+            "showArko3D": True,
+            "showCieloRasoVisible": True
         },
         "hero": {
             "badge": "Ingeniería & Arquitectura",
@@ -229,7 +230,8 @@ TEMPLATE_CONFIGS = {
             "showElectrica": False,
             "showEscaleras": False,
             "showLosas": False,
-            "showArko3D": False
+            "showArko3D": False,
+            "showCieloRasoVisible": False
         },
         "hero": {
             "badge": "Salud Integral",

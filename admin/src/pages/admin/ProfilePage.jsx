@@ -1409,6 +1409,7 @@ export default function ProfilePage() {
                 { key: 'showMuroGravedad', label: 'Diseño de Muro de Gravedad' },
                 { key: 'showDisenoMezclas', label: 'Diseño de Mezclas de Concreto' },
                 { key: 'showDrywall', label: 'Calculadora de Drywall' },
+                { key: 'showCieloRasoVisible', label: 'Cálculo de Cielo Raso (Visible)' },
                 { key: 'showElectrica', label: 'Calculadora Eléctrica' },
                 { key: 'showEscaleras', label: 'Calculadora de Escaleras' },
                 { key: 'showLosas', label: 'Calculadora de Losas' },

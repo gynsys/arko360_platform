@@ -194,7 +194,9 @@ export const SlideCanvas = ({
               top: pos.y + '%',
               width: size + 'px',
               height: size + 'px',
-              transform: `translate(-50%, -50%) rotate(${rot}deg)`,
+              marginLeft: `-${size / 2}px`,
+              marginTop: `-${size / 2}px`,
+              transform: `rotate(${rot}deg)`,
               cursor: isSelected ? 'grab' : 'default',
               borderRadius: imageBorderRadius,
               overflow: 'hidden'

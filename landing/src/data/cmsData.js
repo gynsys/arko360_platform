@@ -316,6 +316,12 @@ export const cmsData = {
         icon: 'Calculator'
       },
       {
+        id: 'visible-ceiling',
+        title: 'Calculadora Cielo Raso Visible',
+        desc: 'Calcula los materiales necesarios para instalar techos de cielo raso con estructura vista o junta visible.',
+        icon: 'Grid'
+      },
+      {
         id: 'electrica',
         title: 'Calculadora Eléctrica',
         desc: 'Cálculo de carga eléctrica residencial basado en NEC 2023: acometida, breaker principal y circuitos derivados.',

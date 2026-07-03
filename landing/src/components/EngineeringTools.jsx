@@ -7,6 +7,7 @@ import DropCeilingCalc from './tools/DropCeilingCalc.jsx';
 import MixDesignCalculator from './tools/MixDesignCalculator.jsx';
 import MuroGravedad from './tools/MuroGravedad.jsx';
 import CalculadoraDrywall from './tools/CalculadoraDrywall.jsx';
+import CalculadoraCieloVisible from './tools/CalculadoraCieloVisible.jsx';
 import CalculadoraElectrica from './tools/CalculadoraElectrica.jsx';
 import CalculadoraEscaleras from './tools/CalculadoraEscaleras.jsx';
 import CalculadoraLosas from './tools/calculadoraLosas/CalculadoraLosas.jsx';
@@ -36,6 +37,8 @@ export default function EngineeringTools() {
         return <MixDesignCalculator />;
       case 'drywall':
         return <CalculadoraDrywall />;
+      case 'visible-ceiling':
+        return <CalculadoraCieloVisible />;
       case 'electrica':
         return <CalculadoraElectrica />;
       case 'escaleras':
@@ -64,6 +67,7 @@ export default function EngineeringTools() {
               if (tool.id === 'muro-gravedad') return siteConfig.tools.showMuroGravedad !== false;
               if (tool.id === 'diseno-mezclas') return siteConfig.tools.showDisenoMezclas !== false;
               if (tool.id === 'drywall') return siteConfig.tools.showDrywall !== false;
+              if (tool.id === 'visible-ceiling') return siteConfig.tools.showCieloRasoVisible !== false;
               if (tool.id === 'electrica') return siteConfig.tools.showElectrica !== false;
               if (tool.id === 'escaleras') return siteConfig.tools.showEscaleras !== false;
               if (tool.id === 'losas') return siteConfig.tools.showLosas !== false;

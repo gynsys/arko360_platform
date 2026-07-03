@@ -285,7 +285,8 @@ DEFAULT_SITE_CONFIG = {
         "showElectrica": True,
         "showEscaleras": True,
         "showLosas": True,
-        "showArko3D": True
+        "showArko3D": True,
+        "showCieloRasoVisible": True
     },
     "hero": {
         "badge": "Ingeniería & Arquitectura",
