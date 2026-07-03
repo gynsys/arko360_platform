@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Calculator, DoorOpen, Maximize, Ruler, Download, ArrowLeft, Brush } from 'lucide-react';
+import { Calculator, DoorOpen, Maximize, Ruler, Download, ArrowLeft, Brush, Grid, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const CalculadoraMamposteria = () => {
@@ -32,8 +32,11 @@ const CalculadoraMamposteria = () => {
     cemento: 13.46,
     arena: 45.24,
     polvillo: 53.36,
+    pego: 12.00,
+    lija: 1.50,
     pasta: 17.48, // Galón
-    pintura: 17.40 // Galón
+    pintura: 17.40, // Galón
+    manoObra: 10.00 // por m2
   });
 
   const reportRef = useRef(null);
@@ -131,7 +134,7 @@ const CalculadoraMamposteria = () => {
     const vol_mortero_total = (vol_mortero_pegue_total + vol_mortero_friso) * factorDesperdicio;
 
     // Cemento y Arena (proporción 1:4 => 1m3 mortero = 7.5 sacos cemento + 1.05m3 agregado)
-    const sacosCemento = Math.ceil(vol_mortero_total * 7.5) || (areaNeta > 0 ? 1 : 0);
+    let sacosCemento = Math.ceil(vol_mortero_total * 7.5) || (areaNeta > 0 ? 1 : 0);
     const arena_total = vol_mortero_total * 1.05;
     // 1:1 Arena Lavada / Polvillo
     const m3Arena = parseFloat((arena_total / 2).toFixed(2)) || (areaNeta > 0 ? 0.25 : 0);
@@ -140,12 +143,19 @@ const CalculadoraMamposteria = () => {
     // Acabado
     let galonesPasta = 0;
     let galonesPintura = 0;
+    let sacosPego = 0;
+    let hojasLija = 0;
 
     if (friso !== 'ninguna' && acabado === 'liso') {
       // Rendimiento aprox: 1 galón de pasta = 4 m2
       galonesPasta = Math.ceil((areaFriso / 4) * factorDesperdicio);
-      // Rendimiento aprox: 1 galón de pintura = 15 m2
+      // Rendimiento aprox: 1 galón de pintura = 15 m2 (2 manos)
       galonesPintura = Math.ceil((areaFriso / 15) * factorDesperdicio);
+      
+      // Pego y Lija para el empastado liso
+      sacosPego = Math.ceil((areaFriso / 5) * factorDesperdicio);
+      sacosCemento += Math.ceil((areaFriso / 10) * factorDesperdicio); // Cemento extra para mezclilla
+      hojasLija = Math.ceil((areaFriso / 5) * factorDesperdicio);
     }
 
     // Conversión de moneda
@@ -160,17 +170,24 @@ const CalculadoraMamposteria = () => {
     const pCemento = convertPrice(costos.cemento);
     const pArena = convertPrice(costos.arena);
     const pPolvillo = convertPrice(costos.polvillo);
+    const pPego = convertPrice(costos.pego);
+    const pLija = convertPrice(costos.lija);
     const pPasta = convertPrice(costos.pasta);
     const pPintura = convertPrice(costos.pintura);
+    const pManoObra = convertPrice(costos.manoObra);
 
     const totalBloque = bloques * pBloque;
     const totalCemento = sacosCemento * pCemento;
     const totalArena = m3Arena * pArena;
     const totalPolvillo = m3Polvillo * pPolvillo;
+    const totalPego = sacosPego * pPego;
+    const totalLija = hojasLija * pLija;
     const totalPasta = galonesPasta * pPasta;
     const totalPintura = galonesPintura * pPintura;
 
-    const totalGeneral = totalBloque + totalCemento + totalArena + totalPolvillo + totalPasta + totalPintura;
+    const totalMateriales = totalBloque + totalCemento + totalArena + totalPolvillo + totalPego + totalLija + totalPasta + totalPintura;
+    const totalManoObra = areaNeta * pManoObra;
+    const totalProyecto = totalMateriales + totalManoObra;
 
     const materialesArray = [
       { nombre: `Bloque de ${tipoBloque === 'arcilla' ? 'Arcilla' : 'Cemento'} (${grosorBloque}cm)`, cantidad: bloques, unidad: 'und', precio: pBloque, total: totalBloque },
@@ -181,7 +198,9 @@ const CalculadoraMamposteria = () => {
 
     if (friso !== 'ninguna' && acabado === 'liso') {
       materialesArray.push(
+        { nombre: 'Pego (Saco)', cantidad: sacosPego, unidad: 'sacos', precio: pPego, total: totalPego },
         { nombre: 'Pasta Profesional (Galón)', cantidad: galonesPasta, unidad: 'galones', precio: pPasta, total: totalPasta },
+        { nombre: 'Lija (Hoja)', cantidad: hojasLija, unidad: 'hojas', precio: pLija, total: totalLija },
         { nombre: 'Pintura de Caucho (Galón)', cantidad: galonesPintura, unidad: 'galones', precio: pPintura, total: totalPintura }
       );
     }
@@ -194,7 +213,9 @@ const CalculadoraMamposteria = () => {
       espacioNecesario: espacioNecesario.toFixed(2),
       ventanasValidas,
       materiales: materialesArray,
-      totalGeneral
+      totalMateriales,
+      totalManoObra,
+      totalProyecto
     };
   }, [pared, puertas, ventanas, desperdicio, tipoBloque, grosorBloque, friso, acabado, costos, baseCurrency, viewCurrency, exchangeRate]);
 
@@ -277,7 +298,7 @@ const CalculadoraMamposteria = () => {
             <strong>Área Neta:</strong> ${resultados.areaNeta} m²<br/>
             <strong>Bloque:</strong> ${tipoBloque === 'arcilla' ? 'Arcilla' : 'Cemento'} de ${grosorBloque}cm<br/>
             <strong>Friso:</strong> ${friso === 'ninguna' ? 'Sin Friso' : (friso === '1_cara' ? '1 Cara' : '2 Caras')} (${resultados.areaFriso} m²)<br/>
-            ${friso !== 'ninguna' ? `<strong>Acabado:</strong> ${acabado === 'liso' ? 'Liso (Enastado y Pintura)' : 'Rústico'}<br/>` : ''}
+            ${friso !== 'ninguna' ? `<strong>Acabado:</strong> ${acabado === 'liso' ? 'Liso (Empastado y Pintura)' : 'Rústico'}<br/>` : ''}
             <strong>Desperdicio:</strong> ${desperdicio}%<br/>
           </div>
           <h2>Lista de Materiales y Costos</h2>
@@ -293,7 +314,9 @@ const CalculadoraMamposteria = () => {
               </tr>
             `).join('')}
           </table>
-          <div class="total">TOTAL ESTIMADO: ${formatMoney(resultados.totalGeneral)}</div>
+          <div class="total">TOTAL ESTIMADO MATERIALES: ${formatMoney(resultados.totalMateriales)}</div>
+          <div class="total" style="color: #555; font-size: 16px; margin-top: 10px;">TOTAL MANO DE OBRA (${resultados.areaNeta} m² × ${formatMoney(costos.manoObra)}): ${formatMoney(resultados.totalManoObra)}</div>
+          <div class="total" style="font-size: 22px; margin-top: 15px; color: #1b5e20;">TOTAL GENERAL: ${formatMoney(resultados.totalProyecto)}</div>
         </body>
       </html>
     `;
@@ -322,7 +345,9 @@ const CalculadoraMamposteria = () => {
                 <td>${m.total}</td>
               </tr>
             `).join('')}
-            <tr><td colspan="4" style="text-align: right; font-weight: bold;">TOTAL:</td><td style="font-weight: bold;">${resultados.totalGeneral}</td></tr>
+            <tr><td colspan="4" style="text-align: right; font-weight: bold;">TOTAL MATERIALES:</td><td style="font-weight: bold;">${resultados.totalMateriales}</td></tr>
+            <tr><td colspan="4" style="text-align: right; font-weight: bold;">TOTAL MANO DE OBRA:</td><td style="font-weight: bold;">${resultados.totalManoObra}</td></tr>
+            <tr><td colspan="4" style="text-align: right; font-weight: bold; font-size: 16px;">TOTAL GENERAL:</td><td style="font-weight: bold; font-size: 16px;">${resultados.totalProyecto}</td></tr>
           </table>
         </body>
       </html>
@@ -348,7 +373,9 @@ const CalculadoraMamposteria = () => {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 style={{ margin: '0 0 8px 0', color: '#1a237e' }}>🧱 Calculadora de Mampostería</h2>
+          <h2 style={{ margin: '0 0 8px 0', color: '#1a237e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Grid size={28} /> Calculadora de Mampostería
+          </h2>
           <p style={{ color: '#555', margin: 0 }}>Cálculo de bloques, mezcla para pegar y friso.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -386,13 +413,13 @@ const CalculadoraMamposteria = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Configuración de la Pared */}
-          <Card title="📐 Dimensiones de la Pared" color="#1a237e">
+          <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Ruler size={18} /> Dimensiones de la Pared</div>} color="#1a237e">
             <InputRow label="Largo (m)" name="largo" value={pared.largo} onChange={handlePared} step={0.1} />
             <InputRow label="Alto (m)" name="alto" value={pared.alto} onChange={handlePared} step={0.1} />
           </Card>
 
           {/* Configuración de Bloque y Acabado */}
-          <Card title="🧱 Bloque y Acabado" color="#f57c00">
+          <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Grid size={18} /> Bloque y Acabado</div>} color="#1a237e">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '14px', marginBottom: '6px', color: '#444' }}>Tipo de Bloque</label>
@@ -434,7 +461,7 @@ const CalculadoraMamposteria = () => {
           </Card>
 
           {/* Puertas */}
-          <Card title="🚪 Puertas" color="#0277bd">
+          <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><DoorOpen size={18} /> Puertas</div>} color="#1a237e">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
               <input type="checkbox" id="incPuertas" name="incluir" checked={puertas.incluir} onChange={handlePuertas} style={{ width: '18px', height: '18px' }} />
               <label htmlFor="incPuertas" style={{ fontWeight: 500 }}>Incluir Puertas</label>
@@ -449,7 +476,7 @@ const CalculadoraMamposteria = () => {
           </Card>
 
           {/* Ventanas */}
-          <Card title="🪟 Ventanas" color="#00838f">
+          <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Maximize size={18} /> Ventanas</div>} color="#1a237e">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
               <input type="checkbox" id="incVentanas" name="incluir" checked={ventanas.incluir} onChange={handleVentanas} style={{ width: '18px', height: '18px' }} />
               <label htmlFor="incVentanas" style={{ fontWeight: 500 }}>Incluir Ventanas</label>
@@ -467,7 +494,7 @@ const CalculadoraMamposteria = () => {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Visualización */}
-          <Card title="Plano de la Pared" color="#333">
+          <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Brush size={18} /> Plano de la Pared</div>} color="#1a237e">
             {!resultados.cabenHorizontal && (
               <div style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '12px', borderRadius: '6px', marginBottom: '16px', fontSize: '13px' }}>
                 ⚠️ Las aberturas no caben horizontalmente.
@@ -522,8 +549,10 @@ const CalculadoraMamposteria = () => {
             </div>
           </Card>
 
+          </Card>
+
           {/* Precios Unitarios */}
-          <Card title="💵 Precios Unitarios (Con 16% IVA)" color="#2e7d32">
+          <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Calculator size={18} /> Precios Unitarios (Con 16% IVA)</div>} color="#1a237e">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <CostInput label={`Bloque ${tipoBloque === 'arcilla' ? 'Arcilla' : 'Cemento'} (${grosorBloque}cm)`} name={`bloque_${tipoBloque}_${grosorBloque}`} value={costos[`bloque_${tipoBloque}_${grosorBloque}`] || 0} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
               <CostInput label="Cemento (Saco)" name="cemento" value={costos.cemento} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
@@ -531,10 +560,15 @@ const CalculadoraMamposteria = () => {
               <CostInput label="Polvillo (m³)" name="polvillo" value={costos.polvillo} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
               {friso !== 'ninguna' && acabado === 'liso' && (
                 <>
+                  <CostInput label="Pego (Saco)" name="pego" value={costos.pego} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
+                  <CostInput label="Lija (Hoja)" name="lija" value={costos.lija} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
                   <CostInput label="Pasta Prof. (Galón)" name="pasta" value={costos.pasta} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
                   <CostInput label="Pintura Caucho (Galón)" name="pintura" value={costos.pintura} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
                 </>
               )}
+            </div>
+            <div style={{ marginTop: '16px', borderTop: '1px solid #eee', paddingTop: '16px' }}>
+              <CostInput label="Costo Mano de Obra (por m²)" name="manoObra" value={costos.manoObra} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
             </div>
             <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <label style={{ fontSize: '13px', fontWeight: 600 }}>% Desperdicio:</label>
@@ -574,9 +608,25 @@ const CalculadoraMamposteria = () => {
               ))}
             </tbody>
           </table>
-          <div style={{ marginTop: '24px', padding: '20px', backgroundColor: '#e8f5e9', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '16px', color: '#2e7d32', fontWeight: 600 }}>TOTAL MATERIALES</span>
-            <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#1b5e20' }}>{formatMoney(resultados.totalGeneral)}</span>
+          
+          <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ padding: '16px 20px', backgroundColor: '#e8f5e9', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '15px', color: '#2e7d32', fontWeight: 600 }}>SUBTOTAL MATERIALES</span>
+              <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#1b5e20' }}>{formatMoney(resultados.totalMateriales)}</span>
+            </div>
+            
+            <div style={{ padding: '16px 20px', backgroundColor: '#e3f2fd', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '15px', color: '#1565c0', fontWeight: 600 }}>MANO DE OBRA</span>
+                <span style={{ fontSize: '12px', color: '#1976d2' }}>({resultados.areaNeta} m² × {formatMoney(convertPrice(costos.manoObra))}/m²)</span>
+              </div>
+              <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#0d47a1' }}>{formatMoney(resultados.totalManoObra)}</span>
+            </div>
+
+            <div style={{ padding: '20px', backgroundColor: '#fff3e0', borderRadius: '8px', border: '2px solid #ffb74d', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '18px', color: '#e65100', fontWeight: 800 }}>TOTAL ESTIMADO</span>
+              <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#e65100' }}>{formatMoney(resultados.totalProyecto)}</span>
+            </div>
           </div>
         </div>
       </div>
