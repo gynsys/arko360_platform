@@ -796,12 +796,13 @@ export default function SocialGenerator() {
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Título</label>
                 <input 
                   type="text"
-                  value={generatedContent.slides[editingIndex]?.title || ''}
+                  value={activeTab === 'video' ? (generatedContent.video_slides[editingIndex]?.title || '') : (generatedContent.slides[editingIndex]?.title || '')}
                   onChange={(e) => {
-                    const newSlides = [...generatedContent.slides];
+                    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+                    const newSlides = [...generatedContent[slidesProp]];
                     if (newSlides[editingIndex]) {
                       newSlides[editingIndex].title = e.target.value;
-                      setGeneratedContent({ ...generatedContent, slides: newSlides });
+                      setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
                     }
                   }}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold"
@@ -840,7 +841,7 @@ export default function SocialGenerator() {
         slides={activeTab === 'video' ? (generatedContent?.video_slides || []) : (generatedContent?.slides || [])}
         onClose={() => setPreviewIndex(null)} onNavigate={setPreviewIndex}
         renderSlide={(slide, i, isPrev) => (
-          <SlideCanvas slide={slide} index={i} isPreview={isPrev} doctor={doctor} doctorLogo={doctorLogoBase64} siteConfig={siteConfig} design={designer.design} canvas={designer.canvas} transform={transformer.state} watermark={watermarkImage} handlers={transformer.handlers} />
+          <SlideCanvas slide={slide} index={i} isPreview={isPrev} doctor={doctor} doctorLogo={doctorLogoBase64} siteConfig={siteConfig} design={designer.design} canvas={designer.canvas} transform={transformer.state} watermark={watermarkImage} handlers={transformer.handlers} isVideoMode={activeTab === 'video'} />
         )}
       />
 
