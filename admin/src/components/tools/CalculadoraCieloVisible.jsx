@@ -4,20 +4,19 @@ const CalculadoraCieloVisible = () => {
   // ─── ESTADO ───
   const [techo, setTecho] = useState({ largo: 5.0, ancho: 4.0 });
   const [correas, setCorreas] = useState('largo'); // Dirección de las correas ('largo' o 'ancho')
-  const [secundarias, setSecundarias] = useState('1.22'); // '1.22' o '0.61'
-  const [desperdicio, setDesperdicio] = useState(10); // %
-  const [baseCurrency, setBaseCurrency] = useState('USD');
-  const [viewCurrency, setViewCurrency] = useState('USD');
-  const [exchangeRate, setExchangeRate] = useState(65.30);
+  const [baseCurrency, setBaseCurrency] = useState('VES');
+  const [viewCurrency, setViewCurrency] = useState('VES');
+  const [exchangeRate, setExchangeRate] = useState(653.00);
   
   const [costos, setCostos] = useState({
-    lamina: 8.50,
-    principal366: 4.50,
-    secundaria122: 1.80,
-    secundaria061: 0.90,
-    angulo305: 3.20,
-    alambre: 2.50, // por kg
-    clavoFulminante: 0.20 // par (clavo + fulminante)
+    lamina: 4705.88,
+    principal366: 5911.24,
+    secundaria122: 2014.45,
+    secundaria061: 1007.22,
+    angulo305: 3841.75,
+    alambre: 3918.00,
+    clavos: 3394.31,
+    fulminante: 11101.00
   });
 
   // ─── HANDLERS ───
@@ -94,6 +93,7 @@ const CalculadoraCieloVisible = () => {
     const cuelguesPrincipales = lineasPrincipales * Math.ceil(dimPrincipal / 1.22);
     const clavosPerimetrales = Math.ceil(perimetro / 0.60); // fijación del ángulo cada 60cm
     const totalFijaciones = Math.ceil((cuelguesPrincipales + clavosPerimetrales) * factorDesperdicio);
+    const bolsasFijaciones = Math.ceil(totalFijaciones / 100);
 
     // Alambre galvanizado (aprox 1 metro por cuelgue, ~25m por kg)
     const kgAlambre = Math.ceil((cuelguesPrincipales * factorDesperdicio) / 25) || 1;
@@ -113,7 +113,8 @@ const CalculadoraCieloVisible = () => {
     const pSecundaria061 = convertPrice(costos.secundaria061);
     const pAngulo305 = convertPrice(costos.angulo305);
     const pAlambre = convertPrice(costos.alambre);
-    const pClavoFulminante = convertPrice(costos.clavoFulminante);
+    const pClavos = convertPrice(costos.clavos);
+    const pFulminante = convertPrice(costos.fulminante);
 
     const totalLamina = laminas * pLamina;
     const totalPrincipal = principales * pPrincipal366;
@@ -121,9 +122,10 @@ const CalculadoraCieloVisible = () => {
     const totalSecundaria061 = secundarias061 * pSecundaria061;
     const totalAngulo = angulos * pAngulo305;
     const totalAlambre = kgAlambre * pAlambre;
-    const totalFijacion = totalFijaciones * pClavoFulminante;
+    const totalClavos = bolsasFijaciones * pClavos;
+    const totalFulminante = bolsasFijaciones * pFulminante;
     
-    const totalGeneral = totalLamina + totalPrincipal + totalSecundaria122 + totalSecundaria061 + totalAngulo + totalAlambre + totalFijacion;
+    const totalGeneral = totalLamina + totalPrincipal + totalSecundaria122 + totalSecundaria061 + totalAngulo + totalAlambre + totalClavos + totalFulminante;
 
     const materialesArray = [
       { nombre: 'Láminas (0.61×1.22m)', cantidad: laminas, unidad: 'pzas', precio: pLamina, total: totalLamina },
@@ -138,7 +140,8 @@ const CalculadoraCieloVisible = () => {
 
     materialesArray.push(
       { nombre: 'Ángulo Perimetral (3.05m)', cantidad: angulos, unidad: 'pzas', precio: pAngulo305, total: totalAngulo },
-      { nombre: 'Clavos + Fulminantes', cantidad: totalFijaciones, unidad: 'pares', precio: pClavoFulminante, total: totalFijacion },
+      { nombre: 'Clavos (Bolsa 100und)', cantidad: bolsasFijaciones, unidad: 'bolsas', precio: pClavos, total: totalClavos },
+      { nombre: 'Fulminantes (Bolsa 100und)', cantidad: bolsasFijaciones, unidad: 'bolsas', precio: pFulminante, total: totalFulminante },
       { nombre: 'Alambre Galvanizado', cantidad: kgAlambre, unidad: 'kg', precio: pAlambre, total: totalAlambre }
     );
 
@@ -368,7 +371,8 @@ const CalculadoraCieloVisible = () => {
                 : <CostInput label="Secundaria 0.61m" name="secundaria061" value={costos.secundaria061} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
               }
               <CostInput label="Ángulo 3.05m" name="angulo305" value={costos.angulo305} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
-              <CostInput label="Clavo+Fulminante" name="clavoFulminante" value={costos.clavoFulminante} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
+              <CostInput label="Clavos (Bolsa)" name="clavos" value={costos.clavos} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
+              <CostInput label="Fulminantes (Bolsa)" name="fulminante" value={costos.fulminante} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
               <CostInput label="Alambre (kg)" name="alambre" value={costos.alambre} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
             </div>
           </Card>
