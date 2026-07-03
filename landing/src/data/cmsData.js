@@ -338,6 +338,12 @@ export const cmsData = {
         title: 'Calculadora de Losas',
         desc: 'Diseño estructural comparativo de losas macizas, aligeradas y colaborantes según ACI 318-19: retícula, momentos y costos.',
         icon: 'Layers'
+      },
+      {
+        id: 'mamposteria',
+        title: 'Calculadora de Mampostería',
+        desc: 'Cálculo de bloques de arcilla o cemento, mezcla de asiento, friso y acabados para paredes de mampostería.',
+        icon: 'Layers'
       }
     ]
   }

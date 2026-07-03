@@ -1,14 +1,21 @@
 import React, { useState, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Grid, Layers, Container, Calculator, ArrowLeft } from 'lucide-react';
+import { Grid, Layers, Container, Calculator, ArrowLeft, Zap, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cmsData } from '../data/cmsData.js';
 import DropCeilingCalc from './tools/DropCeilingCalc.jsx';
 import MixDesignCalculator from './tools/MixDesignCalculator.jsx';
+import MuroGravedad from './tools/MuroGravedad.jsx';
+import CalculadoraDrywall from './tools/CalculadoraDrywall.jsx';
+import CalculadoraCieloVisible from './tools/CalculadoraCieloVisible.jsx';
+import CalculadoraElectrica from './tools/CalculadoraElectrica.jsx';
+import CalculadoraEscaleras from './tools/CalculadoraEscaleras.jsx';
+import CalculadoraLosas from './tools/calculadoraLosas/CalculadoraLosas.jsx';
+import CalculadoraMamposteria from './tools/CalculadoraMamposteria.jsx';
 import { SiteConfigContext } from '../App.jsx';
 
 const iconMap = {
-  Grid, Layers, Container, Calculator
+  Grid, Layers, Container, Calculator, Zap, Wrench
 };
 
 export default function EngineeringTools() {
@@ -26,9 +33,21 @@ export default function EngineeringTools() {
       case 'cielo-raso':
         return <DropCeilingCalc />;
       case 'muro-gravedad':
-        return <div className="text-center p-8"><p>Herramienta Muro de Gravedad en desarrollo...</p></div>;
+        return <MuroGravedad />;
       case 'diseno-mezclas':
         return <MixDesignCalculator />;
+      case 'drywall':
+        return <CalculadoraDrywall />;
+      case 'visible-ceiling':
+        return <CalculadoraCieloVisible />;
+      case 'electrica':
+        return <CalculadoraElectrica />;
+      case 'escaleras':
+        return <CalculadoraEscaleras />;
+      case 'losas':
+        return <CalculadoraLosas />;
+      case 'mamposteria':
+        return <CalculadoraMamposteria />;
       default:
         return null;
     }
@@ -47,9 +66,15 @@ export default function EngineeringTools() {
           >
             {tools.list.filter(tool => {
               if (!siteConfig || !siteConfig.tools) return true; // Default show all
-              if (tool.id === 'diseno-mezclas') return siteConfig.tools.mixDesign;
-              if (tool.id === 'muro-gravedad') return siteConfig.tools.wallCalculator;
-              if (tool.id === 'cielo-raso') return siteConfig.tools.budgetEstimator; // repurposing budgetEstimator for cielo-raso toggle to match
+              if (tool.id === 'cielo-raso') return siteConfig.tools.showCieloRaso !== false;
+              if (tool.id === 'muro-gravedad') return siteConfig.tools.showMuroGravedad !== false;
+              if (tool.id === 'diseno-mezclas') return siteConfig.tools.showDisenoMezclas !== false;
+              if (tool.id === 'drywall') return siteConfig.tools.showDrywall !== false;
+              if (tool.id === 'visible-ceiling') return siteConfig.tools.showCieloRasoVisible !== false;
+              if (tool.id === 'electrica') return siteConfig.tools.showElectrica !== false;
+              if (tool.id === 'escaleras') return siteConfig.tools.showEscaleras !== false;
+              if (tool.id === 'losas') return siteConfig.tools.showLosas !== false;
+              if (tool.id === 'mamposteria') return siteConfig.tools.showMamposteria !== false;
               return true;
             }).map((tool, i) => {
               const Icon = iconMap[tool.icon] || Calculator;

@@ -308,6 +308,42 @@ export const cmsData = {
         title: 'Diseño de Mezclas de Concreto',
         desc: 'Calculadora de proporciones (cemento, arena, piedra, agua) para alcanzar resistencias específicas (fc).',
         icon: 'Container'
+      },
+      {
+        id: 'drywall',
+        title: 'Calculadora de Drywall',
+        desc: 'Estima materiales para paredes de drywall: láminas, canales, parales, tornillos, pasta y cinta.',
+        icon: 'Calculator'
+      },
+      {
+        id: 'visible-ceiling',
+        title: 'Calculadora Cielo Raso Visible',
+        desc: 'Calcula los materiales necesarios para instalar techos de cielo raso con estructura vista o junta visible.',
+        icon: 'Grid'
+      },
+      {
+        id: 'electrica',
+        title: 'Calculadora Eléctrica',
+        desc: 'Cálculo de carga eléctrica residencial basado en NEC 2023: acometida, breaker principal y circuitos derivados.',
+        icon: 'Zap'
+      },
+      {
+        id: 'escaleras',
+        title: 'Calculadora de Escaleras',
+        desc: 'Diseño estructural de escaleras de concreto armado o metálicas según ACI 318-19: dimensiones, cargas y diagramas.',
+        icon: 'Wrench'
+      },
+      {
+        id: 'losas',
+        title: 'Calculadora de Losas',
+        desc: 'Diseño estructural comparativo de losas macizas, aligeradas y colaborantes según ACI 318-19: retícula, momentos y costos.',
+        icon: 'Layers'
+      },
+      {
+        id: 'mamposteria',
+        title: 'Calculadora de Mampostería',
+        desc: 'Cálculo de bloques de arcilla o cemento, mezcla de asiento, friso y acabados para paredes de mampostería.',
+        icon: 'Layers'
       }
     ]
   }
