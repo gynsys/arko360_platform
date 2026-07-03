@@ -109,6 +109,7 @@ export const SlideCanvas = ({
         userSelect: isSelected ? 'none' : 'auto'
       }}
       onClick={() => isSelected && selectElement(null, null)}
+      onDoubleClick={(e) => { e.stopPropagation(); if (onEdit) onEdit(index); }}
     >
       {/* Inner container for slide content */}
       <div className="absolute inset-0 overflow-hidden">

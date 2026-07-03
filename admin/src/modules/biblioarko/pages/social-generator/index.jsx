@@ -812,7 +812,7 @@ export default function SocialGenerator() {
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Contenido</label>
                 <textarea 
                   rows={5}
-                  value={activeTab === 'video' ? (generatedContent.video_slides[editingIndex]?.content || '') : (generatedContent.slides[editingIndex]?.content || '')}
+                  value={activeTab === 'video' ? (generatedContent.video_slides[editingIndex]?.content || generatedContent.video_slides[editingIndex]?.text || '') : (generatedContent.slides[editingIndex]?.content || generatedContent.slides[editingIndex]?.text || '')}
                   onChange={(e) => {
                     const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
                     const newSlides = [...generatedContent[slidesProp]];

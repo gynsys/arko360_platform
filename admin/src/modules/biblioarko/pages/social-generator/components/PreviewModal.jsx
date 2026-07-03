@@ -8,7 +8,7 @@ export const PreviewModal = ({ isOpen, currentIndex, total, slides, renderSlide,
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-gray-100/95 dark:bg-black/95 backdrop-blur-md">
       {/* Slide Content */}
-      <div className="flex items-center justify-center transition-all duration-300 transform scale-[0.8] xs:scale-[0.9] sm:scale-100 md:scale-[1.2] lg:scale-[1.4] z-[105]">
+      <div className={`flex items-center justify-center transition-all duration-300 transform scale-[0.7] sm:scale-[0.8] md:scale-90 lg:scale-100 z-[105]`}>
         {renderSlide(slides[currentIndex], currentIndex, true)}
       </div>
 
