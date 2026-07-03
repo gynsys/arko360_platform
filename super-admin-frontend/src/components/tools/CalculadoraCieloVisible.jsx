@@ -4,6 +4,8 @@ const CalculadoraCieloVisible = () => {
   // ─── ESTADO ───
   const [techo, setTecho] = useState({ largo: 5.0, ancho: 4.0 });
   const [correas, setCorreas] = useState('largo'); // Dirección de las correas ('largo' o 'ancho')
+  const [secundarias, setSecundarias] = useState('1.22'); // '1.22' o '0.61'
+  const [desperdicio, setDesperdicio] = useState(10); // Porcentaje
   const [baseCurrency, setBaseCurrency] = useState('VES');
   const [viewCurrency, setViewCurrency] = useState('VES');
   const [exchangeRate, setExchangeRate] = useState(653.00);

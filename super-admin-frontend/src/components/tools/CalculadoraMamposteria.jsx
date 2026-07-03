@@ -23,11 +23,17 @@ const CalculadoraMamposteria = () => {
   const [exchangeRate, setExchangeRate] = useState(653.00);
 
   const [costos, setCostos] = useState({
-    bloque: 0.45,
-    cemento: 8.50,
-    arena: 25.00,
-    pasta: 12.00, // Galón
-    pintura: 15.00 // Galón
+    bloque_arcilla_10: 0.60,
+    bloque_arcilla_12: 0.64,
+    bloque_arcilla_15: 0.65,
+    bloque_cemento_10: 0.60,
+    bloque_cemento_15: 0.65,
+    bloque_cemento_20: 0.70,
+    cemento: 13.46,
+    arena: 45.24,
+    polvillo: 53.36,
+    pasta: 17.48, // Galón
+    pintura: 17.40 // Galón
   });
 
   const reportRef = useRef(null);
@@ -124,9 +130,12 @@ const CalculadoraMamposteria = () => {
 
     const vol_mortero_total = (vol_mortero_pegue_total + vol_mortero_friso) * factorDesperdicio;
 
-    // Cemento y Arena (proporción 1:4 => 1m3 mortero = 7.5 sacos cemento + 1.05m3 arena)
+    // Cemento y Arena (proporción 1:4 => 1m3 mortero = 7.5 sacos cemento + 1.05m3 agregado)
     const sacosCemento = Math.ceil(vol_mortero_total * 7.5) || (areaNeta > 0 ? 1 : 0);
-    const m3Arena = parseFloat((vol_mortero_total * 1.05).toFixed(2)) || (areaNeta > 0 ? 0.5 : 0);
+    const arena_total = vol_mortero_total * 1.05;
+    // 1:1 Arena Lavada / Polvillo
+    const m3Arena = parseFloat((arena_total / 2).toFixed(2)) || (areaNeta > 0 ? 0.25 : 0);
+    const m3Polvillo = parseFloat((arena_total / 2).toFixed(2)) || (areaNeta > 0 ? 0.25 : 0);
 
     // Acabado
     let galonesPasta = 0;
@@ -147,24 +156,27 @@ const CalculadoraMamposteria = () => {
       return price;
     };
 
-    const pBloque = convertPrice(costos.bloque);
+    const pBloque = convertPrice(costos[`bloque_${tipoBloque}_${grosorBloque}`] || 0);
     const pCemento = convertPrice(costos.cemento);
     const pArena = convertPrice(costos.arena);
+    const pPolvillo = convertPrice(costos.polvillo);
     const pPasta = convertPrice(costos.pasta);
     const pPintura = convertPrice(costos.pintura);
 
     const totalBloque = bloques * pBloque;
     const totalCemento = sacosCemento * pCemento;
     const totalArena = m3Arena * pArena;
+    const totalPolvillo = m3Polvillo * pPolvillo;
     const totalPasta = galonesPasta * pPasta;
     const totalPintura = galonesPintura * pPintura;
 
-    const totalGeneral = totalBloque + totalCemento + totalArena + totalPasta + totalPintura;
+    const totalGeneral = totalBloque + totalCemento + totalArena + totalPolvillo + totalPasta + totalPintura;
 
     const materialesArray = [
       { nombre: `Bloque de ${tipoBloque === 'arcilla' ? 'Arcilla' : 'Cemento'} (${grosorBloque}cm)`, cantidad: bloques, unidad: 'und', precio: pBloque, total: totalBloque },
       { nombre: 'Cemento Portland (42.5kg)', cantidad: sacosCemento, unidad: 'sacos', precio: pCemento, total: totalCemento },
       { nombre: 'Arena Lavada', cantidad: m3Arena, unidad: 'm³', precio: pArena, total: totalArena },
+      { nombre: 'Polvillo', cantidad: m3Polvillo, unidad: 'm³', precio: pPolvillo, total: totalPolvillo },
     ];
 
     if (friso !== 'ninguna' && acabado === 'liso') {
@@ -492,7 +504,7 @@ const CalculadoraMamposteria = () => {
                 <line x1={originX} y1={topY - 15} x2={originX + rectW} y2={topY - 15} stroke="#333" strokeWidth="1" markerStart="url(#arrow)" markerEnd="url(#arrow)" />
                 <text x={originX + rectW / 2} y={topY - 20} textAnchor="middle" fontSize="12" fill="#333" fontWeight="bold">{pared.largo} m</text>
                 <line x1={originX - 15} y1={topY} x2={originX - 15} y2={originY} stroke="#333" strokeWidth="1" markerStart="url(#arrow)" markerEnd="url(#arrow)" />
-                <text x={originX - 25} y={topY + rectH / 2} textAnchor="middle" fontSize="12" fill="#333" fontWeight="bold" transform={\`rotate(-90, \${originX - 25}, \${topY + rectH / 2})\`}>{pared.alto} m</text>
+                <text x={originX - 25} y={topY + rectH / 2} textAnchor="middle" fontSize="12" fill="#333" fontWeight="bold" transform={`rotate(-90, ${originX - 25}, ${topY + rectH / 2})`}>{pared.alto} m</text>
 
                 <defs>
                   <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
@@ -509,11 +521,12 @@ const CalculadoraMamposteria = () => {
           </Card>
 
           {/* Precios Unitarios */}
-          <Card title="💵 Precios Unitarios" color="#2e7d32">
+          <Card title="💵 Precios Unitarios (Con 16% IVA)" color="#2e7d32">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <CostInput label="Bloque" name="bloque" value={costos.bloque} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
+              <CostInput label={`Bloque ${tipoBloque === 'arcilla' ? 'Arcilla' : 'Cemento'} (${grosorBloque}cm)`} name={`bloque_${tipoBloque}_${grosorBloque}`} value={costos[`bloque_${tipoBloque}_${grosorBloque}`] || 0} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
               <CostInput label="Cemento (Saco)" name="cemento" value={costos.cemento} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
-              <CostInput label="Arena (m³)" name="arena" value={costos.arena} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
+              <CostInput label="Arena Lavada (m³)" name="arena" value={costos.arena} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
+              <CostInput label="Polvillo (m³)" name="polvillo" value={costos.polvillo} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
               {friso !== 'ninguna' && acabado === 'liso' && (
                 <>
                   <CostInput label="Pasta Prof. (Galón)" name="pasta" value={costos.pasta} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />

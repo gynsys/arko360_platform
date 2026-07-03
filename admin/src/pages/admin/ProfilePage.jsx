@@ -1413,6 +1413,7 @@ export default function ProfilePage() {
                 { key: 'showElectrica', label: 'Calculadora Eléctrica' },
                 { key: 'showEscaleras', label: 'Calculadora de Escaleras' },
                 { key: 'showLosas', label: 'Calculadora de Losas' },
+                { key: 'showMamposteria', label: 'Calculadora de Mampostería' },
                 { key: 'showArko3D', label: 'Módulo ARKO3D (Cálculo FEM)' },
                 { key: 'showCotizadorPorcelanato', label: 'Cotizador de Instalación de Porcelanato' },
                 { key: 'showCotizadorBano', label: 'Cotizador de Remodelación de Baño' },
