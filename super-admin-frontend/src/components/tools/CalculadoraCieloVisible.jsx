@@ -33,6 +33,24 @@ const CalculadoraCieloVisible = () => {
     setCostos(c => ({ ...c, [name]: isNaN(val) || val < 0 ? 0 : val }));
   };
 
+  const handleBaseCurrencyChange = (e) => {
+    const newBase = e.target.value;
+    if (newBase !== baseCurrency) {
+      const newCostos = {};
+      for (const key in costos) {
+        if (newBase === 'VES' && baseCurrency === 'USD') {
+          newCostos[key] = parseFloat((costos[key] * exchangeRate).toFixed(2));
+        } else if (newBase === 'USD' && baseCurrency === 'VES') {
+          newCostos[key] = parseFloat((costos[key] / exchangeRate).toFixed(2));
+        }
+      }
+      setCostos(newCostos);
+      setBaseCurrency(newBase);
+      // Auto-cambiamos también la moneda de vista para que el total se vea en la nueva moneda base.
+      setViewCurrency(newBase);
+    }
+  };
+
   // ─── CÁLCULOS ───
   const resultados = useMemo(() => {
     const area = techo.largo * techo.ancho;
@@ -328,7 +346,7 @@ const CalculadoraCieloVisible = () => {
               </div>
               <div style={{ flex: 1, minWidth: '120px' }}>
                 <label style={{ fontSize: '12px', color: '#555', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Ingresar precios en:</label>
-                <select value={baseCurrency} onChange={(e) => setBaseCurrency(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '13px' }}>
+                <select value={baseCurrency} onChange={handleBaseCurrencyChange} style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '13px' }}>
                   <option value="USD">Dólares ($)</option>
                   <option value="VES">Bolívares (Bs)</option>
                 </select>
