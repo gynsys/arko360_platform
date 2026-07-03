@@ -47,15 +47,15 @@ const CalculadoraCieloVisible = () => {
     
     if (secundarias === '1.22') {
       // Caso 1.22m: Principales cada 1.22m, Secundarias de 1.22m cada 0.61m
-      lineasPrincipales = Math.ceil(dimPerpendicular / 1.22);
-      const columnasSecundarias = Math.ceil(dimPerpendicular / 1.22);
-      const filasSecundarias = Math.ceil(dimPrincipal / 0.61);
+      lineasPrincipales = Math.max(0, Math.ceil(dimPerpendicular / 1.22) - 1);
+      const columnasSecundarias = Math.ceil(dimPerpendicular / 1.22); // espacios entre principales
+      const filasSecundarias = Math.max(0, Math.ceil(dimPrincipal / 0.61) - 1); // líneas de secundarias
       secundarias122 = Math.ceil((columnasSecundarias * filasSecundarias) * factorDesperdicio);
     } else {
       // Caso 0.61m: Principales cada 0.61m, Secundarias de 0.61m cada 1.22m
-      lineasPrincipales = Math.ceil(dimPerpendicular / 0.61);
-      const columnasSecundarias = Math.ceil(dimPerpendicular / 0.61);
-      const filasSecundarias = Math.ceil(dimPrincipal / 1.22);
+      lineasPrincipales = Math.max(0, Math.ceil(dimPerpendicular / 0.61) - 1);
+      const columnasSecundarias = Math.ceil(dimPerpendicular / 0.61); // espacios entre principales
+      const filasSecundarias = Math.max(0, Math.ceil(dimPrincipal / 1.22) - 1); // líneas de secundarias
       secundarias061 = Math.ceil((columnasSecundarias * filasSecundarias) * factorDesperdicio);
     }
 
@@ -288,13 +288,13 @@ const CalculadoraCieloVisible = () => {
                     elements.push(<line key={`c-${i}`} x1={oX} y1={y} x2={oX + rW} y2={y} stroke="#ff9800" strokeWidth="2" strokeDasharray="6,4" />);
                   }
                   // Principales perpendiculares a correas (paralelas al ancho)
-                  const numP = Math.floor(techo.largo / espacioP);
+                  const numP = Math.max(0, Math.ceil(techo.largo / espacioP) - 1);
                   for (let i = 1; i <= numP; i++) {
                     const x = oX + i * espacioP * sc;
                     elements.push(<line key={`p-${i}`} x1={x} y1={oY} x2={x} y2={oY + rH} stroke="#1976d2" strokeWidth="1.5" />);
                   }
                   // Secundarias perpendiculares a principales (paralelas al largo)
-                  const numS = Math.floor(techo.ancho / espacioS);
+                  const numS = Math.max(0, Math.ceil(techo.ancho / espacioS) - 1);
                   for (let i = 1; i <= numS; i++) {
                     const y = oY + i * espacioS * sc;
                     elements.push(<line key={`s-${i}`} x1={oX} y1={y} x2={oX + rW} y2={y} stroke="#4caf50" strokeWidth="1" />);
@@ -307,13 +307,13 @@ const CalculadoraCieloVisible = () => {
                     elements.push(<line key={`c-${i}`} x1={x} y1={oY} x2={x} y2={oY + rH} stroke="#ff9800" strokeWidth="2" strokeDasharray="6,4" />);
                   }
                   // Principales perpendiculares a correas (paralelas al largo)
-                  const numP = Math.floor(techo.ancho / espacioP);
+                  const numP = Math.max(0, Math.ceil(techo.ancho / espacioP) - 1);
                   for (let i = 1; i <= numP; i++) {
                     const y = oY + i * espacioP * sc;
                     elements.push(<line key={`p-${i}`} x1={oX} y1={y} x2={oX + rW} y2={y} stroke="#1976d2" strokeWidth="1.5" />);
                   }
                   // Secundarias perpendiculares a principales (paralelas al ancho)
-                  const numS = Math.floor(techo.largo / espacioS);
+                  const numS = Math.max(0, Math.ceil(techo.largo / espacioS) - 1);
                   for (let i = 1; i <= numS; i++) {
                     const x = oX + i * espacioS * sc;
                     elements.push(<line key={`s-${i}`} x1={x} y1={oY} x2={x} y2={oY + rH} stroke="#4caf50" strokeWidth="1" />);
