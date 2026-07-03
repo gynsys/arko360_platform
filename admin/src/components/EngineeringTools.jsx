@@ -5,12 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { cmsData } from '../data/cmsData.js';
 import DropCeilingCalc from './tools/DropCeilingCalc.jsx';
 import MixDesignCalculator from './tools/MixDesignCalculator.jsx';
-import MuroGravedad from './tools/MuroGravedad.jsx';
-import CalculadoraDrywall from './tools/CalculadoraDrywall.jsx';
 import CalculadoraCieloVisible from './tools/CalculadoraCieloVisible.jsx';
-import CalculadoraElectrica from './tools/CalculadoraElectrica.jsx';
-import CalculadoraEscaleras from './tools/CalculadoraEscaleras.jsx';
-import CalculadoraLosas from './tools/calculadoraLosas/CalculadoraLosas.jsx';
 import CalculadoraMamposteria from './tools/CalculadoraMamposteria.jsx';
 import { SiteConfigContext } from '../App.jsx';
 
@@ -32,20 +27,10 @@ export default function EngineeringTools() {
     switch (activeTool) {
       case 'cielo-raso':
         return <DropCeilingCalc />;
-      case 'muro-gravedad':
-        return <MuroGravedad />;
       case 'diseno-mezclas':
         return <MixDesignCalculator />;
-      case 'drywall':
-        return <CalculadoraDrywall />;
       case 'visible-ceiling':
         return <CalculadoraCieloVisible />;
-      case 'electrica':
-        return <CalculadoraElectrica />;
-      case 'escaleras':
-        return <CalculadoraEscaleras />;
-      case 'losas':
-        return <CalculadoraLosas />;
       case 'mamposteria':
         return <CalculadoraMamposteria />;
       default:
