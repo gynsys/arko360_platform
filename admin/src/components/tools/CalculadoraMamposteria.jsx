@@ -18,8 +18,8 @@ const CalculadoraMamposteria = () => {
   const [friso, setFriso] = useState('1_cara'); // 'ninguna', '1_cara', '2_caras'
   const [acabado, setAcabado] = useState('rustico'); // 'rustico', 'liso'
 
-  const [baseCurrency, setBaseCurrency] = useState('VES');
-  const [viewCurrency, setViewCurrency] = useState('VES');
+  const [baseCurrency, setBaseCurrency] = useState('USD');
+  const [viewCurrency, setViewCurrency] = useState('USD');
   const [exchangeRate, setExchangeRate] = useState(653.00);
 
   const [costos, setCostos] = useState({
@@ -235,7 +235,7 @@ const CalculadoraMamposteria = () => {
 
   const svgWidth = 420;
   const svgHeight = 320;
-  const margin = 30;
+  const margin = 45;
   const scaleX = (svgWidth - margin * 2) / (pared.largo || 1);
   const scaleY = (svgHeight - margin * 2) / (pared.alto || 1);
   const scale = Math.min(scaleX, scaleY);
@@ -300,7 +300,7 @@ const CalculadoraMamposteria = () => {
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
-    setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
+    setTimeout(() => { printWindow.print(); }, 250);
   };
 
   const exportarExcel = () => {
@@ -486,14 +486,16 @@ const CalculadoraMamposteria = () => {
                 
                 {/* Aberturas */}
                 {posicionesAberturas.map((ab, i) => {
+                  const isPuerta = ab.tipo === 'puerta';
                   const xSVG = originX + ab.x * scale;
-                  const ySVG = topY + ab.y * scale;
                   const wSVG = ab.ancho * scale;
                   const hSVG = ab.alto * scale;
+                  const ySVG = isPuerta ? originY - hSVG : originY - (ab.y + ab.alto) * scale;
+                  const strokeColor = isPuerta ? '#d32f2f' : '#1976d2';
                   return (
                     <g key={i}>
-                      <rect x={xSVG} y={ySVG} width={wSVG} height={hSVG} fill="#fff" stroke="#1976d2" strokeWidth="2" />
-                      <text x={xSVG + wSVG / 2} y={ySVG + hSVG / 2} textAnchor="middle" alignmentBaseline="middle" fontSize="10" fill="#1976d2" fontWeight="bold">
+                      <rect x={xSVG} y={ySVG} width={wSVG} height={hSVG} fill="#fff" stroke={strokeColor} strokeWidth="2" />
+                      <text x={xSVG + wSVG / 2} y={ySVG + hSVG / 2} textAnchor="middle" alignmentBaseline="middle" fontSize="10" fill={strokeColor} fontWeight="bold">
                         {ab.ancho} x {ab.alto}
                       </text>
                     </g>
@@ -504,7 +506,7 @@ const CalculadoraMamposteria = () => {
                 <line x1={originX} y1={topY - 15} x2={originX + rectW} y2={topY - 15} stroke="#333" strokeWidth="1" markerStart="url(#arrow)" markerEnd="url(#arrow)" />
                 <text x={originX + rectW / 2} y={topY - 20} textAnchor="middle" fontSize="12" fill="#333" fontWeight="bold">{pared.largo} m</text>
                 <line x1={originX - 15} y1={topY} x2={originX - 15} y2={originY} stroke="#333" strokeWidth="1" markerStart="url(#arrow)" markerEnd="url(#arrow)" />
-                <text x={originX - 25} y={topY + rectH / 2} textAnchor="middle" fontSize="12" fill="#333" fontWeight="bold" transform={`rotate(-90, ${originX - 25}, ${topY + rectH / 2})`}>{pared.alto} m</text>
+                <text x={originX - 30} y={topY + rectH / 2 + 4} textAnchor="middle" fontSize="12" fill="#333" fontWeight="bold">{pared.alto} m</text>
 
                 <defs>
                   <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
