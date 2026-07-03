@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FiCpu, FiInstagram, FiLoader, FiFolder, FiZap, FiVideo, FiImage, FiSave, FiX, FiPlay, FiPause, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiCpu, FiInstagram, FiLoader, FiFolder, FiZap, FiVideo, FiImage, FiSave, FiX, FiPlay, FiPause, FiChevronLeft, FiChevronRight, FiAlignLeft, FiAlignCenter, FiAlignRight, FiBold, FiItalic, FiList } from 'react-icons/fi';
 
 // Config & Services
 import { blogService } from '../../services/blogService';
@@ -808,9 +808,82 @@ export default function SocialGenerator() {
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold"
                 />
               </div>
-              <div>
+              <div className="flex flex-col">
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Contenido</label>
+                
+                {/* Formato Toolbar */}
+                <div className="flex items-center gap-1 mb-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-xl self-start">
+                  <button onClick={() => {
+                    const textarea = document.getElementById('slide-content-editor');
+                    if (!textarea) return;
+                    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+                    const newSlides = [...generatedContent[slidesProp]];
+                    const slide = newSlides[editingIndex];
+                    let text = slide.content || slide.text || '';
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const selected = text.substring(start, end);
+                    const newText = text.substring(0, start) + '**' + (selected || 'negrita') + '**' + text.substring(end);
+                    slide.content = newText;
+                    setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+                    setTimeout(() => { textarea.focus(); textarea.setSelectionRange(start + 2, start + 2 + (selected ? selected.length : 7)); }, 0);
+                  }} className="p-1.5 text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-600 rounded-lg transition-all" title="Negrita (**)"><FiBold size={14}/></button>
+                  <button onClick={() => {
+                    const textarea = document.getElementById('slide-content-editor');
+                    if (!textarea) return;
+                    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+                    const newSlides = [...generatedContent[slidesProp]];
+                    const slide = newSlides[editingIndex];
+                    let text = slide.content || slide.text || '';
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const selected = text.substring(start, end);
+                    const newText = text.substring(0, start) + '_' + (selected || 'cursiva') + '_' + text.substring(end);
+                    slide.content = newText;
+                    setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+                    setTimeout(() => { textarea.focus(); textarea.setSelectionRange(start + 1, start + 1 + (selected ? selected.length : 7)); }, 0);
+                  }} className="p-1.5 text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-600 rounded-lg transition-all" title="Cursiva (_)"><FiItalic size={14}/></button>
+                  <button onClick={() => {
+                    const textarea = document.getElementById('slide-content-editor');
+                    if (!textarea) return;
+                    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+                    const newSlides = [...generatedContent[slidesProp]];
+                    const slide = newSlides[editingIndex];
+                    let text = slide.content || slide.text || '';
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const selected = text.substring(start, end);
+                    const prefix = start === 0 || text[start - 1] === '\n' ? '• ' : '\n• ';
+                    const newText = text.substring(0, start) + prefix + selected + text.substring(end);
+                    slide.content = newText;
+                    setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+                    setTimeout(() => { textarea.focus(); textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length); }, 0);
+                  }} className="p-1.5 text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-600 rounded-lg transition-all" title="Viñeta"><FiList size={14}/></button>
+                  
+                  <div className="w-[1px] h-4 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                  
+                  <button onClick={() => {
+                    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+                    const newSlides = [...generatedContent[slidesProp]];
+                    newSlides[editingIndex].textAlign = 'left';
+                    setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+                  }} className={`p-1.5 rounded-lg transition-all ${((activeTab === 'video' ? generatedContent?.video_slides[editingIndex]?.textAlign : generatedContent?.slides[editingIndex]?.textAlign) === 'left') ? 'bg-white dark:bg-gray-700 text-indigo-600 shadow-sm' : 'text-gray-500 hover:bg-white dark:hover:bg-gray-700'}`} title="Alinear Izquierda"><FiAlignLeft size={14}/></button>
+                  <button onClick={() => {
+                    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+                    const newSlides = [...generatedContent[slidesProp]];
+                    newSlides[editingIndex].textAlign = 'center';
+                    setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+                  }} className={`p-1.5 rounded-lg transition-all ${((activeTab === 'video' ? generatedContent?.video_slides[editingIndex]?.textAlign : generatedContent?.slides[editingIndex]?.textAlign) !== 'left' && (activeTab === 'video' ? generatedContent?.video_slides[editingIndex]?.textAlign : generatedContent?.slides[editingIndex]?.textAlign) !== 'right') ? 'bg-white dark:bg-gray-700 text-indigo-600 shadow-sm' : 'text-gray-500 hover:bg-white dark:hover:bg-gray-700'}`} title="Centrar"><FiAlignCenter size={14}/></button>
+                  <button onClick={() => {
+                    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+                    const newSlides = [...generatedContent[slidesProp]];
+                    newSlides[editingIndex].textAlign = 'right';
+                    setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+                  }} className={`p-1.5 rounded-lg transition-all ${((activeTab === 'video' ? generatedContent?.video_slides[editingIndex]?.textAlign : generatedContent?.slides[editingIndex]?.textAlign) === 'right') ? 'bg-white dark:bg-gray-700 text-indigo-600 shadow-sm' : 'text-gray-500 hover:bg-white dark:hover:bg-gray-700'}`} title="Alinear Derecha"><FiAlignRight size={14}/></button>
+                </div>
+                
                 <textarea 
+                  id="slide-content-editor"
                   rows={5}
                   value={activeTab === 'video' ? (generatedContent.video_slides[editingIndex]?.content || generatedContent.video_slides[editingIndex]?.text || '') : (generatedContent.slides[editingIndex]?.content || generatedContent.slides[editingIndex]?.text || '')}
                   onChange={(e) => {

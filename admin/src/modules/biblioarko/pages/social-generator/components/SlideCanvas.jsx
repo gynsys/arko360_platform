@@ -29,7 +29,7 @@ const getIconPath = (iconType) => {
 
 const parseHighlightedText = (text, highlightColor, highlightSize) => {
   if (!text) return '';
-  const parts = text.split(/(\*\*.*?\*\*)/g);
+  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|_.*?_)/g);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
@@ -43,6 +43,20 @@ const parseHighlightedText = (text, highlightColor, highlightSize) => {
           }}
         >
           {part.slice(2, -2)}
+        </span>
+      );
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return (
+        <span key={i} style={{ fontWeight: 'bold' }}>
+          {part.slice(1, -1)}
+        </span>
+      );
+    }
+    if (part.startsWith('_') && part.endsWith('_')) {
+      return (
+        <span key={i} style={{ fontStyle: 'italic' }}>
+          {part.slice(1, -1)}
         </span>
       );
     }
@@ -160,7 +174,7 @@ export const SlideCanvas = ({
           }}
         onClick={(e) => { e.stopPropagation(); isSelected && selectElement('content', index); }}
       >
-        <div className="text-center relative" style={{ fontFamily: design.fontFamily || 'Manrope' }}>
+        <div className="relative w-full" style={{ fontFamily: design.fontFamily || 'Manrope', textAlign: slide?.textAlign || 'center' }}>
           <h4 className="font-black mb-3 uppercase leading-tight" style={{ fontSize: titleFontSize + 'px', color: titleColor }}>
             {parseHighlightedText(slide?.title || '', design.headerColor, design.headerFontSize)}
           </h4>
@@ -211,7 +225,16 @@ export const SlideCanvas = ({
             }}
             onClick={(e) => { e.stopPropagation(); isSelected && selectElement('image', imgId); }}
           >
-            <img src={img} alt="Custom" className="w-full h-full object-contain" style={{ borderRadius: imageBorderRadius }} />
+            <div 
+              className="w-full h-full" 
+              style={{ 
+                backgroundImage: `url(${img})`, 
+                backgroundSize: 'contain', 
+                backgroundPosition: 'center', 
+                backgroundRepeat: 'no-repeat', 
+                borderRadius: imageBorderRadius 
+              }} 
+            />
             
             {isSelected && selectedImageId === imgId && (
               <>
@@ -397,7 +420,15 @@ export const SlideCanvas = ({
       {/* Watermark Section */}
       {watermark && (
         <div className="absolute bottom-4 left-4 z-40 opacity-30 pointer-events-none">
-          <img src={watermark} alt="WM" className="w-12 h-12 object-contain" />
+          <div 
+            className="w-12 h-12" 
+            style={{ 
+              backgroundImage: `url(${watermark})`, 
+              backgroundSize: 'contain', 
+              backgroundPosition: 'center', 
+              backgroundRepeat: 'no-repeat' 
+            }} 
+          />
         </div>
       )}
 

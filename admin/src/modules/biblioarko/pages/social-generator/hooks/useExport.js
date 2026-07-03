@@ -34,6 +34,8 @@ export const useExport = (selectedPost, designer, generatedContent) => {
       // Set export mode flag for proper SVG gradient rendering
       designer.canvas.setIsExportMode(true);
 
+      const imageFiles = [];
+
       // Iterar por cada diapositiva usando el canvas principal
       for (let i = 0; i < generatedContent.slides.length; i++) {
         // Cambiar la pagina activa
@@ -56,8 +58,11 @@ export const useExport = (selectedPost, designer, generatedContent) => {
           foreignObjectRendering: false
         });
         
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.90));
+        imageFiles.push(new File([blob], `Diapositiva_${i + 1}.jpg`, { type: 'image/jpeg' }));
+        
         const imgData = canvas.toDataURL('image/jpeg', 0.90).split(',')[1];
-        zip.file(`Slide_${i + 1}.jpg`, imgData, { base64: true });
+        zip.file(`Diapositiva_${i + 1}.jpg`, imgData, { base64: true });
       }
 
       // Restaurar todo a como estaba
@@ -74,7 +79,24 @@ export const useExport = (selectedPost, designer, generatedContent) => {
       const filename = `carrusel-${selectedPost?.slug_url || 'gynsys'}.zip`;
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-      // --- MODO PROXY (100% CONFIABLE EN MÓVIL) ---
+      // --- MODO COMPARTIR NATIVO (SIN ZIP PARA MÓVILES) ---
+      if (isMobile && navigator.canShare && navigator.canShare({ files: imageFiles })) {
+        try {
+          showToast('Abriendo opciones...', 'loading');
+          await navigator.share({
+            files: imageFiles,
+            title: 'Carrusel Arko360',
+            text: 'Descarga o comparte tus diapositivas.'
+          });
+          showToast('¡Imágenes exportadas!', 'success');
+          return;
+        } catch (shareErr) {
+          console.error('[Arko360] Share API Error:', shareErr);
+          // Si el usuario cancela o falla, continuamos con el fallback de ZIP proxy
+        }
+      }
+
+      // --- MODO PROXY (FALLBACK CON ZIP) ---
       if (isMobile || isCapacitor()) {
         try {
           showToast('Preparando descarga...', 'loading');
