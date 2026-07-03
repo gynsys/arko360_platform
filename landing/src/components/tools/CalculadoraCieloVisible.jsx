@@ -41,33 +41,29 @@ const CalculadoraCieloVisible = () => {
     let dimPrincipal = correas === 'largo' ? techo.ancho : techo.largo; // Longitud paralela a las principales
     let dimPerpendicular = correas === 'largo' ? techo.largo : techo.ancho; // Longitud para calcular líneas de principales
 
-    // Perfiles Principales (3.66m) - Separadas cada 1.22m
-    const lineasPrincipales = Math.ceil(dimPerpendicular / 1.22);
+    let secundarias122 = 0;
+    let secundarias061 = 0;
+    let lineasPrincipales = 0;
+    
+    if (secundarias === '1.22') {
+      // Caso 1.22m: Principales cada 1.22m, Secundarias de 1.22m cada 0.61m
+      lineasPrincipales = Math.ceil(dimPerpendicular / 1.22);
+      const columnasSecundarias = Math.ceil(dimPerpendicular / 1.22);
+      const filasSecundarias = Math.ceil(dimPrincipal / 0.61);
+      secundarias122 = Math.ceil((columnasSecundarias * filasSecundarias) * factorDesperdicio);
+    } else {
+      // Caso 0.61m: Principales cada 0.61m, Secundarias de 0.61m cada 1.22m
+      lineasPrincipales = Math.ceil(dimPerpendicular / 0.61);
+      const columnasSecundarias = Math.ceil(dimPerpendicular / 0.61);
+      const filasSecundarias = Math.ceil(dimPrincipal / 1.22);
+      secundarias061 = Math.ceil((columnasSecundarias * filasSecundarias) * factorDesperdicio);
+    }
+
     const metrosPrincipales = lineasPrincipales * dimPrincipal;
     const principales = Math.ceil((metrosPrincipales / 3.66) * factorDesperdicio);
 
     // Ángulo Perimetral (3.05m)
     const angulos = Math.ceil((perimetro / 3.05) * factorDesperdicio);
-
-    let secundarias122 = 0;
-    let secundarias061 = 0;
-
-    if (secundarias === '1.22') {
-      // Secundarias de 1.22m instaladas cada 0.61m entre las principales
-      // Cantidad de módulos de 1.22m a lo largo de dimPrincipal
-      const lineasSecundarias = Math.ceil(dimPrincipal / 1.22);
-      // Puestas cada 0.61m a lo largo de dimPerpendicular
-      const espacios061 = Math.ceil(dimPerpendicular / 0.61);
-      secundarias122 = Math.ceil((lineasSecundarias * espacios061) * factorDesperdicio);
-    } else {
-      // Sistema cruzado (Secundarias 1.22m instaladas cada 1.22m, y secundarias 0.61m cruzando)
-      const lineasSecundarias = Math.ceil(dimPrincipal / 1.22);
-      const espacios122 = Math.ceil(dimPerpendicular / 1.22);
-      secundarias122 = Math.ceil((lineasSecundarias * espacios122) * factorDesperdicio);
-      
-      // Las de 0.61m van entre las de 1.22m (2 por cada recuadro de 1.22x1.22)
-      secundarias061 = Math.ceil((lineasSecundarias * espacios122 * 2) * factorDesperdicio);
-    }
 
     // Láminas (0.61 x 1.22m)
     const areaLamina = 0.61 * 1.22;
@@ -95,11 +91,12 @@ const CalculadoraCieloVisible = () => {
     const materialesArray = [
       { nombre: 'Láminas (0.61×1.22m)', cantidad: laminas, unidad: 'pzas', precio: costos.lamina, total: totalLamina },
       { nombre: 'Perfil Principal (3.66m)', cantidad: principales, unidad: 'pzas', precio: costos.principal366, total: totalPrincipal },
-      { nombre: 'Perfil Secundaria (1.22m)', cantidad: secundarias122, unidad: 'pzas', precio: costos.secundaria122, total: totalSecundaria122 },
     ];
 
-    if (secundarias === '0.61') {
-      materialesArray.push({ nombre: 'Perfil Terciaria (0.61m)', cantidad: secundarias061, unidad: 'pzas', precio: costos.secundaria061, total: totalSecundaria061 });
+    if (secundarias === '1.22') {
+      materialesArray.push({ nombre: 'Perfil Secundaria (1.22m)', cantidad: secundarias122, unidad: 'pzas', precio: costos.secundaria122, total: totalSecundaria122 });
+    } else {
+      materialesArray.push({ nombre: 'Perfil Secundaria (0.61m)', cantidad: secundarias061, unidad: 'pzas', precio: costos.secundaria061, total: totalSecundaria061 });
     }
 
     materialesArray.push(
@@ -144,7 +141,7 @@ const CalculadoraCieloVisible = () => {
             <strong>Dimensiones:</strong> ${techo.largo}m × ${techo.ancho}m (${resultados.area} m²)<br/>
             <strong>Perímetro:</strong> ${resultados.perimetro} m<br/>
             <strong>Desperdicio aplicado:</strong> ${desperdicio}%<br/>
-            <strong>Secundarias utilizadas:</strong> ${secundarias === '1.22' ? 'Perfiles de 1.22m cruzando cada 60cm' : 'Red cruzada (1.22m y 0.61m)'}<br/>
+            <strong>Tipo de Secundarias:</strong> ${secundarias === '1.22' ? 'De 1.22m (Principales cada 1.22m)' : 'De 0.61m (Principales cada 0.61m)'}<br/>
             <strong>Dirección de Correas:</strong> Paralelas al ${correas}<br/>
           </div>
 
@@ -214,13 +211,18 @@ const CalculadoraCieloVisible = () => {
               <small style={{ color: '#666', display: 'block', marginTop: '4px' }}>Las Principales (3.66m) se instalarán perpendicularmente a estas correas.</small>
             </div>
             
+            
             <div>
-              <label style={{ display: 'block', fontWeight: 500, marginBottom: '6px', fontSize: '14px' }}>Tipo de Secundarias</label>
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '6px', fontSize: '14px' }}>Tipo de Secundarias (según diseño)</label>
               <select value={secundarias} onChange={e => setSecundarias(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}>
-                <option value="1.22">Solo Secundarias de 1.22m (Cada 60cm)</option>
-                <option value="0.61">Red Cruzada (Secundarias de 1.22m y 0.61m)</option>
+                <option value="1.22">Secundarias de 1.22m (Principales a 1.22m)</option>
+                <option value="0.61">Secundarias de 0.61m (Principales a 0.61m)</option>
               </select>
-              <small style={{ color: '#666', display: 'block', marginTop: '4px' }}>Ambas opciones usan láminas de 0.61x1.22m.</small>
+              <small style={{ color: '#666', display: 'block', marginTop: '4px' }}>
+                {secundarias === '1.22' 
+                  ? 'Las principales van cada 1.22m y se conectan con secundarias de 1.22m instaladas cada 0.61m.'
+                  : 'Las principales van cada 0.61m y se conectan con secundarias de 0.61m instaladas cada 1.22m.'}
+              </small>
             </div>
           </Card>
 
@@ -228,8 +230,10 @@ const CalculadoraCieloVisible = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <CostInput label="Lámina (0.61x1.22)" name="lamina" value={costos.lamina} onChange={handleCosto} />
               <CostInput label="Principal 3.66m" name="principal366" value={costos.principal366} onChange={handleCosto} />
-              <CostInput label="Secundaria 1.22m" name="secundaria122" value={costos.secundaria122} onChange={handleCosto} />
-              {secundarias === '0.61' && <CostInput label="Secundaria 0.61m" name="secundaria061" value={costos.secundaria061} onChange={handleCosto} />}
+              {secundarias === '1.22' 
+                ? <CostInput label="Secundaria 1.22m" name="secundaria122" value={costos.secundaria122} onChange={handleCosto} />
+                : <CostInput label="Secundaria 0.61m" name="secundaria061" value={costos.secundaria061} onChange={handleCosto} />
+              }
               <CostInput label="Ángulo 3.05m" name="angulo305" value={costos.angulo305} onChange={handleCosto} />
               <CostInput label="Clavo+Fulminante" name="clavoFulminante" value={costos.clavoFulminante} onChange={handleCosto} />
               <CostInput label="Alambre (kg)" name="alambre" value={costos.alambre} onChange={handleCosto} />
@@ -250,26 +254,88 @@ const CalculadoraCieloVisible = () => {
           </div>
 
           <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-            <h3 style={{ margin: '0 0 14px 0', color: '#333' }}>🧾 Desglose de Costos</h3>
-            <table style={{ width: '100%', fontSize: '14px', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #ddd' }}>
-                  <th style={{ textAlign: 'left', padding: '6px 4px' }}>Material</th>
-                  <th style={{ textAlign: 'right', padding: '6px 4px' }}>Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resultados.materiales.map((m, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '6px 4px' }}>{m.nombre} <br/><small style={{ color: '#888' }}>{m.cantidad} {m.unidad}</small></td>
-                    <td style={{ textAlign: 'right', padding: '6px 4px', verticalAlign: 'top' }}>${m.total.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div style={{ marginTop: '14px', padding: '12px', backgroundColor: '#e3f2fd', borderRadius: '8px', textAlign: 'center' }}>
-              <div style={{ fontSize: '13px', color: '#555' }}>TOTAL ESTIMADO</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1565c0' }}>${resultados.totalGeneral.toFixed(2)}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h3 style={{ margin: 0, color: '#333' }}>📐 Layout del Cielo Raso</h3>
+              <span style={{ fontSize: '12px', color: '#888' }}>Escala automática</span>
+            </div>
+            <svg width="100%" height={260} style={{ background: '#fafafa', border: '1px solid #e0e0e0', borderRadius: '6px', display: 'block' }}>
+              {(() => {
+                const svgW = 380;
+                const svgH = 240;
+                const m = 20;
+                const sX = (svgW - m * 2) / (techo.largo || 1);
+                const sY = (svgH - m * 2) / (techo.ancho || 1);
+                const sc = Math.min(sX, sY);
+                const rW = techo.largo * sc;
+                const rH = techo.ancho * sc;
+                const oX = (svgW - rW) / 2 + 10; // offset
+                const oY = (svgH - rH) / 2 + 10;
+                
+                const elements = [];
+                // Fondo
+                elements.push(<rect key="bg" x={oX} y={oY} width={rW} height={rH} fill="#e3f2fd" stroke="#90caf9" strokeWidth="2" />);
+                
+                // Espaciado de principales
+                const espacioP = secundarias === '1.22' ? 1.22 : 0.61;
+                // Espaciado de secundarias
+                const espacioS = secundarias === '1.22' ? 0.61 : 1.22;
+
+                // Correas cada 1.2m
+                if (correas === 'largo') {
+                  const numC = Math.floor(techo.ancho / 1.2);
+                  for (let i = 1; i <= numC; i++) {
+                    const y = oY + i * 1.2 * sc;
+                    elements.push(<line key={`c-${i}`} x1={oX} y1={y} x2={oX + rW} y2={y} stroke="#ff9800" strokeWidth="2" strokeDasharray="6,4" />);
+                  }
+                  // Principales perpendiculares a correas (paralelas al ancho)
+                  const numP = Math.floor(techo.largo / espacioP);
+                  for (let i = 1; i <= numP; i++) {
+                    const x = oX + i * espacioP * sc;
+                    elements.push(<line key={`p-${i}`} x1={x} y1={oY} x2={x} y2={oY + rH} stroke="#1976d2" strokeWidth="1.5" />);
+                  }
+                  // Secundarias perpendiculares a principales (paralelas al largo)
+                  const numS = Math.floor(techo.ancho / espacioS);
+                  for (let i = 1; i <= numS; i++) {
+                    const y = oY + i * espacioS * sc;
+                    elements.push(<line key={`s-${i}`} x1={oX} y1={y} x2={oX + rW} y2={y} stroke="#4caf50" strokeWidth="1" />);
+                  }
+                } else {
+                  // Correas a lo ancho
+                  const numC = Math.floor(techo.largo / 1.2);
+                  for (let i = 1; i <= numC; i++) {
+                    const x = oX + i * 1.2 * sc;
+                    elements.push(<line key={`c-${i}`} x1={x} y1={oY} x2={x} y2={oY + rH} stroke="#ff9800" strokeWidth="2" strokeDasharray="6,4" />);
+                  }
+                  // Principales perpendiculares a correas (paralelas al largo)
+                  const numP = Math.floor(techo.ancho / espacioP);
+                  for (let i = 1; i <= numP; i++) {
+                    const y = oY + i * espacioP * sc;
+                    elements.push(<line key={`p-${i}`} x1={oX} y1={y} x2={oX + rW} y2={y} stroke="#1976d2" strokeWidth="1.5" />);
+                  }
+                  // Secundarias perpendiculares a principales (paralelas al ancho)
+                  const numS = Math.floor(techo.largo / espacioS);
+                  for (let i = 1; i <= numS; i++) {
+                    const x = oX + i * espacioS * sc;
+                    elements.push(<line key={`s-${i}`} x1={x} y1={oY} x2={x} y2={oY + rH} stroke="#4caf50" strokeWidth="1" />);
+                  }
+                }
+
+                // Cotas
+                elements.push(<text key="t1" x={oX + rW / 2} y={oY - 6} textAnchor="middle" fontSize="11" fill="#333" fontWeight="bold">{techo.largo} m</text>);
+                elements.push(<text key="t2" x={oX - 10} y={oY + rH / 2 + 4} textAnchor="middle" fontSize="11" fill="#333" fontWeight="bold" transform={`rotate(-90, ${oX - 10}, ${oY + rH / 2 + 4})`}>{techo.ancho} m</text>);
+
+                return elements;
+              })()}
+            </svg>
+            <div style={{ display: 'flex', gap: '15px', fontSize: '11px', color: '#555', marginTop: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '16px', height: '0px', borderTop: '2px dashed #ff9800' }}></div> Correas (1.2m)</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '16px', height: '2px', backgroundColor: '#1976d2' }}></div> Principales ({secundarias === '1.22' ? '1.22m' : '0.61m'})</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '16px', height: '1px', backgroundColor: '#4caf50' }}></div> Secundarias ({secundarias}m)</span>
+            </div>
+
+            <div style={{ marginTop: '14px', padding: '12px', backgroundColor: '#e8f5e9', borderRadius: '8px', textAlign: 'center', border: '1px solid #c8e6c9' }}>
+              <div style={{ fontSize: '13px', color: '#2e7d32' }}>TOTAL ESTIMADO MATERIALES</div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1b5e20' }}>${resultados.totalGeneral.toFixed(2)}</div>
             </div>
           </div>
 
