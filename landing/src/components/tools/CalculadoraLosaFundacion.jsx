@@ -22,6 +22,7 @@ const SHAPES = [
   { id: 'L', label: 'Forma en L' },
   { id: 'U', label: 'Forma en U' },
   { id: 'T', label: 'Forma en T' },
+  { id: 'libre', label: 'Libre / Manual' },
 ];
 
 export default function CalculadoraLosaFundacion() {
@@ -46,6 +47,12 @@ export default function CalculadoraLosaFundacion() {
     q_adm: 150, // kN/m2 (~1.5 kg/cm2)
     is_plastered: false // Friso global
   });
+  
+  // Guardado y Carga de Base de Datos
+  const [projectName, setProjectName] = useState("Losa Híbrida");
+  const [showOpenModal, setShowOpenModal] = useState(false);
+  const [savedRuns, setSavedRuns] = useState([]);
+  const [loadingRuns, setLoadingRuns] = useState(false);
   
   // Muros Internos (Tabla)
   const [internalWalls, setInternalWalls] = useState([]);
@@ -111,6 +118,8 @@ export default function CalculadoraLosaFundacion() {
     const pts = getPerimeterVertices();
     const matProps = MATERIALS[material];
     const walls = [];
+    if (shape === 'libre') return []; // Sin auto-perímetro en modo libre
+    
     for (let i = 0; i < pts.length; i++) {
       const p1 = pts[i];
       const p2 = pts[(i + 1) % pts.length];
@@ -126,13 +135,13 @@ export default function CalculadoraLosaFundacion() {
       });
     }
     return walls;
-  }, [getPerimeterVertices, material, wallHeight, designParams.is_plastered]);
+  }, [getPerimeterVertices, material, wallHeight, designParams.is_plastered, shape]);
 
   const allWalls = useMemo(() => {
     const matProps = MATERIALS[material];
     const formattedInternal = internalWalls.map(w => ({
       ...w,
-      type: 'interno',
+      type: w.type || 'interno',
       thickness: matProps.thickness,
       height: parseFloat(wallHeight) || 2.7,
       density: matProps.density,
@@ -141,15 +150,26 @@ export default function CalculadoraLosaFundacion() {
     return [...perimeterWalls, ...formattedInternal];
   }, [perimeterWalls, internalWalls, material, wallHeight, designParams.is_plastered]);
 
+  const convertToManual = () => {
+    if (shape === 'libre') return;
+    const perimeterCopy = perimeterWalls.map((w, i) => ({
+      id: `man_${Date.now()}_${i}`,
+      type: 'perimetral',
+      x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2
+    }));
+    setInternalWalls(prev => [...perimeterCopy, ...prev]);
+    setShape('libre');
+  };
+
   const handleParamChange = (field, value) => setParams(prev => ({ ...prev, [field]: parseFloat(value) || 0 }));
   const handleDesignParamChange = (field, value) => setDesignParams(prev => ({ ...prev, [field]: value }));
 
   const addInternalWall = (w) => {
-    setInternalWalls(prev => [...prev, { id: Date.now(), x1: w.x1 || 0, y1: w.y1 || 0, x2: w.x2 || 1, y2: w.y2 || 1 }]);
+    setInternalWalls(prev => [...prev, { id: Date.now(), type: 'interno', x1: w.x1 || 0, y1: w.y1 || 0, x2: w.x2 || 1, y2: w.y2 || 1 }]);
   };
 
   const updateInternalWall = (id, field, value) => {
-    setInternalWalls(prev => prev.map(w => w.id === id ? { ...w, [field]: parseFloat(value) || 0 } : w));
+    setInternalWalls(prev => prev.map(w => w.id === id ? { ...w, [field]: (field === 'type' ? value : (parseFloat(value) || 0)) } : w));
   };
 
   const removeInternalWall = (id) => setInternalWalls(prev => prev.filter(w => w.id !== id));
@@ -213,7 +233,7 @@ export default function CalculadoraLosaFundacion() {
     }));
 
     const payload = {
-      project: "Losa de Cimentación Híbrida",
+      project: projectName,
       geometry: { Lx: params.Lx, Ly: params.Ly, h: params.h / 100 },
       materials: {
         f_c: designParams.fc, f_y: designParams.fy, cover: 0.05, bar_diam: 0.012,
@@ -255,6 +275,44 @@ export default function CalculadoraLosaFundacion() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchRuns = async () => {
+    setLoadingRuns(true);
+    try {
+      const response = await fetch(`${API_BASE}/calculadora-losas/runs`);
+      if (response.ok) {
+        const data = await response.json();
+        const filtered = data.filter(d => d.tipo_losa === 'losa_fundacion_hibrida');
+        setSavedRuns(filtered);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingRuns(false);
+    }
+  };
+
+  const loadRun = (run) => {
+    setProjectName(run.nombre_proyecto);
+    const inp = run.inputs;
+    if (inp) {
+      if (inp.geometry) setParams(prev => ({ ...prev, Lx: inp.geometry.Lx, Ly: inp.geometry.Ly, h: inp.geometry.h * 100 }));
+      if (inp.materials) setDesignParams(prev => ({ ...prev, fc: inp.materials.f_c, fy: inp.materials.f_y, q_adm: inp.materials.q_adm / 1000 }));
+      if (inp.walls) {
+        // Extract internal and manually placed perimeter walls
+        const manualWalls = inp.walls.map((w, idx) => ({
+          id: `db_${idx}`,
+          type: w.type,
+          x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2
+        }));
+        setInternalWalls(manualWalls);
+        setShape('libre');
+      }
+    }
+    setResults(run.resultados);
+    setLastPayload(run.inputs);
+    setShowOpenModal(false);
   };
 
   // Descargar JSON de Auditoría
@@ -371,9 +429,47 @@ export default function CalculadoraLosaFundacion() {
 
   return (
     <div className="calc-losa-container">
+      {/* MODAL PARA ABRIR PROYECTO */}
+      {showOpenModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Abrir Proyecto Guardado</h3>
+            {loadingRuns ? <p>Cargando...</p> : (
+              <ul className="runs-list">
+                {savedRuns.length === 0 && <p>No hay cálculos guardados.</p>}
+                {savedRuns.map(run => (
+                  <li key={run.id} onClick={() => loadRun(run)}>
+                    <strong>{run.nombre_proyecto}</strong>
+                    <br/>
+                    <small>{new Date(run.created_at).toLocaleString()}</small>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button className="btn-secondary" style={{marginTop: '16px'}} onClick={() => setShowOpenModal(false)}>Cerrar</button>
+          </div>
+        </div>
+      )}
+
       <div className="calc-header">
-        <h2>Diseño de Losa de Fundación (Método Híbrido)</h2>
-        <p>Configura la losa (Plantillas) y divisiones internas (Tabla o Clics). Incluye JSON de Auditoría.</p>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <div>
+            <h2>Diseño de Losa de Fundación (Método Híbrido)</h2>
+            <p>Configura la losa (Plantillas) y divisiones internas (Tabla o Clics). Incluye JSON de Auditoría.</p>
+          </div>
+          <div className="header-actions">
+            <input 
+              type="text" 
+              value={projectName} 
+              onChange={e => setProjectName(e.target.value)} 
+              placeholder="Nombre del Proyecto"
+              className="project-name-input"
+            />
+            <button className="btn-secondary" onClick={() => { setShowOpenModal(true); fetchRuns(); }}>
+              📂 Abrir Proyecto
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="calc-body">
@@ -381,7 +477,14 @@ export default function CalculadoraLosaFundacion() {
         <div className="calc-sidebar">
           
           <div className="control-group">
-            <h3>1. Forma de la Losa</h3>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+              <h3>1. Forma de la Losa</h3>
+              {shape !== 'libre' && (
+                <button className="btn-unlink" onClick={convertToManual} title="Desvincular perímetro a tabla manual">
+                  🔗 Editar Perímetro Manualmente
+                </button>
+              )}
+            </div>
             <div className="shape-selector">
               {SHAPES.map(s => (
                 <button 
@@ -450,12 +553,18 @@ export default function CalculadoraLosaFundacion() {
             <table className="coords-table">
               <thead>
                 <tr>
-                  <th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th>
+                  <th>T</th><th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th>
                 </tr>
               </thead>
               <tbody>
                 {internalWalls.map(w => (
                   <tr key={w.id}>
+                    <td>
+                      <select value={w.type} onChange={e => updateInternalWall(w.id, 'type', e.target.value)} style={{width:'50px', padding:'2px', fontSize:'10px'}}>
+                        <option value="interno">Int.</option>
+                        <option value="perimetral">Per.</option>
+                      </select>
+                    </td>
                     <td><input type="number" step="0.5" value={w.x1} onChange={e => updateInternalWall(w.id, 'x1', e.target.value)} /></td>
                     <td><input type="number" step="0.5" value={w.y1} onChange={e => updateInternalWall(w.id, 'y1', e.target.value)} /></td>
                     <td><input type="number" step="0.5" value={w.x2} onChange={e => updateInternalWall(w.id, 'x2', e.target.value)} /></td>

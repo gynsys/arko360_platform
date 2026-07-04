@@ -351,3 +351,82 @@
   background: #a5d6a7;
   cursor: not-allowed;
 }
+
+/* Modal y Header de Proyecto */
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.project-name-input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #fff;
+  font-size: 14px;
+}
+
+.project-name-input::placeholder {
+  color: #888;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.modal-content h3 {
+  margin-top: 0;
+}
+
+.runs-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.runs-list li {
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.runs-list li:hover {
+  background: #f5f5f5;
+  border-color: #2196f3;
+}
+
+.btn-unlink {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffcc80;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-unlink:hover {
+  background: #ffe0b2;
+}
