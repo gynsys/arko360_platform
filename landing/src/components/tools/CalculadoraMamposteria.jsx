@@ -406,18 +406,6 @@ const CalculadoraMamposteria = () => {
           <p style={{ color: '#555', margin: 0 }}>Cálculo de bloques, mezcla para pegar y friso.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          {currentUser ? (
-            <button onClick={() => setShowSaveModal(true)} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
-              <Save size={18} /> Guardar Proyecto
-            </button>
-          ) : (
-            <button onClick={() => setAuthModalOpen(true)} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
-              <Save size={18} /> Guardar Proyecto
-            </button>
-          )}
-          <button onClick={fetchMisCalculos} style={{ background: 'var(--bg-alt)', color: 'var(--text)', border: '1px solid var(--border)', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
-            <FolderOpen size={18} /> Mis Cálculos
-          </button>
           {currentUser && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text)', fontWeight: 600, padding: '0 8px' }}>
@@ -671,6 +659,9 @@ const CalculadoraMamposteria = () => {
             
             {/* Botones de Exportación Inferiores */}
             <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button onClick={fetchMisCalculos} style={{ background: 'var(--bg-alt)', color: 'var(--text)', border: '1px solid var(--border)', padding: '12px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '15px' }}>
+                <FolderOpen size={20} /> Mis Cálculos
+              </button>
               {currentUser ? (
                 <button onClick={() => setShowSaveModal(true)} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '15px' }}>
                   <Save size={20} /> Guardar Proyecto

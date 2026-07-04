@@ -344,6 +344,12 @@ export const cmsData = {
         title: 'Calculadora de Mampostería',
         desc: 'Cálculo de bloques de arcilla o cemento, mezcla de asiento, friso y acabados para paredes de mampostería.',
         icon: 'Layers'
+      },
+      {
+        id: 'losa-fundacion',
+        title: 'Calculadora de Losa de Fundación',
+        desc: 'Diseño estructural mediante Método de Elementos Finitos (FEM) para losas de cimentación según ACI 318.',
+        icon: 'Grid'
       }
     ]
   }

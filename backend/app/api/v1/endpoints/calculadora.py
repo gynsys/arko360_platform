@@ -4,8 +4,12 @@ from typing import List
 
 from app.db.arko_base import get_arko_db
 from app.db.models.calculadora import LosaCalculationRun
-from app.schemas.calculadora import LosaCalculationRunCreate, LosaCalculationRunResponse
+from app.schemas.calculadora import (
+    LosaCalculationRunCreate, LosaCalculationRunResponse,
+    SlabModelInput
+)
 from app.core.logging import logger
+from app.engine.FoundationSlabDesigner import FoundationSlabDesigner
 
 router = APIRouter()
 
@@ -77,3 +81,32 @@ def delete_run(run_id: int, db: Session = Depends(get_arko_db)):
         logger.error(f"Error al eliminar corrida {run_id}: {e}", exc_info=True)
         db.rollback()
         raise HTTPException(status_code=500, detail="Error interno al eliminar.")
+
+@router.post("/losa_fundacion/analyze")
+def analyze_slab(data: SlabModelInput):
+    """
+    Recibe modelo de losa desde React, ejecuta FEM y devuelve resultados + SVG.
+    """
+    try:
+        mat = data.materials
+        gr = FoundationSlabDesigner(
+            Lx=data.geometry.Lx, Ly=data.geometry.Ly, h=data.geometry.h,
+            E=mat.E, nu=mat.nu, k=mat.k, f_c=mat.f_c, f_y=mat.f_y,
+            cover=mat.cover, bar_diam=mat.bar_diam,
+            gamma_horm=mat.gamma_horm, include_self_weight=True, lambda_aci=1.0,
+            band_width_factor=data.band_width_factor,
+            max_settlement_ratio=data.max_settlement_ratio
+        )
+        gr.set_mesh(nx=data.mesh_nx, ny=data.mesh_ny)
+
+        for w in data.walls:
+            gr.add_wall(w.x1, w.y1, w.x2, w.y2, w.thickness, w.height, w.density, w.load_factor, w.type)
+        for b in data.beams:
+            gr.add_beam(b.x1, b.y1, b.x2, b.y2, b.width, b.height, b.load_factor, b.type)
+
+        results = gr.run_full_analysis(extra_uniform_load=data.extra_load)
+        return results
+    except Exception as e:
+        logger.error(f"Error en analyze_slab: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error interno durante el análisis FEM.")
+

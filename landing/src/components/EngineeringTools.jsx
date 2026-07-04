@@ -12,6 +12,7 @@ import CalculadoraElectrica from './tools/CalculadoraElectrica.jsx';
 import CalculadoraEscaleras from './tools/CalculadoraEscaleras.jsx';
 import CalculadoraLosas from './tools/calculadoraLosas/CalculadoraLosas.jsx';
 import CalculadoraMamposteria from './tools/CalculadoraMamposteria.jsx';
+import CalculadoraLosaFundacion from './tools/CalculadoraLosaFundacion.jsx';
 import { SiteConfigContext } from '../App.jsx';
 
 const iconMap = {
@@ -48,6 +49,8 @@ export default function EngineeringTools() {
         return <CalculadoraLosas />;
       case 'mamposteria':
         return <CalculadoraMamposteria />;
+      case 'losa-fundacion':
+        return <CalculadoraLosaFundacion />;
       default:
         return null;
     }
@@ -75,6 +78,7 @@ export default function EngineeringTools() {
               if (tool.id === 'escaleras') return siteConfig.tools.showEscaleras !== false;
               if (tool.id === 'losas') return siteConfig.tools.showLosas !== false;
               if (tool.id === 'mamposteria') return siteConfig.tools.showMamposteria !== false;
+              if (tool.id === 'losa-fundacion') return siteConfig.tools.showLosaFundacion !== false;
               return true;
             }).map((tool, i) => {
               const Icon = iconMap[tool.icon] || Calculator;
