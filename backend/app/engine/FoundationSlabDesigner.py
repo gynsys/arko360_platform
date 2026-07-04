@@ -1233,22 +1233,57 @@ class FoundationSlabDesigner:
                 for op in wall.openings:
                     start = op.get("start_m", 0)
                     w_op = op.get("width_m", 0)
+                    op_type = op.get("type", "window")
                     
-                    # Proyectar start sobre la línea del muro
                     if wall.length > 0:
                         t1 = start / wall.length
                         t2 = (start + w_op) / wall.length
                         x1_op = wall.x1 + t1 * (wall.x2 - wall.x1)
                         y1_op = wall.y1 + t1 * (wall.y2 - wall.y1)
                         x2_op = wall.x1 + t2 * (wall.x2 - wall.x1)
-                        y2_op = wall.y1 + t2 * (wall.y2 - wall.y1)
+                        y2_op = wall.y1 + t2 * (wall.y2 - w.y1)
                         
-                        sx1, sy1 = to_svg(x1_op, y1_op)
-                        sx2, sy2 = to_svg(x2_op, y2_op)
+                        ox1, oy1 = to_svg(x1_op, y1_op)
+                        ox2, oy2 = to_svg(x2_op, y2_op)
                         
-                        # Línea blanca gruesa para indicar la abertura
-                        svg_parts.append(f'<line x1="{sx1:.1f}" y1="{sy1:.1f}" x2="{sx2:.1f}" y2="{sy2:.1f}" stroke="#fafafa" stroke-width="{width+2:.1f}" stroke-linecap="butt"/>')
-                        svg_parts.append(f'<line x1="{sx1:.1f}" y1="{sy1:.1f}" x2="{sx2:.1f}" y2="{sy2:.1f}" stroke="#999" stroke-width="1" stroke-dasharray="2,2"/>')
+                        thickPx = width
+                        w_px = np.sqrt((ox2-ox1)**2 + (oy2-oy1)**2)
+                        if w_px > 0:
+                            ux = (ox2-ox1)/w_px
+                            uy = (oy2-oy1)/w_px
+                        else:
+                            ux, uy = 0, 0
+                        vx, vy = -uy, ux
+
+                        if op_type.startswith('door'):
+                            is_left = (op_type == 'door_left')
+                            hx = ox1 if is_left else ox2
+                            hy = oy1 if is_left else oy2
+                            ex = ox2 if is_left else ox1
+                            ey = oy2 if is_left else oy1
+                            
+                            lx = hx + vx * w_px
+                            ly = hy + vy * w_px
+                            sweep = 1 if is_left else 0
+
+                            # Borrar muro
+                            svg_parts.append(f'<line x1="{ox1:.1f}" y1="{oy1:.1f}" x2="{ox2:.1f}" y2="{oy2:.1f}" stroke="#fafafa" stroke-width="{thickPx+2:.1f}" stroke-linecap="butt"/>')
+                            # Hoja de puerta
+                            svg_parts.append(f'<line x1="{hx:.1f}" y1="{hy:.1f}" x2="{lx:.1f}" y2="{ly:.1f}" stroke="#333" stroke-width="2" stroke-linecap="square"/>')
+                            # Arco
+                            svg_parts.append(f'<path d="M {lx:.1f} {ly:.1f} A {w_px:.1f} {w_px:.1f} 0 0 {sweep} {ex:.1f} {ey:.1f}" fill="none" stroke="#666" stroke-width="1.5" stroke-dasharray="4,4"/>')
+                        else:
+                            # Ventana
+                            f1x1 = ox1 + vx * (thickPx/2); f1y1 = oy1 + vy * (thickPx/2)
+                            f1x2 = ox2 + vx * (thickPx/2); f1y2 = oy2 + vy * (thickPx/2)
+                            f2x1 = ox1 - vx * (thickPx/2); f2y1 = oy1 - vy * (thickPx/2)
+                            f2x2 = ox2 - vx * (thickPx/2); f2y2 = oy2 - vy * (thickPx/2)
+                            
+                            svg_parts.append(f'<line x1="{ox1:.1f}" y1="{oy1:.1f}" x2="{ox2:.1f}" y2="{oy2:.1f}" stroke="#fafafa" stroke-width="{thickPx+2:.1f}" stroke-linecap="butt"/>')
+                            svg_parts.append(f'<line x1="{f1x1:.1f}" y1="{f1y1:.1f}" x2="{f1x2:.1f}" y2="{f1y2:.1f}" stroke="#333" stroke-width="1"/>')
+                            svg_parts.append(f'<line x1="{f2x1:.1f}" y1="{f2y1:.1f}" x2="{f2x2:.1f}" y2="{f2y2:.1f}" stroke="#333" stroke-width="1"/>')
+                            svg_parts.append(f'<line x1="{ox1 + vx*2:.1f}" y1="{oy1 + vy*2:.1f}" x2="{ox2 + vx*2:.1f}" y2="{oy2 + vy*2:.1f}" stroke="#5bc0de" stroke-width="2"/>')
+                            svg_parts.append(f'<line x1="{ox1 - vx*2:.1f}" y1="{oy1 - vy*2:.1f}" x2="{ox2 - vx*2:.1f}" y2="{oy2 - vy*2:.1f}" stroke="#5bc0de" stroke-width="2"/>')
 
         # Cotas exteriores
         cota_y = margin - 35

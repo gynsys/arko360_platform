@@ -264,8 +264,9 @@ export default function CalculadoraLosaFundacion() {
 
     // Si está a menos de 1 metro del muro, hace snap
     if (minD < 1.0 && closestWall) {
-      const width_m = type === 'door' ? 1.0 : 1.5;
-      const height_m = type === 'door' ? 2.1 : 1.2;
+      const isDoor = type.startsWith('door');
+      const width_m = isDoor ? 1.0 : 1.5;
+      const height_m = isDoor ? 2.1 : 1.2;
       
       // Ajustar si se sale del muro
       const length = Math.sqrt((closestWall.x2 - closestWall.x1)**2 + (closestWall.y2 - closestWall.y1)**2);
@@ -279,7 +280,7 @@ export default function CalculadoraLosaFundacion() {
         type: type,
         start_m, width_m, height_m
       }]);
-      toast.success(`${type === 'door' ? 'Puerta' : 'Ventana'} añadida`);
+      toast.success(`${isDoor ? 'Puerta' : 'Ventana'} añadida`);
     } else {
       toast.error("Debes soltar la abertura sobre un muro.");
     }
@@ -676,16 +677,20 @@ export default function CalculadoraLosaFundacion() {
                  <table className="coords-table">
                    <thead><tr><th>Vano</th><th>Muro ID</th><th>Inicio (m)</th><th>Ancho (m)</th><th>Alto (m)</th><th></th></tr></thead>
                    <tbody>
-                     {openings.map(op => (
+                     {openings.map(op => {
+                       let label = '🪟 Ventana';
+                       if (op.type === 'door_left') label = '🚪 Puerta (Izq)';
+                       if (op.type === 'door_right') label = '🚪 Puerta (Der)';
+                       return (
                        <tr key={op.id}>
-                         <td>{op.type === 'door' ? '🚪 Puerta' : '🪟 Ventana'}</td>
+                         <td>{label}</td>
                          <td>{op.wall_id.substring(0,8)}</td>
                          <td>{op.start_m.toFixed(2)}</td>
                          <td>{op.width_m.toFixed(2)}</td>
                          <td>{op.height_m.toFixed(2)}</td>
                          <td><button className="del-btn" onClick={() => removeOpening(op.id)}>X</button></td>
                        </tr>
-                     ))}
+                     )})}
                    </tbody>
                  </table>
                </div>
@@ -723,8 +728,9 @@ export default function CalculadoraLosaFundacion() {
               <h4>Plano Interactivo (Ejes en metros)</h4>
               <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
                 <div className="drag-toolbox" style={{display:'flex', gap:'8px'}}>
-                  <div draggable onDragStart={(e) => handleDragStart(e, 'door')} className="drag-item" title="Arrastra al muro">🚪 Puerta</div>
-                  <div draggable onDragStart={(e) => handleDragStart(e, 'window')} className="drag-item" title="Arrastra al muro">🪟 Ventana</div>
+                  <div draggable onDragStart={(e) => handleDragStart(e, 'door_left')} className="drag-item" title="Puerta Izquierda">🚪 P. Izq</div>
+                  <div draggable onDragStart={(e) => handleDragStart(e, 'door_right')} className="drag-item" title="Puerta Derecha">🚪 P. Der</div>
+                  <div draggable onDragStart={(e) => handleDragStart(e, 'window')} className="drag-item" title="Ventana">🪟 Ventana</div>
                 </div>
                 <span className="mouse-tracker">📍 X: {mouseCoord.x.toFixed(1)}m, Y: {mouseCoord.y.toFixed(1)}m</span>
               </div>
@@ -791,27 +797,61 @@ export default function CalculadoraLosaFundacion() {
                       const len = Math.sqrt((w.x2-w.x1)**2 + (w.y2-w.y1)**2);
                       const t1 = op.start_m / len;
                       const t2 = (op.start_m + op.width_m) / len;
-                      const ox1 = w.x1 + t1 * (w.x2 - w.x1);
-                      const oy1 = w.y1 + t1 * (w.y2 - w.y1);
-                      const ox2 = w.x1 + t2 * (w.x2 - w.x1);
-                      const oy2 = w.y1 + t2 * (w.y2 - w.y1);
-                      return (
-                        <g key={op.id}>
-                          <line 
-                            x1={toSvg(ox1)} y1={toSvg(oy1)} 
-                            x2={toSvg(ox2)} y2={toSvg(oy2)} 
-                            stroke="#fafafa" strokeWidth={Math.max(6, w.thickness * scale + 2)} strokeLinecap="butt" 
-                          />
-                          <line 
-                            x1={toSvg(ox1)} y1={toSvg(oy1)} 
-                            x2={toSvg(ox2)} y2={toSvg(oy2)} 
-                            stroke="#888" strokeWidth="1" strokeDasharray="2,2" 
-                          />
-                          <text x={toSvg(ox1)} y={toSvg(oy1) - 10} fontSize="12" fill="#555">
-                            {op.type === 'door' ? '🚪' : '🪟'}
-                          </text>
-                        </g>
-                      );
+                      const ox1 = toSvg(w.x1 + t1 * (w.x2 - w.x1));
+                      const oy1 = toSvg(w.y1 + t1 * (w.y2 - w.y1));
+                      const ox2 = toSvg(w.x1 + t2 * (w.x2 - w.x1));
+                      const oy2 = toSvg(w.y1 + t2 * (w.y2 - w.y1));
+                      
+                      const thickPx = Math.max(4, w.thickness * scale);
+                      const w_px = Math.sqrt((ox2-ox1)**2 + (oy2-oy1)**2);
+                      const ux = (ox2-ox1)/w_px || 0;
+                      const uy = (oy2-oy1)/w_px || 0;
+                      const vx = -uy;
+                      const vy = ux;
+
+                      if (op.type.startsWith('door')) {
+                        const isLeft = op.type === 'door_left';
+                        const hx = isLeft ? ox1 : ox2;
+                        const hy = isLeft ? oy1 : oy2;
+                        const ex = isLeft ? ox2 : ox1;
+                        const ey = isLeft ? oy2 : oy1;
+                        
+                        const lx = hx + vx * w_px;
+                        const ly = hy + vy * w_px;
+                        
+                        // Sweep flag depends on direction
+                        const sweep = isLeft ? 1 : 0;
+                        
+                        return (
+                          <g key={op.id}>
+                            {/* Blanco para borrar el muro */}
+                            <line x1={ox1} y1={oy1} x2={ox2} y2={oy2} stroke="#fafafa" strokeWidth={thickPx + 2} strokeLinecap="butt" />
+                            {/* Hoja de la puerta */}
+                            <line x1={hx} y1={hy} x2={lx} y2={ly} stroke="#333" strokeWidth="2" strokeLinecap="square" />
+                            {/* Arco de apertura */}
+                            <path d={`M ${lx} ${ly} A ${w_px} ${w_px} 0 0 ${sweep} ${ex} ${ey}`} fill="none" stroke="#666" strokeWidth="1.5" strokeDasharray="4,4" />
+                          </g>
+                        );
+                      } else {
+                        // Ventana
+                        const f1x1 = ox1 + vx * (thickPx/2); const f1y1 = oy1 + vy * (thickPx/2);
+                        const f1x2 = ox2 + vx * (thickPx/2); const f1y2 = oy2 + vy * (thickPx/2);
+                        const f2x1 = ox1 - vx * (thickPx/2); const f2y1 = oy1 - vy * (thickPx/2);
+                        const f2x2 = ox2 - vx * (thickPx/2); const f2y2 = oy2 - vy * (thickPx/2);
+                        
+                        return (
+                          <g key={op.id}>
+                            {/* Blanco para borrar el muro */}
+                            <line x1={ox1} y1={oy1} x2={ox2} y2={oy2} stroke="#fafafa" strokeWidth={thickPx + 2} strokeLinecap="butt" />
+                            {/* Bordes del muro */}
+                            <line x1={f1x1} y1={f1y1} x2={f1x2} y2={f1y2} stroke="#333" strokeWidth="1" />
+                            <line x1={f2x1} y1={f2y1} x2={f2x2} y2={f2y2} stroke="#333" strokeWidth="1" />
+                            {/* Cristales (corredera) */}
+                            <line x1={ox1 + vx*2} y1={oy1 + vy*2} x2={ox2 + vx*2} y2={oy2 + vy*2} stroke="#5bc0de" strokeWidth="2" />
+                            <line x1={ox1 - vx*2} y1={oy1 - vy*2} x2={ox2 - vx*2} y2={oy2 - vy*2} stroke="#5bc0de" strokeWidth="2" />
+                          </g>
+                        );
+                      }
                     })}
                   </g>
               ))}
