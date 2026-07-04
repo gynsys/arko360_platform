@@ -324,18 +324,23 @@ const CalculadoraMamposteria = () => {
 
   const largoF = getF(pared.largo);
   const altoF = getF(pared.alto);
-  const svgWidth = 800;
-  const svgHeight = 320;
   const paddingSVG = 40;
-  const scaleX = (svgWidth - paddingSVG * 2) / (largoF || 1);
-  const scaleY = (svgHeight - paddingSVG * 2) / (altoF || 1);
-  const scale = Math.min(scaleX, scaleY);
+  
+  // Aumentar la escala 30% como pidió el usuario (1.3)
+  const baseScaleX = 800 / (largoF || 1);
+  const baseScaleY = 320 / (altoF || 1);
+  const scale = Math.min(baseScaleX, baseScaleY) * 1.3;
   
   const rectW = largoF * scale;
   const rectH = altoF * scale;
-  const originX = (svgWidth - rectW) / 2;
-  const originY = svgHeight - (svgHeight - rectH) / 2;
-  const topY = originY - rectH;
+  
+  // Ajustar el contenedor SVG para envolver el gráfico aumentado
+  const svgWidth = rectW + paddingSVG * 2;
+  const svgHeight = rectH + paddingSVG * 2;
+  
+  const originX = paddingSVG;
+  const topY = paddingSVG;
+  const originY = paddingSVG + rectH;
 
   const posicionesAberturas = [];
   if (puertas.incluir && getF(puertas.cantidad) > 0) {
@@ -373,12 +378,23 @@ const CalculadoraMamposteria = () => {
           <p style={{ color: '#555', margin: 0 }}>Cálculo de bloques, mezcla para pegar y friso.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={exportarPDF} style={{ background: '#d32f2f', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
-            <Download size={18} /> Exportar a PDF
+          {currentUser ? (
+            <button onClick={() => setShowSaveModal(true)} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
+              <Save size={18} /> Guardar Proyecto
+            </button>
+          ) : (
+            <button onClick={() => setAuthModalOpen(true)} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
+              <LogIn size={18} /> Iniciar Sesión para Guardar
+            </button>
+          )}
+          <button onClick={fetchMisCalculos} style={{ background: 'var(--bg-alt)', color: 'var(--text)', border: '1px solid var(--border)', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
+            <FolderOpen size={18} /> Mis Cálculos
           </button>
-          <button onClick={exportarExcel} style={{ background: '#2e7d32', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
-            <Download size={18} /> Exportar a Excel
-          </button>
+          {currentUser && (
+            <button onClick={logout} style={{ background: '#f8d7da', color: '#721c24', border: 'none', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
+              <LogOut size={18} /> Salir
+            </button>
+          )}
         </div>
       </div>
 
@@ -622,6 +638,15 @@ const CalculadoraMamposteria = () => {
             
             {/* Botones de Exportación Inferiores */}
             <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              {currentUser ? (
+                <button onClick={() => setShowSaveModal(true)} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '15px' }}>
+                  <Save size={20} /> Guardar Proyecto
+                </button>
+              ) : (
+                <button onClick={() => setAuthModalOpen(true)} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '15px' }}>
+                  <LogIn size={20} /> Iniciar Sesión para Guardar
+                </button>
+              )}
               <button onClick={exportarPDF} style={{ background: '#d32f2f', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '15px' }}>
                 <Download size={20} /> Exportar Reporte PDF
               </button>
@@ -631,7 +656,72 @@ const CalculadoraMamposteria = () => {
             </div>
           </div>
         </div>
+          </div>
+        </div>
       </div>
+
+      {/* Modales */}
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} onSuccess={() => { setAuthModalOpen(false); setCurrentUser({ id: 1, name: 'Usuario' }); }} />
+      
+      {showSaveModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px' }}>
+            <h3 style={{ margin: '0 0 16px 0' }}>Guardar Proyecto</h3>
+            <input type="text" value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="Nombre del proyecto..." style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', marginBottom: '16px' }} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button onClick={() => setShowSaveModal(false)} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#e0e0e0', cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={handleSaveCalculo} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer' }}>Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMisCalculos && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0 }}>Mis Cálculos Guardados</h3>
+              <button onClick={() => setShowMisCalculos(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>×</button>
+            </div>
+            {isLoadingCalculos ? (
+              <p>Cargando...</p>
+            ) : misCalculos.length === 0 ? (
+              <p>No tienes cálculos guardados.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {misCalculos.map(calc => (
+                  <div key={calc.id} style={{ padding: '12px', border: '1px solid #eee', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong>{calc.nombre_proyecto}</strong>
+                      <div style={{ fontSize: '12px', color: '#666' }}>{new Date(calc.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <button onClick={() => {
+                      // Load logic
+                      if (calc.inputs) {
+                        if (calc.inputs.pared) setPared(calc.inputs.pared);
+                        if (calc.inputs.puertas) setPuertas(calc.inputs.puertas);
+                        if (calc.inputs.ventanas) setVentanas(calc.inputs.ventanas);
+                        if (calc.inputs.desperdicio) setDesperdicio(calc.inputs.desperdicio);
+                        if (calc.inputs.tipoBloque) setTipoBloque(calc.inputs.tipoBloque);
+                        if (calc.inputs.grosorBloque) setGrosorBloque(calc.inputs.grosorBloque);
+                        if (calc.inputs.friso) setFriso(calc.inputs.friso);
+                        if (calc.inputs.acabado) setAcabado(calc.inputs.acabado);
+                        if (calc.inputs.costos) setCostos(calc.inputs.costos);
+                        if (calc.inputs.baseCurrency) setBaseCurrency(calc.inputs.baseCurrency);
+                        if (calc.inputs.viewCurrency) setViewCurrency(calc.inputs.viewCurrency);
+                        if (calc.inputs.exchangeRate) setExchangeRate(calc.inputs.exchangeRate);
+                      }
+                      setShowMisCalculos(false);
+                      toast.success("Cálculo cargado");
+                    }} style={{ padding: '6px 12px', borderRadius: '6px', background: '#e3f2fd', color: '#1565c0', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cargar</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
