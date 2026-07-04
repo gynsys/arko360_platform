@@ -214,6 +214,7 @@ const CalculadoraMamposteria = () => {
       ventanasValidas,
       materiales: materialesArray,
       totalMateriales,
+      precioManoObra: pManoObra,
       totalManoObra,
       totalProyecto
     };
@@ -616,7 +617,7 @@ const CalculadoraMamposteria = () => {
             <div style={{ padding: '16px 20px', backgroundColor: '#e3f2fd', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '15px', color: '#1565c0', fontWeight: 600 }}>MANO DE OBRA</span>
-                <span style={{ fontSize: '12px', color: '#1976d2' }}>({resultados.areaNeta} m² × {formatMoney(convertPrice(costos.manoObra))}/m²)</span>
+                <span style={{ fontSize: '12px', color: '#1976d2' }}>({resultados.areaNeta} m² × {formatMoney(resultados.precioManoObra)}/m²)</span>
               </div>
               <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#0d47a1' }}>{formatMoney(resultados.totalManoObra)}</span>
             </div>
