@@ -501,7 +501,7 @@ const CalculadoraMamposteria = () => {
             )}
             
             <div style={{ width: '100%', height: '320px', backgroundColor: '#f0f0f0', borderRadius: '8px', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width={svgWidth} height={svgHeight} style={{ border: '1px solid #ccc', backgroundColor: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style={{ border: '1px solid #ccc', backgroundColor: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
                 {/* Fondo pared */}
                 <rect x={originX} y={topY} width={rectW} height={rectH} fill="#ffcc80" opacity="0.6" stroke="#ef6c00" strokeWidth="2" />
                 
@@ -618,6 +618,16 @@ const CalculadoraMamposteria = () => {
             <div style={{ padding: '20px', backgroundColor: '#fff3e0', borderRadius: '8px', border: '2px solid #ffb74d', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '18px', color: '#e65100', fontWeight: 800 }}>TOTAL ESTIMADO</span>
               <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#e65100' }}>{formatMoney(resultados.totalProyecto)}</span>
+            </div>
+            
+            {/* Botones de Exportación Inferiores */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button onClick={exportarPDF} style={{ background: '#d32f2f', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '15px' }}>
+                <Download size={20} /> Exportar Reporte PDF
+              </button>
+              <button onClick={exportarExcel} style={{ background: '#2e7d32', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '15px' }}>
+                <Download size={20} /> Exportar Presupuesto Excel
+              </button>
             </div>
           </div>
         </div>

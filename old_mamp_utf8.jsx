@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+﻿import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Calculator, DoorOpen, Maximize, Ruler, Download, Brush, Grid, DollarSign, Save, FolderOpen, LogIn, LogOut, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { AuthModal } from './fea3d/AuthModal';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
@@ -11,7 +12,7 @@ const CalculadoraMamposteria = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  // ─── ESTADO ───
+  // ÔöÇÔöÇÔöÇ ESTADO ÔöÇÔöÇÔöÇ
   const [pared, setPared] = useState({ largo: "4.0", alto: "2.5" });
   const [puertas, setPuertas] = useState({ incluir: false, cantidad: "1", ancho: "0.9", alto: "2.1" });
   const [ventanas, setVentanas] = useState({ incluir: false, cantidad: "1", ancho: "1.2", alto: "1.2", alturaSuelo: "1.0" });
@@ -38,14 +39,14 @@ const CalculadoraMamposteria = () => {
     polvillo: "53.36",
     pego: "12.00",
     lija: "1.50",
-    pasta: "17.48", // Galón
-    pintura: "17.40", // Galón
+    pasta: "17.48", // Gal├│n
+    pintura: "17.40", // Gal├│n
     manoObra: "10.00" // por m2
   });
 
   const reportRef = useRef(null);
 
-  // ─── AUTH & DB STATE ───
+  // ÔöÇÔöÇÔöÇ AUTH & DB STATE ÔöÇÔöÇÔöÇ
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [misCalculos, setMisCalculos] = useState([]);
@@ -62,7 +63,7 @@ const CalculadoraMamposteria = () => {
     }
   }, []);
 
-  // Efecto para ajustar grosores según el tipo de bloque
+  // Efecto para ajustar grosores seg├║n el tipo de bloque
   useEffect(() => {
     if (tipoBloque === 'arcilla' && grosorBloque === 20) {
       setGrosorBloque(15);
@@ -72,7 +73,7 @@ const CalculadoraMamposteria = () => {
     }
   }, [tipoBloque, grosorBloque]);
 
-  // ─── HANDLERS ───
+  // ÔöÇÔöÇÔöÇ HANDLERS ÔöÇÔöÇÔöÇ
   const parseInputValue = (value) => {
     let sanitized = String(value).replace(',', '.');
     if (/^\d*\.?\d*$/.test(sanitized)) {
@@ -185,8 +186,8 @@ const CalculadoraMamposteria = () => {
     const materialesArray = [
       { nombre: `Bloque ${tipoBloque} (${grosorBloque}cm)`, cantidad: bloques, unidad: 'und', precio: pBloque, total: bloques * pBloque },
       { nombre: 'Cemento Portland', cantidad: sacosCemento, unidad: 'sacos', precio: pCemento, total: sacosCemento * pCemento },
-      { nombre: 'Arena Lavada', cantidad: m3Arena, unidad: 'm³', precio: pArena, total: m3Arena * pArena },
-      { nombre: 'Polvillo', cantidad: m3Polvillo, unidad: 'm³', precio: pPolvillo, total: m3Polvillo * pPolvillo },
+      { nombre: 'Arena Lavada', cantidad: m3Arena, unidad: 'm┬│', precio: pArena, total: m3Arena * pArena },
+      { nombre: 'Polvillo', cantidad: m3Polvillo, unidad: 'm┬│', precio: pPolvillo, total: m3Polvillo * pPolvillo },
     ];
     if (friso !== 'ninguna' && acabado === 'liso') {
       materialesArray.push(
@@ -223,10 +224,10 @@ const CalculadoraMamposteria = () => {
 
   const formatMoney = (amount) => {
     const symbol = viewCurrency === 'VES' ? 'Bs.' : '$';
-    return `${symbol} ${Number(amount || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${symbol} ${amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  // ─── EXPORTACIONES ───
+  // ÔöÇÔöÇÔöÇ EXPORTACIONES ÔöÇÔöÇÔöÇ
   const exportarPDF = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -234,7 +235,7 @@ const CalculadoraMamposteria = () => {
     const html = `
       <html>
         <head>
-          <title>Cotización Mampostería</title>
+          <title>Cotizaci├│n Mamposter├¡a</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
             h1 { color: #1a237e; border-bottom: 2px solid #1a237e; padding-bottom: 10px; }
@@ -247,13 +248,13 @@ const CalculadoraMamposteria = () => {
           </style>
         </head>
         <body>
-          <h1>Cotización – Pared de Mampostería</h1>
+          <h1>Cotizaci├│n ÔÇô Pared de Mamposter├¡a</h1>
           <div class="info">
-            <strong>Dimensiones:</strong> ${pared.largo}m × ${pared.alto}m (${resultados.areaTotal} m²)<br/>
-            <strong>Área Neta:</strong> ${resultados.areaNeta} m²<br/>
+            <strong>Dimensiones:</strong> ${pared.largo}m ├ù ${pared.alto}m (${resultados.areaTotal} m┬▓)<br/>
+            <strong>├ürea Neta:</strong> ${resultados.areaNeta} m┬▓<br/>
             <strong>Bloque:</strong> ${tipoBloque === 'arcilla' ? 'Arcilla' : 'Cemento'} de ${grosorBloque}cm<br/>
-            <strong>Friso:</strong> ${friso === 'ninguna' ? 'Sin Friso' : (friso === '1_cara' ? '1 Cara' : '2 Caras')} (${resultados.areaFriso} m²)<br/>
-            ${friso !== 'ninguna' ? `<strong>Acabado:</strong> ${acabado === 'liso' ? 'Liso (Empastado y Pintura)' : 'Rústico'}<br/>` : ''}
+            <strong>Friso:</strong> ${friso === 'ninguna' ? 'Sin Friso' : (friso === '1_cara' ? '1 Cara' : '2 Caras')} (${resultados.areaFriso} m┬▓)<br/>
+            ${friso !== 'ninguna' ? `<strong>Acabado:</strong> ${acabado === 'liso' ? 'Liso (Empastado y Pintura)' : 'R├║stico'}<br/>` : ''}
             <strong>Desperdicio:</strong> ${desperdicio}%<br/>
           </div>
           <h2>Lista de Materiales y Costos</h2>
@@ -270,7 +271,7 @@ const CalculadoraMamposteria = () => {
             `).join('')}
           </table>
           <div class="total">TOTAL ESTIMADO MATERIALES: ${formatMoney(resultados.totalMateriales)}</div>
-          <div class="total" style="color: #555; font-size: 16px; margin-top: 10px;">TOTAL MANO DE OBRA (${resultados.areaNeta} m² × ${formatMoney(costos.manoObra)}): ${formatMoney(resultados.totalManoObra)}</div>
+          <div class="total" style="color: #555; font-size: 16px; margin-top: 10px;">TOTAL MANO DE OBRA (${resultados.areaNeta} m┬▓ ├ù ${formatMoney(costos.manoObra)}): ${formatMoney(resultados.totalManoObra)}</div>
           <div class="total" style="font-size: 22px; margin-top: 15px; color: #1b5e20;">TOTAL GENERAL: ${formatMoney(resultados.totalProyecto)}</div>
         </body>
       </html>
@@ -287,8 +288,8 @@ const CalculadoraMamposteria = () => {
         <head><meta charset="utf-8"></head>
         <body>
           <table>
-            <tr><th colspan="5" style="font-size: 20px; font-weight: bold;">Presupuesto Estimado - Mampostería</th></tr>
-            <tr><th colspan="5">Área Neta: ${resultados.areaNeta} m² | Friso: ${resultados.areaFriso} m²</th></tr>
+            <tr><th colspan="5" style="font-size: 20px; font-weight: bold;">Presupuesto Estimado - Mamposter├¡a</th></tr>
+            <tr><th colspan="5">├ürea Neta: ${resultados.areaNeta} m┬▓ | Friso: ${resultados.areaFriso} m┬▓</th></tr>
             <tr><th colspan="5">Tasa de Cambio (Bs/$): ${exchangeRate} | Moneda Mostrada: ${viewCurrency === 'VES' ? 'Bs' : '$'}</th></tr>
             <tr><th>Material</th><th>Cantidad</th><th>Unidad</th><th>Precio Unitario</th><th>Subtotal</th></tr>
             ${resultados.materiales.map(m => `
@@ -318,41 +319,6 @@ const CalculadoraMamposteria = () => {
     URL.revokeObjectURL(url);
   };
 
-  const largoF = getF(pared.largo);
-  const altoF = getF(pared.alto);
-  const svgWidth = 800;
-  const svgHeight = 320;
-  const paddingSVG = 40;
-  const scaleX = (svgWidth - paddingSVG * 2) / (largoF || 1);
-  const scaleY = (svgHeight - paddingSVG * 2) / (altoF || 1);
-  const scale = Math.min(scaleX, scaleY);
-  
-  const rectW = largoF * scale;
-  const rectH = altoF * scale;
-  const originX = (svgWidth - rectW) / 2;
-  const originY = svgHeight - (svgHeight - rectH) / 2;
-  const topY = originY - rectH;
-
-  const posicionesAberturas = [];
-  if (puertas.incluir && getF(puertas.cantidad) > 0) {
-    let currentX = 0.5;
-    for (let i = 0; i < getF(puertas.cantidad); i++) {
-      posicionesAberturas.push({ tipo: 'puerta', ancho: getF(puertas.ancho), alto: getF(puertas.alto), x: currentX, y: 0 });
-      currentX += getF(puertas.ancho) + 0.5;
-    }
-  }
-  if (ventanas.incluir && getF(ventanas.cantidad) > 0) {
-    let currentX = 0.5;
-    if (puertas.incluir) currentX += (getF(puertas.ancho) + 0.5) * getF(puertas.cantidad);
-    for (let i = 0; i < getF(ventanas.cantidad); i++) {
-      posicionesAberturas.push({ tipo: 'ventana', ancho: getF(ventanas.ancho), alto: getF(ventanas.alto), x: currentX, y: getF(ventanas.alturaSuelo) || 1.0 });
-      currentX += getF(ventanas.ancho) + 0.5;
-    }
-  }
-
-  const cabenHorizontal = posicionesAberturas.reduce((sum, ab) => sum + ab.ancho + 0.5, 0) <= largoF;
-  const ventanasValidas = !ventanas.incluir || ((getF(ventanas.alturaSuelo) || 1.0) + getF(ventanas.alto) <= altoF);
-
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
@@ -364,9 +330,9 @@ const CalculadoraMamposteria = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ margin: '0 0 8px 0', color: '#1a237e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Grid size={28} /> Calculadora de Mampostería
+            <Grid size={28} /> Calculadora de Mamposter├¡a
           </h2>
-          <p style={{ color: '#555', margin: 0 }}>Cálculo de bloques, mezcla para pegar y friso.</p>
+          <p style={{ color: '#555', margin: 0 }}>C├ílculo de bloques, mezcla para pegar y friso.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button onClick={exportarPDF} style={{ background: '#d32f2f', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
@@ -387,28 +353,28 @@ const CalculadoraMamposteria = () => {
         <div style={{ flex: 1, minWidth: '120px' }}>
           <label style={{ fontSize: '12px', color: '#555', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Ingresar precios en:</label>
           <select value={baseCurrency} onChange={handleBaseCurrencyChange} style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '13px' }}>
-            <option value="USD">Dólares ($)</option>
-            <option value="VES">Bolívares (Bs)</option>
+            <option value="USD">D├│lares ($)</option>
+            <option value="VES">Bol├¡vares (Bs)</option>
           </select>
         </div>
         <div style={{ flex: 1, minWidth: '120px' }}>
           <label style={{ fontSize: '12px', color: '#555', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Ver total en:</label>
           <select value={viewCurrency} onChange={(e) => setViewCurrency(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '13px' }}>
-            <option value="USD">Dólares ($)</option>
-            <option value="VES">Bolívares (Bs)</option>
+            <option value="USD">D├│lares ($)</option>
+            <option value="VES">Bol├¡vares (Bs)</option>
           </select>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Configuración de la Pared */}
+          {/* Configuraci├│n de la Pared */}
           <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Ruler size={18} /> Dimensiones de la Pared</div>} color="#1a237e">
             <InputRow label="Largo (m)" name="largo" value={pared.largo} onChange={handlePared} step={0.1} />
             <InputRow label="Alto (m)" name="alto" value={pared.alto} onChange={handlePared} step={0.1} />
           </Card>
 
-          {/* Configuración de Bloque y Acabado */}
+          {/* Configuraci├│n de Bloque y Acabado */}
           <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Grid size={18} /> Bloque y Acabado</div>} color="#1a237e">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
@@ -442,7 +408,7 @@ const CalculadoraMamposteria = () => {
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', marginBottom: '6px', color: '#444' }}>Acabado</label>
                   <select value={acabado} onChange={(e) => setAcabado(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}>
-                    <option value="rustico">Rústico</option>
+                    <option value="rustico">R├║stico</option>
                     <option value="liso">Liso (Pintado)</option>
                   </select>
                 </div>
@@ -483,21 +449,21 @@ const CalculadoraMamposteria = () => {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Visualización */}
+          {/* Visualizaci├│n */}
           <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Brush size={18} /> Plano de la Pared</div>} color="#1a237e">
-            {!cabenHorizontal && (
+            {!resultados.cabenHorizontal && (
               <div style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '12px', borderRadius: '6px', marginBottom: '16px', fontSize: '13px' }}>
-                ⚠️ Las aberturas no caben horizontalmente.
+                ÔÜá´©Å Las aberturas no caben horizontalmente.
               </div>
             )}
-            {!ventanasValidas && (
+            {!resultados.ventanasValidas && (
               <div style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '12px', borderRadius: '6px', marginBottom: '16px', fontSize: '13px' }}>
-                ⚠️ La ventana sale de la pared verticalmente.
+                ÔÜá´©Å La ventana sale de la pared verticalmente.
               </div>
             )}
             
             <div style={{ width: '100%', height: '320px', backgroundColor: '#f0f0f0', borderRadius: '8px', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style={{ border: '1px solid #ccc', backgroundColor: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+              <svg width={svgWidth} height={svgHeight} style={{ border: '1px solid #ccc', backgroundColor: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
                 {/* Fondo pared */}
                 <rect x={originX} y={topY} width={rectW} height={rectH} fill="#ffcc80" opacity="0.6" stroke="#ef6c00" strokeWidth="2" />
                 
@@ -534,8 +500,8 @@ const CalculadoraMamposteria = () => {
             </div>
             
             <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', backgroundColor: '#e3f2fd', padding: '12px', borderRadius: '8px' }}>
-              <div><strong>Área Total:</strong> {resultados.areaTotal} m²</div>
-              <div style={{ color: '#1565c0' }}><strong>Área Neta:</strong> {resultados.areaNeta} m²</div>
+              <div><strong>├ürea Total:</strong> {resultados.areaTotal} m┬▓</div>
+              <div style={{ color: '#1565c0' }}><strong>├ürea Neta:</strong> {resultados.areaNeta} m┬▓</div>
             </div>
           </Card>
 
@@ -544,19 +510,19 @@ const CalculadoraMamposteria = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <CostInput label={`Bloque ${tipoBloque === 'arcilla' ? 'Arcilla' : 'Cemento'} (${grosorBloque}cm)`} name={`bloque_${tipoBloque}_${grosorBloque}`} value={costos[`bloque_${tipoBloque}_${grosorBloque}`] || 0} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
               <CostInput label="Cemento (Saco)" name="cemento" value={costos.cemento} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
-              <CostInput label="Arena Lavada (m³)" name="arena" value={costos.arena} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
-              <CostInput label="Polvillo (m³)" name="polvillo" value={costos.polvillo} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
+              <CostInput label="Arena Lavada (m┬│)" name="arena" value={costos.arena} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
+              <CostInput label="Polvillo (m┬│)" name="polvillo" value={costos.polvillo} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
               {friso !== 'ninguna' && acabado === 'liso' && (
                 <>
                   <CostInput label="Pego (Saco)" name="pego" value={costos.pego} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
                   <CostInput label="Lija (Hoja)" name="lija" value={costos.lija} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
-                  <CostInput label="Pasta Prof. (Galón)" name="pasta" value={costos.pasta} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
-                  <CostInput label="Pintura Caucho (Galón)" name="pintura" value={costos.pintura} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
+                  <CostInput label="Pasta Prof. (Gal├│n)" name="pasta" value={costos.pasta} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
+                  <CostInput label="Pintura Caucho (Gal├│n)" name="pintura" value={costos.pintura} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
                 </>
               )}
             </div>
             <div style={{ marginTop: '16px', borderTop: '1px solid #eee', paddingTop: '16px' }}>
-              <CostInput label="Costo Mano de Obra (por m²)" name="manoObra" value={costos.manoObra} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
+              <CostInput label="Costo Mano de Obra (por m┬▓)" name="manoObra" value={costos.manoObra} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
             </div>
             <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <label style={{ fontSize: '13px', fontWeight: 600 }}>% Desperdicio:</label>
@@ -606,7 +572,7 @@ const CalculadoraMamposteria = () => {
             <div style={{ padding: '16px 20px', backgroundColor: '#e3f2fd', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '15px', color: '#1565c0', fontWeight: 600 }}>MANO DE OBRA</span>
-                <span style={{ fontSize: '12px', color: '#1976d2' }}>({resultados.areaNeta} m² × {formatMoney(resultados.precioManoObra)}/m²)</span>
+                <span style={{ fontSize: '12px', color: '#1976d2' }}>({resultados.areaNeta} m┬▓ ├ù {formatMoney(resultados.precioManoObra)}/m┬▓)</span>
               </div>
               <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#0d47a1' }}>{formatMoney(resultados.totalManoObra)}</span>
             </div>
@@ -615,16 +581,6 @@ const CalculadoraMamposteria = () => {
               <span style={{ fontSize: '18px', color: '#e65100', fontWeight: 800 }}>TOTAL ESTIMADO</span>
               <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#e65100' }}>{formatMoney(resultados.totalProyecto)}</span>
             </div>
-            
-            {/* Botones de Exportación Inferiores */}
-            <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button onClick={exportarPDF} style={{ background: '#d32f2f', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '15px' }}>
-                <Download size={20} /> Exportar Reporte PDF
-              </button>
-              <button onClick={exportarExcel} style={{ background: '#2e7d32', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '15px' }}>
-                <Download size={20} /> Exportar Presupuesto Excel
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -632,7 +588,7 @@ const CalculadoraMamposteria = () => {
   );
 };
 
-// ─── COMPONENTES AUXILIARES ───
+// ÔöÇÔöÇÔöÇ COMPONENTES AUXILIARES ÔöÇÔöÇÔöÇ
 const Card = ({ title, color, children }) => (
   <div style={{ backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
     <div style={{ backgroundColor: color, color: '#fff', padding: '12px 16px', fontWeight: 'bold', fontSize: '15px' }}>
