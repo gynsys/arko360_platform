@@ -183,3 +183,4 @@ slowapi==0.1.9
 google-generativeai
 numpy
 scipy
+matplotlib
