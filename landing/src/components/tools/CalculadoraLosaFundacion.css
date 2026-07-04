@@ -281,3 +281,73 @@
   padding: 20px;
   border-radius: 8px;
 }
+
+/* Nuevos estilos v2 (Tracker, Auditoria, Dibujo) */
+.mouse-tracker {
+  font-size: 11px;
+  color: #fff;
+  background: #1a1a1a;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.drawing-board.drawing-mode {
+  cursor: crosshair;
+}
+
+.drawing-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #ff9800;
+  font-weight: 500;
+  background: #fff3e0;
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+
+.audit-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed #ccc;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 10px;
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.btn-success {
+  width: 100%;
+  padding: 10px;
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-success:hover {
+  background: #43a047;
+}
+
+.btn-success:disabled {
+  background: #a5d6a7;
+  cursor: not-allowed;
+}
