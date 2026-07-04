@@ -277,7 +277,65 @@ export default function CalculadoraLosaFundacion() {
   // Descargar Plano Estructural (HTML)
   const downloadHTML = () => {
     if (!results || !results.svg_plan) return;
-    const blob = new Blob([results.svg_plan], { type: "text/html;charset=utf-8" });
+    
+    // Generar tabla HTML
+    let tableRows = '';
+    if (results.bands) {
+      results.bands.forEach((b, i) => {
+        const px = b.bar_x?.diam_mm > 0 ? `Ø${b.bar_x.diam_mm}@${(b.bar_x.sep_m*100).toFixed(0)}cm` : "Mínimo";
+        const py = b.bar_y?.diam_mm > 0 ? `Ø${b.bar_y.diam_mm}@${(b.bar_y.sep_m*100).toFixed(0)}cm` : "Mínimo";
+        tableRows += `<tr>
+          <td>M${i+1}</td>
+          <td>${b.type === 'perimetral' ? 'Perimetral' : 'Interno'}</td>
+          <td>${b.band_width.toFixed(2)} m</td>
+          <td>${b.Mx_design_kNm_m.toFixed(2)}</td>
+          <td>${b.My_design_kNm_m.toFixed(2)}</td>
+          <td>${b.Asx_cm2_m.toFixed(2)}</td>
+          <td>${b.Asy_cm2_m.toFixed(2)}</td>
+          <td>${px}</td>
+          <td>${py}</td>
+          <td style="color:#2e7d32;font-weight:bold;">OK</td>
+        </tr>`;
+      });
+    }
+
+    const fullHtml = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Plano de Armado — Losa de Cimentación</title>
+<style>
+  body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 24px; color: #222; background: #fff; max-width: 1000px; margin: 0 auto; padding: 20px;}
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 16px; margin-bottom: 30px;}
+  th { text-align: left; padding: 10px; border-bottom: 2px solid #ddd; color: #555; font-weight: 600; white-space: nowrap; background: #f5f5f5;}
+  td { padding: 10px; border-bottom: 1px solid #eee; white-space: nowrap; }
+  tr:hover td { background: #fafafa; }
+  .svg-container { display: flex; justify-content: center; background: #fafafa; border: 1px solid #eee; padding: 20px; border-radius: 8px; margin-bottom: 20px;}
+</style>
+</head>
+<body>
+  <h2>Reporte de Plano y Armado - Losa Híbrida</h2>
+  <div class="svg-container">
+    ${results.svg_plan}
+  </div>
+  <h3>Tabla de Armado de Bandas</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Muro</th><th>Tipo</th><th>Ancho banda</th>
+        <th>Mx diseño<br>(kN·m/m)</th><th>My diseño<br>(kN·m/m)</th>
+        <th>Asx<br>(cm²/m)</th><th>Asy<br>(cm²/m)</th>
+        <th>Prop. X</th><th>Prop. Y</th><th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+    </tbody>
+  </table>
+</body>
+</html>`;
+
+    const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -541,6 +599,42 @@ export default function CalculadoraLosaFundacion() {
                 <div className="structural-plan">
                   <h4>Plano Estructural Generado</h4>
                   <div className="svg-output" dangerouslySetInnerHTML={{ __html: results.svg_plan }}></div>
+                </div>
+              )}
+
+              {/* Render de la Tabla en React */}
+              {results.bands && (
+                <div className="structural-table" style={{marginTop: '24px', overflowX: 'auto'}}>
+                  <h4>Tabla de Armado de Bandas</h4>
+                  <table className="coords-table" style={{marginTop: '8px', minWidth: '700px'}}>
+                    <thead>
+                      <tr style={{background: '#f5f5f5'}}>
+                        <th>Muro</th><th>Tipo</th><th>Ancho banda</th>
+                        <th>Mx diseño</th><th>My diseño</th>
+                        <th>Asx (cm²/m)</th><th>Asy (cm²/m)</th>
+                        <th>Prop. X</th><th>Prop. Y</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {results.bands.map((b, i) => {
+                        const px = b.bar_x?.diam_mm > 0 ? `Ø${b.bar_x.diam_mm}@${(b.bar_x.sep_m*100).toFixed(0)}cm` : "Mínimo";
+                        const py = b.bar_y?.diam_mm > 0 ? `Ø${b.bar_y.diam_mm}@${(b.bar_y.sep_m*100).toFixed(0)}cm` : "Mínimo";
+                        return (
+                          <tr key={i}>
+                            <td>M{i+1}</td>
+                            <td>{b.type === 'perimetral' ? 'Perim.' : 'Interno'}</td>
+                            <td>{b.band_width.toFixed(2)} m</td>
+                            <td>{b.Mx_design_kNm_m.toFixed(2)}</td>
+                            <td>{b.My_design_kNm_m.toFixed(2)}</td>
+                            <td>{b.Asx_cm2_m.toFixed(2)}</td>
+                            <td>{b.Asy_cm2_m.toFixed(2)}</td>
+                            <td>{px}</td>
+                            <td>{py}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
