@@ -274,6 +274,18 @@ export default function CalculadoraLosaFundacion() {
     URL.revokeObjectURL(url);
   };
 
+  // Descargar Plano Estructural (HTML)
+  const downloadHTML = () => {
+    if (!results || !results.svg_plan) return;
+    const blob = new Blob([results.svg_plan], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `plano_armado_losa_${Date.now()}.html`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Guardar en Base de Datos
   const saveToDatabase = async () => {
     if (!lastPayload || !results) return;
@@ -406,6 +418,9 @@ export default function CalculadoraLosaFundacion() {
           {/* Botones de Auditoría (Aparecen si hay resultados) */}
           {results && !error && (
             <div className="audit-actions">
+              <button className="btn-secondary" onClick={downloadHTML} style={{background: '#e3f2fd', borderColor: '#90caf9'}}>
+                📄 Descargar Plano y Tabla (HTML)
+              </button>
               <button className="btn-secondary" onClick={downloadAuditJSON}>
                 ⬇️ Descargar JSON Auditoría
               </button>
