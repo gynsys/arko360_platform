@@ -130,6 +130,8 @@ const CalculadoraMamposteria = () => {
     }
   };
 
+  const getF = (val) => parseFloat(String(val).replace(',', '.')) || 0;
+
   const resultados = useMemo(() => {
     const largo = getF(pared.largo);
     const alto = getF(pared.alto);
