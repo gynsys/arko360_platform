@@ -549,8 +549,6 @@ const CalculadoraMamposteria = () => {
             </div>
           </Card>
 
-          </Card>
-
           {/* Precios Unitarios */}
           <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Calculator size={18} /> Precios Unitarios (Con 16% IVA)</div>} color="#1a237e">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
