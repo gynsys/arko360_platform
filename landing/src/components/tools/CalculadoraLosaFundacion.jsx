@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import toast from 'react-hot-toast';
 import './CalculadoraLosaFundacion.css';
 
 // ============================================
@@ -63,6 +64,9 @@ export default function CalculadoraLosaFundacion() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  // Aberturas (Puertas y Ventanas) Drag & Drop
+  const [openings, setOpenings] = useState([]);
 
   // Interacción Canvas (Mouse & Snap)
   const [mouseCoord, setMouseCoord] = useState({ x: 0, y: 0 });
@@ -157,6 +161,14 @@ export default function CalculadoraLosaFundacion() {
       type: 'perimetral',
       x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2
     }));
+    
+    // Migrar aberturas
+    setOpenings(prev => prev.map(op => {
+      const perimMatch = perimeterCopy.find((_, idx) => op.wall_id === `perim_${idx}`);
+      if (perimMatch) return { ...op, wall_id: perimMatch.id };
+      return op;
+    }));
+    
     setInternalWalls(prev => [...perimeterCopy, ...prev]);
     setShape('libre');
   };
@@ -172,7 +184,14 @@ export default function CalculadoraLosaFundacion() {
     setInternalWalls(prev => prev.map(w => w.id === id ? { ...w, [field]: (field === 'type' ? value : (parseFloat(value) || 0)) } : w));
   };
 
-  const removeInternalWall = (id) => setInternalWalls(prev => prev.filter(w => w.id !== id));
+  const removeInternalWall = (id) => {
+    setInternalWalls(prev => prev.filter(w => w.id !== id));
+    setOpenings(prev => prev.filter(op => op.wall_id !== id));
+  };
+
+  const removeOpening = (id) => {
+    setOpenings(prev => prev.filter(op => op.id !== id));
+  };
 
   // Lógica del Mouse (Tracker y Dibujo con Snap)
   const handleMouseMove = (e) => {
@@ -227,33 +246,33 @@ export default function CalculadoraLosaFundacion() {
     setResults(null);
     setLastPayload(null);
 
-    const autoBeams = perimeterWalls.map(w => ({
-      x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
-      width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
-    }));
-
     const payload = {
       project: projectName,
       geometry: { Lx: params.Lx, Ly: params.Ly, h: params.h / 100 },
       materials: {
         f_c: designParams.fc, f_y: designParams.fy, cover: 0.05, bar_diam: 0.012,
         gamma_horm: 2400, E: 4700 * Math.sqrt(designParams.fc) * 1e6, nu: 0.2, k: 20e6,
-        q_adm: designParams.q_adm * 1000 // Convertir kN/m2 a N/m2
+        q_adm: designParams.q_adm * 1000 
       },
       walls: allWalls.map(w => ({
         x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
         thickness: w.thickness, height: w.height,
         density: w.density, type: w.type, load_factor: 1.5,
-        is_plastered: w.is_plastered
+        is_plastered: w.is_plastered,
+        openings: openings.filter(op => op.wall_id === w.id).map(op => ({
+          type: op.type, start_m: op.start_m, width_m: op.width_m, height_m: op.height_m
+        }))
       })),
-      beams: autoBeams,
-      doors: [],
+      beams: perimeterWalls.map(w => ({
+        x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
+        width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
+      })),
       mesh_nx: 40,
       mesh_ny: 40,
       extra_load: 300 * 9.81
     };
 
-    setLastPayload(payload); // Guardar para auditoría
+    setLastPayload(payload);
 
     try {
       const response = await fetch(`${API_BASE}/calculadora-losas/losa_fundacion/analyze`, {
@@ -300,7 +319,6 @@ export default function CalculadoraLosaFundacion() {
       if (inp.geometry) setParams(prev => ({ ...prev, Lx: inp.geometry.Lx, Ly: inp.geometry.Ly, h: inp.geometry.h * 100 }));
       if (inp.materials) setDesignParams(prev => ({ ...prev, fc: inp.materials.f_c, fy: inp.materials.f_y, q_adm: inp.materials.q_adm / 1000 }));
       if (inp.walls) {
-        // Extract internal and manually placed perimeter walls
         const manualWalls = inp.walls.map((w, idx) => ({
           id: `db_${idx}`,
           type: w.type,
@@ -308,6 +326,16 @@ export default function CalculadoraLosaFundacion() {
         }));
         setInternalWalls(manualWalls);
         setShape('libre');
+        
+        const ops = [];
+        inp.walls.forEach((w, idx) => {
+          if (w.openings) {
+            w.openings.forEach(op => {
+              ops.push({ id: `op_db_${Date.now()}_${Math.random()}`, wall_id: `db_${idx}`, ...op });
+            });
+          }
+        });
+        setOpenings(ops);
       }
     }
     setResults(run.resultados);
@@ -315,7 +343,6 @@ export default function CalculadoraLosaFundacion() {
     setShowOpenModal(false);
   };
 
-  // Descargar JSON de Auditoría
   const downloadAuditJSON = () => {
     if (!lastPayload || !results) return;
     const auditData = {
@@ -332,11 +359,9 @@ export default function CalculadoraLosaFundacion() {
     URL.revokeObjectURL(url);
   };
 
-  // Descargar Plano Estructural (HTML)
   const downloadHTML = () => {
     if (!results || !results.svg_plan) return;
     
-    // Generar tabla HTML
     let tableRows = '';
     if (results.bands) {
       results.bands.forEach((b, i) => {
@@ -402,7 +427,6 @@ export default function CalculadoraLosaFundacion() {
     URL.revokeObjectURL(url);
   };
 
-  // Guardar en Base de Datos
   const saveToDatabase = async () => {
     if (!lastPayload || !results) return;
     setSaving(true);
@@ -418,10 +442,17 @@ export default function CalculadoraLosaFundacion() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(runData)
       });
-      if (!response.ok) throw new Error('Error al guardar en BD');
-      alert("¡Cálculo guardado exitosamente!");
-    } catch (err) {
-      alert(err.message);
+      if (response.ok) {
+        const saved = await response.json();
+        console.log("Corrida guardada:", saved);
+        toast.success("¡Cálculo guardado exitosamente!");
+        fetchRuns();
+      } else {
+        toast.error("Error al guardar el cálculo.");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error de red al guardar.");
     } finally {
       setSaving(false);
     }
@@ -477,15 +508,8 @@ export default function CalculadoraLosaFundacion() {
         <div className="calc-sidebar">
           
           <div className="control-group">
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-              <h3>1. Forma de la Losa</h3>
-              {shape !== 'libre' && (
-                <button className="btn-unlink" onClick={convertToManual} title="Desvincular perímetro a tabla manual">
-                  🔗 Editar Perímetro Manualmente
-                </button>
-              )}
-            </div>
-            <div className="shape-selector">
+            <h3>1. Forma de la Losa</h3>
+            <div className="shape-selector" style={{marginBottom: '12px'}}>
               {SHAPES.map(s => (
                 <button 
                   key={s.id} 
@@ -496,8 +520,18 @@ export default function CalculadoraLosaFundacion() {
                 </button>
               ))}
             </div>
+            
+            {shape !== 'libre' && (
+              <button 
+                className="btn-secondary" 
+                onClick={convertToManual} 
+                style={{width: '100%', background: '#fff3e0', color: '#e65100', borderColor: '#ffcc80', fontWeight: 'bold'}}
+              >
+                🔗 Desvincular Perímetro (Editar aberturas)
+              </button>
+            )}
 
-            <div className="params-grid">
+            <div className="params-grid" style={{marginTop: '16px'}}>
               <div className="param-item"><label>Lx Total (m):</label><input type="number" step="0.5" value={params.Lx} onChange={e => handleParamChange('Lx', e.target.value)} /></div>
               <div className="param-item"><label>Ly Total (m):</label><input type="number" step="0.5" value={params.Ly} onChange={e => handleParamChange('Ly', e.target.value)} /></div>
               
@@ -553,7 +587,7 @@ export default function CalculadoraLosaFundacion() {
             <table className="coords-table">
               <thead>
                 <tr>
-                  <th>T</th><th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th>
+                  <th>Tipo</th><th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -574,7 +608,30 @@ export default function CalculadoraLosaFundacion() {
                 ))}
               </tbody>
             </table>
-            <button className="add-btn" onClick={() => addInternalWall({})}>+ Fila Manual</button>
+
+            {/* Tabla de Aberturas (si hay) */}
+            {openings.length > 0 && (
+               <div className="structural-table" style={{marginTop: '24px'}}>
+                 <h4>Vanos y Aberturas (Drag & Drop)</h4>
+                 <table className="coords-table">
+                   <thead><tr><th>Vano</th><th>Muro ID</th><th>Inicio (m)</th><th>Ancho (m)</th><th>Alto (m)</th><th></th></tr></thead>
+                   <tbody>
+                     {openings.map(op => (
+                       <tr key={op.id}>
+                         <td>{op.type === 'door' ? '🚪 Puerta' : '🪟 Ventana'}</td>
+                         <td>{op.wall_id.substring(0,8)}</td>
+                         <td>{op.start_m.toFixed(2)}</td>
+                         <td>{op.width_m.toFixed(2)}</td>
+                         <td>{op.height_m.toFixed(2)}</td>
+                         <td><button className="del-btn" onClick={() => removeOpening(op.id)}>X</button></td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+               </div>
+            )}
+            
+            <button className="add-btn" onClick={() => addInternalWall({})}>+ Añadir Muro Interno</button>
           </div>
 
           <button className="analyze-btn" onClick={runAnalysis} disabled={loading}>
@@ -604,7 +661,13 @@ export default function CalculadoraLosaFundacion() {
           <div className="canvas-wrapper hybrid-canvas">
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '10px' }}>
               <h4>Plano Interactivo (Ejes en metros)</h4>
-              <span className="mouse-tracker">📍 X: {mouseCoord.x.toFixed(1)}m, Y: {mouseCoord.y.toFixed(1)}m</span>
+              <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
+                <div className="drag-toolbox" style={{display:'flex', gap:'8px'}}>
+                  <div draggable onDragStart={(e) => handleDragStart(e, 'door')} className="drag-item" title="Arrastra al muro">🚪 Puerta</div>
+                  <div draggable onDragStart={(e) => handleDragStart(e, 'window')} className="drag-item" title="Arrastra al muro">🪟 Ventana</div>
+                </div>
+                <span className="mouse-tracker">📍 X: {mouseCoord.x.toFixed(1)}m, Y: {mouseCoord.y.toFixed(1)}m</span>
+              </div>
             </div>
             
             <svg 
@@ -614,6 +677,8 @@ export default function CalculadoraLosaFundacion() {
               className={`drawing-board ${isDrawing ? 'drawing-mode' : ''}`}
               onMouseMove={handleMouseMove}
               onDoubleClick={handleSvgDoubleClick}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
               style={{ cursor: isDrawing ? 'crosshair' : 'pointer' }}
             >
               {/* Ejes X (Ruler Top) */}
@@ -654,14 +719,41 @@ export default function CalculadoraLosaFundacion() {
               <rect x={MARGIN} y={MARGIN} width={toSvg(params.Lx)-MARGIN} height={toSvg(params.Ly)-MARGIN} fill="rgba(33, 150, 243, 0.03)" stroke="#2196f3" strokeDasharray="5,5" />
 
               {/* Muros */}
-              {allWalls.map(wall => (
-                <line key={wall.id}
-                  x1={toSvg(wall.x1)} y1={toSvg(wall.y1)}
-                  x2={toSvg(wall.x2)} y2={toSvg(wall.y2)}
-                  stroke={wall.type === 'perimetral' ? '#e53935' : '#1e88e5'}
-                  strokeWidth={Math.max(4, wall.thickness * scale)}
-                  strokeLinecap="round"
-                />
+              {allWalls.map(w => (
+                <g key={w.id}>
+                    <line 
+                      x1={toSvg(w.x1)} y1={toSvg(w.y1)} 
+                      x2={toSvg(w.x2)} y2={toSvg(w.y2)} 
+                      stroke={w.type === 'perimetral' ? "#e53935" : "#1e88e5"} 
+                      strokeWidth={Math.max(4, w.thickness * scale)} strokeLinecap="round" 
+                    />
+                    {openings.filter(op => op.wall_id === w.id).map(op => {
+                      const len = Math.sqrt((w.x2-w.x1)**2 + (w.y2-w.y1)**2);
+                      const t1 = op.start_m / len;
+                      const t2 = (op.start_m + op.width_m) / len;
+                      const ox1 = w.x1 + t1 * (w.x2 - w.x1);
+                      const oy1 = w.y1 + t1 * (w.y2 - w.y1);
+                      const ox2 = w.x1 + t2 * (w.x2 - w.x1);
+                      const oy2 = w.y1 + t2 * (w.y2 - w.y1);
+                      return (
+                        <g key={op.id}>
+                          <line 
+                            x1={toSvg(ox1)} y1={toSvg(oy1)} 
+                            x2={toSvg(ox2)} y2={toSvg(oy2)} 
+                            stroke="#fafafa" strokeWidth={Math.max(6, w.thickness * scale + 2)} strokeLinecap="butt" 
+                          />
+                          <line 
+                            x1={toSvg(ox1)} y1={toSvg(oy1)} 
+                            x2={toSvg(ox2)} y2={toSvg(oy2)} 
+                            stroke="#888" strokeWidth="1" strokeDasharray="2,2" 
+                          />
+                          <text x={toSvg(ox1)} y={toSvg(oy1) - 10} fontSize="12" fill="#555">
+                            {op.type === 'door' ? '🚪' : '🪟'}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </g>
               ))}
 
               {/* Pre-visualización de Muro dibujándose */}

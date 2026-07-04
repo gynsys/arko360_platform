@@ -430,3 +430,29 @@
 .btn-unlink:hover {
   background: #ffe0b2;
 }
+
+.mouse-tracker {
+  background: #1a1a1a;
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+  white-space: nowrap;
+  min-width: 140px;
+  text-align: center;
+}
+
+.drag-item {
+  padding: 4px 8px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  user-select: none;
+}
+.drag-item:active {
+  cursor: grabbing;
+}

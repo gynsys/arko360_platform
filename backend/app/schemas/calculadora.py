@@ -41,6 +41,12 @@ class GeometryInput(BaseModel):
     Ly: float
     h: float
 
+class OpeningInput(BaseModel):
+    type: str = "door" # "door" o "window"
+    start_m: float
+    width_m: float
+    height_m: float
+
 class WallInput(BaseModel):
     x1: float
     y1: float
@@ -52,6 +58,7 @@ class WallInput(BaseModel):
     type: str = "perimetral"
     load_factor: float = 1.5
     is_plastered: bool = False
+    openings: List[OpeningInput] = []
 
 class BeamInput(BaseModel):
     x1: float

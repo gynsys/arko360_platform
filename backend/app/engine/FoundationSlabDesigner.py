@@ -33,6 +33,11 @@ class Wall:
     q_lineal: float = 0.0
     length: float = 0.0
     band_width: float = 0.0
+    openings: List[Dict] = None
+
+    def __post_init__(self):
+        if self.openings is None:
+            self.openings = []
 
 
 @dataclass
@@ -130,7 +135,7 @@ class FoundationSlabDesigner:
         print(f"Grilla: {nx}x{ny} elementos | dx={self.dx:.3f}m, dy={self.dy:.3f}m | Nodos={self.n_nodes}")
 
     def add_wall(self, x1, y1, x2, y2, thickness, height, material_density,
-                 load_factor=1.0, wall_type="perimetral", is_plastered=False):
+                 load_factor=1.0, wall_type="perimetral", is_plastered=False, openings=None):
         length = np.sqrt((x2-x1)**2 + (y2-y1)**2)
         if length < 1e-6:
             return
@@ -148,7 +153,8 @@ class FoundationSlabDesigner:
             thickness=thickness, height=height,
             density=material_density, load_factor=load_factor,
             wall_type=wall_type, q_lineal=q_lineal,
-            length=length, band_width=band_width
+            length=length, band_width=band_width,
+            openings=openings or []
         ))
         print(f"  Muro {wall_type}: ({x1:.2f},{y1:.2f})->({x2:.2f},{y2:.2f}) | "
               f"q={q_lineal/1000:.2f} kN/m | Banda={band_width:.2f}m")
@@ -247,21 +253,42 @@ class FoundationSlabDesigner:
         # 2. Cargas de muros - Aplicación concentrada al nodo más cercano
         # (mejor que interpolación bilineal para capturar momentos pico bajo muros)
         for wall in self.walls:
-            x1, y1, x2, y2 = wall.x1, wall.y1, wall.x2, wall.y2
-            ql = wall.q_lineal
-            n_seg = max(int(wall.length / min(self.dx, self.dy)), 50)
-            seg_len = wall.length / n_seg
+            # Dividir muro en pequeños segmentos (dl <= dx/2)
+            n_seg = int(np.ceil(wall.length / (self.dx / 2.0)))
+            if n_seg == 0:
+                continue
+            dl = wall.length / n_seg
+            for k in range(n_seg):
+                t = (k + 0.5) / n_seg
+                dist_from_start = t * wall.length
+                
+                # Check si estamos en un vano (opening)
+                q_eff = wall.q_lineal
+                for op in wall.openings:
+                    op_start = op.get("start_m", 0)
+                    op_w = op.get("width_m", 0)
+                    op_h = op.get("height_m", 0)
+                    
+                    if op_start <= dist_from_start <= (op_start + op_w):
+                        # Carga base del muro
+                        plaster_kg = 80 if getattr(wall, 'is_plastered', False) else 0
+                        gamma = wall.thickness * wall.density + plaster_kg
+                        # Restamos el peso del vano
+                        q_vano = gamma * op_h * 9.81 * wall.load_factor
+                        q_eff = max(0, wall.q_lineal - q_vano)
+                        break
 
-            for t in np.linspace(0, 1, n_seg + 1)[:-1]:
-                xm = x1 + (t + 0.5 / n_seg) * (x2 - x1)
-                ym = y1 + (t + 0.5 / n_seg) * (y2 - y1)
-                # Nodo más cercano
-                i = int(round(xm / self.dx))
-                j = int(round(ym / self.dy))
+                x_p = wall.x1 + t * (wall.x2 - wall.x1)
+                y_p = wall.y1 + t * (wall.y2 - wall.y1)
+                
+                # Encontrar el nodo más cercano
+                i = int(round(x_p / self.dx))
+                j = int(round(y_p / self.dy))
                 i = np.clip(i, 0, self.nx)
                 j = np.clip(j, 0, self.ny)
+                
                 node = self._node_idx(i, j)
-                F[self._dof(node, 0)] += ql * seg_len
+                F[self._dof(node, 0)] += q_eff * dl
 
         # 3. Cargas de vigas de amarre (mismo método concentrado)
         for beam in self.beams:
@@ -1194,13 +1221,34 @@ class FoundationSlabDesigner:
             x2, y2 = to_svg(beam.x2, beam.y2)
             svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="#4caf50" stroke-width="5" stroke-linecap="round" opacity="0.85"/>')
 
-        # Muros
         for wall in self.walls:
             color = "#e53935" if wall.wall_type == "perimetral" else "#1e88e5"
             width = max(2, wall.thickness * scale)
             x1, y1 = to_svg(wall.x1, wall.y1)
             x2, y2 = to_svg(wall.x2, wall.y2)
             svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{color}" stroke-width="{width:.1f}" stroke-linecap="round"/>')
+
+            # Dibujar aberturas (huecos visuales)
+            if hasattr(wall, 'openings') and wall.openings:
+                for op in wall.openings:
+                    start = op.get("start_m", 0)
+                    w_op = op.get("width_m", 0)
+                    
+                    # Proyectar start sobre la línea del muro
+                    if wall.length > 0:
+                        t1 = start / wall.length
+                        t2 = (start + w_op) / wall.length
+                        x1_op = wall.x1 + t1 * (wall.x2 - wall.x1)
+                        y1_op = wall.y1 + t1 * (wall.y2 - wall.y1)
+                        x2_op = wall.x1 + t2 * (wall.x2 - wall.x1)
+                        y2_op = wall.y1 + t2 * (wall.y2 - wall.y1)
+                        
+                        sx1, sy1 = to_svg(x1_op, y1_op)
+                        sx2, sy2 = to_svg(x2_op, y2_op)
+                        
+                        # Línea blanca gruesa para indicar la abertura
+                        svg_parts.append(f'<line x1="{sx1:.1f}" y1="{sy1:.1f}" x2="{sx2:.1f}" y2="{sy2:.1f}" stroke="#fafafa" stroke-width="{width+2:.1f}" stroke-linecap="butt"/>')
+                        svg_parts.append(f'<line x1="{sx1:.1f}" y1="{sy1:.1f}" x2="{sx2:.1f}" y2="{sy2:.1f}" stroke="#999" stroke-width="1" stroke-dasharray="2,2"/>')
 
         # Cotas exteriores
         cota_y = margin - 35
