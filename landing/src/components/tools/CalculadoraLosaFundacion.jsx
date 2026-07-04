@@ -225,6 +225,66 @@ export default function CalculadoraLosaFundacion() {
     }
   };
 
+  // Lógica Drag and Drop para Aberturas
+  const handleDragStart = (e, type) => {
+    e.dataTransfer.setData('type', type);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const type = e.dataTransfer.getData('type');
+    if (!type) return;
+
+    const rect = svgRef.current.getBoundingClientRect();
+    const dropX = toMeters(e.clientX - rect.left);
+    const dropY = toMeters(e.clientY - rect.top, false);
+
+    // Encontrar muro más cercano
+    let closestWall = null;
+    let minD = Infinity;
+    let projDist = 0;
+
+    allWalls.forEach(w => {
+      // Distancia punto a segmento
+      const l2 = (w.x2 - w.x1)**2 + (w.y2 - w.y1)**2;
+      let t = 0;
+      if (l2 > 0) {
+        t = Math.max(0, Math.min(1, ((dropX - w.x1)*(w.x2 - w.x1) + (dropY - w.y1)*(w.y2 - w.y1)) / l2));
+      }
+      const pX = w.x1 + t * (w.x2 - w.x1);
+      const pY = w.y1 + t * (w.y2 - w.y1);
+      const d = Math.sqrt((dropX - pX)**2 + (dropY - pY)**2);
+
+      if (d < minD) {
+        minD = d;
+        closestWall = w;
+        projDist = Math.sqrt((pX - w.x1)**2 + (pY - w.y1)**2);
+      }
+    });
+
+    // Si está a menos de 1 metro del muro, hace snap
+    if (minD < 1.0 && closestWall) {
+      const width_m = type === 'door' ? 1.0 : 1.5;
+      const height_m = type === 'door' ? 2.1 : 1.2;
+      
+      // Ajustar si se sale del muro
+      const length = Math.sqrt((closestWall.x2 - closestWall.x1)**2 + (closestWall.y2 - closestWall.y1)**2);
+      let start_m = projDist - width_m / 2;
+      if (start_m < 0) start_m = 0;
+      if (start_m + width_m > length) start_m = length - width_m;
+
+      setOpenings(prev => [...prev, {
+        id: `op_${Date.now()}`,
+        wall_id: closestWall.id,
+        type: type,
+        start_m, width_m, height_m
+      }]);
+      toast.success(`${type === 'door' ? 'Puerta' : 'Ventana'} añadida`);
+    } else {
+      toast.error("Debes soltar la abertura sobre un muro.");
+    }
+  };
+
 
   // Botón: Cancelar dibujo con Escape
   useEffect(() => {
