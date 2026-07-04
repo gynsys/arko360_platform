@@ -652,8 +652,6 @@ const CalculadoraMamposteria = () => {
             </div>
           </div>
         </div>
-          </div>
-        </div>
       </div>
 
       {/* Modales */}
@@ -717,12 +715,13 @@ const CalculadoraMamposteria = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };
 
 // ─── COMPONENTES AUXILIARES ───
+const AuthModal = () => null;
+
 const Card = ({ title, color, children }) => (
   <div style={{ backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
     <div style={{ backgroundColor: color, color: '#fff', padding: '12px 16px', fontWeight: 'bold', fontSize: '15px' }}>

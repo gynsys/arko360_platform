@@ -653,8 +653,6 @@ const CalculadoraMamposteria = () => {
             </div>
           </div>
         </div>
-          </div>
-        </div>
       </div>
 
       {/* Modales */}
@@ -718,7 +716,6 @@ const CalculadoraMamposteria = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };
