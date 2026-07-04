@@ -157,7 +157,7 @@ const CalculadoraCieloVisible = () => {
 
   const formatMoney = (amount) => {
     const symbol = viewCurrency === 'VES' ? 'Bs.' : '$';
-    return `${symbol} ${amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${symbol} ${Number(amount || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   // ─── EXPORTAR PDF ───
