@@ -60,7 +60,7 @@ class FoundationSlabDesigner:
     def __init__(self, Lx, Ly, h, E, nu, k, f_c, f_y, cover, bar_diam,
                  gamma_horm=2400, include_self_weight=True, lambda_aci=1.0,
                  band_width_factor=1.0, max_settlement_ratio=500.0,
-                 bar_diameters_mm=None):
+                 bar_diameters_mm=None, q_adm=150000.0):
         """
         Parameters
         ----------
@@ -87,6 +87,7 @@ class FoundationSlabDesigner:
         self.lambda_aci = lambda_aci
         self.band_width_factor = band_width_factor
         self.max_settlement_ratio = max_settlement_ratio
+        self.q_adm = q_adm
 
         self.G = E / (2 * (1 + nu))
         self.d_eff = h - cover - bar_diam / 2
@@ -129,11 +130,14 @@ class FoundationSlabDesigner:
         print(f"Grilla: {nx}x{ny} elementos | dx={self.dx:.3f}m, dy={self.dy:.3f}m | Nodos={self.n_nodes}")
 
     def add_wall(self, x1, y1, x2, y2, thickness, height, material_density,
-                 load_factor=1.0, wall_type="perimetral"):
+                 load_factor=1.0, wall_type="perimetral", is_plastered=False):
         length = np.sqrt((x2-x1)**2 + (y2-y1)**2)
         if length < 1e-6:
             return
-        q_lineal = thickness * height * material_density * 9.81 * load_factor
+        
+        # Plaster weight: ~40kg/m2 per side -> 80kg/m2 total * height * g
+        plaster_kg_m2 = 80 if is_plastered else 0
+        q_lineal = (thickness * material_density + plaster_kg_m2) * height * 9.81 * load_factor
 
         # Ancho de banda de refuerzo: espesor + 2*h (o 2*d_ef), mínimo 1.0 m
         base_band = max(thickness + 2 * self.h, 1.0)
@@ -541,16 +545,16 @@ class FoundationSlabDesigner:
             bar_y = self._propose_bars(Asy_band)
 
             band_details.append({
-                'id': idx,
-                'type': wall.wall_type,
-                'x1': wall.x1, 'y1': wall.y1, 'x2': wall.x2, 'y2': wall.y2,
-                'band_width': wall.band_width,
-                'Mx_design_kNm_m': Mx_band_max / 1000,
-                'My_design_kNm_m': My_band_max / 1000,
-                'Asx_cm2_m': Asx_band * 1e4,
-                'Asy_cm2_m': Asy_band * 1e4,
-                'bar_x': bar_x,
-                'bar_y': bar_y
+                'id': int(idx),
+                'type': str(wall.wall_type),
+                'x1': float(wall.x1), 'y1': float(wall.y1), 'x2': float(wall.x2), 'y2': float(wall.y2),
+                'band_width': float(wall.band_width),
+                'Mx_design_kNm_m': float(Mx_band_max / 1000),
+                'My_design_kNm_m': float(My_band_max / 1000),
+                'Asx_cm2_m': float(Asx_band * 1e4),
+                'Asy_cm2_m': float(Asy_band * 1e4),
+                'bar_x': {k: (float(v) if isinstance(v, (np.floating, float)) else v) for k, v in bar_x.items()},
+                'bar_y': {k: (float(v) if isinstance(v, (np.floating, float)) else v) for k, v in bar_y.items()}
             })
 
         # Zonas fuera de bandas (intermedias) - asegurar mínimo
@@ -663,8 +667,8 @@ class FoundationSlabDesigner:
             status = "OK ✓" if ok else "NO CUMPLE ✗"
 
             results.append({
-                'id': idx, 'type': wall.wall_type, 'length': wall.length,
-                'delta_w_mm': delta_w_mm, 'ratio': ratio, 'ok': ok
+                'id': int(idx), 'type': str(wall.wall_type), 'length': float(wall.length),
+                'delta_w_mm': float(delta_w_mm), 'ratio': float(ratio), 'ok': bool(ok)
             })
             print(f"{idx:<6} {wall.wall_type:<12} {wall.length:<10.2f} {delta_w_mm:<10.2f} {ratio:<12.1f} {status:<10}")
 
@@ -1244,6 +1248,11 @@ class FoundationSlabDesigner:
                 "Vu_max_kN_m": float(np.max(self.Vu) / 1000),
                 "phiVc_kN_m": float(self.phiVc / 1000),
                 "shear_ok": bool(np.all(self.shear_ok))
+            },
+            "soil_pressure": {
+                "max_pressure_kN_m2": float(np.max(np.abs(self.w) * self.k) / 1000),
+                "q_adm_kN_m2": float(self.q_adm / 1000),
+                "ok": bool(np.max(np.abs(self.w) * self.k) <= self.q_adm)
             },
             "bands": self.band_data,
             "As_min_cm2_m": float(self.rho_min * 1.0 * self.h * 1e4),

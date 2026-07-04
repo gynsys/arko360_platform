@@ -51,6 +51,7 @@ class WallInput(BaseModel):
     density: float
     type: str = "perimetral"
     load_factor: float = 1.5
+    is_plastered: bool = False
 
 class BeamInput(BaseModel):
     x1: float
@@ -77,6 +78,7 @@ class MaterialsInput(BaseModel):
     E: float = 25e9
     nu: float = 0.2
     k: float = 20e6
+    q_adm: float = 150000.0  # Capacidad portante N/m2 (default 1.5 kg/cm2)
 
 class SlabModelInput(BaseModel):
     project: str = "Losa de Cimentación"
