@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Calculator, DoorOpen, Maximize, Ruler, Download, Brush, Grid, DollarSign, Save, FolderOpen, LogIn, LogOut } from 'lucide-react';
+import { Calculator, DoorOpen, Maximize, Ruler, Download, Brush, Grid, DollarSign, Save, FolderOpen, LogIn, LogOut, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
