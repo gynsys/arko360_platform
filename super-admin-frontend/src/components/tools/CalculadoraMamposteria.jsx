@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Calculator, DoorOpen, Maximize, Ruler, Download, Brush, Grid, DollarSign, Save, FolderOpen, LogIn, LogOut, ArrowLeft, User } from 'lucide-react';
+import { Calculator, DoorOpen, Maximize, Ruler, Download, Brush, Grid, DollarSign, Save, FolderOpen, LogIn, LogOut, ArrowLeft, User, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
@@ -221,6 +221,37 @@ const CalculadoraMamposteria = () => {
       toast.success("Guardado");
       setShowSaveModal(false);
     } catch (e) { toast.error('Error al guardar'); }
+  };
+
+  const handleDeleteCalculo = (id) => {
+    toast((t) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <span style={{ fontWeight: 600 }}>¿Eliminar cálculo?</span>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button 
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await axios.delete(`${API_BASE}/arko_app/calculadoras/mamposteria/${id}`);
+                setMisCalculos(prev => prev.filter(calc => calc.id !== id));
+                toast.success('Eliminado con éxito');
+              } catch (e) {
+                toast.error('Error al eliminar');
+              }
+            }} 
+            style={{ padding: '6px 12px', background: '#d32f2f', color: '#fff', borderRadius: '4px', border: 'none', cursor: 'pointer', flex: 1 }}
+          >
+            Sí, eliminar
+          </button>
+          <button 
+            onClick={() => toast.dismiss(t.id)} 
+            style={{ padding: '6px 12px', background: '#e0e0e0', borderRadius: '4px', border: 'none', cursor: 'pointer', flex: 1 }}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    ), { duration: 5000 });
   };
 
   const logout = () => { localStorage.removeItem('arko_token'); setCurrentUser(null); };
@@ -702,25 +733,34 @@ const CalculadoraMamposteria = () => {
                       <strong>{calc.nombre_proyecto}</strong>
                       <div style={{ fontSize: '12px', color: '#666' }}>{new Date(calc.created_at).toLocaleDateString()}</div>
                     </div>
-                    <button onClick={() => {
-                      // Load logic
-                      if (calc.inputs) {
-                        if (calc.inputs.pared) setPared(calc.inputs.pared);
-                        if (calc.inputs.puertas) setPuertas(calc.inputs.puertas);
-                        if (calc.inputs.ventanas) setVentanas(calc.inputs.ventanas);
-                        if (calc.inputs.desperdicio) setDesperdicio(calc.inputs.desperdicio);
-                        if (calc.inputs.tipoBloque) setTipoBloque(calc.inputs.tipoBloque);
-                        if (calc.inputs.grosorBloque) setGrosorBloque(calc.inputs.grosorBloque);
-                        if (calc.inputs.friso) setFriso(calc.inputs.friso);
-                        if (calc.inputs.acabado) setAcabado(calc.inputs.acabado);
-                        if (calc.inputs.costos) setCostos(calc.inputs.costos);
-                        if (calc.inputs.baseCurrency) setBaseCurrency(calc.inputs.baseCurrency);
-                        if (calc.inputs.viewCurrency) setViewCurrency(calc.inputs.viewCurrency);
-                        if (calc.inputs.exchangeRate) setExchangeRate(calc.inputs.exchangeRate);
-                      }
-                      setShowMisCalculos(false);
-                      toast.success("Cálculo cargado");
-                    }} style={{ padding: '6px 12px', borderRadius: '6px', background: '#e3f2fd', color: '#1565c0', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cargar</button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={() => {
+                        // Load logic
+                        if (calc.inputs) {
+                          if (calc.inputs.pared) setPared(calc.inputs.pared);
+                          if (calc.inputs.puertas) setPuertas(calc.inputs.puertas);
+                          if (calc.inputs.ventanas) setVentanas(calc.inputs.ventanas);
+                          if (calc.inputs.desperdicio) setDesperdicio(calc.inputs.desperdicio);
+                          if (calc.inputs.tipoBloque) setTipoBloque(calc.inputs.tipoBloque);
+                          if (calc.inputs.grosorBloque) setGrosorBloque(calc.inputs.grosorBloque);
+                          if (calc.inputs.friso) setFriso(calc.inputs.friso);
+                          if (calc.inputs.acabado) setAcabado(calc.inputs.acabado);
+                          if (calc.inputs.costos) setCostos(calc.inputs.costos);
+                          if (calc.inputs.baseCurrency) setBaseCurrency(calc.inputs.baseCurrency);
+                          if (calc.inputs.viewCurrency) setViewCurrency(calc.inputs.viewCurrency);
+                          if (calc.inputs.exchangeRate) setExchangeRate(calc.inputs.exchangeRate);
+                        }
+                        setShowMisCalculos(false);
+                        toast.success("Cálculo cargado");
+                      }} style={{ padding: '6px 12px', borderRadius: '6px', background: '#e3f2fd', color: '#1565c0', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cargar</button>
+                      <button 
+                        onClick={() => handleDeleteCalculo(calc.id)} 
+                        style={{ padding: '6px', borderRadius: '6px', background: '#ffebee', color: '#d32f2f', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        title="Eliminar cálculo"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

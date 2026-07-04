@@ -96,7 +96,7 @@ def register(user_in: UserCreate):
         with get_db_session() as db:
             existing = db.query(ArkoUser).filter(ArkoUser.email == user_in.email).first()
             if existing:
-                raise HTTPException(status_code=400, detail="Email already registered")
+                raise HTTPException(status_code=400, detail="Este correo ya está registrado")
             
             user = ArkoUser(
                 email=user_in.email,
@@ -119,9 +119,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         with get_db_session() as db:
             user = db.query(ArkoUser).filter(ArkoUser.email == form_data.username).first()
             if not user or not verify_password(form_data.password, user.hashed_password):
-                raise HTTPException(status_code=400, detail="Incorrect email or password")
+                raise HTTPException(status_code=400, detail="Correo o contraseña incorrectos")
             if not user.is_active:
-                raise HTTPException(status_code=400, detail="Inactive user")
+                raise HTTPException(status_code=400, detail="Usuario inactivo")
             
             access_token = create_access_token(
                 data={"sub": user.email, "type": "arko_user"}
@@ -243,4 +243,20 @@ def get_mamposteria_run(run_id: int, current_user: ArkoUser = Depends(get_curren
         raise
     except Exception as e:
         logger.error("Error fetching mamposteria run", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.delete("/calculadoras/mamposteria/{run_id}")
+def delete_mamposteria_run(run_id: int, current_user: ArkoUser = Depends(get_current_user)):
+    try:
+        with get_db_session() as db:
+            run = db.query(MamposteriaCalculationRun).filter(MamposteriaCalculationRun.id == run_id, MamposteriaCalculationRun.user_id == current_user.id).first()
+            if not run:
+                raise HTTPException(status_code=404, detail="Run not found")
+            db.delete(run)
+            db.commit()
+            return {"status": "success", "message": "Cálculo eliminado"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error deleting mamposteria run", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
