@@ -6,9 +6,9 @@ Plataforma integral de ingeniería estructural y gestión de proyectos, diseñad
 
 El repositorio sigue un formato monorepo que contiene:
 
-- `landing/`: Frontend principal desarrollado en React 18 y Vite. Contiene la herramienta **ARKO3D** (Calculadora de Losas y Pórticos) con renderizado paramétrico interactivo (Three.js y SVG).
+- `landing/`: Frontend principal desarrollado en React 18 y Vite. Contiene la herramienta **ARKO3D** (Calculadora de Losas y Pórticos) con renderizado paramétrico interactivo (Three.js y SVG), y la **Calculadora de Pared de Mampostería** para presupuestos.
 - `admin/` / `super-admin-frontend/`: Paneles de gestión y CMS para el contenido de la plataforma.
-- `backend/`: API desarrollada en FastAPI (Python) para gestionar usuarios, configuraciones y alojar el **Motor Matemático FEM**.
+- `backend/`: API desarrollada en FastAPI (Python) para gestionar usuarios, configuraciones, autenticación, persistencia de presupuestos y alojar el **Motor Matemático FEM**.
 
 ## Despliegue
 

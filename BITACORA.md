@@ -12,6 +12,13 @@ Este documento registra el estado actual del proyecto y los pasos pendientes par
    - Renderizado SVG dinÃ¡mico con sistema de mÃ¡scaras para ocultamiento de vigas, correas y nodos huÃ©rfanos.
    - AuditorÃ­a JSON (`impactoAberturas`) de cantidades de acero, concreto y deck removido/agregado.
 
+2. **Herramienta Calculadora de Pared de Mampostería** - Implementado en `landing/src/components/tools/CalculadoraMamposteria.jsx`:
+   - Inputs dinámicos que soportan punto y coma para separar decimales.
+   - Cómputos automáticos de bloques, arena, cemento, pego, pintura y lija.
+   - Incorporación de costos de Mano de Obra.
+   - Guardado en Base de Datos de cálculos por usuario mediante autenticación con `AuthModal`.
+   - Exportación de presupuesto en PDF y CSV.
+
 2. **Flujo ETABS en ARKO3D** - Implementado en el visor 3D web:
    - **SelecciÃ³n Masiva y AsignaciÃ³n:** Modales `SelectElementsModal` y `AssignSectionModal` para manipular vigas/columnas en lote.
    - **Wizard Avanzado:** DefiniciÃ³n inicial de "Material Predominante" (Acero/Concreto) con preasignaciÃ³n de secciones por defecto.
