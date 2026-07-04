@@ -1,5 +1,5 @@
 from app.db.models.arko import ArkoPost, ArkoProject, ArkoAdmin
-from app.db.models.calculadora import LosaCalculationRun
+from app.db.models.calculadora import LosaCalculationRun, MamposteriaCalculationRun
 from app.db.models.lead import ArkoLead
 from app.db.models.landing_site import LandingSite, LandingSitePost
 from app.blog.models import BlogPost, SocialCarousel, SocialAudio, BlogPostSEO, Comment
@@ -10,6 +10,7 @@ __all__ = [
     "ArkoProject",
     "ArkoAdmin",
     "LosaCalculationRun",
+    "MamposteriaCalculationRun",
     "ArkoLead",
     "LandingSite",
     "LandingSitePost",

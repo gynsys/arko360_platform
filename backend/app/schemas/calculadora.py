@@ -17,3 +17,19 @@ class LosaCalculationRunResponse(LosaCalculationRunBase):
 
     class Config:
         from_attributes = True
+
+class MamposteriaCalculationRunBase(BaseModel):
+    nombre_proyecto: str
+    inputs: Dict[str, Any]
+    resultados: Dict[str, Any]
+
+class MamposteriaCalculationRunCreate(MamposteriaCalculationRunBase):
+    pass
+
+class MamposteriaCalculationRunResponse(MamposteriaCalculationRunBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

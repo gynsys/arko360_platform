@@ -1,6 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Calculator, DoorOpen, Maximize, Ruler, Download, ArrowLeft, Brush, Grid, DollarSign } from 'lucide-react';
+import { Calculator, DoorOpen, Maximize, Ruler, Download, Brush, Grid, DollarSign, Save, FolderOpen, LogIn, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { AuthModal } from './fea3d/AuthModal';
+import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
 const CalculadoraMamposteria = () => {
   useEffect(() => {
@@ -8,10 +13,10 @@ const CalculadoraMamposteria = () => {
   }, []);
 
   // ─── ESTADO ───
-  const [pared, setPared] = useState({ largo: 4.0, alto: 2.5 });
-  const [puertas, setPuertas] = useState({ incluir: false, cantidad: 1, ancho: 0.9, alto: 2.1 });
-  const [ventanas, setVentanas] = useState({ incluir: false, cantidad: 1, ancho: 1.2, alto: 1.2, alturaSuelo: 1.0 });
-  const [desperdicio, setDesperdicio] = useState(10); // %
+  const [pared, setPared] = useState({ largo: "4.0", alto: "2.5" });
+  const [puertas, setPuertas] = useState({ incluir: false, cantidad: "1", ancho: "0.9", alto: "2.1" });
+  const [ventanas, setVentanas] = useState({ incluir: false, cantidad: "1", ancho: "1.2", alto: "1.2", alturaSuelo: "1.0" });
+  const [desperdicio, setDesperdicio] = useState("10"); // %
 
   const [tipoBloque, setTipoBloque] = useState('arcilla'); // 'arcilla' o 'cemento'
   const [grosorBloque, setGrosorBloque] = useState(15); // cm
@@ -20,26 +25,43 @@ const CalculadoraMamposteria = () => {
 
   const [baseCurrency, setBaseCurrency] = useState('USD');
   const [viewCurrency, setViewCurrency] = useState('USD');
-  const [exchangeRate, setExchangeRate] = useState(653.00);
+  const [exchangeRate, setExchangeRate] = useState("653.00");
 
   const [costos, setCostos] = useState({
-    bloque_arcilla_10: 0.60,
-    bloque_arcilla_12: 0.64,
-    bloque_arcilla_15: 0.65,
-    bloque_cemento_10: 0.60,
-    bloque_cemento_15: 0.65,
-    bloque_cemento_20: 0.70,
-    cemento: 13.46,
-    arena: 45.24,
-    polvillo: 53.36,
-    pego: 12.00,
-    lija: 1.50,
-    pasta: 17.48, // Galón
-    pintura: 17.40, // Galón
-    manoObra: 10.00 // por m2
+    bloque_arcilla_10: "0.60",
+    bloque_arcilla_12: "0.64",
+    bloque_arcilla_15: "0.65",
+    bloque_cemento_10: "0.60",
+    bloque_cemento_15: "0.65",
+    bloque_cemento_20: "0.70",
+    cemento: "13.46",
+    arena: "45.24",
+    polvillo: "53.36",
+    pego: "12.00",
+    lija: "1.50",
+    pasta: "17.48", // Galón
+    pintura: "17.40", // Galón
+    manoObra: "10.00" // por m2
   });
 
   const reportRef = useRef(null);
+
+  // ─── AUTH & DB STATE ───
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [misCalculos, setMisCalculos] = useState([]);
+  const [showMisCalculos, setShowMisCalculos] = useState(false);
+  const [isLoadingCalculos, setIsLoadingCalculos] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [showSaveModal, setShowSaveModal] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('arko_token');
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setCurrentUser({ name: "Usuario" }); 
+    }
+  }, []);
 
   // Efecto para ajustar grosores según el tipo de bloque
   useEffect(() => {
@@ -52,26 +74,42 @@ const CalculadoraMamposteria = () => {
   }, [tipoBloque, grosorBloque]);
 
   // ─── HANDLERS ───
+  const parseInputValue = (value) => {
+    let sanitized = String(value).replace(',', '.');
+    if (/^\d*\.?\d*$/.test(sanitized)) {
+      return sanitized;
+    }
+    return null;
+  };
+
   const handlePared = (e) => {
-    const { name, value } = e.target;
-    const val = parseFloat(value);
-    setPared(p => ({ ...p, [name]: isNaN(val) || val < 0 ? 0 : val }));
+    const val = parseInputValue(e.target.value);
+    if (val !== null) setPared(p => ({ ...p, [e.target.name]: val }));
   };
 
   const handlePuertas = (e) => {
-    const { name, value, type, checked } = e.target;
-    setPuertas(p => ({ ...p, [name]: type === 'checkbox' ? checked : parseFloat(value) || 0 }));
+    const { name, type, checked } = e.target;
+    if (type === 'checkbox') {
+      setPuertas(p => ({ ...p, [name]: checked }));
+    } else {
+      const val = parseInputValue(e.target.value);
+      if (val !== null) setPuertas(p => ({ ...p, [name]: val }));
+    }
   };
 
   const handleVentanas = (e) => {
-    const { name, value, type, checked } = e.target;
-    setVentanas(v => ({ ...v, [name]: type === 'checkbox' ? checked : parseFloat(value) || 0 }));
+    const { name, type, checked } = e.target;
+    if (type === 'checkbox') {
+      setVentanas(v => ({ ...v, [name]: checked }));
+    } else {
+      const val = parseInputValue(e.target.value);
+      if (val !== null) setVentanas(v => ({ ...v, [name]: val }));
+    }
   };
 
   const handleCosto = (e) => {
-    const { name, value } = e.target;
-    const val = parseFloat(value);
-    setCostos(c => ({ ...c, [name]: isNaN(val) || val < 0 ? 0 : val }));
+    const val = parseInputValue(e.target.value);
+    if (val !== null) setCostos(c => ({ ...c, [e.target.name]: val }));
   };
 
   const handleBaseCurrencyChange = (e) => {
@@ -93,179 +131,94 @@ const CalculadoraMamposteria = () => {
     }
   };
 
-  // ─── CÁLCULOS ───
   const resultados = useMemo(() => {
-    const areaTotal = pared.largo * pared.alto;
-    const areaPuertas = puertas.incluir ? puertas.cantidad * puertas.ancho * puertas.alto : 0;
-    const areaVentanas = ventanas.incluir ? ventanas.cantidad * ventanas.ancho * ventanas.alto : 0;
+    const largo = getF(pared.largo);
+    const alto = getF(pared.alto);
+    const desp = getF(desperdicio);
+    const areaTotal = largo * alto;
+    const areaPuertas = puertas.incluir ? getF(puertas.cantidad) * getF(puertas.ancho) * getF(puertas.alto) : 0;
+    const areaVentanas = ventanas.incluir ? getF(ventanas.cantidad) * getF(ventanas.ancho) * getF(ventanas.alto) : 0;
     const areaNeta = Math.max(0, areaTotal - areaPuertas - areaVentanas);
 
-    // ── Verificación de espacio ──
-    const anchoAberturas = (puertas.incluir ? puertas.cantidad * puertas.ancho : 0)
-                         + (ventanas.incluir ? ventanas.cantidad * ventanas.ancho : 0);
-    const numAberturas = (puertas.incluir ? puertas.cantidad : 0) + (ventanas.incluir ? ventanas.cantidad : 0);
-    const separacionMin = 0.15;
-    const espacioNecesario = anchoAberturas + (numAberturas > 0 ? (numAberturas + 1) * separacionMin : 0);
-    const cabenHorizontal = anchoAberturas <= pared.largo && espacioNecesario <= pared.largo;
-    const ventanasValidas = ventanas.incluir ? (ventanas.alturaSuelo + ventanas.alto <= pared.alto) : true;
-
-    // ── Materiales ──
-    const factorDesperdicio = 1 + (desperdicio / 100);
-
-    // Bloques
+    const factorDesperdicio = 1 + (desp / 100);
     const anchoB = tipoBloque === 'arcilla' ? 0.30 : 0.40;
     const altoB = tipoBloque === 'arcilla' ? 0.25 : 0.20;
-    const areaB = anchoB * altoB;
-    const cantBloquesBruto = areaNeta / areaB;
-    const bloques = Math.ceil(cantBloquesBruto * factorDesperdicio);
+    const bloques = Math.ceil((areaNeta / (anchoB * altoB)) * factorDesperdicio);
 
-    // Mortero Pegue (Mezcla de asiento 1.5 cm)
-    const ML_juntas = (1 / anchoB) + (1 / altoB); // m lineales de junta por m2
-    const grosor_m = grosorBloque / 100;
-    const vol_mortero_pegue_m2 = ML_juntas * 0.015 * grosor_m; // 1.5cm de mezcla
-    const vol_mortero_pegue_total = vol_mortero_pegue_m2 * areaNeta;
+    const vol_mortero_pegue = ((1 / anchoB) + (1 / altoB)) * 0.015 * (grosorBloque / 100) * areaNeta;
+    const areaFriso = friso === '1_cara' ? areaNeta : (friso === '2_caras' ? areaNeta * 2 : 0);
+    const vol_mortero_friso = areaFriso * 0.012;
+    const vol_mortero_total = (vol_mortero_pegue + vol_mortero_friso) * factorDesperdicio;
 
-    // Mortero Friso (1.2 cm)
-    let areaFriso = 0;
-    if (friso === '1_cara') areaFriso = areaNeta;
-    if (friso === '2_caras') areaFriso = areaNeta * 2;
-    const vol_mortero_friso = areaFriso * 0.012; // 1.2cm espesor
-
-    const vol_mortero_total = (vol_mortero_pegue_total + vol_mortero_friso) * factorDesperdicio;
-
-    // Cemento y Arena (proporción 1:4 => 1m3 mortero = 7.5 sacos cemento + 1.05m3 agregado)
-    let sacosCemento = Math.ceil(vol_mortero_total * 7.5) || (areaNeta > 0 ? 1 : 0);
-    const arena_total = vol_mortero_total * 1.05;
-    // 1:1 Arena Lavada / Polvillo
-    const m3Arena = parseFloat((arena_total / 2).toFixed(2)) || (areaNeta > 0 ? 0.25 : 0);
-    const m3Polvillo = parseFloat((arena_total / 2).toFixed(2)) || (areaNeta > 0 ? 0.25 : 0);
-
-    // Acabado
-    let galonesPasta = 0;
-    let galonesPintura = 0;
-    let sacosPego = 0;
-    let hojasLija = 0;
-
+    let sacosCemento = Math.ceil(vol_mortero_total * 7.5) || 0;
+    const m3Arena = parseFloat((vol_mortero_total * 0.525).toFixed(2));
+    const m3Polvillo = parseFloat((vol_mortero_total * 0.525).toFixed(2));
+    
+    let galonesPasta = 0, galonesPintura = 0, sacosPego = 0, hojasLija = 0;
     if (friso !== 'ninguna' && acabado === 'liso') {
-      // Rendimiento aprox: 1 galón de pasta = 4 m2
       galonesPasta = Math.ceil((areaFriso / 4) * factorDesperdicio);
-      // Rendimiento aprox: 1 galón de pintura = 15 m2 (2 manos)
       galonesPintura = Math.ceil((areaFriso / 15) * factorDesperdicio);
-      
-      // Pego y Lija para el empastado liso
       sacosPego = Math.ceil((areaFriso / 5) * factorDesperdicio);
-      sacosCemento += Math.ceil((areaFriso / 10) * factorDesperdicio); // Cemento extra para mezclilla
+      sacosCemento += Math.ceil((areaFriso / 10) * factorDesperdicio);
       hojasLija = Math.ceil((areaFriso / 5) * factorDesperdicio);
     }
 
-    // Conversión de moneda
     const convertPrice = (price) => {
       if (baseCurrency === viewCurrency) return price;
-      if (baseCurrency === 'VES' && viewCurrency === 'USD') return price / exchangeRate;
-      if (baseCurrency === 'USD' && viewCurrency === 'VES') return price * exchangeRate;
-      return price;
+      return baseCurrency === 'USD' ? price * exchangeRate : price / exchangeRate;
     };
 
-    const pBloque = convertPrice(costos[`bloque_${tipoBloque}_${grosorBloque}`] || 0);
-    const pCemento = convertPrice(costos.cemento);
-    const pArena = convertPrice(costos.arena);
-    const pPolvillo = convertPrice(costos.polvillo);
-    const pPego = convertPrice(costos.pego);
-    const pLija = convertPrice(costos.lija);
-    const pPasta = convertPrice(costos.pasta);
-    const pPintura = convertPrice(costos.pintura);
-    const pManoObra = convertPrice(costos.manoObra);
+    const pBloque = convertPrice(getF(costos[`bloque_${tipoBloque}_${grosorBloque}`]));
+    const pCemento = convertPrice(getF(costos.cemento));
+    const pArena = convertPrice(getF(costos.arena));
+    const pPolvillo = convertPrice(getF(costos.polvillo));
+    const pPego = convertPrice(getF(costos.pego));
+    const pLija = convertPrice(getF(costos.lija));
+    const pPasta = convertPrice(getF(costos.pasta));
+    const pPintura = convertPrice(getF(costos.pintura));
+    const pManoObra = convertPrice(getF(costos.manoObra));
 
-    const totalBloque = bloques * pBloque;
-    const totalCemento = sacosCemento * pCemento;
-    const totalArena = m3Arena * pArena;
-    const totalPolvillo = m3Polvillo * pPolvillo;
-    const totalPego = sacosPego * pPego;
-    const totalLija = hojasLija * pLija;
-    const totalPasta = galonesPasta * pPasta;
-    const totalPintura = galonesPintura * pPintura;
-
-    const totalMateriales = totalBloque + totalCemento + totalArena + totalPolvillo + totalPego + totalLija + totalPasta + totalPintura;
+    const totalMateriales = (bloques * pBloque) + (sacosCemento * pCemento) + (m3Arena * pArena) + (m3Polvillo * pPolvillo) + (sacosPego * pPego) + (hojasLija * pLija) + (galonesPasta * pPasta) + (galonesPintura * pPintura);
     const totalManoObra = areaNeta * pManoObra;
-    const totalProyecto = totalMateriales + totalManoObra;
 
     const materialesArray = [
-      { nombre: `Bloque de ${tipoBloque === 'arcilla' ? 'Arcilla' : 'Cemento'} (${grosorBloque}cm)`, cantidad: bloques, unidad: 'und', precio: pBloque, total: totalBloque },
-      { nombre: 'Cemento Portland (42.5kg)', cantidad: sacosCemento, unidad: 'sacos', precio: pCemento, total: totalCemento },
-      { nombre: 'Arena Lavada', cantidad: m3Arena, unidad: 'm³', precio: pArena, total: totalArena },
-      { nombre: 'Polvillo', cantidad: m3Polvillo, unidad: 'm³', precio: pPolvillo, total: totalPolvillo },
+      { nombre: `Bloque ${tipoBloque} (${grosorBloque}cm)`, cantidad: bloques, unidad: 'und', precio: pBloque, total: bloques * pBloque },
+      { nombre: 'Cemento Portland', cantidad: sacosCemento, unidad: 'sacos', precio: pCemento, total: sacosCemento * pCemento },
+      { nombre: 'Arena Lavada', cantidad: m3Arena, unidad: 'm³', precio: pArena, total: m3Arena * pArena },
+      { nombre: 'Polvillo', cantidad: m3Polvillo, unidad: 'm³', precio: pPolvillo, total: m3Polvillo * pPolvillo },
     ];
-
     if (friso !== 'ninguna' && acabado === 'liso') {
       materialesArray.push(
-        { nombre: 'Pego (Saco)', cantidad: sacosPego, unidad: 'sacos', precio: pPego, total: totalPego },
-        { nombre: 'Pasta Profesional (Galón)', cantidad: galonesPasta, unidad: 'galones', precio: pPasta, total: totalPasta },
-        { nombre: 'Lija (Hoja)', cantidad: hojasLija, unidad: 'hojas', precio: pLija, total: totalLija },
-        { nombre: 'Pintura de Caucho (Galón)', cantidad: galonesPintura, unidad: 'galones', precio: pPintura, total: totalPintura }
+        { nombre: 'Pego', cantidad: sacosPego, unidad: 'sacos', precio: pPego, total: sacosPego * pPego },
+        { nombre: 'Lija', cantidad: hojasLija, unidad: 'hojas', precio: pLija, total: hojasLija * pLija },
+        { nombre: 'Pasta Profesional', cantidad: galonesPasta, unidad: 'galones', precio: pPasta, total: galonesPasta * pPasta },
+        { nombre: 'Pintura', cantidad: galonesPintura, unidad: 'galones', precio: pPintura, total: galonesPintura * pPintura }
       );
     }
 
-    return {
-      areaTotal: areaTotal.toFixed(2),
-      areaNeta: areaNeta.toFixed(2),
-      areaFriso: areaFriso.toFixed(2),
-      cabenHorizontal,
-      espacioNecesario: espacioNecesario.toFixed(2),
-      ventanasValidas,
-      materiales: materialesArray,
-      totalMateriales,
-      precioManoObra: pManoObra,
-      totalManoObra,
-      totalProyecto
-    };
+    return { areaTotal: areaTotal.toFixed(2), areaNeta: areaNeta.toFixed(2), areaFriso: areaFriso.toFixed(2), materiales: materialesArray, totalMateriales, totalManoObra, totalProyecto: totalMateriales + totalManoObra };
   }, [pared, puertas, ventanas, desperdicio, tipoBloque, grosorBloque, friso, acabado, costos, baseCurrency, viewCurrency, exchangeRate]);
 
-  // ─── SVG CONFIG ───
-  const posicionesAberturas = useMemo(() => {
-    if (!puertas.incluir && !ventanas.incluir) return [];
-    const separacion = 0.20;
-    const margen = 0.15;
-    const anchoPuertas = puertas.incluir ? puertas.cantidad * puertas.ancho : 0;
-    const anchoVentanas = ventanas.incluir ? ventanas.cantidad * ventanas.ancho : 0;
-    const anchoTotal = anchoPuertas + anchoVentanas;
-    const numAberturas = (puertas.incluir ? puertas.cantidad : 0) + (ventanas.incluir ? ventanas.cantidad : 0);
-    const numSeparaciones = numAberturas + 1;
-    let espacioLibre = pared.largo - anchoTotal;
-    let sep = separacion;
-    let marg = margen;
-    if (espacioLibre > 0 && numSeparaciones > 0) {
-      const espacioPorHueco = espacioLibre / numSeparaciones;
-      sep = espacioPorHueco;
-      marg = espacioPorHueco;
-    }
-    const posiciones = [];
-    let x = marg;
-    if (puertas.incluir) {
-      for (let i = 0; i < puertas.cantidad; i++) {
-        posiciones.push({ tipo: 'puerta', x, y: 0, ancho: puertas.ancho, alto: puertas.alto, desdeSuelo: true });
-        x += puertas.ancho + sep;
-      }
-    }
-    if (ventanas.incluir) {
-      for (let i = 0; i < ventanas.cantidad; i++) {
-        posiciones.push({ tipo: 'ventana', x, y: pared.alto - ventanas.alturaSuelo - ventanas.alto, ancho: ventanas.ancho, alto: ventanas.alto, desdeSuelo: false });
-        x += ventanas.ancho + sep;
-      }
-    }
-    return posiciones;
-  }, [pared, puertas, ventanas]);
+  const fetchMisCalculos = async () => {
+    if (!currentUser) { setAuthModalOpen(true); return; }
+    setIsLoadingCalculos(true);
+    try {
+      const { data } = await axios.get(`${API_BASE}/arko_app/calculadoras/mamposteria`);
+      setMisCalculos(data);
+      setShowMisCalculos(true);
+    } catch (e) { toast.error('Error al cargar'); } finally { setIsLoadingCalculos(false); }
+  };
 
-  const svgWidth = 420;
-  const svgHeight = 320;
-  const margin = 45;
-  const scaleX = (svgWidth - margin * 2) / (pared.largo || 1);
-  const scaleY = (svgHeight - margin * 2) / (pared.alto || 1);
-  const scale = Math.min(scaleX, scaleY);
-  const rectW = pared.largo * scale;
-  const rectH = pared.alto * scale;
-  const originX = (svgWidth - rectW) / 2;
-  const originY = svgHeight - margin;
-  const topY = originY - rectH;
+  const handleSaveCalculo = async () => {
+    if (!saveName.trim()) { toast.error("Ingresa nombre"); return; }
+    try {
+      await axios.post(`${API_BASE}/arko_app/calculadoras/mamposteria`, { nombre_proyecto: saveName, inputs: { pared, puertas, ventanas, desperdicio, tipoBloque, grosorBloque, friso, acabado, costos, baseCurrency, viewCurrency, exchangeRate }, resultados });
+      toast.success("Guardado");
+      setShowSaveModal(false);
+    } catch (e) { toast.error('Error al guardar'); }
+  };
+
+  const logout = () => { localStorage.removeItem('arko_token'); setCurrentUser(null); };
 
   const formatMoney = (amount) => {
     const symbol = viewCurrency === 'VES' ? 'Bs.' : '$';
@@ -393,7 +346,7 @@ const CalculadoraMamposteria = () => {
       <div style={{ backgroundColor: '#f8f9fa', padding: '16px', borderRadius: '12px', border: '1px solid #e0e0e0', marginBottom: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div style={{ flex: 1, minWidth: '120px' }}>
           <label style={{ fontSize: '12px', color: '#555', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Tasa BCV (Bs/$):</label>
-          <input type="number" step="0.01" value={exchangeRate} onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)} style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '13px' }} />
+          <input type="text" value={exchangeRate} onChange={(e) => setExchangeRate(parseInputValue(e.target.value) || e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '13px' }} />
         </div>
         <div style={{ flex: 1, minWidth: '120px' }}>
           <label style={{ fontSize: '12px', color: '#555', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Ingresar precios en:</label>
@@ -551,7 +504,7 @@ const CalculadoraMamposteria = () => {
           </Card>
 
           {/* Precios Unitarios */}
-          <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Calculator size={18} /> Precios Unitarios (Con 16% IVA)</div>} color="#1a237e">
+          <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Calculator size={18} /> Precios Unitarios (Editables)</div>} color="#1a237e">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <CostInput label={`Bloque ${tipoBloque === 'arcilla' ? 'Arcilla' : 'Cemento'} (${grosorBloque}cm)`} name={`bloque_${tipoBloque}_${grosorBloque}`} value={costos[`bloque_${tipoBloque}_${grosorBloque}`] || 0} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
               <CostInput label="Cemento (Saco)" name="cemento" value={costos.cemento} onChange={handleCosto} symbol={baseCurrency === 'VES' ? 'Bs' : '$'} />
@@ -571,7 +524,7 @@ const CalculadoraMamposteria = () => {
             </div>
             <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <label style={{ fontSize: '13px', fontWeight: 600 }}>% Desperdicio:</label>
-              <input type="number" value={desperdicio} onChange={(e) => setDesperdicio(parseFloat(e.target.value) || 0)} style={{ width: '60px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #ccc' }} />
+              <input type="text" value={desperdicio} onChange={(e) => setDesperdicio(parseInputValue(e.target.value) || e.target.value)} style={{ width: '60px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #ccc' }} />
             </div>
           </Card>
         </div>
@@ -645,10 +598,10 @@ const Card = ({ title, color, children }) => (
   </div>
 );
 
-const InputRow = ({ label, name, value, onChange, step }) => (
+const InputRow = ({ label, name, value, onChange }) => (
   <div>
     <label style={{ display: 'block', fontSize: '13px', color: '#555', marginBottom: '4px', fontWeight: 500 }}>{label}</label>
-    <input type="number" step={step} name={name} value={value} onChange={onChange} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', outline: 'none' }} />
+    <input type="text" name={name} value={value} onChange={onChange} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', outline: 'none' }} />
   </div>
 );
 
@@ -657,7 +610,7 @@ const CostInput = ({ label, name, value, onChange, symbol }) => (
     <label style={{ display: 'block', fontSize: '12px', color: '#555', marginBottom: '4px', fontWeight: 600 }}>{label}</label>
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#f5f7fa', padding: '8px', borderRadius: '6px', border: '1px solid #e0e0e0' }}>
       <span style={{ color: '#888', fontSize: '13px', fontWeight: 'bold' }}>{symbol}</span>
-      <input type="number" step="0.01" name={name} value={value} onChange={onChange} style={{ width: '100%', border: 'none', backgroundColor: 'transparent', outline: 'none', fontSize: '14px' }} />
+      <input type="text" name={name} value={value} onChange={onChange} style={{ width: '100%', border: 'none', backgroundColor: 'transparent', outline: 'none', fontSize: '14px' }} />
     </div>
   </div>
 );

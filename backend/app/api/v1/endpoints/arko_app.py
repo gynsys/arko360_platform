@@ -13,6 +13,8 @@ from app.core.logging import logger
 from app.db.arko_base import ArkoSessionLocal
 from contextlib import contextmanager
 from app.db.models.arko import ArkoUser, ArkoProject3D
+from app.db.models.calculadora import MamposteriaCalculationRun
+from app.schemas.calculadora import MamposteriaCalculationRunCreate, MamposteriaCalculationRunResponse
 from app.core.security import create_access_token
 from app.core.config import settings
 
@@ -197,4 +199,48 @@ def delete_project(project_id: str, current_user: ArkoUser = Depends(get_current
         raise
     except Exception as e:
         logger.error("Error deleting project", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# --- Mamposteria Calculadora ---
+
+@router.get("/calculadoras/mamposteria", response_model=List[MamposteriaCalculationRunResponse])
+def get_mamposteria_runs(current_user: ArkoUser = Depends(get_current_user)):
+    try:
+        with get_db_session() as db:
+            runs = db.query(MamposteriaCalculationRun).filter(MamposteriaCalculationRun.user_id == current_user.id).order_by(MamposteriaCalculationRun.created_at.desc()).all()
+            return runs
+    except Exception as e:
+        logger.error("Error fetching mamposteria runs", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/calculadoras/mamposteria", response_model=MamposteriaCalculationRunResponse)
+def create_mamposteria_run(run_in: MamposteriaCalculationRunCreate, current_user: ArkoUser = Depends(get_current_user)):
+    try:
+        with get_db_session() as db:
+            new_run = MamposteriaCalculationRun(
+                user_id=current_user.id,
+                nombre_proyecto=run_in.nombre_proyecto,
+                inputs=run_in.inputs,
+                resultados=run_in.resultados
+            )
+            db.add(new_run)
+            db.commit()
+            db.refresh(new_run)
+            return new_run
+    except Exception as e:
+        logger.error("Error creating mamposteria run", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.get("/calculadoras/mamposteria/{run_id}", response_model=MamposteriaCalculationRunResponse)
+def get_mamposteria_run(run_id: int, current_user: ArkoUser = Depends(get_current_user)):
+    try:
+        with get_db_session() as db:
+            run = db.query(MamposteriaCalculationRun).filter(MamposteriaCalculationRun.id == run_id, MamposteriaCalculationRun.user_id == current_user.id).first()
+            if not run:
+                raise HTTPException(status_code=404, detail="Run not found")
+            return run
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error fetching mamposteria run", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
