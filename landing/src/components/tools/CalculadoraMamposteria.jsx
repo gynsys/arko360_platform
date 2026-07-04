@@ -381,7 +381,7 @@ const CalculadoraMamposteria = () => {
             </button>
           ) : (
             <button onClick={() => setAuthModalOpen(true)} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
-              <LogIn size={18} /> Iniciar Sesión para Guardar
+              <Save size={18} /> Guardar Proyecto
             </button>
           )}
           <button onClick={fetchMisCalculos} style={{ background: 'var(--bg-alt)', color: 'var(--text)', border: '1px solid var(--border)', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
@@ -641,7 +641,7 @@ const CalculadoraMamposteria = () => {
                 </button>
               ) : (
                 <button onClick={() => setAuthModalOpen(true)} style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '15px' }}>
-                  <LogIn size={20} /> Iniciar Sesión para Guardar
+                  <Save size={20} /> Guardar Proyecto
                 </button>
               )}
               <button onClick={exportarPDF} style={{ background: '#d32f2f', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '15px' }}>
@@ -656,7 +656,12 @@ const CalculadoraMamposteria = () => {
       </div>
 
       {/* Modales */}
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} onSuccess={() => { setAuthModalOpen(false); setCurrentUser({ id: 1, name: 'Usuario' }); }} />
+      {authModalOpen && (
+        <AuthModal 
+          onClose={() => setAuthModalOpen(false)} 
+          onLoginSuccess={() => { setAuthModalOpen(false); setCurrentUser({ id: 1, name: 'Usuario' }); }} 
+        />
+      )}
       
       {showSaveModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>

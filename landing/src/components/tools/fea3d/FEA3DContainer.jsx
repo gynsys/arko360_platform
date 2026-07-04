@@ -730,8 +730,8 @@ export default function FEA3DContainer() {
       
       {authModalOpen && (
         <AuthModal 
-          onClose={() => setAuthModalOpen(false)} 
-          onLoginSuccess={(u) => { setCurrentUser(u); setAuthModalOpen(false); }}
+          onClose={() => { setAuthModalOpen(false); setWizardOpen(true); }} 
+          onLoginSuccess={(u) => { setCurrentUser(u); setAuthModalOpen(false); setWizardOpen(true); }}
         />
       )}
 

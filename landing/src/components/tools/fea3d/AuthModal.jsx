@@ -43,7 +43,7 @@ export function AuthModal({ onClose, onLoginSuccess }) {
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md overflow-hidden relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white z-50">
           <X size={20} />
         </button>
 
@@ -52,7 +52,7 @@ export function AuthModal({ onClose, onLoginSuccess }) {
             {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
           </h2>
           <p className="text-slate-400 text-center mb-8 text-sm">
-            Guarda tus proyectos estructurales en la nube
+            Regístrate para guardar tus cálculos y cotizaciones en la nube
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
