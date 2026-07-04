@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Calculator, DoorOpen, Maximize, Ruler, Download, Brush, Grid, DollarSign, Save, FolderOpen, LogIn, LogOut, ArrowLeft } from 'lucide-react';
+import { Calculator, DoorOpen, Maximize, Ruler, Download, Brush, Grid, DollarSign, Save, FolderOpen, LogIn, LogOut, ArrowLeft, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { AuthModal } from './fea3d/AuthModal';
@@ -321,7 +321,7 @@ const CalculadoraMamposteria = () => {
 
   const largoF = getF(pared.largo);
   const altoF = getF(pared.alto);
-  const paddingSVG = 40;
+  const paddingSVG = 80;
   
   // Aumentar la escala 30% como pidió el usuario (1.3)
   const baseScaleX = 800 / (largoF || 1);
@@ -388,9 +388,14 @@ const CalculadoraMamposteria = () => {
             <FolderOpen size={18} /> Mis Cálculos
           </button>
           {currentUser && (
-            <button onClick={logout} style={{ background: '#f8d7da', color: '#721c24', border: 'none', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
-              <LogOut size={18} /> Salir
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text)', fontWeight: 600, padding: '0 8px' }}>
+                <User size={18} /> {currentUser.name || 'Usuario'}
+              </div>
+              <button onClick={logout} style={{ background: '#f8d7da', color: '#721c24', border: 'none', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                <LogOut size={18} /> Salir
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -529,7 +534,7 @@ const CalculadoraMamposteria = () => {
                   return (
                     <g key={i}>
                       <rect x={xSVG} y={ySVG} width={wSVG} height={hSVG} fill="#fff" stroke={strokeColor} strokeWidth="2" />
-                      <text x={xSVG + wSVG / 2} y={ySVG + hSVG / 2} textAnchor="middle" alignmentBaseline="middle" fontSize="10" fill={strokeColor} fontWeight="bold">
+                      <text x={xSVG + wSVG / 2} y={ySVG + hSVG / 2} textAnchor="middle" alignmentBaseline="middle" fontSize="22" fill={strokeColor} fontWeight="bold">
                         {ab.ancho} x {ab.alto}
                       </text>
                     </g>
@@ -537,14 +542,14 @@ const CalculadoraMamposteria = () => {
                 })}
 
                 {/* Cotas */}
-                <line x1={originX} y1={topY - 15} x2={originX + rectW} y2={topY - 15} stroke="#333" strokeWidth="1" markerStart="url(#arrow)" markerEnd="url(#arrow)" />
-                <text x={originX + rectW / 2} y={topY - 20} textAnchor="middle" fontSize="12" fill="#333" fontWeight="bold">{pared.largo} m</text>
-                <line x1={originX - 15} y1={topY} x2={originX - 15} y2={originY} stroke="#333" strokeWidth="1" markerStart="url(#arrow)" markerEnd="url(#arrow)" />
-                <text x={originX - 30} y={topY + rectH / 2 + 4} textAnchor="middle" fontSize="12" fill="#333" fontWeight="bold">{pared.alto} m</text>
+                <line x1={originX} y1={topY - 20} x2={originX + rectW} y2={topY - 20} stroke="#333" strokeWidth="2" markerStart="url(#arrow)" markerEnd="url(#arrow)" />
+                <text x={originX + rectW / 2} y={topY - 30} textAnchor="middle" fontSize="28" fill="#333" fontWeight="bold">{pared.largo} m</text>
+                <line x1={originX - 20} y1={topY} x2={originX - 20} y2={originY} stroke="#333" strokeWidth="2" markerStart="url(#arrow)" markerEnd="url(#arrow)" />
+                <text x={originX - 45} y={topY + rectH / 2 + 8} textAnchor="middle" fontSize="28" fill="#333" fontWeight="bold">{pared.alto} m</text>
 
                 <defs>
-                  <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
-                    <polygon points="0,0 6,3 0,6" fill="#333" />
+                  <marker id="arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+                    <polygon points="0,0 8,4 0,8" fill="#333" />
                   </marker>
                 </defs>
               </svg>
@@ -658,8 +663,9 @@ const CalculadoraMamposteria = () => {
       {/* Modales */}
       {authModalOpen && (
         <AuthModal 
+          source="calculadora"
           onClose={() => setAuthModalOpen(false)} 
-          onLoginSuccess={() => { setAuthModalOpen(false); setCurrentUser({ id: 1, name: 'Usuario' }); }} 
+          onLoginSuccess={(u) => { setAuthModalOpen(false); setCurrentUser(u || { id: 1, name: 'Usuario' }); }} 
         />
       )}
       

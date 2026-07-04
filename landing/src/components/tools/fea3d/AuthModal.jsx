@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, User as UserIcon } from 'lucide-react';
+import { X, Mail, Lock, User as UserIcon, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiLogin, apiRegister, setAuthToken } from './api';
 
-export function AuthModal({ onClose, onLoginSuccess }) {
+export function AuthModal({ onClose, onLoginSuccess, source = 'arko3d' }) {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -95,15 +96,22 @@ export function AuthModal({ onClose, onLoginSuccess }) {
               <div className="relative mt-1">
                 <Lock size={16} className="absolute left-3 top-3 text-slate-500" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   autoComplete="current-password"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-10 pr-10 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                   placeholder="••••••••"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
@@ -112,7 +120,7 @@ export function AuthModal({ onClose, onLoginSuccess }) {
               disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-colors mt-6 flex justify-center items-center"
             >
-              {loading ? <span className="animate-pulse">Procesando...</span> : isLogin ? 'Ingresar a ARKO3D' : 'Registrarse'}
+              {loading ? <span className="animate-pulse">Procesando...</span> : isLogin ? (source === 'calculadora' ? 'Ingresar a Calculadora' : 'Ingresar a ARKO3D') : 'Registrarse'}
             </button>
           </form>
 
