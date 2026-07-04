@@ -1135,6 +1135,122 @@ class FoundationSlabDesigner:
             f.write(html)
         print(f"Plano de armado exportado: {filepath}")
 
+    def get_svg_plan(self):
+        # Escalas
+        margin = 80
+        svg_w = 700
+        svg_h = 700
+        plot_size = min(svg_w, svg_h) - 2 * margin
+        scale = plot_size / max(self.Lx, self.Ly)
+
+        def to_svg(x, y):
+            return (margin + x * scale, margin + (self.Ly - y) * scale)
+
+        # --- Construir SVG ---
+        svg_parts = []
+        svg_parts.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_w} {svg_h}" style="width:100%;max-height:600px;border:1px solid #ccc;border-radius:8px;background:#fafafa;">')
+
+        # Grid ligero
+        for i in range(self.nx + 1):
+            x = i * self.dx
+            x1, y1 = to_svg(x, 0)
+            x2, y2 = to_svg(x, self.Ly)
+            svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="#e0e0e0" stroke-width="0.8"/>')
+        for j in range(self.ny + 1):
+            y = j * self.dy
+            x1, y1 = to_svg(0, y)
+            x2, y2 = to_svg(self.Lx, y)
+            svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="#e0e0e0" stroke-width="0.8"/>')
+
+        # Bandas de refuerzo (rectángulos centrados en muros)
+        for wall in self.walls:
+            dxw = wall.x2 - wall.x1
+            dyw = wall.y2 - wall.y1
+            length = wall.length
+            if length < 1e-6:
+                continue
+            # Vector perpendicular unitario (ancho de banda)
+            nx_vec = -dyw / length
+            ny_vec = dxw / length
+            hw = wall.band_width / 2.0
+
+            # 4 esquinas del rectángulo de banda
+            corners = [
+                (wall.x1 + nx_vec * hw, wall.y1 + ny_vec * hw),
+                (wall.x1 - nx_vec * hw, wall.y1 - ny_vec * hw),
+                (wall.x2 - nx_vec * hw, wall.y2 - ny_vec * hw),
+                (wall.x2 + nx_vec * hw, wall.y2 + ny_vec * hw),
+            ]
+            pts = " ".join([f"{to_svg(cx, cy)[0]:.1f},{to_svg(cx, cy)[1]:.1f}" for cx, cy in corners])
+            svg_parts.append(f'<polygon points="{pts}" fill="rgba(255,193,7,0.25)" stroke="#f9a825" stroke-width="1.5"/>')
+
+        # Vigas de amarre
+        for beam in self.beams:
+            x1, y1 = to_svg(beam.x1, beam.y1)
+            x2, y2 = to_svg(beam.x2, beam.y2)
+            svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="#4caf50" stroke-width="5" stroke-linecap="round" opacity="0.85"/>')
+
+        # Muros
+        for wall in self.walls:
+            color = "#e53935" if wall.wall_type == "perimetral" else "#1e88e5"
+            width = max(2, wall.thickness * scale)
+            x1, y1 = to_svg(wall.x1, wall.y1)
+            x2, y2 = to_svg(wall.x2, wall.y2)
+            svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{color}" stroke-width="{width:.1f}" stroke-linecap="round"/>')
+
+        # Cotas exteriores
+        cota_y = margin - 35
+        x_left, _ = to_svg(0, self.Ly)
+        x_right, _ = to_svg(self.Lx, self.Ly)
+        svg_parts.append(f'<line x1="{x_left:.1f}" y1="{cota_y:.1f}" x2="{x_right:.1f}" y2="{cota_y:.1f}" stroke="#555" stroke-width="1" marker-end="url(#arrow)" marker-start="url(#arrow)"/>')
+        svg_parts.append(f'<text x="{(x_left+x_right)/2:.1f}" y="{cota_y - 6:.1f}" text-anchor="middle" font-size="11" fill="#555" font-family="sans-serif">{self.Lx:.2f} m</text>')
+
+        cota_x = margin - 35
+        _, y_bottom = to_svg(0, 0)
+        _, y_top = to_svg(0, self.Ly)
+        svg_parts.append(f'<line x1="{cota_x:.1f}" y1="{y_bottom:.1f}" x2="{cota_x:.1f}" y2="{y_top:.1f}" stroke="#555" stroke-width="1" marker-end="url(#arrow)" marker-start="url(#arrow)"/>')
+        svg_parts.append(f'<text x="{cota_x - 6:.1f}" y="{(y_bottom+y_top)/2:.1f}" text-anchor="middle" font-size="11" fill="#555" font-family="sans-serif" transform="rotate(-90, {cota_x - 6:.1f}, {(y_bottom+y_top)/2:.1f})">{self.Ly:.2f} m</text>')
+
+        # Escala gráfica
+        scale_x = margin
+        scale_y = svg_h - margin + 40
+        scale_len = 2.0 * scale
+        svg_parts.append(f'<line x1="{scale_x:.1f}" y1="{scale_y:.1f}" x2="{scale_x + scale_len:.1f}" y2="{scale_y:.1f}" stroke="#333" stroke-width="2"/>')
+        svg_parts.append(f'<line x1="{scale_x:.1f}" y1="{scale_y - 4:.1f}" x2="{scale_x:.1f}" y2="{scale_y + 4:.1f}" stroke="#333" stroke-width="1"/>')
+        svg_parts.append(f'<line x1="{scale_x + scale_len/2:.1f}" y1="{scale_y - 4:.1f}" x2="{scale_x + scale_len/2:.1f}" y2="{scale_y + 4:.1f}" stroke="#333" stroke-width="1"/>')
+        svg_parts.append(f'<line x1="{scale_x + scale_len:.1f}" y1="{scale_y - 4:.1f}" x2="{scale_x + scale_len:.1f}" y2="{scale_y + 4:.1f}" stroke="#333" stroke-width="1"/>')
+        svg_parts.append(f'<text x="{scale_x + scale_len/2:.1f}" y="{scale_y + 14:.1f}" text-anchor="middle" font-size="10" fill="#555" font-family="sans-serif">2.0 m</text>')
+
+        svg_parts.append('</svg>')
+        return "\\n".join(svg_parts)
+
+    def run_full_analysis(self, extra_uniform_load=0.0):
+        self.solve(extra_uniform_load=extra_uniform_load)
+        self.compute_moments()
+        self.compute_shear()
+        self.define_reinforcement_bands(load_factor=1.5)
+        self.check_differential_settlements()
+        self.check_punching()
+        
+        return {
+            "displacements": {
+                "w_max_mm": float(np.max(np.abs(self.w)) * 1000)
+            },
+            "moments": {
+                "Mx_max_kNm_m": float(np.max(np.abs(self.Mx)) / 1000),
+                "My_max_kNm_m": float(np.max(np.abs(self.My)) / 1000)
+            },
+            "shear": {
+                "Vu_max_kN_m": float(np.max(self.Vu) / 1000),
+                "phiVc_kN_m": float(self.phiVc / 1000),
+                "shear_ok": bool(np.all(self.shear_ok))
+            },
+            "bands": self.band_data,
+            "As_min_cm2_m": float(self.rho_min * 1.0 * self.h * 1e4),
+            "settlements": self.settlement_data,
+            "svg_plan": self.get_svg_plan()
+        }
+
 if __name__ == "__main__":
     # Ejemplo de uso corregido
     gr = FoundationSlabDesigner(

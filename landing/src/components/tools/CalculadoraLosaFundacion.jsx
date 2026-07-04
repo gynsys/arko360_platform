@@ -204,7 +204,7 @@ export default function CalculadoraLosaFundacion() {
     };
 
     try {
-      const response = await fetch(`${API_BASE}/arko_app/calculadoras/losa_fundacion/analyze`, {
+      const response = await fetch(`${API_BASE}/calculadora-losas/losa_fundacion/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
