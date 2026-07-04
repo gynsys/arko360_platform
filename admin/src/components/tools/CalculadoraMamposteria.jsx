@@ -2,7 +2,6 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Calculator, DoorOpen, Maximize, Ruler, Download, Brush, Grid, DollarSign, Save, FolderOpen, LogIn, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { AuthModal } from './fea3d/AuthModal';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
