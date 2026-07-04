@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-undef
 const fs = require('fs');
 const lFactor = 3.2808;
 

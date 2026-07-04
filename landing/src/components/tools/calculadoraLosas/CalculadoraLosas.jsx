@@ -654,7 +654,7 @@ const CalculadoraLosas = () => {
 
       {mostrarHistorial && (
         <HistorialCorridas 
-          onCargarCorrida={cargarDesdeHistorial} 
+          onCargarCorrida={handleLoadRun} 
           onClose={() => setMostrarHistorial(false)} 
         />
       )}

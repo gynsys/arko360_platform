@@ -322,6 +322,41 @@ const CalculadoraMamposteria = () => {
     URL.revokeObjectURL(url);
   };
 
+  const largoF = getF(pared.largo);
+  const altoF = getF(pared.alto);
+  const svgWidth = 800;
+  const svgHeight = 320;
+  const paddingSVG = 40;
+  const scaleX = (svgWidth - paddingSVG * 2) / (largoF || 1);
+  const scaleY = (svgHeight - paddingSVG * 2) / (altoF || 1);
+  const scale = Math.min(scaleX, scaleY);
+  
+  const rectW = largoF * scale;
+  const rectH = altoF * scale;
+  const originX = (svgWidth - rectW) / 2;
+  const originY = svgHeight - (svgHeight - rectH) / 2;
+  const topY = originY - rectH;
+
+  const posicionesAberturas = [];
+  if (puertas.incluir && getF(puertas.cantidad) > 0) {
+    let currentX = 0.5;
+    for (let i = 0; i < getF(puertas.cantidad); i++) {
+      posicionesAberturas.push({ tipo: 'puerta', ancho: getF(puertas.ancho), alto: getF(puertas.alto), x: currentX, y: 0 });
+      currentX += getF(puertas.ancho) + 0.5;
+    }
+  }
+  if (ventanas.incluir && getF(ventanas.cantidad) > 0) {
+    let currentX = 0.5;
+    if (puertas.incluir) currentX += (getF(puertas.ancho) + 0.5) * getF(puertas.cantidad);
+    for (let i = 0; i < getF(ventanas.cantidad); i++) {
+      posicionesAberturas.push({ tipo: 'ventana', ancho: getF(ventanas.ancho), alto: getF(ventanas.alto), x: currentX, y: getF(ventanas.alturaSuelo) || 1.0 });
+      currentX += getF(ventanas.ancho) + 0.5;
+    }
+  }
+
+  const cabenHorizontal = posicionesAberturas.reduce((sum, ab) => sum + ab.ancho + 0.5, 0) <= largoF;
+  const ventanasValidas = !ventanas.incluir || ((getF(ventanas.alturaSuelo) || 1.0) + getF(ventanas.alto) <= altoF);
+
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
@@ -454,12 +489,12 @@ const CalculadoraMamposteria = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Visualización */}
           <Card title={<div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Brush size={18} /> Plano de la Pared</div>} color="#1a237e">
-            {!resultados.cabenHorizontal && (
+            {!cabenHorizontal && (
               <div style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '12px', borderRadius: '6px', marginBottom: '16px', fontSize: '13px' }}>
                 ⚠️ Las aberturas no caben horizontalmente.
               </div>
             )}
-            {!resultados.ventanasValidas && (
+            {!ventanasValidas && (
               <div style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '12px', borderRadius: '6px', marginBottom: '16px', fontSize: '13px' }}>
                 ⚠️ La ventana sale de la pared verticalmente.
               </div>

@@ -33,6 +33,24 @@ jobs:
           echo "VITE_API_URL=/api/v1" > admin/.env.production
           echo "VITE_API_URL=/api/v1" > super-admin-frontend/.env.production
 
+      - name: Run ESLint on Landing Frontend
+        working-directory: ./landing
+        run: |
+          npm ci || npm install
+          npm run lint
+
+      - name: Run ESLint on Admin Frontend
+        working-directory: ./admin
+        run: |
+          npm ci || npm install
+          npm run lint
+
+      - name: Run ESLint on Super Admin Frontend
+        working-directory: ./super-admin-frontend
+        run: |
+          npm ci || npm install
+          npm run lint
+
       - name: Build and push Backend
         uses: docker/build-push-action@v5
         with:

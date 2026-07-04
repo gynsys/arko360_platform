@@ -58,6 +58,7 @@ export const MobileLayout = ({
   setCustomAudioUrl,
   audioRef,
   previewAudioRef,
+  exporter,
   isExporting,
   exportProgress,
   handleExportVideo,

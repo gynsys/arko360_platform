@@ -168,7 +168,7 @@ export default function SEOConfiguration({ seoData, onChange, postTitle, postCon
                     maxScore = score
                     bestKeyword = phrase
                 }
-            } catch (e) { }
+            } catch (e) { /* ignore */ }
         })
 
         if (!bestKeyword && candidates.length > 0) {
