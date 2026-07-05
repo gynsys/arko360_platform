@@ -105,10 +105,10 @@ const generarPresupuesto = (results) => {
 
   // Acabados
   const area_total_muros = s.area_lisa_m2 + s.area_rustica_m2;
-  const vol_friso = area_total_muros * 0.02; // Espesor 2cm
   
-  const cemento_friso = Math.ceil(vol_friso * 8.0);
-  const arena_friso = +(vol_friso * 1.0).toFixed(2);
+  // Rendimiento real estimado de friso: 1 saco rinde ~8 m2, 1 m3 de arena rinde ~65 m2
+  const cemento_friso = Math.ceil(area_total_muros / 8.0);
+  const arena_friso = +(area_total_muros / 65.0).toFixed(2);
   
   if (cemento_friso > 0) {
     items.push({ chapter: 'Mampostería', material: 'Cemento Portland (Friso)', unit: 'sacos', qty: cemento_friso, pu: PRECIOS.cemento, total: cemento_friso * PRECIOS.cemento });
@@ -175,6 +175,7 @@ export default function CalculadoraLosaFundacion() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [showResultsModal, setShowResultsModal] = useState(false);
+  const [currentRunId, setCurrentRunId] = useState(null);
 
   // Aberturas (Puertas y Ventanas) Drag & Drop
   const [openings, setOpenings] = useState([]);
@@ -322,7 +323,7 @@ export default function CalculadoraLosaFundacion() {
     const formattedInternal = internalWalls.map(w => ({
       ...w,
       type: w.type || 'interno',
-      thickness: matProps.thickness,
+      thickness: w.type === 'interno' ? 0.12 : matProps.thickness,
       height: parseFloat(wallHeight) || 2.7,
       density: matProps.density,
       is_plastered: designParams.is_plastered
@@ -569,8 +570,19 @@ export default function CalculadoraLosaFundacion() {
 
   const loadRun = (run) => {
     setProjectName(run.nombre_proyecto);
+    setCurrentRunId(run.id);
+
     const inp = run.inputs;
-    if (inp) {
+    if (inp && inp._canvas_state) {
+      const st = inp._canvas_state;
+      setShape(st.shape || 'rectangular');
+      if (st.params) setParams(st.params);
+      if (st.designParams) setDesignParams(st.designParams);
+      if (st.wallHeight) setWallHeight(st.wallHeight);
+      if (st.internalWalls) setInternalWalls(st.internalWalls);
+      if (st.openings) setOpenings(st.openings);
+      if (st.material) setMaterial(st.material);
+    } else if (inp) {
       if (inp.geometry) setParams(prev => ({ ...prev, Lx: inp.geometry.Lx, Ly: inp.geometry.Ly, h: inp.geometry.h * 100 }));
       if (inp.materials) {
         const fc_kgcm2 = inp.materials.f_c_kgcm2 || +(inp.materials.f_c * 10.197).toFixed(0);
@@ -784,12 +796,17 @@ export default function CalculadoraLosaFundacion() {
         inputs: freshPayload,
         resultados: results
       };
-      const response = await fetch(`${API_BASE}/calculadora-losas/runs`, {
-        method: 'POST',
+      const method = currentRunId ? 'PUT' : 'POST';
+      const endpoint = currentRunId ? `${API_BASE}/calculadora-losas/runs/${currentRunId}` : `${API_BASE}/calculadora-losas/runs`;
+      
+      const response = await fetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(runData)
       });
       if (response.ok) {
+        const data = await response.json();
+        setCurrentRunId(data.id);
         toast.success("¡Cálculo guardado exitosamente!");
         fetchRuns();
       } else {
@@ -820,6 +837,8 @@ export default function CalculadoraLosaFundacion() {
         body: JSON.stringify(runData)
       });
       if (response.ok) {
+        const data = await response.json();
+        setCurrentRunId(data.id);
         setProjectName(customName || projectName);
         toast.success(`¡Guardado como "${customName}"!`);
         fetchRuns();

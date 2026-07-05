@@ -62,6 +62,31 @@ def get_run(run_id: int, db: Session = Depends(get_arko_db)):
         logger.error(f"Error al obtener corrida {run_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno al obtener los datos.")
 
+@router.put("/runs/{run_id}", response_model=LosaCalculationRunResponse)
+def update_run(run_id: int, run_in: LosaCalculationRunCreate, db: Session = Depends(get_arko_db)):
+    """
+    Actualiza una corrida específica por su ID.
+    """
+    try:
+        run = db.query(LosaCalculationRun).filter(LosaCalculationRun.id == run_id).first()
+        if not run:
+            raise HTTPException(status_code=404, detail="Corrida no encontrada.")
+        
+        run.nombre_proyecto = run_in.nombre_proyecto
+        run.tipo_losa = run_in.tipo_losa
+        run.inputs = run_in.inputs
+        run.resultados = run_in.resultados
+        
+        db.commit()
+        db.refresh(run)
+        return run
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error al actualizar corrida {run_id}: {e}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error interno al actualizar.")
+
 @router.delete("/runs/{run_id}")
 def delete_run(run_id: int, db: Session = Depends(get_arko_db)):
     """
