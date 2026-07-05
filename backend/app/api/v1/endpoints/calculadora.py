@@ -122,7 +122,8 @@ def analyze_slab(data: SlabModelInput):
             band_width_factor=data.band_width_factor,
             max_settlement_ratio=data.max_settlement_ratio,
             q_adm=mat.q_adm,
-            band_width_m=mat.band_width_m
+            band_width_m=mat.band_width_m,
+            custom_mesh_cm2_m=mat.custom_mesh_cm2_m
         )
         gr.set_mesh(nx=data.mesh_nx, ny=data.mesh_ny)
 

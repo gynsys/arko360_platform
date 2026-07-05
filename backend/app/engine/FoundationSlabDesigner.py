@@ -69,7 +69,8 @@ class FoundationSlabDesigner:
     def __init__(self, Lx, Ly, h, E, nu, k, f_c, f_y, cover, bar_diam,
                  gamma_horm=2400, include_self_weight=True, lambda_aci=1.0,
                  band_width_factor=1.0, max_settlement_ratio=500.0,
-                 bar_diameters_mm=None, q_adm=150000.0, band_width_m=0.0):
+                 bar_diameters_mm=None, q_adm=150000.0, band_width_m=0.0,
+                 custom_mesh_cm2_m=0.0):
         """
         Parameters
         ----------
@@ -98,6 +99,7 @@ class FoundationSlabDesigner:
         self.max_settlement_ratio = max_settlement_ratio
         self.q_adm = q_adm
         self.band_width_m = band_width_m
+        self.custom_mesh_cm2_m = custom_mesh_cm2_m
 
         self.G = E / (2 * (1 + nu))
         self.d_eff = h - cover - bar_diam / 2
@@ -1472,8 +1474,10 @@ class FoundationSlabDesigner:
         self.check_differential_settlements()
         self.check_punching()
         
-        As_min_cm2 = float(self.rho_min * 1.0 * self.h * 1e4)
-        As_min_m2 = float(self.rho_min * 1.0 * self.h)
+        As_min_cm2_normativo = float(self.rho_min * 1.0 * self.h * 1e4)
+        As_min_cm2 = max(As_min_cm2_normativo, float(self.custom_mesh_cm2_m)) if self.custom_mesh_cm2_m > 0 else As_min_cm2_normativo
+        As_min_m2 = float(As_min_cm2 / 1e4)
+        
         general_slab_steel_x = self._propose_bars(As_min_m2)
         general_slab_steel_y = self._propose_bars(As_min_m2)
         

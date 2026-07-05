@@ -157,8 +157,9 @@ export default function CalculadoraLosaFundacion() {
     fc: 250, // kgf/cm² (antes 25 MPa)
     fy: 4200, // kgf/cm² (antes 420 MPa)
     q_adm: 1.5, // kgf/cm² (antes 150 kN/m²)
+    band_width_m: 0, // 0 = Auto calculado en backend
     is_plastered: false, // Friso global
-    band_width_m: 0 // 0 = Auto calculado en backend
+    custom_mesh_cm2_m: 0 // 0 = Auto
   });
   
   // Guardado y Carga de Base de Datos
@@ -753,7 +754,8 @@ export default function CalculadoraLosaFundacion() {
       E: 4700 * Math.sqrt(designParams.fc / 10.197) * 1e6, 
       nu: 0.2, k: 20e6,
       q_adm: designParams.q_adm * 98066.5, // kgf/cm² a Pa
-      band_width_m: designParams.band_width_m > 0 ? designParams.band_width_m : 0
+      band_width_m: designParams.band_width_m > 0 ? designParams.band_width_m : 0,
+      custom_mesh_cm2_m: designParams.custom_mesh_cm2_m || 0
     },
     walls: allWalls.map(w => ({
       x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
@@ -1273,6 +1275,18 @@ export default function CalculadoraLosaFundacion() {
               <div className="param-item"><label>fy Acero (kgf/cm²):</label><input type="number" step="100" value={designParams.fy} onChange={e => handleDesignParamChange('fy', parseFloat(e.target.value))} /></div>
               <div className="param-item"><label>Cap. Portante (kgf/cm²):</label><input type="number" step="0.1" value={designParams.q_adm} onChange={e => handleDesignParamChange('q_adm', parseFloat(e.target.value))} title="1.5 kgf/cm² = 15000 kgf/m²" /></div>
               <div className="param-item"><label>Ancho Banda (m):</label><input type="number" step="0.05" value={designParams.band_width_m} onChange={e => handleDesignParamChange('band_width_m', parseFloat(e.target.value))} title="0 = Auto (Calculado min)" /></div>
+              <div className="param-item">
+                <label>Acero General (Malla):</label>
+                <select value={designParams.custom_mesh_cm2_m || 0} onChange={e => handleDesignParamChange('custom_mesh_cm2_m', parseFloat(e.target.value))}>
+                  <option value={0}>Automático (Mínimo ACI)</option>
+                  <option value={0.61}>Malla 6x6 (Ø3.43@15) - 0.61 cm²/m</option>
+                  <option value={1.41}>Varillas Ø6@20cm - 1.41 cm²/m</option>
+                  <option value={1.88}>Malla Sima (Ø6@15) - 1.88 cm²/m</option>
+                  <option value={2.51}>Varillas Ø8@20cm - 2.51 cm²/m</option>
+                  <option value={3.93}>Varillas Ø10@20cm - 3.93 cm²/m</option>
+                  <option value={5.24}>Varillas Ø10@15cm - 5.24 cm²/m</option>
+                </select>
+              </div>
             </div>
             
             <div className="param-item" style={{ marginTop: '10px' }}>
@@ -1683,8 +1697,21 @@ export default function CalculadoraLosaFundacion() {
                   </div>
                 </div>
                 <div style={{flex:1, background:'#fff', padding:'12px', borderRadius:'8px', border:'1px solid #e0e0e0'}}>
-                  <strong>Acero General Losa (Mínimo):</strong>
-                  <div style={{fontSize:'14px', color:'#c62828', fontWeight:'bold'}}>{results.materials_computation.general_slab_steel.bar_x} en X, {results.materials_computation.general_slab_steel.bar_y} en Y</div>
+                  <h4 style={{margin:'0 0 12px 0', color:'#333'}}>
+                    {designParams.custom_mesh_cm2_m > 0 ? 'Acero General (Personalizado):' : 'Acero General Losa (Mínimo):'}
+                  </h4>
+                  {designParams.custom_mesh_cm2_m > 0 ? (
+                    <div style={{fontSize:'14px', color:'#c62828', fontWeight:'bold'}}>
+                      {designParams.custom_mesh_cm2_m === 0.61 && 'Malla 6x6 (Ø3.43@15cm)'}
+                      {designParams.custom_mesh_cm2_m === 1.41 && 'Varillas Ø6@20cm'}
+                      {designParams.custom_mesh_cm2_m === 1.88 && 'Malla Sima (Ø6@15cm)'}
+                      {designParams.custom_mesh_cm2_m === 2.51 && 'Varillas Ø8@20cm'}
+                      {designParams.custom_mesh_cm2_m === 3.93 && 'Varillas Ø10@20cm'}
+                      {designParams.custom_mesh_cm2_m === 5.24 && 'Varillas Ø10@15cm'}
+                    </div>
+                  ) : (
+                    <div style={{fontSize:'14px', color:'#c62828', fontWeight:'bold'}}>{results.materials_computation.general_slab_steel.bar_x} en X, {results.materials_computation.general_slab_steel.bar_y} en Y</div>
+                  )}
                   <div style={{fontSize:'12px', color:'#777'}}>Peso estimado: {results.materials_computation.steel_weight_general_kg.toFixed(0)} kg</div>
                   {results.materials_computation.general_bars_6m && <div style={{fontSize:'12px', color:'#555'}}>~ {results.materials_computation.general_bars_6m} varillas de 6m</div>}
                 </div>
