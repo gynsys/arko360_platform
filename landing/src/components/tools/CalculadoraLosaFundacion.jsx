@@ -63,10 +63,11 @@ export default function CalculadoraLosaFundacion() {
   
   // Estado de resultados
   const [results, setResults] = useState(null);
-  const [lastPayload, setLastPayload] = useState(null); // Para guardar/auditar
+  const [lastPayload, setLastPayload] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [showResultsModal, setShowResultsModal] = useState(false);
 
   // Aberturas (Puertas y Ventanas) Drag & Drop
   const [openings, setOpenings] = useState([]);
@@ -333,7 +334,7 @@ export default function CalculadoraLosaFundacion() {
     extra_load: 300 * 9.81,
     // Estado completo del plano para poder reabrirlo
     _canvas_state: {
-      shape, params, designParams, wallHeight, internalWalls, openings, wallMaterial
+      shape, params, designParams, wallHeight, internalWalls, openings, material
     }
   });
 
@@ -419,16 +420,101 @@ export default function CalculadoraLosaFundacion() {
 
   const downloadAuditJSON = () => {
     if (!lastPayload || !results) return;
+
+    // Calcular cargas en MKS para la auditoría
+    const Lx = lastPayload.geometry?.Lx || 0;
+    const Ly = lastPayload.geometry?.Ly || 0;
+    const h_m = lastPayload.geometry?.h || 0.15;
+    const gamma_horm = 2400; // kg/m3
+    const A_losa = Lx * Ly;
+    const P_losa_kg = gamma_horm * A_losa * h_m;
+    const sc_kg_m2 = 300 / 9.81; // de extra_load N/m2 a kg/m2
+    const P_sc_kg = sc_kg_m2 * A_losa;
+    
+    let P_muros_kg = 0;
+    const wallLoads = (lastPayload.walls || []).map(w => {
+      const len = Math.sqrt((w.x2 - w.x1) ** 2 + (w.y2 - w.y1) ** 2);
+      // Restar aberturas
+      const opening_m = (w.openings || []).reduce((acc, op) => acc + op.width_m, 0);
+      const len_neta = Math.max(0, len - opening_m);
+      const rho_kgm3 = w.density || 1400;
+      const vol_m3 = len_neta * w.height * w.thickness;
+      const P_kg = rho_kgm3 * vol_m3;
+      P_muros_kg += P_kg * (w.load_factor || 1.5);
+      return {
+        tipo: w.type,
+        longitud_m: +len.toFixed(3),
+        longitud_neta_m: +len_neta.toFixed(3),
+        altura_m: w.height,
+        espesor_m: w.thickness,
+        densidad_kgm3: rho_kgm3,
+        peso_kg: +P_kg.toFixed(1),
+        peso_factored_kg: +(P_kg * (w.load_factor || 1.5)).toFixed(1)
+      };
+    });
+    const P_total_kg = P_losa_kg + P_sc_kg + P_muros_kg;
+    
+    const fc_Pa = lastPayload.materials?.f_c || 25e6;
+    const fc_MPa = fc_Pa > 1000 ? fc_Pa / 1e6 : fc_Pa; // handle if already MPa
+    const fc_kgcm2 = +(fc_MPa * 10.197).toFixed(1);
+    const fy_MPa = (lastPayload.materials?.f_y || 420e6) > 1000 ? (lastPayload.materials.f_y / 1e6) : (lastPayload.materials?.f_y || 420);
+    const fy_kgcm2 = +(fy_MPa * 10.197).toFixed(0);
+
     const auditData = {
-      timestamp: new Date().toISOString(),
-      inputs: lastPayload,
-      outputs: results
+      meta: {
+        proyecto: lastPayload.project,
+        fecha: new Date().toISOString(),
+        norma: 'ACI 318 / COVENIN 1753',
+        sistema_unidades: 'MKS (kgf, m, kgf/cm²)'
+      },
+      parametros_diseno: {
+        fc_kgf_cm2: fc_kgcm2,
+        fy_kgf_cm2: fy_kgcm2,
+        recubrimiento_cm: (lastPayload.materials?.cover || 0.05) * 100,
+        barra_diametro_mm: (lastPayload.materials?.bar_diam || 0.012) * 1000,
+        q_adm_kgf_m2: +((lastPayload.materials?.q_adm || 150000) / 9.81).toFixed(0)
+      },
+      geometria: {
+        Lx_m: Lx, Ly_m: Ly,
+        espesor_h_m: h_m,
+        espesor_h_cm: +(h_m * 100).toFixed(1),
+        area_m2: +A_losa.toFixed(2)
+      },
+      calculo_de_cargas_MKS: {
+        peso_propio_losa_kg: +P_losa_kg.toFixed(1),
+        sobrecarga_sc_kg: +P_sc_kg.toFixed(1),
+        peso_muros_factored_kg: +P_muros_kg.toFixed(1),
+        carga_total_kg: +P_total_kg.toFixed(1),
+        carga_total_kN: +(P_total_kg * 9.81 / 1000).toFixed(2),
+        presion_media_suelo_kgf_m2: +(P_total_kg / A_losa).toFixed(1),
+        detalle_muros: wallLoads
+      },
+      resultados_FEM: {
+        desplazamiento_max_mm: results.displacements?.w_max_mm,
+        momento_Mx_max_kNm_m: results.moments?.Mx_max_kNm_m,
+        momento_My_max_kNm_m: results.moments?.My_max_kNm_m,
+        cortante_Vu_max_kN_m: results.shear?.Vu_max_kN_m,
+        cortante_phiVc_kN_m: results.shear?.phiVc_kN_m,
+        verificacion_cortante: results.shear?.shear_ok ? 'CUMPLE' : 'NO CUMPLE',
+        presion_max_suelo_kN_m2: results.soil_pressure?.max_pressure_kN_m2,
+        q_adm_kN_m2: results.soil_pressure?.q_adm_kN_m2,
+        verificacion_suelo: results.soil_pressure?.ok ? 'CUMPLE' : 'NO CUMPLE'
+      },
+      diseno_armado_bandas: results.bands,
+      acero_minimo_cm2_m: results.As_min_cm2_m,
+      observaciones: [
+        'Verificación por cortante unidireccional (ACI 318 §11.3)',
+        'El punzonamiento no es crítico para losas con muros (sin columnas puntuales)',
+        'Bandas de refuerzo concentradas bajo cada muro según distribución FEM',
+        `Fáctor de seguridad en presión suelo: ${results.soil_pressure?.q_adm_kN_m2 && results.soil_pressure?.max_pressure_kN_m2 ? (results.soil_pressure.q_adm_kN_m2 / results.soil_pressure.max_pressure_kN_m2).toFixed(2) : 'N/A'}`
+      ],
+      datos_entrada_raw: lastPayload
     };
-    const blob = new Blob([JSON.stringify(auditData, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(auditData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = url;
-    link.download = `auditoria_losa_${Date.now()}.json`;
+    link.download = `auditoria_losa_${projectName.replace(/\s+/g, '_')}_${Date.now()}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -810,8 +896,11 @@ export default function CalculadoraLosaFundacion() {
           {/* Botones de Auditoría (Aparecen si hay resultados) */}
           {results && !error && (
             <div className="audit-actions">
+              <button className="btn-primary-results" onClick={() => setShowResultsModal(true)}>
+                📊 Ver Resultados
+              </button>
               <button className="btn-secondary" onClick={downloadHTML} style={{background: '#e3f2fd', borderColor: '#90caf9'}}>
-                📄 Descargar Plano y Tabla (HTML)
+                📄 Plano HTML
               </button>
               <button className="btn-secondary" onClick={downloadAuditJSON}>
                 ⬇️ JSON Auditoría
@@ -823,10 +912,25 @@ export default function CalculadoraLosaFundacion() {
                 className="btn-secondary"
                 style={{borderColor:'#4caf50', color:'#2e7d32'}}
                 onClick={() => { setSaveAsName(projectName); setShowSaveAsModal(true); }}
-                disabled={!lastPayload || !results}
+                disabled={!results}
               >
                 📂 Guardar Como
               </button>
+            </div>
+          )}
+
+          {/* Estado rápido inline (sin abrir modal) */}
+          {results && !error && (
+            <div style={{display:'flex', gap:'8px', flexWrap:'wrap', marginTop:'8px'}}>
+              <span className={`status-badge ${results.shear?.shear_ok ? 'ok' : 'fail'}`}>
+                Cortante: {results.shear?.shear_ok ? '✓ OK' : '✗ Revisar'}
+              </span>
+              <span className={`status-badge ${results.soil_pressure?.ok ? 'ok' : 'fail'}`}>
+                Suelo: {results.soil_pressure?.ok ? '✓ OK' : '✗ Revisar'}
+              </span>
+              <span className="status-badge info">
+                wₘₐₓ = {(results.displacements?.w_max_mm || 0).toFixed(2)} mm
+              </span>
             </div>
           )}
 
@@ -1001,107 +1105,119 @@ export default function CalculadoraLosaFundacion() {
             {isDrawing && <div className="drawing-hint">Haz doble clic nuevamente para fijar el muro. Presiona ESC para cancelar.</div>}
           </div>
 
-          {/* Renderizado de Resultados */}
-          {results && !error && (
-            <div className="results-panel">
-              <h3>Resultados del Análisis (ACI 318)</h3>
-              <div className="result-cards">
-                <div className="res-card">
-                  <h4>Asentamiento Máx</h4>
-                  <p>{(results.displacements?.w_max_mm || results.max_displacement * 1000).toFixed(2)} mm</p>
-                </div>
-                <div className="res-card">
-                  <h4>Cortante Base</h4>
-                  <p>{(results.shear?.Vu_max_kN_m || results.max_shear / 1000).toFixed(1)} kN</p>
-                </div>
-                {results.soil_pressure && (
-                  <div className="res-card">
-                    <h4>Presión Suelo</h4>
-                    <p style={{ color: results.soil_pressure.ok ? '#2e7d32' : '#c62828' }}>
-                      {results.soil_pressure.max_pressure_kN_m2.toFixed(1)} kN/m²
-                    </p>
-                    <span style={{ fontSize: '10px' }}>vs {results.soil_pressure.q_adm_kN_m2.toFixed(0)} adm</span>
-                  </div>
-                )}
-              </div>
-              
-              {results.svg_plan && (
-                <div className="structural-plan">
-                  <h4>Plano Estructural Generado</h4>
-                  <div className="svg-output" dangerouslySetInnerHTML={{ __html: results.svg_plan }}></div>
-                </div>
-              )}
-
-              {/* Mapas de Calor (Heatmap) */}
-              {results.heatmap_base64 && (
-                <div className="structural-plan" style={{marginTop: '24px'}}>
-                  <div style={{display:'flex', alignItems:'center', gap:'12px', marginBottom:'12px'}}>
-                    <h4 style={{margin:0}}>🌡️ Mapas de Calor - Resultados FEM</h4>
-                    <a
-                      href={`data:image/png;base64,${results.heatmap_base64}`}
-                      download="mapas_calor_losa.png"
-                      className="btn-secondary"
-                      style={{fontSize:'12px', padding:'4px 10px', textDecoration:'none'}}
-                    >
-                      ⬇️ Descargar PNG
-                    </a>
-                  </div>
-                  <img
-                    src={`data:image/png;base64,${results.heatmap_base64}`}
-                    alt="Mapas de calor FEM"
-                    style={{
-                      width: '100%',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                      border: '1px solid #e0e0e0'
-                    }}
-                  />
-                  <p style={{fontSize:'11px', color:'#888', marginTop:'8px', textAlign:'center'}}>
-                    Desplazamiento w · Momentos Mx/My · Cortante Vu · Acero As X/Y · Ratio Vu/φVc · Planta con Bandas
-                  </p>
-                </div>
-              )}
-
-              {/* Render de la Tabla en React */}
-              {results.bands && (
-                <div className="structural-table" style={{marginTop: '24px', overflowX: 'auto'}}>
-                  <h4>Tabla de Armado de Bandas</h4>
-                  <table className="coords-table" style={{marginTop: '8px', minWidth: '700px'}}>
-                    <thead>
-                      <tr style={{background: '#f5f5f5'}}>
-                        <th>Muro</th><th>Tipo</th><th>Ancho banda</th>
-                        <th>Mx diseño</th><th>My diseño</th>
-                        <th>Asx (cm²/m)</th><th>Asy (cm²/m)</th>
-                        <th>Prop. X</th><th>Prop. Y</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.bands.map((b, i) => {
-                        const px = b.bar_x?.diam_mm > 0 ? `Ø${b.bar_x.diam_mm}@${(b.bar_x.sep_m*100).toFixed(0)}cm` : "Mínimo";
-                        const py = b.bar_y?.diam_mm > 0 ? `Ø${b.bar_y.diam_mm}@${(b.bar_y.sep_m*100).toFixed(0)}cm` : "Mínimo";
-                        return (
-                          <tr key={i}>
-                            <td>M{i+1}</td>
-                            <td>{b.type === 'perimetral' ? 'Perim.' : 'Interno'}</td>
-                            <td>{b.band_width.toFixed(2)} m</td>
-                            <td>{b.Mx_design_kNm_m.toFixed(2)}</td>
-                            <td>{b.My_design_kNm_m.toFixed(2)}</td>
-                            <td>{b.Asx_cm2_m.toFixed(2)}</td>
-                            <td>{b.Asy_cm2_m.toFixed(2)}</td>
-                            <td>{px}</td>
-                            <td>{py}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-          )}
+          {/* Renderizado de Resultados — ahora en Modal */}
         </div>
       </div>
     </div>
+
+    {/* ===== MODAL DE RESULTADOS ===== */}
+    {showResultsModal && results && (
+      <div className="modal-overlay" style={{alignItems:'flex-start', padding:'20px', overflowY:'auto'}} onClick={() => setShowResultsModal(false)}>
+        <div className="modal-content" style={{maxWidth:'960px', width:'100%', margin:'auto', padding:'0'}} onClick={e => e.stopPropagation()}>
+          {/* Header */}
+          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 24px', borderBottom:'1px solid #eee', background:'#1e1e2f', borderRadius:'12px 12px 0 0'}}>
+            <div>
+              <h3 style={{margin:0, color:'#fff', fontSize:'16px'}}>📊 Resultados del Análisis Estructural (ACI 318)</h3>
+              <small style={{color:'#aaa'}}>{projectName}</small>
+            </div>
+            <button onClick={() => setShowResultsModal(false)} style={{background:'none', border:'1px solid #555', color:'#fff', borderRadius:'6px', padding:'4px 12px', cursor:'pointer', fontSize:'14px'}}>✕ Cerrar</button>
+          </div>
+
+          {/* Cards de métricas clave */}
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'12px', padding:'20px 24px', background:'#f9f9f9', borderBottom:'1px solid #eee'}}>
+            {[{
+              label:'Asentamiento Máx', val: `${(results.displacements?.w_max_mm||0).toFixed(2)} mm`, ok: true
+            },{
+              label:'Momento Mx Máx', val: `${(results.moments?.Mx_max_kNm_m||0).toFixed(2)} kN·m/m`, ok: true
+            },{
+              label:'Momento My Máx', val: `${(results.moments?.My_max_kNm_m||0).toFixed(2)} kN·m/m`, ok: true
+            },{
+              label:'Cortante Vu Máx', val: `${(results.shear?.Vu_max_kN_m||0).toFixed(1)} kN/m`, ok: results.shear?.shear_ok
+            },{
+              label:'φVc Cap.', val: `${(results.shear?.phiVc_kN_m||0).toFixed(1)} kN/m`, ok: results.shear?.shear_ok
+            },{
+              label:'Presión Suelo', val: results.soil_pressure ? `${results.soil_pressure.max_pressure_kN_m2.toFixed(1)} kN/m²` : '-', ok: results.soil_pressure?.ok
+            },{
+              label:'q_adm', val: results.soil_pressure ? `${results.soil_pressure.q_adm_kN_m2.toFixed(0)} kN/m²` : '-', ok: true
+            },{
+              label:'Acero Mínimo', val: `${(results.As_min_cm2_m||0).toFixed(2)} cm²/m`, ok: true
+            }].map((c, i) => (
+              <div key={i} style={{background:'#fff', borderRadius:'8px', padding:'12px', boxShadow:'0 1px 4px rgba(0,0,0,0.08)', borderLeft:`3px solid ${c.ok ? '#4caf50' : '#e53935'}`}}>
+                <div style={{fontSize:'10px', color:'#888', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'4px'}}>{c.label}</div>
+                <div style={{fontSize:'16px', fontWeight:'700', color: c.ok ? '#1a1a1a' : '#c62828'}}>{c.val}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Plano SVG */}
+          {results.svg_plan && (
+            <div style={{padding:'20px 24px', borderBottom:'1px solid #eee'}}>
+              <h4 style={{margin:'0 0 12px 0', color:'#333'}}>Plano Estructural</h4>
+              <div style={{background:'#fafafa', border:'1px solid #eee', borderRadius:'8px', padding:'12px', overflow:'auto'}} dangerouslySetInnerHTML={{__html: results.svg_plan}} />
+            </div>
+          )}
+
+          {/* Mapa de calor - solo descarga */}
+          {results.heatmap_base64 && (
+            <div style={{padding:'16px 24px', borderBottom:'1px solid #eee', display:'flex', alignItems:'center', gap:'16px', background:'#f0f4ff'}}>
+              <span style={{fontSize:'13px', color:'#555'}}>🌡️ <strong>Mapas de Calor FEM generados</strong> (Desplazamiento, Momentos Mx/My, Cortante, Acero As X/Y, Ratio Vu/φVc)</span>
+              <a
+                href={`data:image/png;base64,${results.heatmap_base64}`}
+                download={`mapas_calor_${projectName.replace(/\s+/g,'_')}.png`}
+                style={{background:'#3f51b5', color:'#fff', padding:'6px 14px', borderRadius:'6px', textDecoration:'none', fontSize:'12px', whiteSpace:'nowrap', flexShrink:0}}
+              >
+                ⬇️ Descargar PNG (8 paneles)
+              </a>
+            </div>
+          )}
+
+          {/* Tabla de Bandas */}
+          {results.bands && (
+            <div style={{padding:'20px 24px', overflowX:'auto'}}>
+              <h4 style={{margin:'0 0 12px 0', color:'#333'}}>Tabla de Armado de Bandas</h4>
+              <table className="coords-table" style={{minWidth:'720px', fontSize:'12px'}}>
+                <thead>
+                  <tr style={{background:'#1e1e2f', color:'#fff'}}>
+                    <th style={{color:'#fff'}}>Muro</th><th style={{color:'#fff'}}>Tipo</th>
+                    <th style={{color:'#fff'}}>Ancho Banda</th>
+                    <th style={{color:'#fff'}}>Mx (kN·m/m)</th><th style={{color:'#fff'}}>My (kN·m/m)</th>
+                    <th style={{color:'#fff'}}>Asx (cm²/m)</th><th style={{color:'#fff'}}>Asy (cm²/m)</th>
+                    <th style={{color:'#fff'}}>Prop. X</th><th style={{color:'#fff'}}>Prop. Y</th>
+                    <th style={{color:'#fff'}}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.bands.map((b, i) => {
+                    const px = b.bar_x?.diam_mm > 0 ? `Ø${b.bar_x.diam_mm}@${(b.bar_x.sep_m*100).toFixed(0)}cm` : 'Mínimo';
+                    const py = b.bar_y?.diam_mm > 0 ? `Ø${b.bar_y.diam_mm}@${(b.bar_y.sep_m*100).toFixed(0)}cm` : 'Mínimo';
+                    return (
+                      <tr key={i} style={{background: i % 2 === 0 ? '#fff' : '#f9f9f9'}}>
+                        <td>M{i+1}</td>
+                        <td><span style={{padding:'2px 6px', borderRadius:'3px', fontSize:'10px', background: b.type==='perimetral' ? '#ffebee' : '#e3f2fd', color: b.type==='perimetral' ? '#c62828' : '#1565c0'}}>{b.type==='perimetral' ? 'Perim.' : 'Interno'}</span></td>
+                        <td>{b.band_width.toFixed(2)} m</td>
+                        <td>{b.Mx_design_kNm_m.toFixed(2)}</td>
+                        <td>{b.My_design_kNm_m.toFixed(2)}</td>
+                        <td style={{fontWeight:'600'}}>{b.Asx_cm2_m.toFixed(2)}</td>
+                        <td style={{fontWeight:'600'}}>{b.Asy_cm2_m.toFixed(2)}</td>
+                        <td>{px}</td>
+                        <td>{py}</td>
+                        <td><span style={{color:'#2e7d32', fontWeight:'700'}}>✓</span></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div style={{padding:'12px 24px', borderTop:'1px solid #eee', display:'flex', justifyContent:'flex-end', gap:'8px', background:'#fafafa', borderRadius:'0 0 12px 12px'}}>
+            <button className="btn-secondary" onClick={downloadAuditJSON}>⬇️ JSON Auditoría MKS</button>
+            <button className="btn-secondary" onClick={downloadHTML} style={{background:'#e3f2fd', borderColor:'#90caf9'}}>📄 Plano HTML</button>
+            <button onClick={() => setShowResultsModal(false)} className="btn-success">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    )}
   );
 }
