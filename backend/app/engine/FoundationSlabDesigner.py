@@ -1499,6 +1499,12 @@ class FoundationSlabDesigner:
 
         # Estimar número de varillas de 6m (usando el diámetro base general)
         diam_base = general_slab_steel_x['diam_mm']
+        if self.custom_mesh_cm2_m > 0:
+            if self.custom_mesh_cm2_m == 0.61: diam_base = 3.43
+            elif self.custom_mesh_cm2_m in (1.41, 1.88): diam_base = 6.0
+            elif self.custom_mesh_cm2_m == 2.51: diam_base = 8.0
+            elif self.custom_mesh_cm2_m in (3.93, 5.24): diam_base = 10.0
+
         bar_vol_m3 = (np.pi * (diam_base / 1000.0)**2 / 4.0) * 6.0 if diam_base > 0 else 1e-6
         general_bars_6m = int(np.ceil(general_steel_vol_m3 / bar_vol_m3))
         bands_bars_6m = int(np.ceil(extra_steel_vol_m3 / bar_vol_m3))

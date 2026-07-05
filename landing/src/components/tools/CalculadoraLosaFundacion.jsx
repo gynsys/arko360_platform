@@ -403,8 +403,10 @@ export default function CalculadoraLosaFundacion() {
     let aberturasHtml = '';
     if (openings.length > 0) {
       openings.forEach((op, i) => {
-        const area = op.width * op.height;
-        aberturasHtml += `<li>Abertura ${i+1} (${op.type}): ${op.width.toFixed(2)}m (Ancho) × ${op.height.toFixed(2)}m (Alto) = -${area.toFixed(2)} m² (descontado de mampostería)</li>`;
+        const w_op = op.width || op.width_m || 0;
+        const h_op = op.height || op.height_m || 0;
+        const area = w_op * h_op;
+        aberturasHtml += `<li>Abertura ${i+1} (${op.type}): ${w_op.toFixed(2)}m (Ancho) × ${h_op.toFixed(2)}m (Alto) = -${area.toFixed(2)} m² (descontado de mampostería)</li>`;
       });
     } else {
       aberturasHtml = '<li>No se registraron puertas ni ventanas.</li>';
