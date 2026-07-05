@@ -121,17 +121,17 @@ const generarPresupuesto = (results, prices) => {
   }
 
   if (s.area_lisa_m2 > 0) {
-    const pasta_kg = s.area_lisa_m2 / 1.8;
-    const pasta_galones = Math.ceil(pasta_kg / 6.0); 
-
-    const pintura = Math.ceil(s.area_lisa_m2 / 10);
+    // Rendimiento Pasta: ~25 m2 por cuñete (4-5 galones)
+    const pasta_cunetes = Math.ceil(s.area_lisa_m2 / 25.0); 
+    // Rendimiento Pintura: ~20 m2 por galón (a dos manos)
+    const pintura_galones = Math.ceil(s.area_lisa_m2 / 20.0);
     const lija = Math.ceil(s.area_lisa_m2 / 10);
     const polvillo = +(s.area_lisa_m2 / 100).toFixed(2);
 
     items.push({ chapter: 'Mampostería', material: 'Polvillo (Acabado liso)', unit: 'm³', qty: polvillo, pu: p.polvillo, total: polvillo * p.polvillo });
     items.push({ chapter: 'Mampostería', material: 'Lija', unit: 'hojas', qty: lija, pu: p.lija, total: lija * p.lija });
-    items.push({ chapter: 'Mampostería', material: 'Pasta Profesional', unit: 'galones', qty: pasta_galones, pu: p.pasta, total: pasta_galones * p.pasta });
-    items.push({ chapter: 'Mampostería', material: 'Pintura', unit: 'galones', qty: pintura, pu: p.pintura, total: pintura * p.pintura });
+    items.push({ chapter: 'Mampostería', material: 'Pasta Profesional', unit: 'cuñetes', qty: pasta_cunetes, pu: p.pasta, total: pasta_cunetes * p.pasta });
+    items.push({ chapter: 'Mampostería', material: 'Pintura', unit: 'galones', qty: pintura_galones, pu: p.pintura, total: pintura_galones * p.pintura });
   }
   
   return items;
@@ -442,9 +442,14 @@ export default function CalculadoraLosaFundacion() {
     <h2>3. Acabados y Pintura (Solo interior)</h2>
     <p><strong>Pasta Profesional:</strong></p>
     <div class="formula">
-      Rendimiento: 1.8 m² por kg. (Un galón rinde ~6 kg).<br>
-      Pasta (kg) = Área Lisa (${s.area_lisa_m2.toFixed(2)} m²) / 1.8 = ${(s.area_lisa_m2 / 1.8).toFixed(2)} kg<br>
-      Galones requeridos = Math.ceil(kg / 6) = ${Math.ceil(s.area_lisa_m2 / 1.8 / 6.0)} galones
+      Rendimiento: 1 cuñete (4-5 galones) rinde ~25 m².<br>
+      Cuñetes requeridos = Área Lisa (${s.area_lisa_m2.toFixed(2)} m²) / 25 = Math.ceil(${s.area_lisa_m2 / 25.0}) = ${Math.ceil(s.area_lisa_m2 / 25.0)} cuñetes
+    </div>
+    
+    <p><strong>Pintura:</strong></p>
+    <div class="formula">
+      Rendimiento: 1 galón rinde ~20 m² a dos manos.<br>
+      Galones requeridos = Área Lisa (${s.area_lisa_m2.toFixed(2)} m²) / 20 = Math.ceil(${s.area_lisa_m2 / 20.0}) = ${Math.ceil(s.area_lisa_m2 / 20.0)} galones
     </div>
   </div>
   
