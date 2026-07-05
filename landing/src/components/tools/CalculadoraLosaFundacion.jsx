@@ -669,6 +669,7 @@ export default function CalculadoraLosaFundacion() {
   };
 
   return (
+    <>
     <div className="calc-losa-container">
       {/* MODAL PARA ABRIR PROYECTO */}
       {showSaveAsModal && (
@@ -1219,5 +1220,6 @@ export default function CalculadoraLosaFundacion() {
         </div>
       </div>
     )}
+    </>
   );
 }
