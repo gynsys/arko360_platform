@@ -370,6 +370,31 @@ export default function CalculadoraLosaFundacion() {
     const s = mc.superstructure;
     const area_total = s.area_lisa_m2 + s.area_rustica_m2;
     
+    let murosHtml = '';
+    const h = wallHeight || 2.70;
+    
+    // Perimetrales
+    results.walls.forEach((w, i) => {
+      const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
+      murosHtml += `<li>Muro Perimetral ${i+1}: ${len.toFixed(2)}m (L) × ${h.toFixed(2)}m (H) = ${(len * h).toFixed(2)} m² (x 2 caras = ${(len * h * 2).toFixed(2)} m²)</li>`;
+    });
+    
+    // Internos
+    internalWalls.forEach((w, i) => {
+      const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
+      murosHtml += `<li>Muro Interno ${i+1}: ${len.toFixed(2)}m (L) × ${h.toFixed(2)}m (H) = ${(len * h).toFixed(2)} m² (x 2 caras = ${(len * h * 2).toFixed(2)} m²)</li>`;
+    });
+
+    let aberturasHtml = '';
+    if (openings.length > 0) {
+      openings.forEach((op, i) => {
+        const area = op.width * op.height;
+        aberturasHtml += `<li>Abertura ${i+1} (${op.type}): ${op.width.toFixed(2)}m (Ancho) × ${op.height.toFixed(2)}m (Alto) = -${area.toFixed(2)} m² (descontado de mampostería)</li>`;
+      });
+    } else {
+      aberturasHtml = '<li>No se registraron puertas ni ventanas.</li>';
+    }
+
     const htmlContent = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -380,6 +405,8 @@ export default function CalculadoraLosaFundacion() {
     h1, h2, h3 { color: #1e1e2f; }
     .card { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
     .formula { background: #e3f2fd; padding: 12px; border-left: 4px solid #1976d2; font-family: monospace; font-size: 14px; margin: 10px 0; color: #0d47a1; }
+    ul { margin: 10px 0; padding-left: 20px; }
+    li { margin-bottom: 5px; }
   </style>
 </head>
 <body>
@@ -410,7 +437,19 @@ export default function CalculadoraLosaFundacion() {
   
   <div class="card">
     <h2>2. Superestructura (Mampostería)</h2>
-    <p><strong>Área Total de Muros a Frisar:</strong><br>
+    <p><strong>Desglose de Áreas por Pared (Altura base: ${h.toFixed(2)}m):</strong></p>
+    <div class="formula" style="background: #fff3e0; border-left-color: #ff9800; color: #e65100;">
+      <ul>
+        ${murosHtml}
+      </ul>
+      <hr style="border:0; border-top:1px solid #ffe0b2; margin: 10px 0;">
+      <strong>Descuento por Aberturas (Áreas Negativas):</strong>
+      <ul>
+        ${aberturasHtml}
+      </ul>
+    </div>
+
+    <p><strong>Área Neta Total de Muros a Frisar:</strong><br>
     Se considera 1 cara exterior y 1 interior para muros perimetrales, y 2 caras interiores para muros internos. A esta área bruta se le resta el área de las puertas y ventanas dibujadas.</p>
     <div class="formula">
       Área Lisa (Interna) = ${s.area_lisa_m2.toFixed(2)} m²<br>
