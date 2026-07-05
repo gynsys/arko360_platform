@@ -43,10 +43,11 @@ export default function CalculadoraLosaFundacion() {
   
   // Parámetros de Diseño Técnico
   const [designParams, setDesignParams] = useState({
-    fc: 25,
-    fy: 420,
-    q_adm: 150, // kN/m2 (~1.5 kg/cm2)
-    is_plastered: false // Friso global
+    fc: 250, // kgf/cm² (antes 25 MPa)
+    fy: 4200, // kgf/cm² (antes 420 MPa)
+    q_adm: 1.5, // kgf/cm² (antes 150 kN/m²)
+    is_plastered: false, // Friso global
+    band_width_m: 0 // 0 = Auto calculado en backend
   });
   
   // Guardado y Carga de Base de Datos
@@ -312,9 +313,15 @@ export default function CalculadoraLosaFundacion() {
     project: projectName,
     geometry: { Lx: params.Lx, Ly: params.Ly, h: params.h / 100 },
     materials: {
-      f_c: designParams.fc, f_y: designParams.fy, cover: 0.05, bar_diam: 0.012,
-      gamma_horm: 2400, E: 4700 * Math.sqrt(designParams.fc) * 1e6, nu: 0.2, k: 20e6,
-      q_adm: designParams.q_adm * 1000
+      f_c_kgcm2: designParams.fc,
+      f_c: designParams.fc / 10.197, // Convertir a MPa
+      f_y: designParams.fy / 10.197, // Convertir a MPa
+      cover: 0.05, bar_diam: 0.012,
+      gamma_horm: 2400, 
+      E: 4700 * Math.sqrt(designParams.fc / 10.197) * 1e6, 
+      nu: 0.2, k: 20e6,
+      q_adm: designParams.q_adm * 98066.5, // kgf/cm² a Pa
+      band_width_m: designParams.band_width_m > 0 ? designParams.band_width_m : 0
     },
     walls: allWalls.map(w => ({
       x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
@@ -392,7 +399,13 @@ export default function CalculadoraLosaFundacion() {
     const inp = run.inputs;
     if (inp) {
       if (inp.geometry) setParams(prev => ({ ...prev, Lx: inp.geometry.Lx, Ly: inp.geometry.Ly, h: inp.geometry.h * 100 }));
-      if (inp.materials) setDesignParams(prev => ({ ...prev, fc: inp.materials.f_c, fy: inp.materials.f_y, q_adm: inp.materials.q_adm / 1000 }));
+      if (inp.materials) {
+        const fc_kgcm2 = inp.materials.f_c_kgcm2 || +(inp.materials.f_c * 10.197).toFixed(0);
+        const fy_kgcm2 = +(inp.materials.f_y * 10.197).toFixed(0);
+        const q_adm_kgcm2 = +(inp.materials.q_adm / 98066.5).toFixed(2);
+        const bw = inp.materials.band_width_m || 0;
+        setDesignParams(prev => ({ ...prev, fc: fc_kgcm2, fy: fy_kgcm2, q_adm: q_adm_kgcm2, band_width_m: bw }));
+      }
       if (inp.walls) {
         const manualWalls = inp.walls.map((w, idx) => ({
           id: `db_${idx}`,
@@ -806,9 +819,10 @@ export default function CalculadoraLosaFundacion() {
             <div className="params-grid">
               <div className="param-item"><label>Offset / Retiro (m):</label><input type="number" step="0.05" value={offset} onChange={e => setOffset(e.target.value)} /></div>
               <div className="param-item"><label>Alto Muros (m):</label><input type="number" step="0.1" value={wallHeight} onChange={e => setWallHeight(e.target.value)} /></div>
-              <div className="param-item"><label>f'c Concreto (MPa):</label><input type="number" step="1" value={designParams.fc} onChange={e => handleDesignParamChange('fc', parseFloat(e.target.value))} /></div>
-              <div className="param-item"><label>fy Acero (MPa):</label><input type="number" step="10" value={designParams.fy} onChange={e => handleDesignParamChange('fy', parseFloat(e.target.value))} /></div>
-              <div className="param-item"><label>Cap. Portante (kN/m²):</label><input type="number" step="10" value={designParams.q_adm} onChange={e => handleDesignParamChange('q_adm', parseFloat(e.target.value))} title="150 kN/m2 es aprox 1.5 kg/cm2" /></div>
+              <div className="param-item"><label>f'c Concreto (kgf/cm²):</label><input type="number" step="10" value={designParams.fc} onChange={e => handleDesignParamChange('fc', parseFloat(e.target.value))} /></div>
+              <div className="param-item"><label>fy Acero (kgf/cm²):</label><input type="number" step="100" value={designParams.fy} onChange={e => handleDesignParamChange('fy', parseFloat(e.target.value))} /></div>
+              <div className="param-item"><label>Cap. Portante (kgf/cm²):</label><input type="number" step="0.1" value={designParams.q_adm} onChange={e => handleDesignParamChange('q_adm', parseFloat(e.target.value))} title="1.5 kgf/cm² = 15000 kgf/m²" /></div>
+              <div className="param-item"><label>Ancho Banda (m):</label><input type="number" step="0.05" value={designParams.band_width_m} onChange={e => handleDesignParamChange('band_width_m', parseFloat(e.target.value))} title="0 = Auto (Calculado min)" /></div>
             </div>
             
             <div className="param-item" style={{ marginTop: '10px' }}>
@@ -1169,6 +1183,30 @@ export default function CalculadoraLosaFundacion() {
               >
                 ⬇️ Descargar PNG (8 paneles)
               </a>
+            </div>
+          )}
+
+          {/* Cantidades de Obra */}
+          {results.materials_computation && (
+            <div style={{padding:'20px 24px', borderBottom:'1px solid #eee', background:'#f5f7fa'}}>
+              <h4 style={{margin:'0 0 12px 0', color:'#333'}}>🏗️ Cómputos Métricos (Cantidades Estimadas)</h4>
+              <div style={{display:'flex', gap:'20px'}}>
+                <div style={{flex:1, background:'#fff', padding:'12px', borderRadius:'8px', border:'1px solid #e0e0e0'}}>
+                  <strong>Volumen de Concreto:</strong>
+                  <div style={{fontSize:'20px', color:'#1565c0', fontWeight:'bold'}}>{results.materials_computation.concrete_vol_m3.toFixed(2)} m³</div>
+                  <div style={{fontSize:'12px', color:'#777'}}>Área neta x Espesor de Losa</div>
+                </div>
+                <div style={{flex:1, background:'#fff', padding:'12px', borderRadius:'8px', border:'1px solid #e0e0e0'}}>
+                  <strong>Acero General Losa (Mínimo):</strong>
+                  <div style={{fontSize:'14px', color:'#c62828', fontWeight:'bold'}}>{results.materials_computation.general_slab_steel.bar_x} en X, {results.materials_computation.general_slab_steel.bar_y} en Y</div>
+                  <div style={{fontSize:'12px', color:'#777'}}>Peso total estimado general: {results.materials_computation.steel_weight_general_kg.toFixed(0)} kg</div>
+                </div>
+                <div style={{flex:1, background:'#fff', padding:'12px', borderRadius:'8px', border:'1px solid #e0e0e0'}}>
+                  <strong>Acero de Bandas (Refuerzo):</strong>
+                  <div style={{fontSize:'12px', color:'#777'}}>Peso adicional en bandas: {results.materials_computation.steel_weight_bands_kg.toFixed(0)} kg</div>
+                  <div style={{fontSize:'14px', color:'#2e7d32', fontWeight:'bold'}}>Total Acero: {(results.materials_computation.steel_weight_general_kg + results.materials_computation.steel_weight_bands_kg).toFixed(0)} kg</div>
+                </div>
+              </div>
             </div>
           )}
 

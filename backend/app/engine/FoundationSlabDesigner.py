@@ -69,7 +69,7 @@ class FoundationSlabDesigner:
     def __init__(self, Lx, Ly, h, E, nu, k, f_c, f_y, cover, bar_diam,
                  gamma_horm=2400, include_self_weight=True, lambda_aci=1.0,
                  band_width_factor=1.0, max_settlement_ratio=500.0,
-                 bar_diameters_mm=None, q_adm=150000.0):
+                 bar_diameters_mm=None, q_adm=150000.0, band_width_m=0.0):
         """
         Parameters
         ----------
@@ -97,6 +97,7 @@ class FoundationSlabDesigner:
         self.band_width_factor = band_width_factor
         self.max_settlement_ratio = max_settlement_ratio
         self.q_adm = q_adm
+        self.band_width_m = band_width_m
 
         self.G = E / (2 * (1 + nu))
         self.d_eff = h - cover - bar_diam / 2
@@ -148,9 +149,12 @@ class FoundationSlabDesigner:
         plaster_kg_m2 = 80 if is_plastered else 0
         q_lineal = (thickness * material_density + plaster_kg_m2) * height * 9.81 * load_factor
 
-        # Ancho de banda de refuerzo: espesor + 2*h (o 2*d_ef), mínimo 1.0 m
-        base_band = max(thickness + 2 * self.h, 1.0)
-        band_width = base_band * self.band_width_factor
+        # Ancho de banda de refuerzo: espesor + 2*d_eff, mínimo racional ~0.33m
+        base_band = max(thickness + 2 * self.d_eff, 0.33)
+        if hasattr(self, 'band_width_m') and self.band_width_m > 0:
+            band_width = max(self.band_width_m, base_band)
+        else:
+            band_width = base_band * self.band_width_factor
 
         self.walls.append(Wall(
             x1=x1, y1=y1, x2=x2, y2=y2,
@@ -1394,7 +1398,7 @@ class FoundationSlabDesigner:
                             
                             lx = hx + vx * w_px
                             ly = hy + vy * w_px
-                            sweep = 1 if is_left else 0
+                            sweep = 0 if is_left else 1
 
                             # Borrar muro
                             svg_parts.append(f'<line x1="{ox1:.1f}" y1="{oy1:.1f}" x2="{ox2:.1f}" y2="{oy2:.1f}" stroke="#fafafa" stroke-width="{thickPx+2:.1f}" stroke-linecap="butt"/>')
@@ -1449,6 +1453,22 @@ class FoundationSlabDesigner:
         self.check_differential_settlements()
         self.check_punching()
         
+        As_min_cm2 = float(self.rho_min * 1.0 * self.h * 1e4)
+        general_slab_steel_x = self._propose_bars(As_min_cm2)
+        general_slab_steel_y = self._propose_bars(As_min_cm2)
+        
+        concrete_vol_m3 = float(self.Lx * self.Ly * self.h)
+        
+        # Acero general de losa (ambas direcciones)
+        general_steel_vol_m3 = 2 * (As_min_cm2 / 10000) * self.Lx * self.Ly
+        steel_weight_general_kg = float(general_steel_vol_m3 * 7850)
+        
+        # Acero total real computado en la malla (cm2/m -> m2/m * area)
+        total_steel_vol_m3 = np.sum((self.Asx / 10000) + (self.Asy / 10000)) * self.dx * self.dy
+        steel_weight_total_kg = float(total_steel_vol_m3 * 7850)
+        
+        steel_weight_bands_kg = max(0.0, float(steel_weight_total_kg - steel_weight_general_kg))
+
         return {
             "displacements": {
                 "w_max_mm": float(np.max(np.abs(self.w)) * 1000)
@@ -1468,10 +1488,19 @@ class FoundationSlabDesigner:
                 "ok": bool(np.max(np.abs(self.w) * self.k) <= self.q_adm)
             },
             "bands": self.band_data,
-            "As_min_cm2_m": float(self.rho_min * 1.0 * self.h * 1e4),
+            "As_min_cm2_m": As_min_cm2,
             "settlements": self.settlement_data,
             "svg_plan": self.get_svg_plan(),
-            "heatmap_base64": self.get_heatmap_base64()
+            "heatmap_base64": self.get_heatmap_base64(),
+            "materials_computation": {
+                "concrete_vol_m3": concrete_vol_m3,
+                "general_slab_steel": {
+                    "bar_x": f"Ø{general_slab_steel_x['diam_mm']}@{int(general_slab_steel_x['sep_m']*100)}cm",
+                    "bar_y": f"Ø{general_slab_steel_y['diam_mm']}@{int(general_slab_steel_y['sep_m']*100)}cm"
+                },
+                "steel_weight_general_kg": steel_weight_general_kg,
+                "steel_weight_bands_kg": steel_weight_bands_kg
+            }
         }
 
 if __name__ == "__main__":

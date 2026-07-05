@@ -95,7 +95,9 @@ def analyze_slab(data: SlabModelInput):
             cover=mat.cover, bar_diam=mat.bar_diam,
             gamma_horm=mat.gamma_horm, include_self_weight=True, lambda_aci=1.0,
             band_width_factor=data.band_width_factor,
-            max_settlement_ratio=data.max_settlement_ratio
+            max_settlement_ratio=data.max_settlement_ratio,
+            q_adm=mat.q_adm,
+            band_width_m=mat.band_width_m
         )
         gr.set_mesh(nx=data.mesh_nx, ny=data.mesh_ny)
 

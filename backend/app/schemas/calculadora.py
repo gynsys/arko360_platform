@@ -86,6 +86,7 @@ class MaterialsInput(BaseModel):
     nu: float = 0.2
     k: float = 20e6
     q_adm: float = 150000.0  # Capacidad portante N/m2 (default 1.5 kg/cm2)
+    band_width_m: float = 0.0
 
 class SlabModelInput(BaseModel):
     project: str = "Losa de Cimentación"
