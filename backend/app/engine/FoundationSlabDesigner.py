@@ -1507,7 +1507,7 @@ class FoundationSlabDesigner:
         longitud_perimetral_m = 0.0
         
         for w in self.walls:
-            op_area = sum(op.get('width', 0) * op.get('height', 0) for op in w.openings) if w.openings else 0
+            op_area = sum(op.get('width_m', 0) * op.get('height_m', 0) for op in w.openings) if w.openings else 0
             net_area = max(0, w.length * w.height - op_area)
             
             if abs(w.thickness - 0.15) < 0.01:
