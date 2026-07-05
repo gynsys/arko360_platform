@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import './CalculadoraLosaFundacion.css';
-import { DoorOpen, AppWindow, Undo2, Redo2, LogIn, LogOut } from 'lucide-react';
+import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut } from 'lucide-react';
 
 // ============================================
 // FOUNDATION SLAB EDITOR - HIBRIDO v2
@@ -52,16 +52,19 @@ const generarPresupuesto = (results) => {
 
   const items = [];
 
-  // Concreto Losa + Vigas (volumen total)
-  const vol_concreto = m.concrete_vol_m3 + s.vol_vigas_corona_m3;
-  const cemento = Math.ceil(vol_concreto * 8.3);
-  items.push({ material: 'Cemento Portland', unit: 'sacos', qty: cemento, pu: PRECIOS.cemento, total: cemento * PRECIOS.cemento });
-  
-  const arena = +(vol_concreto * 0.70).toFixed(2);
-  items.push({ material: 'Arena Lavada (Losa+Vigas)', unit: 'm³', qty: arena, pu: PRECIOS.arena, total: arena * PRECIOS.arena });
+  // Separar losa y mampostería (viga corona)
+  const vol_losa = m.concrete_vol_m3;
+  const vol_viga = s.vol_vigas_corona_m3;
 
-  const piedra = +(vol_concreto * 0.70).toFixed(2);
-  items.push({ material: 'Piedra picada (Losa+Vigas)', unit: 'm³', qty: piedra, pu: PRECIOS.piedra, total: piedra * PRECIOS.piedra });
+  // ==== CAPÍTULO: LOSA DE FUNDACIÓN ====
+  const cemento_losa = Math.ceil(vol_losa * 6.7);
+  items.push({ chapter: 'Losa de Fundación', material: 'Cemento Portland (Losa)', unit: 'sacos', qty: cemento_losa, pu: PRECIOS.cemento, total: cemento_losa * PRECIOS.cemento });
+  
+  const arena_losa = +(vol_losa * 0.63).toFixed(2);
+  items.push({ chapter: 'Losa de Fundación', material: 'Arena Lavada (Losa)', unit: 'm³', qty: arena_losa, pu: PRECIOS.arena, total: arena_losa * PRECIOS.arena });
+
+  const piedra_losa = +(vol_losa * 0.60).toFixed(2);
+  items.push({ chapter: 'Losa de Fundación', material: 'Piedra picada (Losa)', unit: 'm³', qty: piedra_losa, pu: PRECIOS.piedra, total: piedra_losa * PRECIOS.piedra });
 
   // Acero Losa y Bandas
   const diam_base = m.diam_base_mm || 10;
@@ -70,24 +73,34 @@ const generarPresupuesto = (results) => {
   else if (diam_base > 10) precio_cabilla = 7.36 * Math.pow(diam_base / 10, 2);
 
   const total_cabillas_losa = m.total_bars_6m;
-  items.push({ material: `Cabilla de ${diam_base} mm (Losa)`, unit: 'und', qty: total_cabillas_losa, pu: precio_cabilla, total: total_cabillas_losa * precio_cabilla });
+  items.push({ chapter: 'Losa de Fundación', material: `Cabilla de ${diam_base} mm (Losa)`, unit: 'und', qty: total_cabillas_losa, pu: precio_cabilla, total: total_cabillas_losa * precio_cabilla });
+
+  // ==== CAPÍTULO: MAMPOSTERÍA ====
+  if (vol_viga > 0) {
+    const cemento_viga = Math.ceil(vol_viga * 6.7);
+    const arena_viga = +(vol_viga * 0.63).toFixed(2);
+    const piedra_viga = +(vol_viga * 0.60).toFixed(2);
+    items.push({ chapter: 'Mampostería', material: 'Cemento Portland (Viga Corona)', unit: 'sacos', qty: cemento_viga, pu: PRECIOS.cemento, total: cemento_viga * PRECIOS.cemento });
+    items.push({ chapter: 'Mampostería', material: 'Arena Lavada (Viga Corona)', unit: 'm³', qty: arena_viga, pu: PRECIOS.arena, total: arena_viga * PRECIOS.arena });
+    items.push({ chapter: 'Mampostería', material: 'Piedra picada (Viga Corona)', unit: 'm³', qty: piedra_viga, pu: PRECIOS.piedra, total: piedra_viga * PRECIOS.piedra });
+  }
 
   // Acero Viga Corona
   if (s.corona_10mm_bars > 0) {
-    items.push({ material: 'Cabilla de 10 mm (Viga Corona)', unit: 'und', qty: s.corona_10mm_bars, pu: PRECIOS.cabilla_10, total: s.corona_10mm_bars * PRECIOS.cabilla_10 });
+    items.push({ chapter: 'Mampostería', material: 'Cabilla de 10 mm (Viga Corona)', unit: 'und', qty: s.corona_10mm_bars, pu: PRECIOS.cabilla_10, total: s.corona_10mm_bars * PRECIOS.cabilla_10 });
   }
   if (s.corona_5_2mm_bars > 0) {
-    items.push({ material: 'Cabilla de 5.2 mm (Estribos)', unit: 'und', qty: s.corona_5_2mm_bars, pu: PRECIOS.cabilla_5_2, total: s.corona_5_2mm_bars * PRECIOS.cabilla_5_2 });
+    items.push({ chapter: 'Mampostería', material: 'Cabilla de 5.2 mm (Estribos)', unit: 'und', qty: s.corona_5_2mm_bars, pu: PRECIOS.cabilla_5_2, total: s.corona_5_2mm_bars * PRECIOS.cabilla_5_2 });
   }
 
   // Bloques
   if (s.bloques_15_m2 > 0) {
     const qty = Math.ceil(s.bloques_15_m2 * 12.5);
-    items.push({ material: 'Bloque arcilla (15cm)', unit: 'und', qty, pu: PRECIOS.bloque_15, total: qty * PRECIOS.bloque_15 });
+    items.push({ chapter: 'Mampostería', material: 'Bloque arcilla (15cm)', unit: 'und', qty, pu: PRECIOS.bloque_15, total: qty * PRECIOS.bloque_15 });
   }
   if (s.bloques_12_m2 > 0) {
     const qty = Math.ceil(s.bloques_12_m2 * 12.5);
-    items.push({ material: 'Bloque arcilla (12cm)', unit: 'und', qty, pu: PRECIOS.bloque_12, total: qty * PRECIOS.bloque_12 });
+    items.push({ chapter: 'Mampostería', material: 'Bloque arcilla (12cm)', unit: 'und', qty, pu: PRECIOS.bloque_12, total: qty * PRECIOS.bloque_12 });
   }
 
   // Acabados
@@ -98,24 +111,22 @@ const generarPresupuesto = (results) => {
   const arena_friso = +(vol_friso * 1.0).toFixed(2);
   
   if (cemento_friso > 0) {
-    items.push({ material: 'Cemento Portland (Friso)', unit: 'sacos', qty: cemento_friso, pu: PRECIOS.cemento, total: cemento_friso * PRECIOS.cemento });
-    items.push({ material: 'Arena Lavada (Friso)', unit: 'm³', qty: arena_friso, pu: PRECIOS.arena, total: arena_friso * PRECIOS.arena });
+    items.push({ chapter: 'Mampostería', material: 'Cemento Portland (Friso)', unit: 'sacos', qty: cemento_friso, pu: PRECIOS.cemento, total: cemento_friso * PRECIOS.cemento });
+    items.push({ chapter: 'Mampostería', material: 'Arena Lavada (Friso)', unit: 'm³', qty: arena_friso, pu: PRECIOS.arena, total: arena_friso * PRECIOS.arena });
   }
 
   if (s.area_lisa_m2 > 0) {
-    // Rendimiento Pasta: 1 Kg por 1.8 m2
     const pasta_kg = s.area_lisa_m2 / 1.8;
-    // Asumiendo que 1 galón de pasta pesa aprox 6 Kg
     const pasta_galones = Math.ceil(pasta_kg / 6.0); 
 
     const pintura = Math.ceil(s.area_lisa_m2 / 10);
     const lija = Math.ceil(s.area_lisa_m2 / 10);
     const polvillo = +(s.area_lisa_m2 / 100).toFixed(2);
 
-    items.push({ material: 'Polvillo (Acabado liso)', unit: 'm³', qty: polvillo, pu: PRECIOS.polvillo, total: polvillo * PRECIOS.polvillo });
-    items.push({ material: 'Lija', unit: 'hojas', qty: lija, pu: PRECIOS.lija, total: lija * PRECIOS.lija });
-    items.push({ material: 'Pasta Profesional', unit: 'galones', qty: pasta_galones, pu: PRECIOS.pasta, total: pasta_galones * PRECIOS.pasta });
-    items.push({ material: 'Pintura', unit: 'galones', qty: pintura, pu: PRECIOS.pintura, total: pintura * PRECIOS.pintura });
+    items.push({ chapter: 'Mampostería', material: 'Polvillo (Acabado liso)', unit: 'm³', qty: polvillo, pu: PRECIOS.polvillo, total: polvillo * PRECIOS.polvillo });
+    items.push({ chapter: 'Mampostería', material: 'Lija', unit: 'hojas', qty: lija, pu: PRECIOS.lija, total: lija * PRECIOS.lija });
+    items.push({ chapter: 'Mampostería', material: 'Pasta Profesional', unit: 'galones', qty: pasta_galones, pu: PRECIOS.pasta, total: pasta_galones * PRECIOS.pasta });
+    items.push({ chapter: 'Mampostería', material: 'Pintura', unit: 'galones', qty: pintura, pu: PRECIOS.pintura, total: pintura * PRECIOS.pintura });
   }
   
   return items;
@@ -216,7 +227,15 @@ export default function CalculadoraLosaFundacion() {
     doc.setFontSize(11);
     doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 30);
     
-    const tableData = presupuesto.map(p => [p.material, p.unit, p.qty, `$${p.pu.toFixed(2)}`, `$${p.total.toFixed(2)}`]);
+    const tableData = [];
+    ['Losa de Fundación', 'Mampostería'].forEach(chap => {
+      const items = presupuesto.filter(p => p.chapter === chap);
+      if (items.length > 0) {
+        const sub = items.reduce((a, b) => a + b.total, 0);
+        tableData.push([{ content: chap, colSpan: 4, styles: { fillColor: [227, 242, 253], textColor: [13, 71, 161], fontStyle: 'bold' } }, { content: `$${sub.toFixed(2)}`, styles: { fillColor: [227, 242, 253], textColor: [13, 71, 161], fontStyle: 'bold' } }]);
+        items.forEach(p => tableData.push([`  ${p.material}`, p.unit, p.qty, `$${p.pu.toFixed(2)}`, `$${p.total.toFixed(2)}`]));
+      }
+    });
     
     doc.autoTable({
       startY: 35,
@@ -1457,15 +1476,28 @@ export default function CalculadoraLosaFundacion() {
                   </tr>
                 </thead>
                 <tbody>
-                  {presupuesto.map((p, i) => (
-                    <tr key={i} style={{background: i % 2 === 0 ? '#f9f9f9' : '#fff'}}>
-                      <td style={{textAlign:'left', fontWeight:'500'}}>{p.material}</td>
-                      <td>{p.unit}</td>
-                      <td>{p.qty}</td>
-                      <td>{p.pu.toFixed(2)}</td>
-                      <td style={{textAlign:'right', fontWeight:'bold', color:'#2e7d32'}}>{p.total.toFixed(2)}</td>
-                    </tr>
-                  ))}
+                  {['Losa de Fundación', 'Mampostería'].map((chap) => {
+                    const items = presupuesto.filter(p => p.chapter === chap);
+                    if (items.length === 0) return null;
+                    const subtotal = items.reduce((acc, it) => acc + it.total, 0);
+                    return (
+                      <React.Fragment key={chap}>
+                        <tr style={{background:'#e3f2fd'}}>
+                          <td colSpan="4" style={{fontWeight:'bold', color:'#0d47a1'}}>{chap}</td>
+                          <td style={{textAlign:'right', fontWeight:'bold', color:'#0d47a1'}}>${subtotal.toFixed(2)}</td>
+                        </tr>
+                        {items.map((p, i) => (
+                          <tr key={`${chap}-${i}`} style={{background: i % 2 === 0 ? '#f9f9f9' : '#fff'}}>
+                            <td style={{textAlign:'left', fontWeight:'500', paddingLeft:'24px'}}>{p.material}</td>
+                            <td>{p.unit}</td>
+                            <td>{p.qty}</td>
+                            <td>{p.pu.toFixed(2)}</td>
+                            <td style={{textAlign:'right', fontWeight:'500'}}>${p.total.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr style={{background:'#eeeeee'}}>
