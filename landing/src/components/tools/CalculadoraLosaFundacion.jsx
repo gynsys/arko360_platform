@@ -56,11 +56,11 @@ const generarPresupuesto = (results) => {
   const cemento = Math.ceil(vol_concreto * 8.3);
   items.push({ material: 'Cemento Portland', unit: 'sacos', qty: cemento, pu: PRECIOS.cemento, total: cemento * PRECIOS.cemento });
   
-  const arena = +(vol_concreto * 0.55).toFixed(2);
-  items.push({ material: 'Arena Lavada', unit: 'm³', qty: arena, pu: PRECIOS.arena, total: arena * PRECIOS.arena });
+  const arena = +(vol_concreto * 0.70).toFixed(2);
+  items.push({ material: 'Arena Lavada (Losa+Vigas)', unit: 'm³', qty: arena, pu: PRECIOS.arena, total: arena * PRECIOS.arena });
 
-  const piedra = +(vol_concreto * 0.84).toFixed(2);
-  items.push({ material: 'Piedra picada', unit: 'm³', qty: piedra, pu: PRECIOS.piedra, total: piedra * PRECIOS.piedra });
+  const piedra = +(vol_concreto * 0.70).toFixed(2);
+  items.push({ material: 'Piedra picada (Losa+Vigas)', unit: 'm³', qty: piedra, pu: PRECIOS.piedra, total: piedra * PRECIOS.piedra });
 
   // Acero Losa y Bandas
   const diam_base = m.diam_base_mm || 10;
@@ -102,14 +102,19 @@ const generarPresupuesto = (results) => {
   }
 
   if (s.area_lisa_m2 > 0) {
-    const pasta = Math.ceil(s.area_lisa_m2 / 10);
+    // Rendimiento Pasta: 1 Kg por 1.8 m2
+    const pasta_kg = Math.ceil(s.area_lisa_m2 / 1.8);
+    // Asumiendo que el precio (17.48) era por cuñete de ~20kg o galón de ~5.5kg.
+    // Lo dejamos expresado por Kg para que sea exacto (17.48 / 20 kg = ~0.87 $/kg, o lo ajustas después)
+    const precio_pasta_kg = +(PRECIOS.pasta / 20).toFixed(2); 
+
     const pintura = Math.ceil(s.area_lisa_m2 / 10);
     const lija = Math.ceil(s.area_lisa_m2 / 10);
     const polvillo = +(s.area_lisa_m2 / 100).toFixed(2);
 
     items.push({ material: 'Polvillo (Acabado liso)', unit: 'm³', qty: polvillo, pu: PRECIOS.polvillo, total: polvillo * PRECIOS.polvillo });
     items.push({ material: 'Lija', unit: 'hojas', qty: lija, pu: PRECIOS.lija, total: lija * PRECIOS.lija });
-    items.push({ material: 'Pasta Profesional', unit: 'galones', qty: pasta, pu: PRECIOS.pasta, total: pasta * PRECIOS.pasta });
+    items.push({ material: 'Pasta Profesional', unit: 'kg', qty: pasta_kg, pu: precio_pasta_kg, total: pasta_kg * precio_pasta_kg });
     items.push({ material: 'Pintura', unit: 'galones', qty: pintura, pu: PRECIOS.pintura, total: pintura * PRECIOS.pintura });
   }
   
