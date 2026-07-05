@@ -463,6 +463,16 @@ export default function CalculadoraLosaFundacion() {
   const handleParamChange = (field, value) => setParams(prev => ({ ...prev, [field]: parseFloat(value) || 0 }));
   const handleDesignParamChange = (field, value) => setDesignParams(prev => ({ ...prev, [field]: value }));
 
+  const handleShapeChange = (newShape) => {
+    saveHistory();
+    setShape(newShape);
+    if (newShape !== 'libre') {
+      // Limpiar muros perimetrales que se habían vuelto manuales al salir del modo libre
+      setInternalWalls(prev => prev.filter(w => typeof w.id !== 'string' || !w.id.startsWith('man_')));
+      setOpenings(prev => prev.filter(op => typeof op.wall_id !== 'string' || !op.wall_id.startsWith('man_')));
+    }
+  };
+
   const addInternalWall = (w) => {
     saveHistory();
     setInternalWalls(prev => [...prev, { id: Date.now(), type: 'interno', x1: w.x1 || 0, y1: w.y1 || 0, x2: w.x2 || 1, y2: w.y2 || 1 }]);
@@ -1075,7 +1085,7 @@ export default function CalculadoraLosaFundacion() {
                 <button 
                   key={s.id} 
                   className={`shape-btn ${shape === s.id ? 'active' : ''}`}
-                  onClick={() => setShape(s.id)}
+                  onClick={() => handleShapeChange(s.id)}
                 >
                   {s.label}
                 </button>

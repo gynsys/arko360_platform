@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+import { API_URL } from '../../services/api';
 
 export default function MaterialsPage() {
   const [materials, setMaterials] = useState([]);
@@ -12,7 +11,7 @@ export default function MaterialsPage() {
 
   const fetchMaterials = async () => {
     try {
-      const res = await fetch(`${API_BASE}/materials`);
+      const res = await fetch(`${API_URL}/materials`);
       if (res.ok) {
         const data = await res.json();
         setMaterials(data);
@@ -33,7 +32,7 @@ export default function MaterialsPage() {
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_BASE}/materials`, {
+      const res = await fetch(`${API_URL}/materials`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm)
@@ -55,7 +54,7 @@ export default function MaterialsPage() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_BASE}/materials/${editingId}`, {
+      const res = await fetch(`${API_URL}/materials/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm)
@@ -77,7 +76,7 @@ export default function MaterialsPage() {
   const handleDelete = async (id) => {
     if (!window.confirm('¿Seguro que deseas eliminar este material?')) return;
     try {
-      const res = await fetch(`${API_BASE}/materials/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/materials/${id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('Material eliminado');
         fetchMaterials();
