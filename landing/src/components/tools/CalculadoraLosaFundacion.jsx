@@ -103,10 +103,9 @@ const generarPresupuesto = (results) => {
 
   if (s.area_lisa_m2 > 0) {
     // Rendimiento Pasta: 1 Kg por 1.8 m2
-    const pasta_kg = Math.ceil(s.area_lisa_m2 / 1.8);
-    // Asumiendo que el precio (17.48) era por cuñete de ~20kg o galón de ~5.5kg.
-    // Lo dejamos expresado por Kg para que sea exacto (17.48 / 20 kg = ~0.87 $/kg, o lo ajustas después)
-    const precio_pasta_kg = +(PRECIOS.pasta / 20).toFixed(2); 
+    const pasta_kg = s.area_lisa_m2 / 1.8;
+    // Asumiendo que 1 galón de pasta pesa aprox 6 Kg
+    const pasta_galones = Math.ceil(pasta_kg / 6.0); 
 
     const pintura = Math.ceil(s.area_lisa_m2 / 10);
     const lija = Math.ceil(s.area_lisa_m2 / 10);
@@ -114,7 +113,7 @@ const generarPresupuesto = (results) => {
 
     items.push({ material: 'Polvillo (Acabado liso)', unit: 'm³', qty: polvillo, pu: PRECIOS.polvillo, total: polvillo * PRECIOS.polvillo });
     items.push({ material: 'Lija', unit: 'hojas', qty: lija, pu: PRECIOS.lija, total: lija * PRECIOS.lija });
-    items.push({ material: 'Pasta Profesional', unit: 'kg', qty: pasta_kg, pu: precio_pasta_kg, total: pasta_kg * precio_pasta_kg });
+    items.push({ material: 'Pasta Profesional', unit: 'galones', qty: pasta_galones, pu: PRECIOS.pasta, total: pasta_galones * PRECIOS.pasta });
     items.push({ material: 'Pintura', unit: 'galones', qty: pintura, pu: PRECIOS.pintura, total: pintura * PRECIOS.pintura });
   }
   
