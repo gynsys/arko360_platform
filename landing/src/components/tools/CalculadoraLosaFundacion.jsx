@@ -306,6 +306,37 @@ export default function CalculadoraLosaFundacion() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isDrawing]);
 
+  // Construir el payload con el estado actual (muros, aberturas, parametros)
+  const buildCurrentPayload = () => ({
+    project: projectName,
+    geometry: { Lx: params.Lx, Ly: params.Ly, h: params.h / 100 },
+    materials: {
+      f_c: designParams.fc, f_y: designParams.fy, cover: 0.05, bar_diam: 0.012,
+      gamma_horm: 2400, E: 4700 * Math.sqrt(designParams.fc) * 1e6, nu: 0.2, k: 20e6,
+      q_adm: designParams.q_adm * 1000
+    },
+    walls: allWalls.map(w => ({
+      x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
+      thickness: w.thickness, height: w.height,
+      density: w.density, type: w.type, load_factor: 1.5,
+      is_plastered: w.is_plastered,
+      openings: openings.filter(op => op.wall_id === w.id).map(op => ({
+        type: op.type, start_m: op.start_m, width_m: op.width_m, height_m: op.height_m
+      }))
+    })),
+    beams: perimeterWalls.map(w => ({
+      x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
+      width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
+    })),
+    mesh_nx: 40,
+    mesh_ny: 40,
+    extra_load: 300 * 9.81,
+    // Estado completo del plano para poder reabrirlo
+    _canvas_state: {
+      shape, params, designParams, wallHeight, internalWalls, openings, wallMaterial
+    }
+  });
+
   // Ejecutar Análisis
   const runAnalysis = async () => {
     setLoading(true);
@@ -313,33 +344,9 @@ export default function CalculadoraLosaFundacion() {
     setResults(null);
     setLastPayload(null);
 
-    const payload = {
-      project: projectName,
-      geometry: { Lx: params.Lx, Ly: params.Ly, h: params.h / 100 },
-      materials: {
-        f_c: designParams.fc, f_y: designParams.fy, cover: 0.05, bar_diam: 0.012,
-        gamma_horm: 2400, E: 4700 * Math.sqrt(designParams.fc) * 1e6, nu: 0.2, k: 20e6,
-        q_adm: designParams.q_adm * 1000 
-      },
-      walls: allWalls.map(w => ({
-        x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
-        thickness: w.thickness, height: w.height,
-        density: w.density, type: w.type, load_factor: 1.5,
-        is_plastered: w.is_plastered,
-        openings: openings.filter(op => op.wall_id === w.id).map(op => ({
-          type: op.type, start_m: op.start_m, width_m: op.width_m, height_m: op.height_m
-        }))
-      })),
-      beams: perimeterWalls.map(w => ({
-        x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
-        width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
-      })),
-      mesh_nx: 40,
-      mesh_ny: 40,
-      extra_load: 300 * 9.81
-    };
-
+    const payload = buildCurrentPayload();
     setLastPayload(payload);
+
 
     try {
       const response = await fetch(`${API_BASE}/calculadora-losas/losa_fundacion/analyze`, {
@@ -495,13 +502,14 @@ export default function CalculadoraLosaFundacion() {
   };
 
   const saveToDatabase = async () => {
-    if (!lastPayload || !results) return;
+    if (!results) return;
+    const freshPayload = buildCurrentPayload();
     setSaving(true);
     try {
       const runData = {
-        nombre_proyecto: lastPayload.project,
+        nombre_proyecto: projectName,
         tipo_losa: 'losa_fundacion_hibrida',
-        inputs: lastPayload,
+        inputs: freshPayload,
         resultados: results
       };
       const response = await fetch(`${API_BASE}/calculadora-losas/runs`, {
@@ -510,8 +518,6 @@ export default function CalculadoraLosaFundacion() {
         body: JSON.stringify(runData)
       });
       if (response.ok) {
-        const saved = await response.json();
-        console.log("Corrida guardada:", saved);
         toast.success("¡Cálculo guardado exitosamente!");
         fetchRuns();
       } else {
@@ -526,13 +532,14 @@ export default function CalculadoraLosaFundacion() {
   };
 
   const saveAsToDatabase = async (customName) => {
-    if (!lastPayload || !results) return;
+    if (!results) return;
+    const freshPayload = buildCurrentPayload();
     setSaving(true);
     try {
       const runData = {
         nombre_proyecto: customName || projectName,
         tipo_losa: 'losa_fundacion_hibrida',
-        inputs: { ...lastPayload, project: customName || projectName },
+        inputs: { ...freshPayload, project: customName || projectName },
         resultados: results
       };
       const response = await fetch(`${API_BASE}/calculadora-losas/runs`, {
@@ -916,8 +923,9 @@ export default function CalculadoraLosaFundacion() {
                     />
                     {openings.filter(op => op.wall_id === w.id).map(op => {
                       const len = Math.sqrt((w.x2-w.x1)**2 + (w.y2-w.y1)**2);
+                      if (len < 0.01) return null;
                       const t1 = op.start_m / len;
-                      const t2 = (op.start_m + op.width_m) / len;
+                      const t2 = Math.min((op.start_m + op.width_m) / len, 1);
                       const ox1 = toSvg(w.x1 + t1 * (w.x2 - w.x1));
                       const oy1 = toSvg(w.y1 + t1 * (w.y2 - w.y1));
                       const ox2 = toSvg(w.x1 + t2 * (w.x2 - w.x1));
@@ -925,49 +933,48 @@ export default function CalculadoraLosaFundacion() {
                       
                       const thickPx = Math.max(4, w.thickness * scale);
                       const w_px = Math.sqrt((ox2-ox1)**2 + (oy2-oy1)**2);
-                      const ux = (ox2-ox1)/w_px || 0;
-                      const uy = (oy2-oy1)/w_px || 0;
-                      const vx = -uy;
-                      const vy = ux;
+                      if (w_px < 1) return null;
+
+                      // Unit vector along wall (in SVG coords)
+                      const ux = (ox2-ox1)/w_px;
+                      const uy = (oy2-oy1)/w_px;
+                      // Perpendicular: two options, pick the one pointing toward interior
+                      // Interior = toward losa center (CANVAS_SIZE/2, CANVAS_SIZE/2)
+                      const cx = (ox1+ox2)/2, cy = (oy1+oy2)/2;
+                      const svgCx = CANVAS_SIZE/2, svgCy = CANVAS_SIZE/2;
+                      // Option A: (-uy, ux), Option B: (uy, -ux)
+                      const dotA = (-uy)*(svgCx - cx) + (ux)*(svgCy - cy);
+                      const vx = dotA >= 0 ? -uy : uy;
+                      const vy = dotA >= 0 ? ux : -ux;
 
                       if (op.type.startsWith('door')) {
                         const isLeft = op.type === 'door_left';
+                        // Hinge point and free end
                         const hx = isLeft ? ox1 : ox2;
                         const hy = isLeft ? oy1 : oy2;
                         const ex = isLeft ? ox2 : ox1;
                         const ey = isLeft ? oy2 : oy1;
-                        
+                        // Leaf swings toward interior
                         const lx = hx + vx * w_px;
                         const ly = hy + vy * w_px;
-                        
-                        // Sweep flag depends on direction
-                        const sweep = isLeft ? 1 : 0;
-                        
+                        // Arc sweep: in SVG Y-down, we need to determine CW vs CCW
+                        // The arc goes from (lx,ly) to (ex,ey) with radius w_px
+                        const sweep = isLeft ? 0 : 1;
                         return (
                           <g key={op.id}>
-                            {/* Blanco para borrar el muro */}
                             <line x1={ox1} y1={oy1} x2={ox2} y2={oy2} stroke="#fafafa" strokeWidth={thickPx + 2} strokeLinecap="butt" />
-                            {/* Hoja de la puerta */}
-                            <line x1={hx} y1={hy} x2={lx} y2={ly} stroke="#333" strokeWidth="2" strokeLinecap="square" />
-                            {/* Arco de apertura */}
-                            <path d={`M ${lx} ${ly} A ${w_px} ${w_px} 0 0 ${sweep} ${ex} ${ey}`} fill="none" stroke="#666" strokeWidth="1.5" strokeDasharray="4,4" />
+                            <line x1={hx} y1={hy} x2={lx} y2={ly} stroke="#222" strokeWidth="2.5" strokeLinecap="square" />
+                            <path d={`M ${lx.toFixed(1)} ${ly.toFixed(1)} A ${w_px.toFixed(1)} ${w_px.toFixed(1)} 0 0 ${sweep} ${ex.toFixed(1)} ${ey.toFixed(1)}`} fill="none" stroke="#444" strokeWidth="1.5" strokeDasharray="5,3" />
                           </g>
                         );
                       } else {
-                        // Ventana
-                        const f1x1 = ox1 + vx * (thickPx/2); const f1y1 = oy1 + vy * (thickPx/2);
-                        const f1x2 = ox2 + vx * (thickPx/2); const f1y2 = oy2 + vy * (thickPx/2);
-                        const f2x1 = ox1 - vx * (thickPx/2); const f2y1 = oy1 - vy * (thickPx/2);
-                        const f2x2 = ox2 - vx * (thickPx/2); const f2y2 = oy2 - vy * (thickPx/2);
-                        
+                        // Window: double glass lines
+                        const gap = thickPx * 0.35;
                         return (
                           <g key={op.id}>
-                            {/* Blanco para borrar el muro */}
                             <line x1={ox1} y1={oy1} x2={ox2} y2={oy2} stroke="#fafafa" strokeWidth={thickPx + 2} strokeLinecap="butt" />
-                            {/* Bordes del muro */}
-                            <line x1={f1x1} y1={f1y1} x2={f1x2} y2={f1y2} stroke="#333" strokeWidth="1" />
-                            <line x1={f2x1} y1={f2y1} x2={f2x2} y2={f2y2} stroke="#333" strokeWidth="1" />
-                            {/* Cristales (corredera) */}
+                            <line x1={ox1 + vx*gap} y1={oy1 + vy*gap} x2={ox2 + vx*gap} y2={oy2 + vy*gap} stroke="#333" strokeWidth="1.2" />
+                            <line x1={ox1 - vx*gap} y1={oy1 - vy*gap} x2={ox2 - vx*gap} y2={oy2 - vy*gap} stroke="#333" strokeWidth="1.2" />
                             <line x1={ox1 + vx*2} y1={oy1 + vy*2} x2={ox2 + vx*2} y2={oy2 + vy*2} stroke="#5bc0de" strokeWidth="2" />
                             <line x1={ox1 - vx*2} y1={oy1 - vy*2} x2={ox2 - vx*2} y2={oy2 - vy*2} stroke="#5bc0de" strokeWidth="2" />
                           </g>
