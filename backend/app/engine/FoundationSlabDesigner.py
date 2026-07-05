@@ -1398,8 +1398,13 @@ class FoundationSlabDesigner:
                             
                             lx = hx + vx * w_px
                             ly = hy + vy * w_px
-                            cross = ux * vy - uy * vx
-                            sweep = 0 if (is_left and cross > 0) or (not is_left and cross <= 0) else 1
+                            # Calculo 100% infalible del sweep flag en SVG basandose en el vector hacia el centro
+                            hl_x = lx - hx
+                            hl_y = ly - hy
+                            he_x = ex - hx
+                            he_y = ey - hy
+                            cross_val = (hl_x * he_y) - (hl_y * he_x)
+                            sweep = 1 if cross_val > 0 else 0
 
                             # Borrar muro
                             svg_parts.append(f'<line x1="{ox1:.1f}" y1="{oy1:.1f}" x2="{ox2:.1f}" y2="{oy2:.1f}" stroke="#fafafa" stroke-width="{thickPx+2:.1f}" stroke-linecap="butt"/>')

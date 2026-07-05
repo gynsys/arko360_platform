@@ -1193,9 +1193,13 @@ export default function CalculadoraLosaFundacion() {
                         const lx = hx + vx * w_px;
                         const ly = hy + vy * w_px;
                         // Arc sweep: in SVG Y-down, we need to determine CW vs CCW
-                        // Depends on the relative handedness of (ux, uy) and (vx, vy)
-                        const cross = ux * vy - uy * vx;
-                        const sweep = cross > 0 ? (isLeft ? 0 : 1) : (isLeft ? 1 : 0);
+                        // Bulletproof sweep flag: cross product of vectors HL and HE
+                        const hl_x = lx - hx;
+                        const hl_y = ly - hy;
+                        const he_x = ex - hx;
+                        const he_y = ey - hy;
+                        const cross = (hl_x * he_y) - (hl_y * he_x);
+                        const sweep = cross > 0 ? 1 : 0;
                         return (
                           <g key={op.id}>
                             <line x1={ox1} y1={oy1} x2={ox2} y2={oy2} stroke="#fafafa" strokeWidth={thickPx + 2} strokeLinecap="butt" />
