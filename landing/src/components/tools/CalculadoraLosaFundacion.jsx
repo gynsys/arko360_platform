@@ -1716,7 +1716,7 @@ export default function CalculadoraLosaFundacion() {
                 </thead>
                 <tbody>
                   {results.bands.map((b, i) => {
-                    const asMin = results.materials_computation?.As_min_cm2_m || 0;
+                    const asMin = results.As_min_cm2_m || 0;
                     const isMinX = b.Asx_cm2_m <= asMin + 0.01;
                     const isMinY = b.Asy_cm2_m <= asMin + 0.01;
                     const px = isMinX ? 'Malla General' : (b.bar_x?.diam_mm > 0 ? `Ø${b.bar_x.diam_mm}@${(b.bar_x.sep_m*100).toFixed(0)}cm` : 'Mínimo');
