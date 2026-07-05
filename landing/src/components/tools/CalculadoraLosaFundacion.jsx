@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import './CalculadoraLosaFundacion.css';
+import { DoorOpen, AppWindow, Undo2, Redo2, LogIn, LogOut } from 'lucide-react';
 
 // ============================================
 // FOUNDATION SLAB EDITOR - HIBRIDO v2
@@ -169,6 +170,34 @@ export default function CalculadoraLosaFundacion() {
 
   // Hover interactivo (bidireccional SVG <-> Tabla)
   const [hoveredWallId, setHoveredWallId] = useState(null);
+  const [hoveredOpeningId, setHoveredOpeningId] = useState(null);
+
+  // Undo / Redo para muros y aberturas
+  const [historyPast, setHistoryPast] = useState([]);
+  const [historyFuture, setHistoryFuture] = useState([]);
+
+  const saveHistory = () => {
+    setHistoryPast(prev => [...prev, { internalWalls: [...internalWalls], openings: [...openings] }]);
+    setHistoryFuture([]);
+  };
+
+  const undo = () => {
+    if (historyPast.length === 0) return;
+    const previous = historyPast[historyPast.length - 1];
+    setHistoryPast(prev => prev.slice(0, -1));
+    setHistoryFuture(prev => [{ internalWalls, openings }, ...prev]);
+    setInternalWalls(previous.internalWalls);
+    setOpenings(previous.openings);
+  };
+
+  const redo = () => {
+    if (historyFuture.length === 0) return;
+    const next = historyFuture[0];
+    setHistoryFuture(prev => prev.slice(1));
+    setHistoryPast(prev => [...prev, { internalWalls, openings }]);
+    setInternalWalls(next.internalWalls);
+    setOpenings(next.openings);
+  };
 
   // Interacción Canvas (Mouse & Snap)
   const [mouseCoord, setMouseCoord] = useState({ x: 0, y: 0 });
@@ -305,19 +334,23 @@ export default function CalculadoraLosaFundacion() {
   const handleDesignParamChange = (field, value) => setDesignParams(prev => ({ ...prev, [field]: value }));
 
   const addInternalWall = (w) => {
+    saveHistory();
     setInternalWalls(prev => [...prev, { id: Date.now(), type: 'interno', x1: w.x1 || 0, y1: w.y1 || 0, x2: w.x2 || 1, y2: w.y2 || 1 }]);
   };
 
   const updateInternalWall = (id, field, value) => {
+    saveHistory();
     setInternalWalls(prev => prev.map(w => w.id === id ? { ...w, [field]: (field === 'type' ? value : (parseFloat(value) || 0)) } : w));
   };
 
   const removeInternalWall = (id) => {
+    saveHistory();
     setInternalWalls(prev => prev.filter(w => w.id !== id));
     setOpenings(prev => prev.filter(op => op.wall_id !== id));
   };
 
   const removeOpening = (id) => {
+    saveHistory();
     setOpenings(prev => prev.filter(op => op.id !== id));
   };
 
@@ -402,6 +435,7 @@ export default function CalculadoraLosaFundacion() {
       if (start_m < 0) start_m = 0;
       if (start_m + width_m > length) start_m = length - width_m;
 
+      saveHistory();
       setOpenings(prev => [...prev, {
         id: `op_${Date.now()}`,
         wall_id: closestWall.id,
@@ -1002,12 +1036,18 @@ export default function CalculadoraLosaFundacion() {
                    <thead><tr><th>Vano</th><th>Muro ID</th><th>Inicio (m)</th><th>Ancho (m)</th><th>Alto (m)</th><th></th></tr></thead>
                    <tbody>
                      {openings.map(op => {
-                       let label = '🪟 Ventana';
-                       if (op.type.startsWith('door_left')) label = '🚪 Puerta (Izq)';
-                       if (op.type.startsWith('door_right')) label = '🚪 Puerta (Der)';
+                       let Icon = AppWindow;
+                       let label = 'Ventana';
+                       if (op.type.startsWith('door_left')) { Icon = DoorClosed; label = 'Puerta (Izq)'; }
+                       if (op.type.startsWith('door_right')) { Icon = DoorOpen; label = 'Puerta (Der)'; }
                        return (
-                       <tr key={op.id}>
-                         <td>{label}</td>
+                       <tr 
+                         key={op.id}
+                         className={hoveredOpeningId === op.id ? 'highlighted-row' : ''}
+                         onMouseEnter={() => setHoveredOpeningId(op.id)}
+                         onMouseLeave={() => setHoveredOpeningId(null)}
+                       >
+                         <td style={{display:'flex', alignItems:'center', gap:'6px'}}><Icon size={16} color="#666"/> {label}</td>
                          <td>{String(op.wall_id).substring(0,8)}</td>
                          <td>{op.start_m.toFixed(2)}</td>
                          <td>{op.width_m.toFixed(2)}</td>
@@ -1075,11 +1115,11 @@ export default function CalculadoraLosaFundacion() {
         <div style={{ position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 10, alignSelf: 'flex-start', background: '#fff', padding: '10px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
           <h5 style={{margin: '0', fontSize: '12px', color: '#666', textAlign:'center', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>Arrastrar</h5>
           <div className="drag-toolbox" style={{display:'flex', flexDirection:'column', gap:'8px'}}>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left')} className="drag-item" title="Puerta Izquierda (Adentro)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}>🚪 P. Izq<br/><small>(Adentro)</small></div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left_out')} className="drag-item" title="Puerta Izquierda (Afuera)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}>🚪 P. Izq<br/><small>(Afuera)</small></div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right')} className="drag-item" title="Puerta Derecha (Adentro)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}>🚪 P. Der<br/><small>(Adentro)</small></div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right_out')} className="drag-item" title="Puerta Derecha (Afuera)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}>🚪 P. Der<br/><small>(Afuera)</small></div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'window')} className="drag-item" title="Ventana" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}>🪟 Ventana</div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left')} className="drag-item" title="Puerta Izquierda (Adentro)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}><DoorClosed size={20} color="#555" style={{margin:'0 auto 4px'}}/ >P. Izq<br/><small>(Adentro)</small></div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left_out')} className="drag-item" title="Puerta Izquierda (Afuera)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}><DoorClosed size={20} color="#555" style={{margin:'0 auto 4px'}}/ >P. Izq<br/><small>(Afuera)</small></div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right')} className="drag-item" title="Puerta Derecha (Adentro)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}><DoorOpen size={20} color="#555" style={{margin:'0 auto 4px'}}/ >P. Der<br/><small>(Adentro)</small></div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right_out')} className="drag-item" title="Puerta Derecha (Afuera)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}><DoorOpen size={20} color="#555" style={{margin:'0 auto 4px'}}/ >P. Der<br/><small>(Afuera)</small></div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'window')} className="drag-item" title="Ventana" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}><AppWindow size={20} color="#555" style={{margin:'0 auto 4px'}}/ >Ventana</div>
           </div>
         </div>
 
@@ -1087,7 +1127,13 @@ export default function CalculadoraLosaFundacion() {
         <div className="calc-content" style={{ flex: '1', minWidth: 0 }}>
           <div className="canvas-wrapper hybrid-canvas">
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '10px' }}>
-              <h4>Plano Interactivo (Ejes en metros)</h4>
+              <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
+                <h4 style={{margin:0}}>Plano Interactivo</h4>
+                <div style={{display:'flex', gap:'4px', marginLeft:'12px'}}>
+                  <button onClick={undo} disabled={historyPast.length === 0} title="Deshacer" style={{padding:'4px 8px', cursor: historyPast.length === 0 ? 'not-allowed' : 'pointer', background:'#fff', border:'1px solid #ccc', borderRadius:'4px'}}><Undo2 size={16} color={historyPast.length === 0 ? '#ccc' : '#333'}/></button>
+                  <button onClick={redo} disabled={historyFuture.length === 0} title="Rehacer" style={{padding:'4px 8px', cursor: historyFuture.length === 0 ? 'not-allowed' : 'pointer', background:'#fff', border:'1px solid #ccc', borderRadius:'4px'}}><Redo2 size={16} color={historyFuture.length === 0 ? '#ccc' : '#333'}/></button>
+                </div>
+              </div>
               <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
                 <span className="mouse-tracker">📍 X: {mouseCoord.x.toFixed(1)}m, Y: {mouseCoord.y.toFixed(1)}m</span>
               </div>
@@ -1213,23 +1259,28 @@ export default function CalculadoraLosaFundacion() {
                         const he_y = ey - hy;
                         const cross = (hl_x * he_y) - (hl_y * he_x);
                         const sweep = cross > 0 ? 1 : 0;
+                        
+                        const isOpHovered = hoveredOpeningId === op.id;
                         return (
-                          <g key={op.id}>
+                          <g key={op.id} onMouseEnter={() => setHoveredOpeningId(op.id)} onMouseLeave={() => setHoveredOpeningId(null)} style={{cursor: 'pointer'}}>
                             <line x1={ox1} y1={oy1} x2={ox2} y2={oy2} stroke="#fafafa" strokeWidth={thickPx + 2} strokeLinecap="butt" />
-                            <line x1={hx} y1={hy} x2={lx} y2={ly} stroke="#222" strokeWidth="2.5" strokeLinecap="square" />
-                            <path d={`M ${lx.toFixed(1)} ${ly.toFixed(1)} A ${w_px.toFixed(1)} ${w_px.toFixed(1)} 0 0 ${sweep} ${ex.toFixed(1)} ${ey.toFixed(1)}`} fill="none" stroke="#444" strokeWidth="1.5" strokeDasharray="5,3" />
+                            <line x1={hx} y1={hy} x2={lx} y2={ly} stroke={isOpHovered ? "#ff9800" : "#222"} strokeWidth={isOpHovered ? "3.5" : "2.5"} strokeLinecap="square" />
+                            <path d={`M ${lx.toFixed(1)} ${ly.toFixed(1)} A ${w_px.toFixed(1)} ${w_px.toFixed(1)} 0 0 ${sweep} ${ex.toFixed(1)} ${ey.toFixed(1)}`} fill={isOpHovered ? "rgba(255,152,0,0.1)" : "none"} stroke={isOpHovered ? "#ff9800" : "#444"} strokeWidth={isOpHovered ? "2.5" : "1.5"} strokeDasharray="5,3" />
                           </g>
                         );
                       } else {
                         // Window: double glass lines
                         const gap = thickPx * 0.35;
+                        const isOpHovered = hoveredOpeningId === op.id;
+                        const winColor = isOpHovered ? "#ff9800" : "#5bc0de";
+                        const glassColor = isOpHovered ? "#ffb74d" : "#333";
                         return (
-                          <g key={op.id}>
+                          <g key={op.id} onMouseEnter={() => setHoveredOpeningId(op.id)} onMouseLeave={() => setHoveredOpeningId(null)} style={{cursor: 'pointer'}}>
                             <line x1={ox1} y1={oy1} x2={ox2} y2={oy2} stroke="#fafafa" strokeWidth={thickPx + 2} strokeLinecap="butt" />
-                            <line x1={ox1 + vx*gap} y1={oy1 + vy*gap} x2={ox2 + vx*gap} y2={oy2 + vy*gap} stroke="#333" strokeWidth="1.2" />
-                            <line x1={ox1 - vx*gap} y1={oy1 - vy*gap} x2={ox2 - vx*gap} y2={oy2 - vy*gap} stroke="#333" strokeWidth="1.2" />
-                            <line x1={ox1 + vx*2} y1={oy1 + vy*2} x2={ox2 + vx*2} y2={oy2 + vy*2} stroke="#5bc0de" strokeWidth="2" />
-                            <line x1={ox1 - vx*2} y1={oy1 - vy*2} x2={ox2 - vx*2} y2={oy2 - vy*2} stroke="#5bc0de" strokeWidth="2" />
+                            <line x1={ox1 + vx*gap} y1={oy1 + vy*gap} x2={ox2 + vx*gap} y2={oy2 + vy*gap} stroke={glassColor} strokeWidth="1.2" />
+                            <line x1={ox1 - vx*gap} y1={oy1 - vy*gap} x2={ox2 - vx*gap} y2={oy2 - vy*gap} stroke={glassColor} strokeWidth="1.2" />
+                            <line x1={ox1 + vx*2} y1={oy1 + vy*2} x2={ox2 + vx*2} y2={oy2 + vy*2} stroke={winColor} strokeWidth={isOpHovered ? "3" : "2"} />
+                            <line x1={ox1 - vx*2} y1={oy1 - vy*2} x2={ox2 - vx*2} y2={oy2 - vy*2} stroke={winColor} strokeWidth={isOpHovered ? "3" : "2"} />
                           </g>
                         );
                       }
