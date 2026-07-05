@@ -68,6 +68,9 @@ export default function CalculadoraLosaFundacion() {
   // Aberturas (Puertas y Ventanas) Drag & Drop
   const [openings, setOpenings] = useState([]);
 
+  // Hover interactivo (bidireccional SVG <-> Tabla)
+  const [hoveredWallId, setHoveredWallId] = useState(null);
+
   // Interacción Canvas (Mouse & Snap)
   const [mouseCoord, setMouseCoord] = useState({ x: 0, y: 0 });
   const [isDrawing, setIsDrawing] = useState(false);
@@ -653,7 +656,12 @@ export default function CalculadoraLosaFundacion() {
               </thead>
               <tbody>
                 {internalWalls.map(w => (
-                  <tr key={w.id}>
+                  <tr 
+                    key={w.id} 
+                    className={hoveredWallId === w.id ? 'highlighted-row' : ''}
+                    onMouseEnter={() => setHoveredWallId(w.id)}
+                    onMouseLeave={() => setHoveredWallId(null)}
+                  >
                     <td>
                       <select value={w.type} onChange={e => updateInternalWall(w.id, 'type', e.target.value)} style={{width:'50px', padding:'2px', fontSize:'10px'}}>
                         <option value="interno">Int.</option>
@@ -785,13 +793,30 @@ export default function CalculadoraLosaFundacion() {
               <rect x={MARGIN} y={MARGIN} width={toSvg(params.Lx)-MARGIN} height={toSvg(params.Ly)-MARGIN} fill="rgba(33, 150, 243, 0.03)" stroke="#2196f3" strokeDasharray="5,5" />
 
               {/* Muros */}
-              {allWalls.map(w => (
-                <g key={w.id}>
+              {allWalls.map(w => {
+                const isHovered = hoveredWallId === w.id;
+                const strokeColor = isHovered ? '#ff9800' : (w.type === 'perimetral' ? '#e53935' : '#1e88e5');
+                const strokeW = Math.max(isHovered ? 8 : 4, w.thickness * scale + (isHovered ? 4 : 0));
+
+                return (
+                <g key={w.id} 
+                   onMouseEnter={() => setHoveredWallId(w.id)}
+                   onMouseLeave={() => setHoveredWallId(null)}
+                   style={{ cursor: 'pointer' }}
+                >
+                    {isHovered && (
+                      <line 
+                        x1={toSvg(w.x1)} y1={toSvg(w.y1)} 
+                        x2={toSvg(w.x2)} y2={toSvg(w.y2)} 
+                        stroke="#ffe0b2" 
+                        strokeWidth={strokeW + 6} strokeLinecap="round" 
+                      />
+                    )}
                     <line 
                       x1={toSvg(w.x1)} y1={toSvg(w.y1)} 
                       x2={toSvg(w.x2)} y2={toSvg(w.y2)} 
-                      stroke={w.type === 'perimetral' ? "#e53935" : "#1e88e5"} 
-                      strokeWidth={Math.max(4, w.thickness * scale)} strokeLinecap="round" 
+                      stroke={strokeColor} 
+                      strokeWidth={strokeW} strokeLinecap="round" 
                     />
                     {openings.filter(op => op.wall_id === w.id).map(op => {
                       const len = Math.sqrt((w.x2-w.x1)**2 + (w.y2-w.y1)**2);
@@ -854,7 +879,8 @@ export default function CalculadoraLosaFundacion() {
                       }
                     })}
                   </g>
-              ))}
+                );
+              })}
 
               {/* Pre-visualización de Muro dibujándose */}
               {isDrawing && drawStart && drawEnd && (

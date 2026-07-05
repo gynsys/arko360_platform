@@ -417,6 +417,15 @@
   border-color: #2196f3;
 }
 
+.highlighted-row td {
+  background-color: #fff3e0 !important;
+  font-weight: 600;
+  color: #e65100;
+}
+.highlighted-row td input {
+  background-color: #fff !important;
+}
+
 .btn-unlink {
   background: #fff3e0;
   color: #e65100;
