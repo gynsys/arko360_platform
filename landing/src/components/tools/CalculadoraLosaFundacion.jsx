@@ -1173,14 +1173,10 @@ export default function CalculadoraLosaFundacion() {
                       // Unit vector along wall (in SVG coords)
                       const ux = (ox2-ox1)/w_px;
                       const uy = (oy2-oy1)/w_px;
-                      // Perpendicular: two options, pick the one pointing toward interior
-                      // Interior = toward losa center (CANVAS_SIZE/2, CANVAS_SIZE/2)
-                      const cx = (ox1+ox2)/2, cy = (oy1+oy2)/2;
-                      const svgCx = CANVAS_SIZE/2, svgCy = CANVAS_SIZE/2;
-                      // Option A: (-uy, ux), Option B: (uy, -ux)
-                      const dotA = (-uy)*(svgCx - cx) + (ux)*(svgCy - cy);
-                      const vx = dotA >= 0 ? -uy : uy;
-                      const vy = dotA >= 0 ? ux : -ux;
+                      // Perpendicular: determines opening direction based on wall drawing direction
+                      // Clockwise rooms will automatically open inwards.
+                      const vx = -uy;
+                      const vy = ux;
 
                       if (op.type.startsWith('door')) {
                         const isLeft = op.type === 'door_left';
