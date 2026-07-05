@@ -10,10 +10,14 @@ UNIDADES: N, m, Pa, MPa  (salidas en kN, mm, cm²/m)
 import numpy as np
 from scipy.sparse import lil_matrix, csr_matrix
 from scipy.sparse.linalg import spsolve
+import matplotlib
+matplotlib.use('Agg')  # Non-interactive backend (no GUI needed)
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 import json
+import io
+import base64
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Tuple
 import warnings
@@ -916,7 +920,133 @@ class FoundationSlabDesigner:
         if save_path:
             plt.savefig(save_path, dpi=150, bbox_inches='tight')
             print(f"Gráfico guardado: {save_path}")
-        plt.show()
+        plt.close(fig)
+
+    def get_heatmap_base64(self) -> str:
+        """Genera el mapa de calor de resultados y lo devuelve como PNG en base64."""
+        fig, axes = plt.subplots(2, 4, figsize=(22, 11))
+        fig.patch.set_facecolor('#1a1a2e')
+        for ax in axes.flat:
+            ax.set_facecolor('#16213e')
+            for spine in ax.spines.values():
+                spine.set_color('#444')
+            ax.tick_params(colors='#ccc', labelsize=8)
+            ax.xaxis.label.set_color('#aaa')
+            ax.yaxis.label.set_color('#aaa')
+            ax.title.set_color('#eee')
+
+        fig.suptitle(
+            f'Losa {self.Lx:.1f}x{self.Ly:.1f}m | h={self.h*100:.0f}cm | H-{self.f_c:.0f} | '
+            f'Grilla {self.nx}x{self.ny} | d={self.d_eff*100:.1f}cm',
+            fontsize=13, fontweight='bold', color='white'
+        )
+
+        # 1. Desplazamiento
+        ax = axes[0, 0]
+        im = ax.contourf(self.X, self.Y, self.w*1000, levels=20, cmap='viridis')
+        ax.set_title('Desplazamiento w [mm]')
+        ax.set_xlabel('x [m]'); ax.set_ylabel('y [m]')
+        plt.colorbar(im, ax=ax)
+
+        # 2. Mx
+        ax = axes[0, 1]
+        vmax = max(float(np.max(np.abs(self.Mx/1000))), 1e-6)
+        im = ax.contourf(self.X, self.Y, self.Mx/1000, levels=20, cmap='RdBu_r', vmin=-vmax, vmax=vmax)
+        ax.set_title('Momento Mx [kN·m/m]')
+        ax.set_xlabel('x [m]'); ax.set_ylabel('y [m]')
+        plt.colorbar(im, ax=ax)
+
+        # 3. My
+        ax = axes[0, 2]
+        vmax = max(float(np.max(np.abs(self.My/1000))), 1e-6)
+        im = ax.contourf(self.X, self.Y, self.My/1000, levels=20, cmap='RdBu_r', vmin=-vmax, vmax=vmax)
+        ax.set_title('Momento My [kN·m/m]')
+        ax.set_xlabel('x [m]'); ax.set_ylabel('y [m]')
+        plt.colorbar(im, ax=ax)
+
+        # 4. Cortante
+        ax = axes[0, 3]
+        im = ax.contourf(self.X, self.Y, self.Vu/1000, levels=20, cmap='YlOrRd')
+        ax.set_title(f'Cortante Vu [kN/m]\nφVc={self.phiVc/1000:.1f} kN/m')
+        ax.set_xlabel('x [m]'); ax.set_ylabel('y [m]')
+        plt.colorbar(im, ax=ax)
+
+        # 5. As inferior X
+        ax = axes[1, 0]
+        im = ax.contourf(self.X, self.Y, self.Asx_bot*1e4, levels=15, cmap='YlOrRd')
+        ax.set_title('As inferior X [cm²/m]\n(Bandas bajo muros)')
+        ax.set_xlabel('x [m]'); ax.set_ylabel('y [m]')
+        plt.colorbar(im, ax=ax)
+
+        # 6. As inferior Y
+        ax = axes[1, 1]
+        im = ax.contourf(self.X, self.Y, self.Asy_bot*1e4, levels=15, cmap='YlOrRd')
+        ax.set_title('As inferior Y [cm²/m]\n(Bandas bajo muros)')
+        ax.set_xlabel('x [m]'); ax.set_ylabel('y [m]')
+        plt.colorbar(im, ax=ax)
+
+        # 7. Ratio cortante
+        ax = axes[1, 2]
+        im = ax.contourf(self.X, self.Y, self.shear_ratio, levels=15, cmap='RdYlGn_r')
+        status = "CUMPLE ✓" if bool(np.all(self.shear_ok)) else "NO CUMPLE ✗"
+        ax.set_title(f'Ratio Vu/φVc\n{status}')
+        ax.set_xlabel('x [m]'); ax.set_ylabel('y [m]')
+        plt.colorbar(im, ax=ax)
+
+        # 8. Planta con bandas
+        ax = axes[1, 3]
+        ax.set_facecolor('#0d1b2a')
+        ax.set_xlim(0, self.Lx); ax.set_ylim(0, self.Ly)
+        ax.set_aspect('equal')
+        ax.set_title('Planta - Bandas de refuerzo')
+        ax.set_xlabel('x [m]'); ax.set_ylabel('y [m]')
+        ax.grid(True, alpha=0.2, color='#555')
+
+        for wall in self.walls:
+            dxw = wall.x2 - wall.x1
+            dyw = wall.y2 - wall.y1
+            length = wall.length
+            if length < 1e-6:
+                continue
+            cx = (wall.x1 + wall.x2) / 2
+            cy = (wall.y1 + wall.y2) / 2
+            angle = np.degrees(np.arctan2(dyw, dxw))
+            rect = Rectangle(
+                (cx - length/2, -wall.band_width/2),
+                length, wall.band_width,
+                angle=angle, rotation_point='center',
+                facecolor='yellow', alpha=0.25, edgecolor='orange', linewidth=1.5
+            )
+            ax.add_patch(rect)
+
+        for wall in self.walls:
+            color = '#ef5350' if wall.wall_type == 'perimetral' else '#42a5f5'
+            ax.plot([wall.x1, wall.x2], [wall.y1, wall.y2],
+                   color=color, linewidth=3, solid_capstyle='round')
+
+        for beam in self.beams:
+            ax.plot([beam.x1, beam.x2], [beam.y1, beam.y2],
+                   color='#66bb6a', linewidth=5, solid_capstyle='round', alpha=0.8)
+
+        legend_elements = [
+            Line2D([0], [0], color='#ef5350', lw=3, label='Muro perimetral'),
+            Line2D([0], [0], color='#42a5f5', lw=3, label='Muro interno'),
+            Line2D([0], [0], color='#66bb6a', lw=5, label='Viga amarre', alpha=0.8),
+            Line2D([0], [0], color='orange', lw=2, marker='s', markersize=8,
+                   markerfacecolor='yellow', alpha=0.5, label='Banda refuerzo')
+        ]
+        legend = ax.legend(handles=legend_elements, loc='upper right', fontsize=7,
+                          facecolor='#1a1a2e', edgecolor='#444')
+        for text in legend.get_texts():
+            text.set_color('#eee')
+
+        plt.tight_layout()
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=130, bbox_inches='tight',
+                    facecolor=fig.get_facecolor())
+        plt.close(fig)
+        buf.seek(0)
+        return base64.b64encode(buf.read()).decode('utf-8')
 
     def export_summary(self, filepath):
         summary = {
@@ -1340,7 +1470,8 @@ class FoundationSlabDesigner:
             "bands": self.band_data,
             "As_min_cm2_m": float(self.rho_min * 1.0 * self.h * 1e4),
             "settlements": self.settlement_data,
-            "svg_plan": self.get_svg_plan()
+            "svg_plan": self.get_svg_plan(),
+            "heatmap_base64": self.get_heatmap_base64()
         }
 
 if __name__ == "__main__":

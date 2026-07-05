@@ -1025,6 +1025,36 @@ export default function CalculadoraLosaFundacion() {
                 </div>
               )}
 
+              {/* Mapas de Calor (Heatmap) */}
+              {results.heatmap_base64 && (
+                <div className="structural-plan" style={{marginTop: '24px'}}>
+                  <div style={{display:'flex', alignItems:'center', gap:'12px', marginBottom:'12px'}}>
+                    <h4 style={{margin:0}}>🌡️ Mapas de Calor - Resultados FEM</h4>
+                    <a
+                      href={`data:image/png;base64,${results.heatmap_base64}`}
+                      download="mapas_calor_losa.png"
+                      className="btn-secondary"
+                      style={{fontSize:'12px', padding:'4px 10px', textDecoration:'none'}}
+                    >
+                      ⬇️ Descargar PNG
+                    </a>
+                  </div>
+                  <img
+                    src={`data:image/png;base64,${results.heatmap_base64}`}
+                    alt="Mapas de calor FEM"
+                    style={{
+                      width: '100%',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                      border: '1px solid #e0e0e0'
+                    }}
+                  />
+                  <p style={{fontSize:'11px', color:'#888', marginTop:'8px', textAlign:'center'}}>
+                    Desplazamiento w · Momentos Mx/My · Cortante Vu · Acero As X/Y · Ratio Vu/φVc · Planta con Bandas
+                  </p>
+                </div>
+              )}
+
               {/* Render de la Tabla en React */}
               {results.bands && (
                 <div className="structural-table" style={{marginTop: '24px', overflowX: 'auto'}}>
@@ -1061,6 +1091,7 @@ export default function CalculadoraLosaFundacion() {
                 </div>
               )}
             </div>
+
           )}
         </div>
       </div>
