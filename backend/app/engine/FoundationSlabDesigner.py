@@ -592,9 +592,9 @@ class FoundationSlabDesigner:
                 'bar_y': {k: (float(v) if isinstance(v, (np.floating, float)) else v) for k, v in bar_y.items()}
             })
 
-        # Zonas fuera de bandas (intermedias) - asegurar mínimo
-        self.Asx = np.where(~mask_bands, As_min_val, self.Asx)
-        self.Asy = np.where(~mask_bands, As_min_val, self.Asy)
+        # Asegurar mínimo en TODA la losa (bandas e intermedias)
+        self.Asx = np.maximum(self.Asx, As_min_val)
+        self.Asy = np.maximum(self.Asy, As_min_val)
 
         # Separar inferior/superior según signo de momento (sin factor de carga para signo)
         self.Asx_bot = np.where(self.Mx > 0, self.Asx, As_min_val)
@@ -1487,13 +1487,17 @@ class FoundationSlabDesigner:
         total_steel_vol_m3 = np.sum(self.Asx + self.Asy) * self.dx * self.dy
         steel_weight_total_kg = float(total_steel_vol_m3 * 7850)
         
-        steel_weight_bands_kg = max(0.0, float(steel_weight_total_kg - steel_weight_general_kg))
+        # Acero adicional en bandas (integrando solo la diferencia para evitar error numérico de grilla)
+        extra_Asx = np.maximum(0, self.Asx - As_min_m2)
+        extra_Asy = np.maximum(0, self.Asy - As_min_m2)
+        extra_steel_vol_m3 = np.sum(extra_Asx + extra_Asy) * self.dx * self.dy
+        steel_weight_bands_kg = float(extra_steel_vol_m3 * 7850)
 
         # Estimar número de varillas de 6m (usando el diámetro base general)
         diam_base = general_slab_steel_x['diam_mm']
         bar_vol_m3 = (np.pi * (diam_base / 1000.0)**2 / 4.0) * 6.0 if diam_base > 0 else 1e-6
         general_bars_6m = int(np.ceil(general_steel_vol_m3 / bar_vol_m3))
-        bands_bars_6m = int(np.ceil((total_steel_vol_m3 - general_steel_vol_m3) / bar_vol_m3)) if total_steel_vol_m3 > general_steel_vol_m3 else 0
+        bands_bars_6m = int(np.ceil(extra_steel_vol_m3 / bar_vol_m3))
         total_bars_6m = general_bars_6m + bands_bars_6m
         
         # --- Cálculo de Superestructura ---
