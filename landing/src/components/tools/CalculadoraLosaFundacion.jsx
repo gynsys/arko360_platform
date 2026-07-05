@@ -361,6 +361,100 @@ export default function CalculadoraLosaFundacion() {
     doc.save("Presupuesto_Materiales_Arko360.pdf");
   };
 
+  const descargarMemoriaCalculoHtml = () => {
+    if (!results || !results.materials_computation) {
+      toast.error("No hay resultados para generar memoria.");
+      return;
+    }
+    const mc = results.materials_computation;
+    const s = mc.superstructure;
+    const area_total = s.area_lisa_m2 + s.area_rustica_m2;
+    
+    const htmlContent = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Memoria de Cálculo - ${projectName}</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; line-height: 1.6; }
+    h1, h2, h3 { color: #1e1e2f; }
+    .card { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    .formula { background: #e3f2fd; padding: 12px; border-left: 4px solid #1976d2; font-family: monospace; font-size: 14px; margin: 10px 0; color: #0d47a1; }
+  </style>
+</head>
+<body>
+  <h1>Memoria de Cálculo: ${projectName}</h1>
+  <p>Reporte generado automáticamente por Arko360. A continuación se detallan las fórmulas y consideraciones matemáticas para los cómputos métricos de este proyecto.</p>
+  
+  <div class="card">
+    <h2>1. Losa de Fundación</h2>
+    <p><strong>Volumen de Concreto:</strong></p>
+    <div class="formula">
+      Fórmula: Área Neta de la Losa × Espesor<br>
+      Resultado: ${mc.concrete_vol_m3.toFixed(2)} m³
+    </div>
+    
+    <p><strong>Acero General (Malla):</strong></p>
+    <div class="formula">
+      Fórmula: Cuantía mínima según norma × Área<br>
+      Peso Total Acero General: ${mc.steel_weight_general_kg.toFixed(2)} kg<br>
+      Varillas de 6m = Peso Total / Peso por Varilla = ${mc.general_bars_6m} varillas
+    </div>
+    
+    <p><strong>Acero de Bandas (Refuerzo inferior bajo muros):</strong></p>
+    <div class="formula">
+      Peso Acero Adicional: ${mc.steel_weight_bands_kg.toFixed(2)} kg<br>
+      Varillas de 6m equivalentes: ${mc.bands_bars_6m} varillas
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>2. Superestructura (Mampostería)</h2>
+    <p><strong>Área Total de Muros a Frisar:</strong><br>
+    Se considera 1 cara exterior y 1 interior para muros perimetrales, y 2 caras interiores para muros internos. A esta área bruta se le resta el área de las puertas y ventanas dibujadas.</p>
+    <div class="formula">
+      Área Lisa (Interna) = ${s.area_lisa_m2.toFixed(2)} m²<br>
+      Área Rústica (Externa) = ${s.area_rustica_m2.toFixed(2)} m²<br>
+      Área Neta Total a frisar = ${area_total.toFixed(2)} m²
+    </div>
+    
+    <p><strong>Cemento Portland para Friso (1 cm espesor):</strong></p>
+    <div class="formula">
+      Rendimiento Base: 1 saco (42.5kg) rinde ~12.5 m² a 1cm de espesor (Proporción 1:4).<br>
+      Sacos = Área Total / 12.5 = Math.ceil(${area_total.toFixed(2)} / 12.5) = ${Math.ceil(area_total / 12.5)} sacos
+    </div>
+    
+    <p><strong>Arena Lavada para Friso:</strong></p>
+    <div class="formula">
+      Rendimiento Base: 1 m³ de arena rinde ~100 m² a 1cm de espesor.<br>
+      Volumen Arena = Área Total / 100 = ${( area_total / 100.0 ).toFixed(2)} m³
+    </div>
+    
+    <p><strong>Bloques de Arcilla:</strong></p>
+    <div class="formula">
+      Rendimiento Base: 12.5 bloques por m² de pared.<br>
+      Bloques 15cm = Área muros de 15cm (${s.bloques_15_m2.toFixed(2)} m²) × 12.5 = ${Math.ceil(s.bloques_15_m2 * 12.5)} und<br>
+      Bloques 12cm = Área muros de 12cm (${s.bloques_12_m2.toFixed(2)} m²) × 12.5 = ${Math.ceil(s.bloques_12_m2 * 12.5)} und
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>3. Acabados y Pintura (Solo interior)</h2>
+    <p><strong>Pasta Profesional:</strong></p>
+    <div class="formula">
+      Rendimiento: 1.8 m² por kg. (Un galón rinde ~6 kg).<br>
+      Pasta (kg) = Área Lisa (${s.area_lisa_m2.toFixed(2)} m²) / 1.8 = ${(s.area_lisa_m2 / 1.8).toFixed(2)} kg<br>
+      Galones requeridos = Math.ceil(kg / 6) = ${Math.ceil(s.area_lisa_m2 / 1.8 / 6.0)} galones
+    </div>
+  </div>
+  
+</body>
+</html>`;
+    
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    saveAs(blob, `Memoria_Calculo_${projectName.replace(/\s+/g,'_')}.html`);
+  };
+
   const snapToGrid = (val) => Math.round(val * 2) / 2; // Snap a 0.5m
 
   // Escala para el SVG
@@ -1601,6 +1695,9 @@ export default function CalculadoraLosaFundacion() {
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px'}}>
                 <h4 style={{margin:0, color:'#333'}}>📋 Presupuesto Estimado</h4>
                 <div style={{display:'flex', gap:'8px'}}>
+                  <button className="btn-success" onClick={descargarMemoriaCalculoHtml} style={{background:'#673ab7'}}>
+                    📘 Memoria de Cálculo (HTML)
+                  </button>
                   <button className="btn-success" onClick={descargarExcel} style={{background:'#1976d2'}}>
                     📄 Descargar Excel con Fórmulas
                   </button>

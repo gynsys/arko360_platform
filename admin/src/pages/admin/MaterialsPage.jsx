@@ -11,7 +11,7 @@ export default function MaterialsPage() {
 
   const fetchMaterials = async () => {
     try {
-      const res = await fetch(`${API_URL}/materials`);
+      const res = await fetch(`${API_URL}/materials/`);
       if (res.ok) {
         const data = await res.json();
         setMaterials(data);
@@ -32,7 +32,7 @@ export default function MaterialsPage() {
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_URL}/materials`, {
+      const res = await fetch(`${API_URL}/materials/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm)
