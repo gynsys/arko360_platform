@@ -189,7 +189,7 @@ export default function CalculadoraLosaFundacion() {
   useEffect(() => {
     const fetchMaterials = async () => {
       try {
-        const res = await fetch(`${API_BASE}/materials`);
+        const res = await fetch(`${API_BASE}/materials/`);
         if (res.ok) {
           const data = await res.json();
           const p = { ...FALLBACK_PRECIOS };
@@ -374,7 +374,7 @@ export default function CalculadoraLosaFundacion() {
     const h = wallHeight || 2.70;
     
     // Perimetrales
-    results.walls.forEach((w, i) => {
+    perimeterWalls.forEach((w, i) => {
       const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
       murosHtml += `<li>Muro Perimetral ${i+1}: ${len.toFixed(2)}m (L) × ${h.toFixed(2)}m (H) = ${(len * h).toFixed(2)} m² (x 2 caras = ${(len * h * 2).toFixed(2)} m²)</li>`;
     });
