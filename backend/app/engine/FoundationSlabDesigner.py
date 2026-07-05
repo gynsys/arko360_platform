@@ -1390,7 +1390,15 @@ class FoundationSlabDesigner:
                         vx, vy = -uy, ux
 
                         if op_type.startswith('door'):
-                            is_left = (op_type == 'door_left')
+                            is_left = 'left' in op_type
+                            is_out = 'out' in op_type
+                            
+                            vx = -uy
+                            vy = ux
+                            if is_out:
+                                vx = -vx
+                                vy = -vy
+                                
                             hx = ox1 if is_left else ox2
                             hy = oy1 if is_left else oy2
                             ex = ox2 if is_left else ox1

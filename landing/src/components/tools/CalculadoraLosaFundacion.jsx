@@ -999,8 +999,8 @@ export default function CalculadoraLosaFundacion() {
                    <tbody>
                      {openings.map(op => {
                        let label = '🪟 Ventana';
-                       if (op.type === 'door_left') label = '🚪 Puerta (Izq)';
-                       if (op.type === 'door_right') label = '🚪 Puerta (Der)';
+                       if (op.type.startsWith('door_left')) label = '🚪 Puerta (Izq)';
+                       if (op.type.startsWith('door_right')) label = '🚪 Puerta (Der)';
                        return (
                        <tr key={op.id}>
                          <td>{label}</td>
@@ -1075,7 +1075,9 @@ export default function CalculadoraLosaFundacion() {
               <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
                 <div className="drag-toolbox" style={{display:'flex', gap:'8px'}}>
                   <div draggable onDragStart={(e) => handleDragStart(e, 'door_left')} className="drag-item" title="Puerta Izquierda">🚪 P. Izq</div>
+                  <div draggable onDragStart={(e) => handleDragStart(e, 'door_left_out')} className="drag-item" title="Puerta Izquierda Afuera">🚪 P. Izq Out</div>
                   <div draggable onDragStart={(e) => handleDragStart(e, 'door_right')} className="drag-item" title="Puerta Derecha">🚪 P. Der</div>
+                  <div draggable onDragStart={(e) => handleDragStart(e, 'door_right_out')} className="drag-item" title="Puerta Derecha Afuera">🚪 P. Der Out</div>
                   <div draggable onDragStart={(e) => handleDragStart(e, 'window')} className="drag-item" title="Ventana">🪟 Ventana</div>
                 </div>
                 <span className="mouse-tracker">📍 X: {mouseCoord.x.toFixed(1)}m, Y: {mouseCoord.y.toFixed(1)}m</span>
@@ -1174,12 +1176,18 @@ export default function CalculadoraLosaFundacion() {
                       const ux = (ox2-ox1)/w_px;
                       const uy = (oy2-oy1)/w_px;
                       // Perpendicular: determines opening direction based on wall drawing direction
-                      // Clockwise rooms will automatically open inwards.
-                      const vx = -uy;
-                      const vy = ux;
+                      let vx = -uy;
+                      let vy = ux;
 
                       if (op.type.startsWith('door')) {
-                        const isLeft = op.type === 'door_left';
+                        const isLeft = op.type.includes('left');
+                        const isOut = op.type.includes('out');
+                        
+                        if (isOut) {
+                          vx = -vx;
+                          vy = -vy;
+                        }
+
                         // Hinge point and free end
                         const hx = isLeft ? ox1 : ox2;
                         const hy = isLeft ? oy1 : oy2;
