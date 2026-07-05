@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float
-from app.db.arko_base import Base
+from app.db.arko_base import ArkoBase
 
-class MaterialPrice(Base):
+class MaterialPrice(ArkoBase):
     __tablename__ = "material_prices"
 
     id = Column(Integer, primary_key=True, index=True)
