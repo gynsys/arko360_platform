@@ -1399,7 +1399,7 @@ class FoundationSlabDesigner:
                             lx = hx + vx * w_px
                             ly = hy + vy * w_px
                             cross = ux * vy - uy * vx
-                            sweep = 1 if (is_left and cross > 0) or (not is_left and cross <= 0) else 0
+                            sweep = 0 if (is_left and cross > 0) or (not is_left and cross <= 0) else 1
 
                             # Borrar muro
                             svg_parts.append(f'<line x1="{ox1:.1f}" y1="{oy1:.1f}" x2="{ox2:.1f}" y2="{oy2:.1f}" stroke="#fafafa" stroke-width="{thickPx+2:.1f}" stroke-linecap="butt"/>')
