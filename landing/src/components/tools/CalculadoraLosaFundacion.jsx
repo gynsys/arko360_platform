@@ -52,8 +52,11 @@ export default function CalculadoraLosaFundacion() {
   // Guardado y Carga de Base de Datos
   const [projectName, setProjectName] = useState("Losa Híbrida");
   const [showOpenModal, setShowOpenModal] = useState(false);
+  const [showSaveAsModal, setShowSaveAsModal] = useState(false);
+  const [saveAsName, setSaveAsName] = useState('');
   const [savedRuns, setSavedRuns] = useState([]);
   const [loadingRuns, setLoadingRuns] = useState(false);
+  const [deletingRunId, setDeletingRunId] = useState(null);
   
   // Muros Internos (Tabla)
   const [internalWalls, setInternalWalls] = useState([]);
@@ -522,9 +525,84 @@ export default function CalculadoraLosaFundacion() {
     }
   };
 
+  const saveAsToDatabase = async (customName) => {
+    if (!lastPayload || !results) return;
+    setSaving(true);
+    try {
+      const runData = {
+        nombre_proyecto: customName || projectName,
+        tipo_losa: 'losa_fundacion_hibrida',
+        inputs: { ...lastPayload, project: customName || projectName },
+        resultados: results
+      };
+      const response = await fetch(`${API_BASE}/calculadora-losas/runs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(runData)
+      });
+      if (response.ok) {
+        setProjectName(customName || projectName);
+        toast.success(`¡Guardado como "${customName}"!`);
+        fetchRuns();
+      } else {
+        toast.error('Error al guardar.');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Error de red al guardar.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteRun = async (e, runId) => {
+    e.stopPropagation();
+    if (!window.confirm('¿Eliminar este cálculo? Esta acción no se puede deshacer.')) return;
+    setDeletingRunId(runId);
+    try {
+      const response = await fetch(`${API_BASE}/calculadora-losas/runs/${runId}`, { method: 'DELETE' });
+      if (response.ok) {
+        toast.success('Cálculo eliminado.');
+        setSavedRuns(prev => prev.filter(r => r.id !== runId));
+      } else {
+        toast.error('Error al eliminar.');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Error de red al eliminar.');
+    } finally {
+      setDeletingRunId(null);
+    }
+  };
+
   return (
     <div className="calc-losa-container">
       {/* MODAL PARA ABRIR PROYECTO */}
+      {showSaveAsModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{maxWidth: '400px'}}>
+            <h3>Guardar Como</h3>
+            <p style={{color:'#666', fontSize:'13px', marginBottom:'12px'}}>Escribe un nombre para este cálculo:</p>
+            <input
+              type="text"
+              value={saveAsName}
+              onChange={e => setSaveAsName(e.target.value)}
+              placeholder="Ej: Losa Casa Principal"
+              className="project-name-input"
+              style={{width:'100%', marginBottom:'16px'}}
+              autoFocus
+              onKeyDown={e => { if (e.key === 'Enter' && saveAsName.trim()) { saveAsToDatabase(saveAsName.trim()); setShowSaveAsModal(false); } }}
+            />
+            <div style={{display:'flex', gap:'8px', justifyContent:'flex-end'}}>
+              <button className="btn-secondary" onClick={() => setShowSaveAsModal(false)}>Cancelar</button>
+              <button className="btn-success" disabled={!saveAsName.trim() || saving} onClick={() => { saveAsToDatabase(saveAsName.trim()); setShowSaveAsModal(false); }}>
+                {saving ? 'Guardando...' : '💾 Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showOpenModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -533,10 +611,20 @@ export default function CalculadoraLosaFundacion() {
               <ul className="runs-list">
                 {savedRuns.length === 0 && <p>No hay cálculos guardados.</p>}
                 {savedRuns.map(run => (
-                  <li key={run.id} onClick={() => loadRun(run)}>
-                    <strong>{run.nombre_proyecto}</strong>
-                    <br/>
-                    <small>{new Date(run.created_at).toLocaleString()}</small>
+                  <li key={run.id} onClick={() => loadRun(run)} className="run-item">
+                    <div className="run-item-info">
+                      <strong>{run.nombre_proyecto}</strong>
+                      <small>{new Date(run.created_at).toLocaleString()}</small>
+                    </div>
+                    <button
+                      className="del-btn"
+                      title="Eliminar cálculo"
+                      disabled={deletingRunId === run.id}
+                      onClick={(e) => deleteRun(e, run.id)}
+                      style={{flexShrink: 0}}
+                    >
+                      {deletingRunId === run.id ? '...' : '🗑️'}
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -692,7 +780,7 @@ export default function CalculadoraLosaFundacion() {
                        return (
                        <tr key={op.id}>
                          <td>{label}</td>
-                         <td>{op.wall_id.substring(0,8)}</td>
+                         <td>{String(op.wall_id).substring(0,8)}</td>
                          <td>{op.start_m.toFixed(2)}</td>
                          <td>{op.width_m.toFixed(2)}</td>
                          <td>{op.height_m.toFixed(2)}</td>
@@ -719,10 +807,18 @@ export default function CalculadoraLosaFundacion() {
                 📄 Descargar Plano y Tabla (HTML)
               </button>
               <button className="btn-secondary" onClick={downloadAuditJSON}>
-                ⬇️ Descargar JSON Auditoría
+                ⬇️ JSON Auditoría
               </button>
               <button className="btn-success" onClick={saveToDatabase} disabled={saving}>
-                💾 {saving ? 'Guardando...' : 'Guardar en Historial'}
+                💾 {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+              <button
+                className="btn-secondary"
+                style={{borderColor:'#4caf50', color:'#2e7d32'}}
+                onClick={() => { setSaveAsName(projectName); setShowSaveAsModal(true); }}
+                disabled={!lastPayload || !results}
+              >
+                📂 Guardar Como
               </button>
             </div>
           )}
