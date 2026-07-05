@@ -1067,19 +1067,24 @@ export default function CalculadoraLosaFundacion() {
 
         </div>
 
+        {/* TOOLBAR VERTICAL FLOTANTE (STICKY) */}
+        <div style={{ position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 10, alignSelf: 'flex-start', background: '#fff', padding: '10px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          <h5 style={{margin: '0', fontSize: '12px', color: '#666', textAlign:'center', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>Arrastrar</h5>
+          <div className="drag-toolbox" style={{display:'flex', flexDirection:'column', gap:'8px'}}>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left')} className="drag-item" title="Puerta Izquierda (Adentro)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}>🚪 P. Izq<br/><small>(Adentro)</small></div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left_out')} className="drag-item" title="Puerta Izquierda (Afuera)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}>🚪 P. Izq<br/><small>(Afuera)</small></div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right')} className="drag-item" title="Puerta Derecha (Adentro)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}>🚪 P. Der<br/><small>(Adentro)</small></div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right_out')} className="drag-item" title="Puerta Derecha (Afuera)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}>🚪 P. Der<br/><small>(Afuera)</small></div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'window')} className="drag-item" title="Ventana" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}>🪟 Ventana</div>
+          </div>
+        </div>
+
         {/* PANEL DERECHO: VISTA PREVIA Y RESULTADOS */}
-        <div className="calc-content">
+        <div className="calc-content" style={{ flex: '1', minWidth: 0 }}>
           <div className="canvas-wrapper hybrid-canvas">
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '10px' }}>
               <h4>Plano Interactivo (Ejes en metros)</h4>
               <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
-                <div className="drag-toolbox" style={{display:'flex', gap:'8px'}}>
-                  <div draggable onDragStart={(e) => handleDragStart(e, 'door_left')} className="drag-item" title="Puerta Izquierda">🚪 P. Izq</div>
-                  <div draggable onDragStart={(e) => handleDragStart(e, 'door_left_out')} className="drag-item" title="Puerta Izquierda Afuera">🚪 P. Izq Out</div>
-                  <div draggable onDragStart={(e) => handleDragStart(e, 'door_right')} className="drag-item" title="Puerta Derecha">🚪 P. Der</div>
-                  <div draggable onDragStart={(e) => handleDragStart(e, 'door_right_out')} className="drag-item" title="Puerta Derecha Afuera">🚪 P. Der Out</div>
-                  <div draggable onDragStart={(e) => handleDragStart(e, 'window')} className="drag-item" title="Ventana">🪟 Ventana</div>
-                </div>
                 <span className="mouse-tracker">📍 X: {mouseCoord.x.toFixed(1)}m, Y: {mouseCoord.y.toFixed(1)}m</span>
               </div>
             </div>
