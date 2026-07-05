@@ -46,7 +46,7 @@ const SHAPES = [
   { id: 'libre', label: 'Libre / Manual' },
 ];
 
-const generarPresupuesto = (results, prices) => {
+const generarPresupuesto = (results, prices, designParams) => {
   if (!results?.materials_computation) return [];
   const m = results.materials_computation;
   const s = m.superstructure;
@@ -70,14 +70,28 @@ const generarPresupuesto = (results, prices) => {
   items.push({ chapter: 'Losa de Fundación', material: 'Piedra picada (Losa)', unit: 'm³', qty: piedra_losa, pu: p.piedra, total: piedra_losa * p.piedra });
 
   // Acero Losa y Bandas
-  const diam_base = m.diam_base_mm || 10;
-  let precio_cabilla = 7.36;
-  if (diam_base === 8) precio_cabilla = p.cabilla_8 || 5.90;
-  else if (diam_base === 10) precio_cabilla = p.cabilla_10 || 5.82;
-  else if (diam_base > 10) precio_cabilla = 7.36 * Math.pow(diam_base / 10, 2);
+  const custom_mesh_cm2_m = designParams?.custom_mesh_cm2_m || 0;
+  
+  let label_acero = 'Cabilla de 10 mm (Losa)';
+  let precio_acero = 7.36; // default 10mm
+  
+  if (custom_mesh_cm2_m > 0) {
+    if (custom_mesh_cm2_m === 0.61) { label_acero = 'Malla 6x6 (Ø3.43@15)'; precio_acero = p.malla_6x6 || 15.0; }
+    else if (custom_mesh_cm2_m === 1.41) { label_acero = 'Varillas Ø6@20cm (Losa)'; precio_acero = p.cabilla_6 || 4.50; }
+    else if (custom_mesh_cm2_m === 1.88) { label_acero = 'Malla Sima (Ø6@15)'; precio_acero = p.malla_sima || 35.0; }
+    else if (custom_mesh_cm2_m === 2.51) { label_acero = 'Varillas Ø8@20cm (Losa)'; precio_acero = p.cabilla_8 || 5.90; }
+    else if (custom_mesh_cm2_m === 3.93) { label_acero = 'Varillas Ø10@20cm (Losa)'; precio_acero = p.cabilla_10 || 5.82; }
+    else if (custom_mesh_cm2_m === 5.24) { label_acero = 'Varillas Ø10@15cm (Losa)'; precio_acero = p.cabilla_10 || 5.82; }
+  } else {
+    const diam_base = m.diam_base_mm || 10;
+    label_acero = `Cabilla de ${diam_base} mm (Losa)`;
+    if (diam_base === 8) precio_acero = p.cabilla_8 || 5.90;
+    else if (diam_base === 10) precio_acero = p.cabilla_10 || 5.82;
+    else if (diam_base > 10) precio_acero = 7.36 * Math.pow(diam_base / 10, 2);
+  }
 
   const total_cabillas_losa = m.total_bars_6m;
-  items.push({ chapter: 'Losa de Fundación', material: `Cabilla de ${diam_base} mm (Losa)`, unit: 'und', qty: total_cabillas_losa, pu: precio_cabilla, total: total_cabillas_losa * precio_cabilla });
+  items.push({ chapter: 'Losa de Fundación', material: label_acero, unit: 'und', qty: total_cabillas_losa, pu: precio_acero, total: total_cabillas_losa * precio_acero });
 
   // ==== CAPÍTULO: MAMPOSTERÍA ====
   if (vol_viga > 0) {
@@ -256,7 +270,7 @@ export default function CalculadoraLosaFundacion() {
   const [drawStart, setDrawStart] = useState(null);
   const [drawEnd, setDrawEnd] = useState(null); // Preview de la línea
   
-  const presupuesto = useMemo(() => generarPresupuesto(results, globalPrices), [results, globalPrices]);
+  const presupuesto = useMemo(() => generarPresupuesto(results, globalPrices, designParams), [results, globalPrices, designParams]);
   const presupuestoTotal = useMemo(() => presupuesto.reduce((acc, it) => acc + it.total, 0), [presupuesto]);
 
   const descargarExcel = async () => {
@@ -369,7 +383,7 @@ export default function CalculadoraLosaFundacion() {
     }
     const mc = results.materials_computation;
     const s = mc.superstructure;
-    const area_total = s.area_lisa_m2 + s.area_rustica_m2;
+    const area_total = s ? s.area_lisa_m2 + s.area_rustica_m2 : 0;
     
     let murosHtml = '';
     const h = wallHeight || 2.70;
@@ -424,9 +438,9 @@ export default function CalculadoraLosaFundacion() {
     
     <p><strong>Acero General (Malla):</strong></p>
     <div class="formula">
-      Fórmula: Cuantía mínima según norma × Área<br>
+      Fórmula: Cuantía mínima o Malla Personalizada<br>
       Peso Total Acero General: ${mc.steel_weight_general_kg.toFixed(2)} kg<br>
-      Varillas de 6m = Peso Total / Peso por Varilla = ${mc.general_bars_6m} varillas
+      Equivalente en Varillas (o planchas según el material elegido): ${mc.general_bars_6m} und
     </div>
     
     <p><strong>Acero de Bandas (Refuerzo inferior bajo muros):</strong></p>
@@ -436,6 +450,7 @@ export default function CalculadoraLosaFundacion() {
     </div>
   </div>
   
+  ${s ? `
   <div class="card">
     <h2>2. Superestructura (Mampostería)</h2>
     <p><strong>Desglose de Áreas por Pared (Altura base: ${h.toFixed(2)}m):</strong></p>
@@ -492,6 +507,10 @@ export default function CalculadoraLosaFundacion() {
       Galones requeridos = Área Lisa (${s.area_lisa_m2.toFixed(2)} m²) / 20 = Math.ceil(${s.area_lisa_m2 / 20.0}) = ${Math.ceil(s.area_lisa_m2 / 20.0)} galones
     </div>
   </div>
+  ` : ''}
+  
+</body>
+
   
 </body>
 </html>`;
