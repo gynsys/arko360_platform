@@ -4,6 +4,8 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import './CalculadoraLosaFundacion.css';
 import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 // ============================================
 // FOUNDATION SLAB EDITOR - HIBRIDO v2
@@ -21,7 +23,7 @@ const MATERIALS = {
   'ladrillo_hueco': { name: 'Ladrillo Hueco (12cm)', thickness: 0.12, density: 1400 },
 };
 
-const PRECIOS = {
+const FALLBACK_PRECIOS = {
   bloque_15: 0.65,
   bloque_12: 0.64,
   cemento: 13.46,
@@ -44,13 +46,14 @@ const SHAPES = [
   { id: 'libre', label: 'Libre / Manual' },
 ];
 
-const generarPresupuesto = (results) => {
+const generarPresupuesto = (results, prices) => {
   if (!results?.materials_computation) return [];
   const m = results.materials_computation;
   const s = m.superstructure;
   if (!s) return [];
 
   const items = [];
+  const p = prices || FALLBACK_PRECIOS;
 
   // Separar losa y mampostería (viga corona)
   const vol_losa = m.concrete_vol_m3;
@@ -58,18 +61,19 @@ const generarPresupuesto = (results) => {
 
   // ==== CAPÍTULO: LOSA DE FUNDACIÓN ====
   const cemento_losa = Math.ceil(vol_losa * 6.7);
-  items.push({ chapter: 'Losa de Fundación', material: 'Cemento Portland (Losa)', unit: 'sacos', qty: cemento_losa, pu: PRECIOS.cemento, total: cemento_losa * PRECIOS.cemento });
+  items.push({ chapter: 'Losa de Fundación', material: 'Cemento Portland (Losa)', unit: 'sacos', qty: cemento_losa, pu: p.cemento, total: cemento_losa * p.cemento });
   
   const arena_losa = +(vol_losa * 0.63).toFixed(2);
-  items.push({ chapter: 'Losa de Fundación', material: 'Arena Lavada (Losa)', unit: 'm³', qty: arena_losa, pu: PRECIOS.arena, total: arena_losa * PRECIOS.arena });
+  items.push({ chapter: 'Losa de Fundación', material: 'Arena Lavada (Losa)', unit: 'm³', qty: arena_losa, pu: p.arena, total: arena_losa * p.arena });
 
   const piedra_losa = +(vol_losa * 0.60).toFixed(2);
-  items.push({ chapter: 'Losa de Fundación', material: 'Piedra picada (Losa)', unit: 'm³', qty: piedra_losa, pu: PRECIOS.piedra, total: piedra_losa * PRECIOS.piedra });
+  items.push({ chapter: 'Losa de Fundación', material: 'Piedra picada (Losa)', unit: 'm³', qty: piedra_losa, pu: p.piedra, total: piedra_losa * p.piedra });
 
   // Acero Losa y Bandas
   const diam_base = m.diam_base_mm || 10;
   let precio_cabilla = 7.36;
-  if (diam_base === 8) precio_cabilla = 5.90;
+  if (diam_base === 8) precio_cabilla = p.cabilla_8 || 5.90;
+  else if (diam_base === 10) precio_cabilla = p.cabilla_10 || 5.82;
   else if (diam_base > 10) precio_cabilla = 7.36 * Math.pow(diam_base / 10, 2);
 
   const total_cabillas_losa = m.total_bars_6m;
@@ -80,27 +84,27 @@ const generarPresupuesto = (results) => {
     const cemento_viga = Math.ceil(vol_viga * 6.7);
     const arena_viga = +(vol_viga * 0.63).toFixed(2);
     const piedra_viga = +(vol_viga * 0.60).toFixed(2);
-    items.push({ chapter: 'Mampostería', material: 'Cemento Portland (Viga Corona)', unit: 'sacos', qty: cemento_viga, pu: PRECIOS.cemento, total: cemento_viga * PRECIOS.cemento });
-    items.push({ chapter: 'Mampostería', material: 'Arena Lavada (Viga Corona)', unit: 'm³', qty: arena_viga, pu: PRECIOS.arena, total: arena_viga * PRECIOS.arena });
-    items.push({ chapter: 'Mampostería', material: 'Piedra picada (Viga Corona)', unit: 'm³', qty: piedra_viga, pu: PRECIOS.piedra, total: piedra_viga * PRECIOS.piedra });
+    items.push({ chapter: 'Mampostería', material: 'Cemento Portland (Viga Corona)', unit: 'sacos', qty: cemento_viga, pu: p.cemento, total: cemento_viga * p.cemento });
+    items.push({ chapter: 'Mampostería', material: 'Arena Lavada (Viga Corona)', unit: 'm³', qty: arena_viga, pu: p.arena, total: arena_viga * p.arena });
+    items.push({ chapter: 'Mampostería', material: 'Piedra picada (Viga Corona)', unit: 'm³', qty: piedra_viga, pu: p.piedra, total: piedra_viga * p.piedra });
   }
 
   // Acero Viga Corona
   if (s.corona_10mm_bars > 0) {
-    items.push({ chapter: 'Mampostería', material: 'Cabilla de 10 mm (Viga Corona)', unit: 'und', qty: s.corona_10mm_bars, pu: PRECIOS.cabilla_10, total: s.corona_10mm_bars * PRECIOS.cabilla_10 });
+    items.push({ chapter: 'Mampostería', material: 'Cabilla de 10 mm (Viga Corona)', unit: 'und', qty: s.corona_10mm_bars, pu: p.cabilla_10, total: s.corona_10mm_bars * p.cabilla_10 });
   }
   if (s.corona_5_2mm_bars > 0) {
-    items.push({ chapter: 'Mampostería', material: 'Cabilla de 5.2 mm (Estribos)', unit: 'und', qty: s.corona_5_2mm_bars, pu: PRECIOS.cabilla_5_2, total: s.corona_5_2mm_bars * PRECIOS.cabilla_5_2 });
+    items.push({ chapter: 'Mampostería', material: 'Cabilla de 5.2 mm (Estribos)', unit: 'und', qty: s.corona_5_2mm_bars, pu: p.cabilla_5_2, total: s.corona_5_2mm_bars * p.cabilla_5_2 });
   }
 
   // Bloques
   if (s.bloques_15_m2 > 0) {
     const qty = Math.ceil(s.bloques_15_m2 * 12.5);
-    items.push({ chapter: 'Mampostería', material: 'Bloque arcilla (15cm)', unit: 'und', qty, pu: PRECIOS.bloque_15, total: qty * PRECIOS.bloque_15 });
+    items.push({ chapter: 'Mampostería', material: 'Bloque arcilla (15cm)', unit: 'und', qty, pu: p.bloque_15, total: qty * p.bloque_15 });
   }
   if (s.bloques_12_m2 > 0) {
     const qty = Math.ceil(s.bloques_12_m2 * 12.5);
-    items.push({ chapter: 'Mampostería', material: 'Bloque arcilla (12cm)', unit: 'und', qty, pu: PRECIOS.bloque_12, total: qty * PRECIOS.bloque_12 });
+    items.push({ chapter: 'Mampostería', material: 'Bloque arcilla (12cm)', unit: 'und', qty, pu: p.bloque_12, total: qty * p.bloque_12 });
   }
 
   // Acabados
@@ -111,8 +115,8 @@ const generarPresupuesto = (results) => {
   const arena_friso = +(area_total_muros / 65.0).toFixed(2);
   
   if (cemento_friso > 0) {
-    items.push({ chapter: 'Mampostería', material: 'Cemento Portland (Friso)', unit: 'sacos', qty: cemento_friso, pu: PRECIOS.cemento, total: cemento_friso * PRECIOS.cemento });
-    items.push({ chapter: 'Mampostería', material: 'Arena Lavada (Friso)', unit: 'm³', qty: arena_friso, pu: PRECIOS.arena, total: arena_friso * PRECIOS.arena });
+    items.push({ chapter: 'Mampostería', material: 'Cemento Portland (Friso)', unit: 'sacos', qty: cemento_friso, pu: p.cemento, total: cemento_friso * p.cemento });
+    items.push({ chapter: 'Mampostería', material: 'Arena Lavada (Friso)', unit: 'm³', qty: arena_friso, pu: p.arena, total: arena_friso * p.arena });
   }
 
   if (s.area_lisa_m2 > 0) {
@@ -123,10 +127,10 @@ const generarPresupuesto = (results) => {
     const lija = Math.ceil(s.area_lisa_m2 / 10);
     const polvillo = +(s.area_lisa_m2 / 100).toFixed(2);
 
-    items.push({ chapter: 'Mampostería', material: 'Polvillo (Acabado liso)', unit: 'm³', qty: polvillo, pu: PRECIOS.polvillo, total: polvillo * PRECIOS.polvillo });
-    items.push({ chapter: 'Mampostería', material: 'Lija', unit: 'hojas', qty: lija, pu: PRECIOS.lija, total: lija * PRECIOS.lija });
-    items.push({ chapter: 'Mampostería', material: 'Pasta Profesional', unit: 'galones', qty: pasta_galones, pu: PRECIOS.pasta, total: pasta_galones * PRECIOS.pasta });
-    items.push({ chapter: 'Mampostería', material: 'Pintura', unit: 'galones', qty: pintura, pu: PRECIOS.pintura, total: pintura * PRECIOS.pintura });
+    items.push({ chapter: 'Mampostería', material: 'Polvillo (Acabado liso)', unit: 'm³', qty: polvillo, pu: p.polvillo, total: polvillo * p.polvillo });
+    items.push({ chapter: 'Mampostería', material: 'Lija', unit: 'hojas', qty: lija, pu: p.lija, total: lija * p.lija });
+    items.push({ chapter: 'Mampostería', material: 'Pasta Profesional', unit: 'galones', qty: pasta_galones, pu: p.pasta, total: pasta_galones * p.pasta });
+    items.push({ chapter: 'Mampostería', material: 'Pintura', unit: 'galones', qty: pintura, pu: p.pintura, total: pintura * p.pintura });
   }
   
   return items;
@@ -179,6 +183,39 @@ export default function CalculadoraLosaFundacion() {
 
   // Aberturas (Puertas y Ventanas) Drag & Drop
   const [openings, setOpenings] = useState([]);
+  const [globalPrices, setGlobalPrices] = useState(FALLBACK_PRECIOS);
+
+  useEffect(() => {
+    const fetchMaterials = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/materials`);
+        if (res.ok) {
+          const data = await res.json();
+          const p = { ...FALLBACK_PRECIOS };
+          data.forEach(m => {
+            const n = m.nombre.toLowerCase();
+            if (n.includes('bloque arcilla (15cm)')) p.bloque_15 = m.precio_usd;
+            else if (n.includes('bloque arcilla (12cm)')) p.bloque_12 = m.precio_usd;
+            else if (n.includes('cemento')) p.cemento = m.precio_usd;
+            else if (n.includes('arena')) p.arena = m.precio_usd;
+            else if (n.includes('piedra')) p.piedra = m.precio_usd;
+            else if (n.includes('cabilla') && n.includes('5')) p.cabilla_5_2 = m.precio_usd;
+            else if (n.includes('cabilla') && n.includes('8')) p.cabilla_8 = m.precio_usd;
+            else if (n.includes('cabilla') && n.includes('10')) p.cabilla_10 = m.precio_usd;
+            else if (n.includes('polvillo')) p.polvillo = m.precio_usd;
+            else if (n.includes('pego')) p.pego = m.precio_usd;
+            else if (n.includes('lija')) p.lija = m.precio_usd;
+            else if (n.includes('pasta')) p.pasta = m.precio_usd;
+            else if (n.includes('pintura')) p.pintura = m.precio_usd;
+          });
+          setGlobalPrices(p);
+        }
+      } catch (e) {
+        console.error('Error fetching global prices', e);
+      }
+    };
+    fetchMaterials();
+  }, []);
 
   // Hover interactivo (bidireccional SVG <-> Tabla)
   const [hoveredWallId, setHoveredWallId] = useState(null);
@@ -217,8 +254,79 @@ export default function CalculadoraLosaFundacion() {
   const [drawStart, setDrawStart] = useState(null);
   const [drawEnd, setDrawEnd] = useState(null); // Preview de la línea
   
-  const presupuesto = useMemo(() => generarPresupuesto(results), [results]);
+  const presupuesto = useMemo(() => generarPresupuesto(results, globalPrices), [results, globalPrices]);
   const presupuestoTotal = useMemo(() => presupuesto.reduce((acc, it) => acc + it.total, 0), [presupuesto]);
+
+  const descargarExcel = async () => {
+    if (!results) return;
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Presupuesto');
+
+    worksheet.columns = [
+      { header: 'Capítulo', key: 'chapter', width: 20 },
+      { header: 'Material', key: 'material', width: 40 },
+      { header: 'Unidad', key: 'unit', width: 15 },
+      { header: 'Cantidad', key: 'qty', width: 15 },
+      { header: 'P.U. ($)', key: 'pu', width: 15 },
+      { header: 'Total ($)', key: 'total', width: 15 }
+    ];
+
+    // Estilos de encabezado
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2E7D32' } };
+
+    let currentRow = 2;
+    ['Losa de Fundación', 'Mampostería'].forEach(chap => {
+      const items = presupuesto.filter(p => p.chapter === chap);
+      if (items.length > 0) {
+        // Título de capítulo
+        const chapRow = worksheet.getRow(currentRow);
+        chapRow.values = [chap];
+        chapRow.font = { bold: true, color: { argb: 'FF0D47A1' } };
+        chapRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3F2FD' } };
+        currentRow++;
+
+        items.forEach(p => {
+          const row = worksheet.getRow(currentRow);
+          row.values = {
+            chapter: '',
+            material: p.material,
+            unit: p.unit,
+            qty: p.qty,
+            pu: p.pu
+          };
+          // Fórmula para el total = Cantidad * P.U.
+          row.getCell('total').value = { formula: `D${currentRow}*E${currentRow}`, result: p.total };
+          row.getCell('total').numFmt = '"$"#,##0.00';
+          row.getCell('pu').numFmt = '"$"#,##0.00';
+          currentRow++;
+        });
+      }
+    });
+
+    // Fila del Gran Total
+    const totalRow = worksheet.getRow(currentRow + 1);
+    totalRow.getCell('pu').value = 'GRAN TOTAL:';
+    totalRow.getCell('pu').font = { bold: true };
+    // Suma de todas las celdas de total (se puede hacer con una fórmula SUM compleja o solo la suma de los valores de los items)
+    // Para simplificar y asegurar que Excel recalcula bien todo, sumamos todo en una sola fórmula
+    // Construimos la lista de celdas de total
+    let formulaParts = [];
+    for (let i = 2; i < currentRow; i++) {
+      if (worksheet.getRow(i).getCell('material').value) {
+        formulaParts.push(`F${i}`);
+      }
+    }
+    if (formulaParts.length > 0) {
+      totalRow.getCell('total').value = { formula: formulaParts.join('+'), result: presupuestoTotal };
+    }
+    totalRow.getCell('total').font = { bold: true };
+    totalRow.getCell('total').numFmt = '"$"#,##0.00';
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `Presupuesto_Losa_${projectName.replace(/\s+/g, '_')}_${Date.now()}.xlsx`);
+  };
 
   const descargarPDFPresupuesto = () => {
     const doc = new jsPDF();
@@ -233,8 +341,9 @@ export default function CalculadoraLosaFundacion() {
       const items = presupuesto.filter(p => p.chapter === chap);
       if (items.length > 0) {
         const sub = items.reduce((a, b) => a + b.total, 0);
+        // jsPDF-autotable soporta string[] en el body
         tableData.push([{ content: chap, colSpan: 4, styles: { fillColor: [227, 242, 253], textColor: [13, 71, 161], fontStyle: 'bold' } }, { content: `$${sub.toFixed(2)}`, styles: { fillColor: [227, 242, 253], textColor: [13, 71, 161], fontStyle: 'bold' } }]);
-        items.forEach(p => tableData.push([`  ${p.material}`, p.unit, p.qty, `$${p.pu.toFixed(2)}`, `$${p.total.toFixed(2)}`]));
+        items.forEach(p => tableData.push([`  ${p.material}`, p.unit, p.qty.toString(), `$${p.pu.toFixed(2)}`, `$${p.total.toFixed(2)}`]));
       }
     });
     
@@ -1480,9 +1589,14 @@ export default function CalculadoraLosaFundacion() {
             <div style={{padding:'20px 24px', overflowX:'auto', background:'#fff'}}>
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px'}}>
                 <h4 style={{margin:0, color:'#333'}}>📋 Presupuesto Estimado</h4>
-                <button className="btn-success" onClick={descargarPDFPresupuesto} style={{background:'#2e7d32'}}>
-                  ⬇️ Descargar PDF
-                </button>
+                <div style={{display:'flex', gap:'8px'}}>
+                  <button className="btn-success" onClick={descargarExcel} style={{background:'#1976d2'}}>
+                    📄 Descargar Excel con Fórmulas
+                  </button>
+                  <button className="btn-success" onClick={descargarPDFPresupuesto} style={{background:'#2e7d32'}}>
+                    📄 Descargar PDF
+                  </button>
+                </div>
               </div>
               <table className="coords-table" style={{minWidth:'720px', fontSize:'13px'}}>
                 <thead>

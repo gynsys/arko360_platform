@@ -10,6 +10,7 @@ import AdminLayout from './components/layout/AdminLayout.jsx';
 import BlogManagementPage from './pages/admin/BlogManagementPage.jsx';
 import SocialGeneratorPage from './modules/biblioarko/pages/social-generator';
 import ProfilePage from './pages/admin/ProfilePage.jsx';
+import MaterialsPage from './pages/admin/MaterialsPage.jsx';
 import { API_URL } from './services/api';
 import { Toaster } from 'react-hot-toast';
 
@@ -81,6 +82,7 @@ function App() {
               <Route path="blog" element={<BlogManagementPage />} />
               <Route path="social-generator" element={<SocialGeneratorPage />} />
               <Route path="profile" element={<ProfilePage />} />
+              <Route path="materials" element={<MaterialsPage />} />
             </Route>
 
             {/* Rutas para sitios clonados usando el slug */}
@@ -98,6 +100,7 @@ function App() {
               <Route path="blog" element={<BlogManagementPage />} />
               <Route path="social-generator" element={<SocialGeneratorPage />} />
               <Route path="profile" element={<ProfilePage />} />
+              <Route path="materials" element={<MaterialsPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

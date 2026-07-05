@@ -14,14 +14,17 @@ from app.blog.router import router as blog_router
 
 api_router = APIRouter()
 
+from app.api.v1.endpoints import solver
+from app.api.v1.endpoints import materials
+
 # Arko 360 Endpoints
+api_router.include_router(materials.router, prefix="/materials", tags=["materials"])
 api_router.include_router(leads.router, prefix="/leads", tags=["leads"])
 api_router.include_router(contact.router, prefix="/arko360/contact", tags=["contact"])
 api_router.include_router(arko.router, prefix="/arko", tags=["arko360"])
 api_router.include_router(
     arko_landing_sites.router, prefix="/arko/landing_sites", tags=["arko_admin_landing_sites"]
 )
-from app.api.v1.endpoints import solver
 
 api_router.include_router(
     calculadora.router, prefix="/calculadora-losas", tags=["calculadora_losas"]
