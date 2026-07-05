@@ -1511,13 +1511,13 @@ class FoundationSlabDesigner:
                 
         vol_vigas_corona_m3 = longitud_perimetral_m * 0.15 * 0.15
         
-        # Acero de vigas de corona: 4Ø8mm + Estribos Ø6mm @20cm (longitud estribo ~0.50m)
-        longitud_varilla_8mm = longitud_perimetral_m * 4
-        corona_8mm_bars = int(np.ceil(longitud_varilla_8mm / 6.0))
+        # Acero de vigas de corona: 3Ø10mm + Estribos Ø5.2mm @20cm (longitud estribo ~0.50m)
+        longitud_varilla_10mm = longitud_perimetral_m * 3
+        corona_10mm_bars = int(np.ceil(longitud_varilla_10mm / 6.0))
         
         num_estribos = int(np.ceil(longitud_perimetral_m / 0.20))
-        longitud_varilla_6mm = num_estribos * 0.50
-        corona_6mm_bars = int(np.ceil(longitud_varilla_6mm / 6.0))
+        longitud_varilla_5_2mm = num_estribos * 0.50
+        corona_5_2mm_bars = int(np.ceil(longitud_varilla_5_2mm / 6.0))
 
         return {
             "displacements": {
@@ -1560,8 +1560,8 @@ class FoundationSlabDesigner:
                     "bloques_15_m2": bloques_15_m2,
                     "bloques_12_m2": bloques_12_m2,
                     "vol_vigas_corona_m3": vol_vigas_corona_m3,
-                    "corona_8mm_bars": corona_8mm_bars,
-                    "corona_6mm_bars": corona_6mm_bars
+                    "corona_10mm_bars": corona_10mm_bars,
+                    "corona_5_2mm_bars": corona_5_2mm_bars
                 }
             }
         }

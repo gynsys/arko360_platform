@@ -26,8 +26,9 @@ const PRECIOS = {
   cemento: 13.46,
   arena: 45.24,
   piedra: 51.04,
+  cabilla_5_2: 1.58,
   cabilla_8: 5.9,
-  cabilla_10: 7.36,
+  cabilla_10: 5.82,
   polvillo: 53.36,
   pego: 3.886,
   lija: 1.5,
@@ -71,12 +72,11 @@ const generarPresupuesto = (results) => {
   items.push({ material: `Cabilla de ${diam_base} mm (Losa)`, unit: 'und', qty: total_cabillas_losa, pu: precio_cabilla, total: total_cabillas_losa * precio_cabilla });
 
   // Acero Viga Corona
-  if (s.corona_8mm_bars > 0) {
-    items.push({ material: 'Cabilla de 8 mm (Viga Corona)', unit: 'und', qty: s.corona_8mm_bars, pu: PRECIOS.cabilla_8, total: s.corona_8mm_bars * PRECIOS.cabilla_8 });
+  if (s.corona_10mm_bars > 0) {
+    items.push({ material: 'Cabilla de 10 mm (Viga Corona)', unit: 'und', qty: s.corona_10mm_bars, pu: PRECIOS.cabilla_10, total: s.corona_10mm_bars * PRECIOS.cabilla_10 });
   }
-  if (s.corona_6mm_bars > 0) {
-    const precio_6 = PRECIOS.cabilla_8 * (36.0/64.0);
-    items.push({ material: 'Cabilla de 6 mm (Estribos)', unit: 'und', qty: s.corona_6mm_bars, pu: precio_6, total: s.corona_6mm_bars * precio_6 });
+  if (s.corona_5_2mm_bars > 0) {
+    items.push({ material: 'Cabilla de 5.2 mm (Estribos)', unit: 'und', qty: s.corona_5_2mm_bars, pu: PRECIOS.cabilla_5_2, total: s.corona_5_2mm_bars * PRECIOS.cabilla_5_2 });
   }
 
   // Bloques
