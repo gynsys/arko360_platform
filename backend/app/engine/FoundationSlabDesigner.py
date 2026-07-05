@@ -614,15 +614,20 @@ class FoundationSlabDesigner:
         best = None
         for d in self.bar_diameters_mm:
             A_bar = self.bar_areas_mm2[d]  # mm²
-            s = A_bar / (As_req * 1e6)  # m (As_req está en m²/m)
+            s = A_bar / (As_req * 1e6)  # m
             # Redondear separación hacia abajo a múltiplo de 2.5 cm (más conservador)
             s_round = np.floor(s / 0.025) * 0.025
             # Verificar límites ACI/prácticos
             s_min = max(0.10, 1.5 * d / 1000.0)
             s_max = min(0.45, 3 * self.h)
-            if s_round >= s_min and s_round <= s_max:
+            
+            # Si el cálculo da una separación mayor que la máxima permitida, usamos la máxima permitida
+            if s_round > s_max:
+                s_round = s_max
+                
+            if s_round >= s_min:
                 As_prov = (A_bar / (s_round * 1e6))  # m²/m
-                score = d * s_round  # Criterio simple: preferir menor diámetro y mayor separación
+                score = d * s_round  # Preferir menor diámetro
                 if best is None or score < best['score']:
                     best = {
                         'diam_mm': d,
@@ -1488,8 +1493,8 @@ class FoundationSlabDesigner:
         diam_base = general_slab_steel_x['diam_mm']
         bar_vol_m3 = (np.pi * (diam_base / 1000.0)**2 / 4.0) * 6.0 if diam_base > 0 else 1e-6
         general_bars_6m = int(np.ceil(general_steel_vol_m3 / bar_vol_m3))
-        total_bars_6m = int(np.ceil(total_steel_vol_m3 / bar_vol_m3))
-        bands_bars_6m = total_bars_6m - general_bars_6m
+        bands_bars_6m = int(np.ceil((total_steel_vol_m3 - general_steel_vol_m3) / bar_vol_m3)) if total_steel_vol_m3 > general_steel_vol_m3 else 0
+        total_bars_6m = general_bars_6m + bands_bars_6m
         
         # --- Cálculo de Superestructura ---
         area_rustica_m2 = 0.0
