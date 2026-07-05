@@ -1077,8 +1077,9 @@ export default function CalculadoraLosaFundacion() {
                         const lx = hx + vx * w_px;
                         const ly = hy + vy * w_px;
                         // Arc sweep: in SVG Y-down, we need to determine CW vs CCW
-                        // The arc goes from (lx,ly) to (ex,ey) with radius w_px
-                        const sweep = isLeft ? 0 : 1;
+                        // Depends on the relative handedness of (ux, uy) and (vx, vy)
+                        const cross = ux * vy - uy * vx;
+                        const sweep = cross > 0 ? (isLeft ? 1 : 0) : (isLeft ? 0 : 1);
                         return (
                           <g key={op.id}>
                             <line x1={ox1} y1={oy1} x2={ox2} y2={oy2} stroke="#fafafa" strokeWidth={thickPx + 2} strokeLinecap="butt" />
@@ -1199,12 +1200,15 @@ export default function CalculadoraLosaFundacion() {
                 <div style={{flex:1, background:'#fff', padding:'12px', borderRadius:'8px', border:'1px solid #e0e0e0'}}>
                   <strong>Acero General Losa (Mínimo):</strong>
                   <div style={{fontSize:'14px', color:'#c62828', fontWeight:'bold'}}>{results.materials_computation.general_slab_steel.bar_x} en X, {results.materials_computation.general_slab_steel.bar_y} en Y</div>
-                  <div style={{fontSize:'12px', color:'#777'}}>Peso total estimado general: {results.materials_computation.steel_weight_general_kg.toFixed(0)} kg</div>
+                  <div style={{fontSize:'12px', color:'#777'}}>Peso estimado: {results.materials_computation.steel_weight_general_kg.toFixed(0)} kg</div>
+                  {results.materials_computation.general_bars_6m && <div style={{fontSize:'12px', color:'#555'}}>~ {results.materials_computation.general_bars_6m} varillas de 6m</div>}
                 </div>
                 <div style={{flex:1, background:'#fff', padding:'12px', borderRadius:'8px', border:'1px solid #e0e0e0'}}>
                   <strong>Acero de Bandas (Refuerzo):</strong>
                   <div style={{fontSize:'12px', color:'#777'}}>Peso adicional en bandas: {results.materials_computation.steel_weight_bands_kg.toFixed(0)} kg</div>
-                  <div style={{fontSize:'14px', color:'#2e7d32', fontWeight:'bold'}}>Total Acero: {(results.materials_computation.steel_weight_general_kg + results.materials_computation.steel_weight_bands_kg).toFixed(0)} kg</div>
+                  {results.materials_computation.bands_bars_6m !== undefined && <div style={{fontSize:'12px', color:'#555'}}>~ {results.materials_computation.bands_bars_6m} varillas de 6m (eq)</div>}
+                  <div style={{fontSize:'14px', color:'#2e7d32', fontWeight:'bold', marginTop:'4px'}}>Total Acero: {(results.materials_computation.steel_weight_general_kg + results.materials_computation.steel_weight_bands_kg).toFixed(0)} kg</div>
+                  {results.materials_computation.total_bars_6m && <div style={{fontSize:'13px', color:'#2e7d32'}}>Total varillas 6m: {results.materials_computation.total_bars_6m}</div>}
                 </div>
               </div>
             </div>

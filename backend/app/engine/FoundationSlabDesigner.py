@@ -1398,7 +1398,8 @@ class FoundationSlabDesigner:
                             
                             lx = hx + vx * w_px
                             ly = hy + vy * w_px
-                            sweep = 0 if is_left else 1
+                            cross = ux * vy - uy * vx
+                            sweep = 1 if (is_left and cross > 0) or (not is_left and cross <= 0) else 0
 
                             # Borrar muro
                             svg_parts.append(f'<line x1="{ox1:.1f}" y1="{oy1:.1f}" x2="{ox2:.1f}" y2="{oy2:.1f}" stroke="#fafafa" stroke-width="{thickPx+2:.1f}" stroke-linecap="butt"/>')
@@ -1454,20 +1455,28 @@ class FoundationSlabDesigner:
         self.check_punching()
         
         As_min_cm2 = float(self.rho_min * 1.0 * self.h * 1e4)
-        general_slab_steel_x = self._propose_bars(As_min_cm2)
-        general_slab_steel_y = self._propose_bars(As_min_cm2)
+        As_min_m2 = float(self.rho_min * 1.0 * self.h)
+        general_slab_steel_x = self._propose_bars(As_min_m2)
+        general_slab_steel_y = self._propose_bars(As_min_m2)
         
         concrete_vol_m3 = float(self.Lx * self.Ly * self.h)
         
         # Acero general de losa (ambas direcciones)
-        general_steel_vol_m3 = 2 * (As_min_cm2 / 10000) * self.Lx * self.Ly
+        general_steel_vol_m3 = 2 * As_min_m2 * self.Lx * self.Ly
         steel_weight_general_kg = float(general_steel_vol_m3 * 7850)
         
-        # Acero total real computado en la malla (cm2/m -> m2/m * area)
-        total_steel_vol_m3 = np.sum((self.Asx / 10000) + (self.Asy / 10000)) * self.dx * self.dy
+        # Acero total real computado en la malla (m2/m * area)
+        total_steel_vol_m3 = np.sum(self.Asx + self.Asy) * self.dx * self.dy
         steel_weight_total_kg = float(total_steel_vol_m3 * 7850)
         
         steel_weight_bands_kg = max(0.0, float(steel_weight_total_kg - steel_weight_general_kg))
+
+        # Estimar número de varillas de 6m (usando el diámetro base general)
+        diam_base = general_slab_steel_x['diam_mm']
+        bar_vol_m3 = (np.pi * (diam_base / 1000.0)**2 / 4.0) * 6.0 if diam_base > 0 else 1e-6
+        general_bars_6m = int(np.ceil(general_steel_vol_m3 / bar_vol_m3))
+        total_bars_6m = int(np.ceil(total_steel_vol_m3 / bar_vol_m3))
+        bands_bars_6m = total_bars_6m - general_bars_6m
 
         return {
             "displacements": {
@@ -1499,7 +1508,10 @@ class FoundationSlabDesigner:
                     "bar_y": f"Ø{general_slab_steel_y['diam_mm']}@{int(general_slab_steel_y['sep_m']*100)}cm"
                 },
                 "steel_weight_general_kg": steel_weight_general_kg,
-                "steel_weight_bands_kg": steel_weight_bands_kg
+                "steel_weight_bands_kg": steel_weight_bands_kg,
+                "general_bars_6m": general_bars_6m,
+                "bands_bars_6m": bands_bars_6m,
+                "total_bars_6m": total_bars_6m
             }
         }
 
