@@ -1477,6 +1477,42 @@ class FoundationSlabDesigner:
         general_bars_6m = int(np.ceil(general_steel_vol_m3 / bar_vol_m3))
         total_bars_6m = int(np.ceil(total_steel_vol_m3 / bar_vol_m3))
         bands_bars_6m = total_bars_6m - general_bars_6m
+        
+        # --- Cálculo de Superestructura ---
+        area_rustica_m2 = 0.0
+        area_lisa_m2 = 0.0
+        bloques_15_m2 = 0.0
+        bloques_12_m2 = 0.0
+        
+        # Vigas de corona (solo en perimetrales)
+        vol_vigas_corona_m3 = 0.0
+        longitud_perimetral_m = 0.0
+        
+        for w in self.walls:
+            op_area = sum(op.get('width', 0) * op.get('height', 0) for op in w.openings) if w.openings else 0
+            net_area = max(0, w.length * w.height - op_area)
+            
+            if abs(w.thickness - 0.15) < 0.01:
+                bloques_15_m2 += net_area
+            else:
+                bloques_12_m2 += net_area
+                
+            if w.wall_type == 'perimetral':
+                area_rustica_m2 += net_area  # Lado exterior
+                area_lisa_m2 += net_area     # Lado interior
+                longitud_perimetral_m += w.length
+            else:
+                area_lisa_m2 += net_area * 2 # Ambos lados
+                
+        vol_vigas_corona_m3 = longitud_perimetral_m * 0.15 * 0.15
+        
+        # Acero de vigas de corona: 4Ø8mm + Estribos Ø6mm @20cm (longitud estribo ~0.50m)
+        longitud_varilla_8mm = longitud_perimetral_m * 4
+        corona_8mm_bars = int(np.ceil(longitud_varilla_8mm / 6.0))
+        
+        num_estribos = int(np.ceil(longitud_perimetral_m / 0.20))
+        longitud_varilla_6mm = num_estribos * 0.50
+        corona_6mm_bars = int(np.ceil(longitud_varilla_6mm / 6.0))
 
         return {
             "displacements": {
@@ -1511,7 +1547,17 @@ class FoundationSlabDesigner:
                 "steel_weight_bands_kg": steel_weight_bands_kg,
                 "general_bars_6m": general_bars_6m,
                 "bands_bars_6m": bands_bars_6m,
-                "total_bars_6m": total_bars_6m
+                "total_bars_6m": total_bars_6m,
+                "diam_base_mm": diam_base,
+                "superstructure": {
+                    "area_rustica_m2": area_rustica_m2,
+                    "area_lisa_m2": area_lisa_m2,
+                    "bloques_15_m2": bloques_15_m2,
+                    "bloques_12_m2": bloques_12_m2,
+                    "vol_vigas_corona_m3": vol_vigas_corona_m3,
+                    "corona_8mm_bars": corona_8mm_bars,
+                    "corona_6mm_bars": corona_6mm_bars
+                }
             }
         }
 

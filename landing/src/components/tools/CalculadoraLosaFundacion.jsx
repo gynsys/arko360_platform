@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import './CalculadoraLosaFundacion.css';
 
 // ============================================
@@ -18,6 +20,20 @@ const MATERIALS = {
   'ladrillo_hueco': { name: 'Ladrillo Hueco (12cm)', thickness: 0.12, density: 1400 },
 };
 
+const PRECIOS = {
+  bloque_15: 0.65,
+  bloque_12: 0.64,
+  cemento: 13.46,
+  arena: 45.24,
+  piedra: 51.04,
+  cabilla_8: 5.9,
+  cabilla_10: 7.36,
+  polvillo: 53.36,
+  pego: 3.886,
+  lija: 1.5,
+  pasta: 17.48,
+  pintura: 11
+};
 const SHAPES = [
   { id: 'rectangular', label: 'Rectangular' },
   { id: 'L', label: 'Forma en L' },
@@ -25,6 +41,80 @@ const SHAPES = [
   { id: 'T', label: 'Forma en T' },
   { id: 'libre', label: 'Libre / Manual' },
 ];
+
+const generarPresupuesto = (results) => {
+  if (!results?.materials_computation) return [];
+  const m = results.materials_computation;
+  const s = m.superstructure;
+  if (!s) return [];
+
+  const items = [];
+
+  // Concreto Losa + Vigas (volumen total)
+  const vol_concreto = m.concrete_vol_m3 + s.vol_vigas_corona_m3;
+  const cemento = Math.ceil(vol_concreto * 8.3);
+  items.push({ material: 'Cemento Portland', unit: 'sacos', qty: cemento, pu: PRECIOS.cemento, total: cemento * PRECIOS.cemento });
+  
+  const arena = +(vol_concreto * 0.55).toFixed(2);
+  items.push({ material: 'Arena Lavada', unit: 'm³', qty: arena, pu: PRECIOS.arena, total: arena * PRECIOS.arena });
+
+  const piedra = +(vol_concreto * 0.84).toFixed(2);
+  items.push({ material: 'Piedra picada', unit: 'm³', qty: piedra, pu: PRECIOS.piedra, total: piedra * PRECIOS.piedra });
+
+  // Acero Losa y Bandas
+  const diam_base = m.diam_base_mm || 10;
+  let precio_cabilla = 7.36;
+  if (diam_base === 8) precio_cabilla = 5.90;
+  else if (diam_base > 10) precio_cabilla = 7.36 * Math.pow(diam_base / 10, 2);
+
+  const total_cabillas_losa = m.total_bars_6m;
+  items.push({ material: `Cabilla de ${diam_base} mm (Losa)`, unit: 'und', qty: total_cabillas_losa, pu: precio_cabilla, total: total_cabillas_losa * precio_cabilla });
+
+  // Acero Viga Corona
+  if (s.corona_8mm_bars > 0) {
+    items.push({ material: 'Cabilla de 8 mm (Viga Corona)', unit: 'und', qty: s.corona_8mm_bars, pu: PRECIOS.cabilla_8, total: s.corona_8mm_bars * PRECIOS.cabilla_8 });
+  }
+  if (s.corona_6mm_bars > 0) {
+    const precio_6 = PRECIOS.cabilla_8 * (36.0/64.0);
+    items.push({ material: 'Cabilla de 6 mm (Estribos)', unit: 'und', qty: s.corona_6mm_bars, pu: precio_6, total: s.corona_6mm_bars * precio_6 });
+  }
+
+  // Bloques
+  if (s.bloques_15_m2 > 0) {
+    const qty = Math.ceil(s.bloques_15_m2 * 12.5);
+    items.push({ material: 'Bloque arcilla (15cm)', unit: 'und', qty, pu: PRECIOS.bloque_15, total: qty * PRECIOS.bloque_15 });
+  }
+  if (s.bloques_12_m2 > 0) {
+    const qty = Math.ceil(s.bloques_12_m2 * 12.5);
+    items.push({ material: 'Bloque arcilla (12cm)', unit: 'und', qty, pu: PRECIOS.bloque_12, total: qty * PRECIOS.bloque_12 });
+  }
+
+  // Acabados
+  const area_total_muros = s.area_lisa_m2 + s.area_rustica_m2;
+  const vol_friso = area_total_muros * 0.02; // Espesor 2cm
+  
+  const cemento_friso = Math.ceil(vol_friso * 8.0);
+  const arena_friso = +(vol_friso * 1.0).toFixed(2);
+  
+  if (cemento_friso > 0) {
+    items.push({ material: 'Cemento Portland (Friso)', unit: 'sacos', qty: cemento_friso, pu: PRECIOS.cemento, total: cemento_friso * PRECIOS.cemento });
+    items.push({ material: 'Arena Lavada (Friso)', unit: 'm³', qty: arena_friso, pu: PRECIOS.arena, total: arena_friso * PRECIOS.arena });
+  }
+
+  if (s.area_lisa_m2 > 0) {
+    const pasta = Math.ceil(s.area_lisa_m2 / 10);
+    const pintura = Math.ceil(s.area_lisa_m2 / 10);
+    const lija = Math.ceil(s.area_lisa_m2 / 10);
+    const polvillo = +(s.area_lisa_m2 / 100).toFixed(2);
+
+    items.push({ material: 'Polvillo (Acabado liso)', unit: 'm³', qty: polvillo, pu: PRECIOS.polvillo, total: polvillo * PRECIOS.polvillo });
+    items.push({ material: 'Lija', unit: 'hojas', qty: lija, pu: PRECIOS.lija, total: lija * PRECIOS.lija });
+    items.push({ material: 'Pasta Profesional', unit: 'galones', qty: pasta, pu: PRECIOS.pasta, total: pasta * PRECIOS.pasta });
+    items.push({ material: 'Pintura', unit: 'galones', qty: pintura, pu: PRECIOS.pintura, total: pintura * PRECIOS.pintura });
+  }
+  
+  return items;
+};
 
 export default function CalculadoraLosaFundacion() {
   const svgRef = useRef(null);
@@ -82,6 +172,32 @@ export default function CalculadoraLosaFundacion() {
   const [drawStart, setDrawStart] = useState(null);
   const [drawEnd, setDrawEnd] = useState(null); // Preview de la línea
   
+  const presupuesto = useMemo(() => generarPresupuesto(results), [results]);
+  const presupuestoTotal = useMemo(() => presupuesto.reduce((acc, it) => acc + it.total, 0), [presupuesto]);
+
+  const descargarPDFPresupuesto = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Presupuesto Estimado de Construcción", 14, 22);
+    
+    doc.setFontSize(11);
+    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 30);
+    
+    const tableData = presupuesto.map(p => [p.material, p.unit, p.qty, `$${p.pu.toFixed(2)}`, `$${p.total.toFixed(2)}`]);
+    
+    doc.autoTable({
+      startY: 35,
+      head: [['Material', 'Unidad', 'Cantidad', 'P.U.', 'Total']],
+      body: tableData,
+      foot: [['', '', '', 'GRAN TOTAL', `$${presupuestoTotal.toFixed(2)}`]],
+      theme: 'grid',
+      headStyles: { fillColor: [46, 125, 50] },
+      footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
+    });
+    
+    doc.save("Presupuesto_Materiales_Arko360.pdf");
+  };
+
   const snapToGrid = (val) => Math.round(val * 2) / 2; // Snap a 0.5m
 
   // Escala para el SVG
@@ -1249,6 +1365,46 @@ export default function CalculadoraLosaFundacion() {
                     );
                   })}
                 </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Tabla de Presupuesto */}
+          {presupuesto.length > 0 && (
+            <div style={{padding:'20px 24px', overflowX:'auto', background:'#fff'}}>
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px'}}>
+                <h4 style={{margin:0, color:'#333'}}>📋 Presupuesto Estimado</h4>
+                <button className="btn-success" onClick={descargarPDFPresupuesto} style={{background:'#2e7d32'}}>
+                  ⬇️ Descargar PDF
+                </button>
+              </div>
+              <table className="coords-table" style={{minWidth:'720px', fontSize:'13px'}}>
+                <thead>
+                  <tr style={{background:'#1e1e2f', color:'#fff'}}>
+                    <th style={{color:'#fff', textAlign:'left'}}>Material</th>
+                    <th style={{color:'#fff'}}>Unidad</th>
+                    <th style={{color:'#fff'}}>Cantidad</th>
+                    <th style={{color:'#fff'}}>P.U. ($)</th>
+                    <th style={{color:'#fff', textAlign:'right'}}>Total ($)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {presupuesto.map((p, i) => (
+                    <tr key={i} style={{background: i % 2 === 0 ? '#f9f9f9' : '#fff'}}>
+                      <td style={{textAlign:'left', fontWeight:'500'}}>{p.material}</td>
+                      <td>{p.unit}</td>
+                      <td>{p.qty}</td>
+                      <td>{p.pu.toFixed(2)}</td>
+                      <td style={{textAlign:'right', fontWeight:'bold', color:'#2e7d32'}}>{p.total.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr style={{background:'#eeeeee'}}>
+                    <td colSpan="4" style={{textAlign:'right', fontWeight:'bold', fontSize:'14px'}}>GRAN TOTAL:</td>
+                    <td style={{textAlign:'right', fontWeight:'bold', fontSize:'16px', color:'#1b5e20'}}>${presupuestoTotal.toFixed(2)}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
