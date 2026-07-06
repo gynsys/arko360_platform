@@ -1538,6 +1538,16 @@ export default function CalculadoraLosaFundacion() {
 
               {/* Losa Máxima (Bounding Box) */}
               <rect x={MARGIN} y={MARGIN} width={toSvg(params.Lx)-MARGIN} height={toSvg(params.Ly)-MARGIN} fill="rgba(33, 150, 243, 0.03)" stroke="#2196f3" strokeDasharray="5,5" />
+              
+              {/* Referencia: Límites de Parcela y Frente */}
+              <text x={toSvg(params.Lx/2)} y={MARGIN + 15} fontSize="11" fill="#2196f3" textAnchor="middle" fontWeight="bold" opacity="0.6" style={{pointerEvents: 'none'}}>
+                LÍMITES DE PARCELA
+              </text>
+              <g transform={`translate(${toSvg(params.Lx/2)}, ${toSvg(params.Ly) + 15})`} style={{pointerEvents: 'none'}}>
+                <text x="0" y="10" fontSize="11" fill="#333" textAnchor="middle" fontWeight="bold">FRENTE</text>
+                <polygon points="-6,-2 6,-2 0,-12" fill="#333" />
+                <rect x="-2" y="-2" width="4" height="6" fill="#333" />
+              </g>
 
               {/* Muros */}
               {allWalls.map(w => {
