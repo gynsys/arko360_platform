@@ -578,9 +578,33 @@ export default function CalculadoraLosaFundacion() {
     let max_as_x = 0; let max_as_y = 0;
     if (results.bands) {
       results.bands.forEach(b => {
-        if (b.As_x_cm2_m > max_as_x) max_as_x = b.As_x_cm2_m;
-        if (b.As_y_cm2_m > max_as_y) max_as_y = b.As_y_cm2_m;
+        if (b.Asx_cm2_m > max_as_x) max_as_x = b.Asx_cm2_m;
+        if (b.Asy_cm2_m > max_as_y) max_as_y = b.Asy_cm2_m;
       });
+    }
+
+    const nx = results.heatmaps?.nx || 21;
+    const ny = results.heatmaps?.ny || 21;
+    const dx = payload.geometry.Lx / (nx - 1);
+    const dy = payload.geometry.Ly / (ny - 1);
+    const matrixSize = nx * ny;
+    
+    let murosHtml = '';
+    if (payload.loads && payload.loads.walls) {
+      payload.loads.walls.forEach((w, i) => {
+        const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
+        const F_lineal = w.thickness * w.height * w.density;
+        murosHtml += `<tr><td>Muro ${i+1} (${w.type})</td><td>${len.toFixed(2)} m</td><td>${w.thickness.toFixed(2)} m</td><td>${w.height.toFixed(2)} m</td><td>${F_lineal.toFixed(2)} kN/m</td></tr>`;
+      });
+    }
+
+    let bandasHtml = '';
+    if (results.bands && results.bands.length > 0) {
+      results.bands.forEach((b, i) => {
+        bandasHtml += `<li><strong>Banda ${i+1} (Muro ${b.type}):</strong> Mu_x = ${b.Mx_design_kNm_m.toFixed(2)} kN·m/m, Mu_y = ${b.My_design_kNm_m.toFixed(2)} kN·m/m ➔ As_x = ${b.Asx_cm2_m.toFixed(2)} cm²/m, As_y = ${b.Asy_cm2_m.toFixed(2)} cm²/m</li>`;
+      });
+    } else {
+      bandasHtml = `<li>No hay bandas a evaluar o diseño libre.</li>`;
     }
 
     const htmlContent = `<!DOCTYPE html>
@@ -645,7 +669,14 @@ export default function CalculadoraLosaFundacion() {
 
   <div class="card">
     <h2>3. Discretización y Flujo de Cálculo</h2>
-    <p>Para resolver la ecuación diferencial, dividimos la losa en una cuadrícula regular con espaciamiento Δx = Δy = h. Esta discretización transforma el problema continuo en un sistema algebraico matricial.</p>
+    <p>Para resolver la ecuación diferencial, dividimos la losa en una cuadrícula regular. El sistema de ecuaciones algebraicas (matriz) que resuelve el motor es de tamaño <strong>${matrixSize} × ${matrixSize}</strong> nodos.</p>
+    <ul>
+      <li>Nodos en X (nx): ${nx}</li>
+      <li>Nodos en Y (ny): ${ny}</li>
+      <li>Espaciamiento Δx: ${dx.toFixed(3)} m</li>
+      <li>Espaciamiento Δy: ${dy.toFixed(3)} m</li>
+    </ul>
+    <p>La discretización transforma el problema continuo en un sistema algebraico matricial (A·w = b), que modela la interacción entre la losa, la carga y el suelo (k·w).</p>
     <pre class="formula" style="background:#f1f5f9; color:#334155; font-size:12px; line-height:1.2; overflow-x:auto;">
       j=4  ●---●---●---●---●
            |   |   |   |   |
@@ -709,6 +740,15 @@ export default function CalculadoraLosaFundacion() {
     <div class="formula">
       q(i,j) = (F_lineal) / (Δx · Δy) · (longitud de influencia en el nodo)
     </div>
+    <h3>Cargas Específicas del Proyecto (Muros)</h3>
+    <table>
+      <thead>
+        <tr><th>Identificador</th><th>Longitud</th><th>Espesor</th><th>Altura</th><th>Carga Lineal Calculada (kN/m)</th></tr>
+      </thead>
+      <tbody>
+        ${murosHtml || '<tr><td colspan="5">No hay muros definidos para cargar linealmente.</td></tr>'}
+      </tbody>
+    </table>
   </div>
 
   <div class="card">
@@ -729,11 +769,16 @@ export default function CalculadoraLosaFundacion() {
     <div class="formula">
       As_min = ρ_min · b · h = 0.0018 · 100 cm · ${h_cm.toFixed(0)} cm = ${As_min.toFixed(2)} cm²/m
     </div>
-    <p><strong>Acero Requerido por Flexión (Whitney):</strong></p>
+    <p><strong>Acero Requerido por Flexión en Franjas Críticas (Whitney):</strong></p>
     <div class="formula">
-      As_flexion = Mu / [ φ · fy · (d - a/2) ]<br>
-      As_x (máx iterativo): ${max_as_x.toFixed(2)} cm²/m<br>
-      As_y (máx iterativo): ${max_as_y.toFixed(2)} cm²/m
+      As_flexion = Mu / [ φ · fy · (d - a/2) ]<br><br>
+      Evaluación de bandas (bajo muros):<br>
+      <ul>
+        ${bandasHtml}
+      </ul>
+      <br>
+      Máximo esfuerzo demandado en iteración X: ${max_as_x.toFixed(2)} cm²/m<br>
+      Máximo esfuerzo demandado en iteración Y: ${max_as_y.toFixed(2)} cm²/m
     </div>
     <p style="font-size:13px; color:#555;"><i>Nota Técnica: Si los esfuerzos flectores de la losa son bajos y la ecuación de Whitney arroja una cuantía menor que el mínimo normativo, el algoritmo reporta 0.00 cm²/m para la flexión puramente iterativa, demostrando matemáticamente que el acero por flexión no domina el diseño.</i></p>
     <p><strong>Conclusión Estructural:</strong> <span style="color:${(max_as_x <= As_min && max_as_y <= As_min)?'#4caf50':'#ff9800'}; font-weight:bold;">${ (max_as_x <= As_min && max_as_y <= As_min) ? 'El acero MÍNIMO rige el diseño. La malla base general es suficiente (As_flexion < As_min).' : 'El acero por FLEXIÓN rige el diseño. Se requieren bandas de refuerzo extra bajo los muros más pesados.' }</span></p>
