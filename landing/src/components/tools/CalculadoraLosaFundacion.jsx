@@ -452,21 +452,44 @@ export default function CalculadoraLosaFundacion() {
 
     // 4. Resultados del Análisis de Suelo
     addLine("4. Esfuerzos Transmitidos al Terreno", 14, 'bold', [33, 150, 243]);
+    addLine("El modelo de Winkler asume que la presión de contacto es proporcional al asentamiento elástico de la losa. La fórmula que rige el esfuerzo sobre el terreno es:");
+    addLine("q(x,y) = k · w(x,y)", 12, 'italic');
+    addLine("Donde:");
+    addLine(`- k (módulo de balasto) = ${(payload.materials.k / 1e6).toFixed(2)} MN/m³ = ${(payload.materials.k / 9806.65).toFixed(2)} kgf/cm³`);
+    const w_max_m = (results.displacements?.w_max_mm || 0) / 1000;
+    addLine(`- w_max (asentamiento máximo) = ${(w_max_m * 100).toFixed(2)} cm`);
+    
+    addLine("Sustituyendo los valores máximos obtenidos de la simulación numérica:");
     const p_max = results.soil_pressure?.max_pressure_kN_m2 || 0;
-    const q_adm = results.soil_pressure?.q_adm_kN_m2 || 1;
     const q_max_kgcm2 = (p_max / 98.0665).toFixed(3);
-    addLine(`Presión Máxima Calculada sobre el suelo (q_max): ${q_max_kgcm2} kgf/cm²`);
+    addLine(`q_max = ${(payload.materials.k / 9806.65).toFixed(2)} kgf/cm³ · ${(w_max_m * 100).toFixed(2)} cm = ${q_max_kgcm2} kgf/cm²`);
+    
     if (results.soil_pressure?.ok) {
-      addLine("VERIFICACIÓN: SATISFACTORIA. La presión máxima transmitida al suelo es MENOR a la capacidad portante admisible.", 10, 'bold', [46, 125, 50]);
+      addLine(`VERIFICACIÓN: SATISFACTORIA. La presión máxima (${q_max_kgcm2} kgf/cm²) es MENOR a la capacidad portante admisible (${(payload.materials.q_adm / 98066.5).toFixed(2)} kgf/cm²).`, 10, 'bold', [46, 125, 50]);
     } else {
-      addLine("VERIFICACIÓN: FALLA. La presión máxima SUPERA la capacidad portante admisible del suelo.", 10, 'bold', [198, 40, 40]);
+      addLine(`VERIFICACIÓN: FALLA. La presión máxima (${q_max_kgcm2} kgf/cm²) SUPERA la capacidad portante admisible.`, 10, 'bold', [198, 40, 40]);
     }
     y += 5;
 
     // 5. Esfuerzos Flexionantes Máximos
     addLine("5. Solicitaciones Máximas en la Losa", 14, 'bold', [33, 150, 243]);
-    addLine(`Momento Flector Máximo (Mxx): ${(results.moments?.Mx_max_kNm_m || 0).toFixed(2)} kN·m/m`);
-    addLine(`Momento Flector Máximo (Myy): ${(results.moments?.My_max_kNm_m || 0).toFixed(2)} kN·m/m`);
+    addLine("De acuerdo a la teoría de placas de Kirchhoff, los momentos flectores internos dependen de la curvatura de la losa (las segundas derivadas del asentamiento) y de la Rigidez Flexional (D):");
+    addLine("Mxx = -D · [ (∂²w/∂x²) + ν(∂²w/∂y²) ]", 12, 'italic');
+    addLine("Myy = -D · [ (∂²w/∂y²) + ν(∂²w/∂x²) ]", 12, 'italic');
+    
+    // Cálculo de D para demostrar
+    const E_MPa = payload.materials.E / 1e6;
+    const h = payload.geometry.h;
+    const nu = 0.2;
+    const D_kNm = (payload.materials.E * Math.pow(h, 3)) / (12 * (1 - Math.pow(nu, 2))) / 1000; // en kN·m
+    
+    addLine("Donde la Rigidez Flexional (D) de la losa se calcula como:");
+    addLine("D = (E · h³) / (12 · (1 - ν²))", 12, 'italic');
+    addLine(`D = (${E_MPa.toFixed(0)} MPa · ${(h).toFixed(2)}³ m³) / (12 · (1 - 0.2²)) = ${D_kNm.toFixed(2)} kN·m`);
+    
+    addLine("Dado que la losa presenta asimetrías y cargas distribuidas complejas, las derivadas (∂²w) se resuelven numéricamente iterando la malla de diferencias finitas en el servidor. Los momentos máximos absolutos extraídos del modelo matemático son:");
+    addLine(`Mxx_max = ${(results.moments?.Mx_max_kNm_m || 0).toFixed(2)} kN·m/m`);
+    addLine(`Myy_max = ${(results.moments?.My_max_kNm_m || 0).toFixed(2)} kN·m/m`);
     y += 5;
 
     // 6. Diseño de Acero de Refuerzo (ACI 318)
