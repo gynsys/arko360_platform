@@ -103,7 +103,7 @@ class FoundationSlabDesigner:
         self.phi_punch = 0.75
 
         if bar_diameters_mm is None:
-            self.bar_diameters_mm = [8, 10, 12, 16, 20, 25]
+            self.bar_diameters_mm = [7, 8, 10, 12, 16, 20, 25]
         else:
             self.bar_diameters_mm = bar_diameters_mm
 

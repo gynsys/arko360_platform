@@ -32,6 +32,7 @@ const FALLBACK_PRECIOS = {
   arena: 45.24,
   piedra: 51.04,
   cabilla_5_2: 1.58,
+  cabilla_7: 4.5,
   cabilla_8: 5.9,
   cabilla_10: 5.82,
   polvillo: 53.36,
@@ -90,6 +91,7 @@ const generarPresupuesto = (results, prices, designParams) => {
     } else {
       // Son varillas (se calcula por und de 6m)
       if (custom_mesh_cm2_m === 1.41) { label_acero = 'Varillas Ø6@20cm (Losa)'; precio_acero = p.cabilla_6 || 4.50; }
+      else if (custom_mesh_cm2_m === 1.92) { label_acero = 'Varillas Ø7@20cm (Losa)'; precio_acero = p.cabilla_7 || 4.50; }
       else if (custom_mesh_cm2_m === 2.51) { label_acero = 'Varillas Ø8@20cm (Losa)'; precio_acero = p.cabilla_8 || 5.90; }
       else if (custom_mesh_cm2_m === 3.93) { label_acero = 'Varillas Ø10@20cm (Losa)'; precio_acero = p.cabilla_10 || 5.82; }
       else if (custom_mesh_cm2_m === 5.24) { label_acero = 'Varillas Ø10@15cm (Losa)'; precio_acero = p.cabilla_10 || 5.82; }
@@ -100,7 +102,8 @@ const generarPresupuesto = (results, prices, designParams) => {
   } else {
     const diam_base = m.diam_base_mm || 10;
     label_acero = `Cabilla de ${diam_base} mm (Losa)`;
-    if (diam_base === 8) precio_acero = p.cabilla_8 || 5.90;
+    if (diam_base === 7) precio_acero = p.cabilla_7 || 4.50;
+    else if (diam_base === 8) precio_acero = p.cabilla_8 || 5.90;
     else if (diam_base === 10) precio_acero = p.cabilla_10 || 5.82;
     else if (diam_base > 10) precio_acero = 7.36 * Math.pow(diam_base / 10, 2);
     
@@ -232,6 +235,7 @@ export default function CalculadoraLosaFundacion() {
             else if (n.includes('piedra')) p.piedra = m.precio_usd;
             else if (n.includes('cabilla') && n.includes('5')) p.cabilla_5_2 = m.precio_usd;
             else if (n.includes('cabilla') && (n.includes('6') || n.includes(' 6'))) p.cabilla_6 = m.precio_usd;
+            else if (n.includes('cabilla') && n.includes('7')) p.cabilla_7 = m.precio_usd;
             else if (n.includes('cabilla') && n.includes('8')) p.cabilla_8 = m.precio_usd;
             else if (n.includes('cabilla') && n.includes('10')) p.cabilla_10 = m.precio_usd;
             else if (n.includes('malla 6x6') || n.includes('3.43')) p.malla_6x6 = m.precio_usd;
@@ -1443,6 +1447,7 @@ export default function CalculadoraLosaFundacion() {
                   <option value={0.61}>Malla 6x6 (Ø3.43@15) - 0.61 cm²/m</option>
                   <option value={1.41}>Varillas Ø6@20cm - 1.41 cm²/m</option>
                   <option value={1.88}>Malla Sima (Ø6@15) - 1.88 cm²/m</option>
+                  <option value={1.92}>Varillas Ø7@20cm - 1.92 cm²/m</option>
                   <option value={2.51}>Varillas Ø8@20cm - 2.51 cm²/m</option>
                   <option value={3.93}>Varillas Ø10@20cm - 3.93 cm²/m</option>
                   <option value={5.24}>Varillas Ø10@15cm - 5.24 cm²/m</option>
@@ -1905,6 +1910,7 @@ export default function CalculadoraLosaFundacion() {
                       {designParams.custom_mesh_cm2_m === 0.61 && 'Malla 6x6 (Ø3.43@15cm)'}
                       {designParams.custom_mesh_cm2_m === 1.41 && 'Varillas Ø6@20cm'}
                       {designParams.custom_mesh_cm2_m === 1.88 && 'Malla Sima (Ø6@15cm)'}
+                      {designParams.custom_mesh_cm2_m === 1.92 && 'Varillas Ø7@20cm'}
                       {designParams.custom_mesh_cm2_m === 2.51 && 'Varillas Ø8@20cm'}
                       {designParams.custom_mesh_cm2_m === 3.93 && 'Varillas Ø10@20cm'}
                       {designParams.custom_mesh_cm2_m === 5.24 && 'Varillas Ø10@15cm'}

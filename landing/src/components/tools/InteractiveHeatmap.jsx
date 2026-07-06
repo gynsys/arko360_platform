@@ -74,8 +74,8 @@ const InteractiveHeatmap = ({ dataMatrix, title, unit, lx, ly }) => {
       const realY = (r / rows) * ly;
 
       setHoverData({
-        x: e.clientX,
-        y: e.clientY,
+        x: x,
+        y: y,
         val: val,
         gridX: realX.toFixed(2),
         gridY: realY.toFixed(2)
@@ -108,7 +108,7 @@ const InteractiveHeatmap = ({ dataMatrix, title, unit, lx, ly }) => {
         />
         {hoverData && (
           <div style={{
-            position: 'fixed',
+            position: 'absolute',
             left: hoverData.x + 15,
             top: hoverData.y + 15,
             background: 'rgba(15, 23, 42, 0.9)',
