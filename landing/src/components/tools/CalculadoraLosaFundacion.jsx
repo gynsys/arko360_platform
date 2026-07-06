@@ -76,22 +76,35 @@ const generarPresupuesto = (results, prices, designParams) => {
   let precio_acero = 7.36; // default 10mm
   
   if (custom_mesh_cm2_m > 0) {
-    if (custom_mesh_cm2_m === 0.61) { label_acero = 'Malla 6x6 (Ø3.43@15)'; precio_acero = p.malla_6x6 || 15.0; }
-    else if (custom_mesh_cm2_m === 1.41) { label_acero = 'Varillas Ø6@20cm (Losa)'; precio_acero = p.cabilla_6 || 4.50; }
-    else if (custom_mesh_cm2_m === 1.88) { label_acero = 'Malla Sima (Ø6@15)'; precio_acero = p.malla_sima || 35.0; }
-    else if (custom_mesh_cm2_m === 2.51) { label_acero = 'Varillas Ø8@20cm (Losa)'; precio_acero = p.cabilla_8 || 5.90; }
-    else if (custom_mesh_cm2_m === 3.93) { label_acero = 'Varillas Ø10@20cm (Losa)'; precio_acero = p.cabilla_10 || 5.82; }
-    else if (custom_mesh_cm2_m === 5.24) { label_acero = 'Varillas Ø10@15cm (Losa)'; precio_acero = p.cabilla_10 || 5.82; }
+    if (custom_mesh_cm2_m === 0.61 || custom_mesh_cm2_m === 1.88) {
+      // Es una Malla (se calcula por m2)
+      const area_losa_m2 = results?.inputs?.geometry?.Lx * results?.inputs?.geometry?.Ly || 100;
+      const area_con_desperdicio = +(area_losa_m2 * 1.10).toFixed(2); // 10% de solape/desperdicio
+      
+      if (custom_mesh_cm2_m === 0.61) { label_acero = 'Malla 6x6 (Ø3.43@15)'; precio_acero = p.malla_6x6 || 2.50; }
+      else if (custom_mesh_cm2_m === 1.88) { label_acero = 'Malla Sima (Ø6@15)'; precio_acero = p.malla_sima || 5.00; }
+      
+      items.push({ chapter: 'Losa de Fundación', material: label_acero, unit: 'm²', qty: area_con_desperdicio, pu: precio_acero, total: area_con_desperdicio * precio_acero });
+    } else {
+      // Son varillas (se calcula por und de 6m)
+      if (custom_mesh_cm2_m === 1.41) { label_acero = 'Varillas Ø6@20cm (Losa)'; precio_acero = p.cabilla_6 || 4.50; }
+      else if (custom_mesh_cm2_m === 2.51) { label_acero = 'Varillas Ø8@20cm (Losa)'; precio_acero = p.cabilla_8 || 5.90; }
+      else if (custom_mesh_cm2_m === 3.93) { label_acero = 'Varillas Ø10@20cm (Losa)'; precio_acero = p.cabilla_10 || 5.82; }
+      else if (custom_mesh_cm2_m === 5.24) { label_acero = 'Varillas Ø10@15cm (Losa)'; precio_acero = p.cabilla_10 || 5.82; }
+      
+      const total_cabillas_losa = m.total_bars_6m;
+      items.push({ chapter: 'Losa de Fundación', material: label_acero, unit: 'und', qty: total_cabillas_losa, pu: precio_acero, total: total_cabillas_losa * precio_acero });
+    }
   } else {
     const diam_base = m.diam_base_mm || 10;
     label_acero = `Cabilla de ${diam_base} mm (Losa)`;
     if (diam_base === 8) precio_acero = p.cabilla_8 || 5.90;
     else if (diam_base === 10) precio_acero = p.cabilla_10 || 5.82;
     else if (diam_base > 10) precio_acero = 7.36 * Math.pow(diam_base / 10, 2);
+    
+    const total_cabillas_losa = m.total_bars_6m;
+    items.push({ chapter: 'Losa de Fundación', material: label_acero, unit: 'und', qty: total_cabillas_losa, pu: precio_acero, total: total_cabillas_losa * precio_acero });
   }
-
-  const total_cabillas_losa = m.total_bars_6m;
-  items.push({ chapter: 'Losa de Fundación', material: label_acero, unit: 'und', qty: total_cabillas_losa, pu: precio_acero, total: total_cabillas_losa * precio_acero });
 
   // ==== CAPÍTULO: MAMPOSTERÍA ====
   if (vol_viga > 0) {
