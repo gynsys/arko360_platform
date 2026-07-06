@@ -428,18 +428,19 @@ export default function CalculadoraLosaFundacion() {
     y += 5;
 
     // 1. Geometría y Materiales
+    const payload = buildCurrentPayload();
     addLine("1. Geometría y Parámetros del Suelo", 14, 'bold', [33, 150, 243]);
-    addLine(`Dimensiones Analizadas (Losa): ${results.inputs.geometry.Lx.toFixed(2)}m x ${results.inputs.geometry.Ly.toFixed(2)}m`);
-    addLine(`Espesor de la Losa (h): ${results.inputs.geometry.h.toFixed(2)} m`);
-    addLine(`Módulo de Balasto (k): ${(results.inputs.materials.k / 1e6).toFixed(2)} MN/m³`);
-    addLine(`Capacidad Portante Admisible (q_adm): ${(results.inputs.materials.q_adm / 98066.5).toFixed(2)} kgf/cm²`);
+    addLine(`Dimensiones Analizadas (Losa): ${payload.geometry.Lx.toFixed(2)}m x ${payload.geometry.Ly.toFixed(2)}m`);
+    addLine(`Espesor de la Losa (h): ${payload.geometry.h.toFixed(2)} m`);
+    addLine(`Módulo de Balasto (k): ${(payload.materials.k / 1e6).toFixed(2)} MN/m³`);
+    addLine(`Capacidad Portante Admisible (q_adm): ${(payload.materials.q_adm / 98066.5).toFixed(2)} kgf/cm²`);
     y += 5;
 
     // 2. Materiales de Concreto Armado
     addLine("2. Especificaciones de Concreto Armado (Norma ACI 318)", 14, 'bold', [33, 150, 243]);
-    addLine(`Resistencia a la compresión del concreto (f'c): ${(results.inputs.materials.f_c).toFixed(2)} MPa`);
-    addLine(`Límite de fluencia del acero (fy): ${(results.inputs.materials.f_y).toFixed(2)} MPa`);
-    addLine(`Recubrimiento libre: ${(results.inputs.materials.cover * 100).toFixed(1)} cm`);
+    addLine(`Resistencia a la compresión del concreto (f'c): ${(payload.materials.f_c).toFixed(2)} MPa`);
+    addLine(`Límite de fluencia del acero (fy): ${(payload.materials.f_y).toFixed(2)} MPa`);
+    addLine(`Recubrimiento libre: ${(payload.materials.cover * 100).toFixed(1)} cm`);
     y += 5;
 
     // 3. Metodología de Cálculo
@@ -451,9 +452,11 @@ export default function CalculadoraLosaFundacion() {
 
     // 4. Resultados del Análisis de Suelo
     addLine("4. Esfuerzos Transmitidos al Terreno", 14, 'bold', [33, 150, 243]);
-    const q_max_kgcm2 = (results.analysis.p_max_Pa / 98066.5).toFixed(3);
+    const p_max = results.soil_pressure?.max_pressure_kN_m2 || 0;
+    const q_adm = results.soil_pressure?.q_adm_kN_m2 || 1;
+    const q_max_kgcm2 = (p_max / 98.0665).toFixed(3);
     addLine(`Presión Máxima Calculada sobre el suelo (q_max): ${q_max_kgcm2} kgf/cm²`);
-    if (results.analysis.p_max_Pa <= results.inputs.materials.q_adm) {
+    if (results.soil_pressure?.ok) {
       addLine("VERIFICACIÓN: SATISFACTORIA. La presión máxima transmitida al suelo es MENOR a la capacidad portante admisible.", 10, 'bold', [46, 125, 50]);
     } else {
       addLine("VERIFICACIÓN: FALLA. La presión máxima SUPERA la capacidad portante admisible del suelo.", 10, 'bold', [198, 40, 40]);
@@ -462,18 +465,31 @@ export default function CalculadoraLosaFundacion() {
 
     // 5. Esfuerzos Flexionantes Máximos
     addLine("5. Solicitaciones Máximas en la Losa", 14, 'bold', [33, 150, 243]);
-    addLine(`Momento Flector Máximo (Mxx): ${results.analysis.Mx_max_kNm.toFixed(2)} kN·m/m`);
-    addLine(`Momento Flector Máximo (Myy): ${results.analysis.My_max_kNm.toFixed(2)} kN·m/m`);
+    addLine(`Momento Flector Máximo (Mxx): ${(results.moments?.Mx_max_kNm_m || 0).toFixed(2)} kN·m/m`);
+    addLine(`Momento Flector Máximo (Myy): ${(results.moments?.My_max_kNm_m || 0).toFixed(2)} kN·m/m`);
     y += 5;
 
     // 6. Diseño de Acero de Refuerzo (ACI 318)
     addLine("6. Diseño de Acero de Refuerzo (ACI 318)", 14, 'bold', [33, 150, 243]);
     addLine("Según ACI 318, la cuantía mínima de refuerzo por retracción de fraguado y temperatura para losas donde se emplean barras corrugadas grado 420 (60,000 psi) es:");
     addLine("ρ_min = 0.0018", 12, 'italic');
-    addLine(`Acero mínimo requerido (As_min): ${(0.0018 * 100 * (results.inputs.geometry.h * 100)).toFixed(2)} cm²/m`);
-    addLine(`Acero principal requerido calculado en X: ${results.design.As_x_cm2_m.toFixed(2)} cm²/m`);
-    addLine(`Acero principal requerido calculado en Y: ${results.design.As_y_cm2_m.toFixed(2)} cm²/m`);
-    if (results.design.As_x_cm2_m <= 0.0018 * 100 * (results.inputs.geometry.h * 100) && results.design.As_y_cm2_m <= 0.0018 * 100 * (results.inputs.geometry.h * 100)) {
+    
+    const As_min = results.As_min_cm2_m || (0.0018 * 100 * (payload.geometry.h * 100));
+    addLine(`Acero mínimo requerido (As_min): ${As_min.toFixed(2)} cm²/m`);
+    
+    // Obtener máximos de acero requeridos de las bandas de diseño
+    let max_as_x = 0;
+    let max_as_y = 0;
+    if (results.bands) {
+      results.bands.forEach(b => {
+        if (b.As_x_cm2_m > max_as_x) max_as_x = b.As_x_cm2_m;
+        if (b.As_y_cm2_m > max_as_y) max_as_y = b.As_y_cm2_m;
+      });
+    }
+    addLine(`Acero principal requerido calculado en X: ${max_as_x.toFixed(2)} cm²/m`);
+    addLine(`Acero principal requerido calculado en Y: ${max_as_y.toFixed(2)} cm²/m`);
+    
+    if (max_as_x <= As_min && max_as_y <= As_min) {
       addLine("NOTA: Los requerimientos estructurales por flexión son menores que el acero mínimo. El diseño se rige por cuantía de retracción y temperatura (Malla general).", 10, 'normal', [85, 139, 47]);
     }
 
