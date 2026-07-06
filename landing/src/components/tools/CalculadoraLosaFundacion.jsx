@@ -448,18 +448,20 @@ export default function CalculadoraLosaFundacion() {
     const D_kNm = (payload.materials.E * Math.pow(h, 3)) / (12 * (1 - Math.pow(nu, 2))) / 1000;
     
     addLine("D = E · h^3 / [12(1 - v^2)]", 12, 'italic');
-    addLine(`Sustituyendo para este proyecto (h=${h.toFixed(2)}m, E=${E_MPa.toFixed(0)} MPa, v=${nu}):`);
-    addLine(`D = (${E_MPa.toFixed(0)} MPa · ${(h).toFixed(2)}^3 m^3) / (12 · (1 - ${nu}^2)) = ${D_kNm.toFixed(2)} kN·m`);
+    const E_kgf_cm2 = E_MPa * 10.197;
+    const D_kgfm = (payload.materials.E * Math.pow(h, 3)) / (12 * (1 - Math.pow(nu, 2))) / 9.81;
+    addLine(`Sustituyendo para este proyecto (h=${h.toFixed(2)}m, E=${E_kgf_cm2.toFixed(0)} kgf/cm^2, v=${nu}):`);
+    addLine(`D = (${E_kgf_cm2.toFixed(0)} kgf/cm^2 · ${(h).toFixed(2)}^3 m^3) / (12 · (1 - ${nu}^2)) = ${D_kgfm.toFixed(2)} kgf·m`);
     y += 5;
 
     // 3. Discretización
     addLine("3. Discretización por Diferencias Finitas", 14, 'bold', [33, 150, 243]);
     addLine("3.1 La Malla", 12, 'bold');
-    addLine("Dividimos la losa en una cuadrícula regular con espaciamiento numérico (Δx, Δy).");
+    addLine("Dividimos la losa en una cuadrícula regular con espaciamiento numérico (dx, dy).");
     y += 3;
     
     addLine("3.2 Operador Biarmónico Discretizado (Estrella de 13 puntos)", 12, 'bold');
-    addLine("Nabla^4 w ≈ (1/h^4) · [20w - 8*Sum(w_vec) + 2*Sum(w_diag) + Sum(w_2h)]");
+    addLine("Nabla^4 w = (1/h^4) · [20w - 8*Sum(w_vec) + 2*Sum(w_diag) + Sum(w_2h)]");
     addLine("Visualmente, los coeficientes forman la siguiente matriz en la cuadrícula:", 10, 'normal');
     doc.setFont('courier', 'normal');
     addLine("           [+1]");
@@ -476,7 +478,7 @@ export default function CalculadoraLosaFundacion() {
 
     // 4. Cargas
     addLine("4. Cargas de Paredes (Cargas Lineales)", 14, 'bold', [33, 150, 243]);
-    addLine("Concepto Clave: Una pared no es una carga distribuida en área (kN/m²), sino una carga lineal (kN/m). En diferencias finitas, debemos convertirla a una carga equivalente en los nodos numéricos dividiéndola entre el tamaño del diferencial (Δx o Δy).");
+    addLine("Concepto Clave: Una pared no es una carga distribuida en área (kgf/m²), sino una carga lineal (kgf/m). En diferencias finitas, debemos convertirla a una carga equivalente en los nodos numéricos dividiéndola entre el tamaño del diferencial (dx o dy).");
     y += 3;
     addLine("Desglose de cálculo de cargas lineales (W) por cada muro del proyecto:", 12, 'bold');
     
@@ -491,13 +493,13 @@ export default function CalculadoraLosaFundacion() {
              weight_kg_m += (2 * 0.015 * 2000 * w.height);
              calcStr += ` + friso`;
         }
-        calcStr += `) · 9.81 / 1000`;
-        const force_kN_m = (weight_kg_m * 9.81 / 1000);
-        const design_force = force_kN_m * w.load_factor;
+        calcStr += `)`;
+        const force_kgf_m = weight_kg_m;
+        const design_force = force_kgf_m * w.load_factor;
         
         addLine(`Muro ${i+1} (${w.type}): L=${length.toFixed(2)}m`, 10, 'bold');
-        addLine(`${calcStr} = ${force_kN_m.toFixed(2)} kN/m`);
-        addLine(`Carga Última de Diseño (x${w.load_factor}): ${design_force.toFixed(2)} kN/m`, 10, 'italic');
+        addLine(`${calcStr} = ${force_kgf_m.toFixed(2)} kgf/m`);
+        addLine(`Carga Última de Diseño (x${w.load_factor}): ${design_force.toFixed(2)} kgf/m`, 10, 'italic');
         y += 2;
       });
     } else {
@@ -510,17 +512,17 @@ export default function CalculadoraLosaFundacion() {
     const sobrecarga = 300; // kg/m2 (viva/uso)
     addLine(`- Peso propio losa: ${payload.geometry.h.toFixed(2)}m · ${payload.materials.gamma_horm} kg/m³ = ${peso_propio_losa.toFixed(2)} kg/m²`);
     addLine(`- Sobrecarga de uso: ${sobrecarga.toFixed(2)} kg/m²`);
-    const q_total_area_kNm2 = (peso_propio_losa + sobrecarga) * 9.81 / 1000;
-    addLine(`- Carga Uniforme Total (q_area) = ${q_total_area_kNm2.toFixed(2)} kN/m²`);
+    const q_total_area_kgfm2 = peso_propio_losa + sobrecarga;
+    addLine(`- Carga Uniforme Total (q_area) = ${q_total_area_kgfm2.toFixed(2)} kgf/m²`);
     y += 3;
 
     // Vigas de Riostra (Zunchos)
     addLine("Vigas de Riostra / Zunchos (Automáticas):", 12, 'bold');
     addLine("El motor de cálculo asume automáticamente la presencia de vigas de riostra (0.20m x 0.30m) debajo de cada muro para rigidizar la losa perimetral e internamente.");
     const peso_zuncho = 0.20 * 0.30 * payload.materials.gamma_horm;
-    const q_zuncho_kNm = (peso_zuncho * 9.81 / 1000) * 1.2;
+    const q_zuncho_kgfm = peso_zuncho * 1.2;
     addLine(`- Peso por zuncho: 0.20m · 0.30m · ${payload.materials.gamma_horm} kg/m³ = ${peso_zuncho.toFixed(2)} kg/m`);
-    addLine(`- Carga Última de Diseño (x1.2): ${q_zuncho_kNm.toFixed(2)} kN/m`);
+    addLine(`- Carga Última de Diseño (x1.2): ${q_zuncho_kgfm.toFixed(2)} kgf/m`);
     y += 5;
 
     // 5. Ejemplo numérico resuelto
@@ -531,7 +533,7 @@ export default function CalculadoraLosaFundacion() {
     addLine(`- Espesor (h): ${payload.geometry.h.toFixed(2)} m`);
     addLine(`- Módulo de Balasto (k): ${(payload.materials.k / 1e6).toFixed(2)} MN/m³ = ${(payload.materials.k / 9806.65).toFixed(2)} kgf/cm³`);
     addLine(`- Capacidad Portante Admisible: ${(payload.materials.q_adm / 98066.5).toFixed(2)} kgf/cm²`);
-    addLine(`- Resistencia Concreto (f'c): ${(payload.materials.f_c).toFixed(2)} MPa`);
+    addLine(`- Resistencia Concreto (f'c): ${(payload.materials.f_c * 10.197).toFixed(2)} kgf/cm²`);
     y += 3;
 
     addLine("5.2 Resultados: Deformaciones, Presiones y Momentos", 12, 'bold');
@@ -550,8 +552,8 @@ export default function CalculadoraLosaFundacion() {
       addLine(`  VERIFICACIÓN SUELO: FALLA. ${q_max_kgcm2} > ${(payload.materials.q_adm / 98066.5).toFixed(2)} kgf/cm²`, 10, 'bold', [198, 40, 40]);
     }
     
-    addLine(`- Momento Flector Máximo Mxx: ${mx_max.toFixed(2)} kN·m/m`);
-    addLine(`- Momento Flector Máximo Myy: ${my_max.toFixed(2)} kN·m/m`);
+    addLine(`- Momento Flector Máximo Mxx: ${(mx_max * 101.97).toFixed(2)} kgf·m/m`);
+    addLine(`- Momento Flector Máximo Myy: ${(my_max * 101.97).toFixed(2)} kgf·m/m`);
     addLine("Observación importante: La deformación máxima y los picos de momentos flectores (Mxx, Myy) ocurren bajo las cargas lineales de las paredes más pesadas. Esto es crítico para el diseño del armado.", 10, 'italic');
     y += 5;
 
@@ -749,8 +751,13 @@ export default function CalculadoraLosaFundacion() {
 </body>
 </html>`;
     
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-    saveAs(blob, `Memoria_Calculo_${projectName.replace(/\s+/g,'_')}.html`);
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      newWindow.document.write(htmlContent);
+      newWindow.document.close();
+    } else {
+      toast.error("Por favor permite las ventanas emergentes (pop-ups) para ver la memoria.");
+    }
   };
 
   const snapToGrid = (val) => Math.round(val * 2) / 2; // Snap a 0.5m
