@@ -404,7 +404,7 @@ export default function CalculadoraLosaFundacion() {
     doc.save("Presupuesto_Materiales_Arko360.pdf");
   };
 
-  const descargarMemoriaCalculoHtml = () => {
+  const descargarComputosHtml = () => {
     if (!results || !results.materials_computation) {
       toast.error("No hay resultados para generar memoria.");
       return;
