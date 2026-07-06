@@ -503,7 +503,23 @@ export default function CalculadoraLosaFundacion() {
       addLine("No se definieron muros estructurales en este proyecto.", 10, 'italic');
     }
     
-    addLine("Adicionalmente, se superpone el peso propio de la losa y la sobrecarga de uso sobre todos los nodos de la malla.");
+    // Cargas de Área y Sobrecarga
+    addLine("Cargas de Área (q_area):", 12, 'bold');
+    const peso_propio_losa = payload.geometry.h * payload.materials.gamma_horm;
+    const sobrecarga = 300; // kg/m2 (viva/uso)
+    addLine(`- Peso propio losa: ${payload.geometry.h.toFixed(2)}m · ${payload.materials.gamma_horm} kg/m³ = ${peso_propio_losa.toFixed(2)} kg/m²`);
+    addLine(`- Sobrecarga de uso: ${sobrecarga.toFixed(2)} kg/m²`);
+    const q_total_area_kNm2 = (peso_propio_losa + sobrecarga) * 9.81 / 1000;
+    addLine(`- Carga Uniforme Total (q_area) = ${q_total_area_kNm2.toFixed(2)} kN/m²`);
+    y += 3;
+
+    // Vigas de Riostra (Zunchos)
+    addLine("Vigas de Riostra / Zunchos (Automáticas):", 12, 'bold');
+    addLine("El motor de cálculo asume automáticamente la presencia de vigas de riostra (0.20m x 0.30m) debajo de cada muro para rigidizar la losa perimetral e internamente.");
+    const peso_zuncho = 0.20 * 0.30 * payload.materials.gamma_horm;
+    const q_zuncho_kNm = (peso_zuncho * 9.81 / 1000) * 1.2;
+    addLine(`- Peso por zuncho: 0.20m · 0.30m · ${payload.materials.gamma_horm} kg/m³ = ${peso_zuncho.toFixed(2)} kg/m`);
+    addLine(`- Carga Última de Diseño (x1.2): ${q_zuncho_kNm.toFixed(2)} kN/m`);
     y += 5;
 
     // 5. Ejemplo numérico resuelto
