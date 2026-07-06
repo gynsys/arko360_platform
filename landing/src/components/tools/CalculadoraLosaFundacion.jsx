@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import './CalculadoraLosaFundacion.css';
 import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut } from 'lucide-react';
 import ExcelJS from 'exceljs';
@@ -363,14 +363,19 @@ export default function CalculadoraLosaFundacion() {
       }
     });
     
-    doc.autoTable({
+    autoTable(doc, {
       startY: 35,
-      head: [['Material', 'Unidad', 'Cantidad', 'P.U.', 'Total']],
+      head: [['Material', 'Unidad', 'Cantidad', 'P.U. ($)', 'Total ($)']],
       body: tableData,
       foot: [['', '', '', 'GRAN TOTAL', `$${presupuestoTotal.toFixed(2)}`]],
       theme: 'grid',
-      headStyles: { fillColor: [46, 125, 50] },
-      footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
+      headStyles: { fillColor: [30, 30, 47] },
+      footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+      styles: { fontSize: 10 },
+      columnStyles: {
+        3: { halign: 'right' },
+        4: { halign: 'right', fontStyle: 'bold' }
+      }
     });
     
     doc.save("Presupuesto_Materiales_Arko360.pdf");
