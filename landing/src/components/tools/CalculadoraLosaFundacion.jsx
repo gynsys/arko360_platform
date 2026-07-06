@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import './CalculadoraLosaFundacion.css';
 import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus } from 'react-icons/fa';
+import InteractiveHeatmap from './InteractiveHeatmap';
 
 // ============================================
 // FOUNDATION SLAB EDITOR - HIBRIDO v2
@@ -389,227 +388,6 @@ export default function CalculadoraLosaFundacion() {
       theme: 'grid',
       headStyles: { fillColor: [30, 30, 47] },
       footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-      styles: { fontSize: 10 },
-      columnStyles: {
-        3: { halign: 'right' },
-        4: { halign: 'right', fontStyle: 'bold' }
-      }
-    });
-    
-    doc.save("Presupuesto_Materiales_Arko360.pdf");
-  };
-
-  const descargarMemoriaPDF = () => {
-    if (!results) return;
-    const doc = new jsPDF();
-    
-    // Configuración inicial
-    let y = 20;
-    const margin = 14;
-    const lineHeight = 6;
-    
-    const addLine = (text, size = 10, font = 'normal', color = [0,0,0]) => {
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.setFontSize(size);
-      doc.setFont('helvetica', font);
-      doc.setTextColor(color[0], color[1], color[2]);
-      
-      const splitText = doc.splitTextToSize(text, 210 - margin*2);
-      doc.text(splitText, margin, y);
-      y += (splitText.length * lineHeight);
-    };
-
-    // Título
-    addLine("Losa de Fundación por Diferencias Finitas", 16, 'bold', [13, 71, 161]);
-    addLine("Métodos Numéricos en Ingeniería Estructural | Memoria Didáctica", 12, 'italic', [100, 100, 100]);
-    addLine(`Proyecto: ${projectName || 'Sin título'} - Fecha: ${new Date().toLocaleDateString()}`, 10, 'normal');
-    y += 5;
-
-    // 1. Introducción
-    addLine("1. Introducción al Problema", 14, 'bold', [33, 150, 243]);
-    addLine("Una losa de fundación es una placa de concreto que transmite las cargas de una estructura al suelo. El desafío de diseño es determinar cuánto se deforma la losa, qué presiones transmite al suelo y qué momentos flectores se generan. El método de diferencias finitas nos permite resolver numéricamente las ecuaciones diferenciales que gobiernan este problema, discretizando la losa en una cuadrícula de puntos.");
-    y += 5;
-
-    // 2. Ecuación Gobernante
-    const payload = buildCurrentPayload();
-    addLine("2. Ecuación Gobernante", 14, 'bold', [33, 150, 243]);
-    addLine("2.1 Placa sobre Fundación Elástica (Modelo de Winkler)", 12, 'bold');
-    addLine("D · ∇⁴w(x,y) + k · w(x,y) = q(x,y)", 12, 'italic');
-    addLine("Donde w(x,y) es la deformación, q(x,y) la carga, k el coeficiente de balasto, y D la rigidez a la flexión.");
-    y += 3;
-    
-    addLine("2.2 Rigidez a la Flexión", 12, 'bold');
-    const E_MPa = payload.materials.E / 1e6;
-    const h = payload.geometry.h;
-    const nu = payload.materials.nu || 0.2;
-    const D_kNm = (payload.materials.E * Math.pow(h, 3)) / (12 * (1 - Math.pow(nu, 2))) / 1000;
-    
-    addLine("D = E · h^3 / [12(1 - v^2)]", 12, 'italic');
-    const E_kgf_cm2 = E_MPa * 10.197;
-    const D_kgfm = (payload.materials.E * Math.pow(h, 3)) / (12 * (1 - Math.pow(nu, 2))) / 9.81;
-    addLine(`Sustituyendo para este proyecto (h=${h.toFixed(2)}m, E=${E_kgf_cm2.toFixed(0)} kgf/cm^2, v=${nu}):`);
-    addLine(`D = (${E_kgf_cm2.toFixed(0)} kgf/cm^2 · ${(h).toFixed(2)}^3 m^3) / (12 · (1 - ${nu}^2)) = ${D_kgfm.toFixed(2)} kgf·m`);
-    y += 5;
-
-    // 3. Discretización
-    addLine("3. Discretización por Diferencias Finitas", 14, 'bold', [33, 150, 243]);
-    addLine("3.1 La Malla", 12, 'bold');
-    addLine("Dividimos la losa en una cuadrícula regular con espaciamiento numérico (dx, dy).");
-    y += 3;
-    
-    addLine("3.2 Operador Biarmónico Discretizado (Estrella de 13 puntos)", 12, 'bold');
-    addLine("Nabla^4 w = (1/h^4) · [20w - 8*Sum(w_vec) + 2*Sum(w_diag) + Sum(w_2h)]");
-    addLine("Visualmente, los coeficientes forman la siguiente matriz en la cuadrícula:", 10, 'normal');
-    doc.setFont('courier', 'normal');
-    addLine("           [+1]");
-    addLine("            | ");
-    addLine("   [+2]---[-8]---[+2]");
-    addLine("    |       |       |");
-    addLine("  [-8]---[+20]---[-8]");
-    addLine("    |       |       |");
-    addLine("   [+2]---[-8]---[+2]");
-    addLine("            | ");
-    addLine("           [+1]");
-    doc.setFont('helvetica', 'normal');
-    y += 5;
-
-    // 4. Cargas
-    addLine("4. Cargas de Paredes (Cargas Lineales)", 14, 'bold', [33, 150, 243]);
-    addLine("Concepto Clave: Una pared no es una carga distribuida en área (kgf/m²), sino una carga lineal (kgf/m). En diferencias finitas, debemos convertirla a una carga equivalente en los nodos numéricos dividiéndola entre el tamaño del diferencial (dx o dy).");
-    y += 3;
-    addLine("Desglose de cálculo de cargas lineales (W) por cada muro del proyecto:", 12, 'bold');
-    
-    if (payload.walls && payload.walls.length > 0) {
-      payload.walls.forEach((w, i) => {
-        const length = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
-        const vol_per_m = w.thickness * w.height;
-        let weight_kg_m = vol_per_m * w.density;
-        
-        let calcStr = `W = (${w.thickness.toFixed(2)}m · ${w.height.toFixed(2)}m · ${w.density} kg/m³`;
-        if (w.is_plastered) {
-             weight_kg_m += (2 * 0.015 * 2000 * w.height);
-             calcStr += ` + friso`;
-        }
-        calcStr += `)`;
-        const force_kgf_m = weight_kg_m;
-        const design_force = force_kgf_m * w.load_factor;
-        
-        addLine(`Muro ${i+1} (${w.type}): L=${length.toFixed(2)}m`, 10, 'bold');
-        addLine(`${calcStr} = ${force_kgf_m.toFixed(2)} kgf/m`);
-        addLine(`Carga Última de Diseño (x${w.load_factor}): ${design_force.toFixed(2)} kgf/m`, 10, 'italic');
-        y += 2;
-      });
-    } else {
-      addLine("No se definieron muros estructurales en este proyecto.", 10, 'italic');
-    }
-    
-    // Cargas de Área y Sobrecarga
-    addLine("Cargas de Área (q_area):", 12, 'bold');
-    const peso_propio_losa = payload.geometry.h * payload.materials.gamma_horm;
-    const sobrecarga = 300; // kg/m2 (viva/uso)
-    addLine(`- Peso propio losa: ${payload.geometry.h.toFixed(2)}m · ${payload.materials.gamma_horm} kg/m³ = ${peso_propio_losa.toFixed(2)} kg/m²`);
-    addLine(`- Sobrecarga de uso: ${sobrecarga.toFixed(2)} kg/m²`);
-    const q_total_area_kgfm2 = peso_propio_losa + sobrecarga;
-    addLine(`- Carga Uniforme Total (q_area) = ${q_total_area_kgfm2.toFixed(2)} kgf/m²`);
-    y += 3;
-
-    // Vigas de Riostra (Zunchos)
-    addLine("Vigas de Riostra / Zunchos (Automáticas):", 12, 'bold');
-    addLine("El motor de cálculo asume automáticamente la presencia de vigas de riostra (0.20m x 0.30m) debajo de cada muro para rigidizar la losa perimetral e internamente.");
-    const peso_zuncho = 0.20 * 0.30 * payload.materials.gamma_horm;
-    const q_zuncho_kgfm = peso_zuncho * 1.2;
-    addLine(`- Peso por zuncho: 0.20m · 0.30m · ${payload.materials.gamma_horm} kg/m³ = ${peso_zuncho.toFixed(2)} kg/m`);
-    addLine(`- Carga Última de Diseño (x1.2): ${q_zuncho_kgfm.toFixed(2)} kgf/m`);
-    y += 5;
-
-    // 5. Ejemplo numérico resuelto
-    addLine("5. Solución Numérica del Proyecto Actual", 14, 'bold', [33, 150, 243]);
-    
-    addLine("5.1 Datos de Entrada", 12, 'bold');
-    addLine(`- Dimensiones (Lx × Ly): ${payload.geometry.Lx.toFixed(2)}m × ${payload.geometry.Ly.toFixed(2)}m`);
-    addLine(`- Espesor (h): ${payload.geometry.h.toFixed(2)} m`);
-    addLine(`- Módulo de Balasto (k): ${(payload.materials.k / 1e6).toFixed(2)} MN/m³ = ${(payload.materials.k / 9806.65).toFixed(2)} kgf/cm³`);
-    addLine(`- Capacidad Portante Admisible: ${(payload.materials.q_adm / 98066.5).toFixed(2)} kgf/cm²`);
-    addLine(`- Resistencia Concreto (f'c): ${(payload.materials.f_c * 10.197).toFixed(2)} kgf/cm²`);
-    y += 3;
-
-    addLine("5.2 Resultados: Deformaciones, Presiones y Momentos", 12, 'bold');
-    const w_max_mm = results.displacements?.w_max_mm || 0;
-    const p_max = results.soil_pressure?.max_pressure_kN_m2 || 0;
-    const q_max_kgcm2 = (p_max / 98.0665).toFixed(3);
-    const mx_max = results.moments?.Mx_max_kNm_m || 0;
-    const my_max = results.moments?.My_max_kNm_m || 0;
-    
-    addLine(`- Deformación máxima (w_max): ${w_max_mm.toFixed(3)} mm`);
-    addLine(`- Presión máxima sobre suelo (q_max): k · w_max = ${q_max_kgcm2} kgf/cm²`);
-    
-    if (results.soil_pressure?.ok) {
-      addLine(`  VERIFICACIÓN SUELO: CUMPLE. ${q_max_kgcm2} < ${(payload.materials.q_adm / 98066.5).toFixed(2)} kgf/cm²`, 10, 'bold', [46, 125, 50]);
-    } else {
-      addLine(`  VERIFICACIÓN SUELO: FALLA. ${q_max_kgcm2} > ${(payload.materials.q_adm / 98066.5).toFixed(2)} kgf/cm²`, 10, 'bold', [198, 40, 40]);
-    }
-    
-    addLine(`- Momento Flector Máximo Mxx: ${(mx_max * 101.97).toFixed(2)} kgf·m/m`);
-    addLine(`- Momento Flector Máximo Myy: ${(my_max * 101.97).toFixed(2)} kgf·m/m`);
-    addLine("Observación importante: La deformación máxima y los picos de momentos flectores (Mxx, Myy) ocurren bajo las cargas lineales de las paredes más pesadas. Esto es crítico para el diseño del armado.", 10, 'italic');
-    y += 5;
-
-    // 6. Diseño del Armado
-    addLine("6. Diseño del Armado (ACI 318)", 14, 'bold', [33, 150, 243]);
-    addLine("El acero de refuerzo se diseña para resistir los momentos flectores máximos (Mu), pero por norma nunca debe ser menor al requerimiento por cambios volumétricos (temperatura y retracción de fraguado).");
-    y += 3;
-
-    addLine("6.1 Acero Mínimo por Temperatura (ACI 318)", 12, 'bold');
-    addLine("Para losas con acero corrugado Grado 60 (fy = 420 MPa), la cuantía geométrica mínima estipulada es rho_min = 0.0018. La fórmula para una franja unitaria (b = 100 cm) de losa es:");
-    addLine("As_min = rho_min · b · h", 12, 'italic');
-    const b_cm = 100;
-    const h_cm = payload.geometry.h * 100;
-    const As_min = results.As_min_cm2_m || (0.0018 * b_cm * h_cm);
-    addLine(`Sustituyendo: As_min = 0.0018 · 100 cm · ${h_cm.toFixed(0)} cm = ${As_min.toFixed(2)} cm^2/m`);
-    y += 3;
-
-    addLine("6.2 Acero Requerido por Flexión (Whitney)", 12, 'bold');
-    addLine("El acero necesario para resistir las tensiones de flexión pura se calcula mediante el bloque equivalente de compresiones de Whitney con la siguiente ecuación:");
-    addLine("As_flexion = Mu / [ phi · fy · (d - a/2) ]", 12, 'italic');
-    addLine("Donde:");
-    addLine("- Mu: Momento flector último amplificado (extraído de los picos en el análisis FEM)");
-    addLine("- phi: Factor de reducción de resistencia por flexión (0.90)");
-    addLine("- fy: Esfuerzo de fluencia del acero (420 MPa)");
-    addLine("- d: Peralte efectivo de la losa (h - recubrimiento)");
-    addLine("- a: Profundidad del bloque de compresión de concreto");
-    y += 2;
-    
-    let max_as_x = 0; let max_as_y = 0;
-    if (results.bands) {
-      results.bands.forEach(b => {
-        if (b.As_x_cm2_m > max_as_x) max_as_x = b.As_x_cm2_m;
-        if (b.As_y_cm2_m > max_as_y) max_as_y = b.As_y_cm2_m;
-      });
-    }
-    
-    addLine("Aplicando esta fórmula iterativa a los momentos flectores críticos calculados en el proyecto:");
-    addLine(`- As_flexion (Dirección X): ${max_as_x.toFixed(2)} cm^2/m`);
-    addLine(`- As_flexion (Dirección Y): ${max_as_y.toFixed(2)} cm^2/m`);
-    y += 3;
-
-    addLine("6.3 Verificación Final y Cuantía Gobernante", 12, 'bold');
-    addLine("Para garantizar la seguridad estructural y mitigar fisuración, el acero provisto en el diseño final debe ser el MAYOR valor entre As_min y As_flexion.");
-    
-    if (max_as_x <= As_min && max_as_y <= As_min) {
-      addLine(`CONCLUSIÓN: El acero MÍNIMO rige el diseño.`, 10, 'bold', [46, 125, 50]);
-      addLine(`Como As_flexion (máx = ${Math.max(max_as_x, max_as_y).toFixed(2)} cm^2/m) es menor que As_min (${As_min.toFixed(2)} cm^2/m), los esfuerzos estructurales son bajos y están cubiertos por la malla base de temperatura.`);
-    } else {
-      addLine("CONCLUSIÓN: El acero por FLEXIÓN rige el diseño en las zonas críticas.", 10, 'bold', [255, 152, 0]);
-      addLine(`Como As_flexion (máx = ${Math.max(max_as_x, max_as_y).toFixed(2)} cm^2/m) supera al As_min (${As_min.toFixed(2)} cm^2/m), es mandatorio colocar armadura de refuerzo extra (bandas) debajo de los muros más pesados.`);
-    }
-
-    doc.save(`Memoria_Calculo_${projectName.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
-  };
-
-
   const descargarMemoriaCalculoHtml = () => {
     if (!results || !results.materials_computation) {
       toast.error("No hay resultados para generar memoria.");
@@ -744,9 +522,6 @@ export default function CalculadoraLosaFundacion() {
     </div>
   </div>
   ` : ''}
-  
-</body>
-
   
 </body>
 </html>`;
@@ -2014,17 +1789,16 @@ export default function CalculadoraLosaFundacion() {
             </div>
           )}
 
-          {/* Mapa de calor - solo descarga */}
-          {results.heatmap_base64 && (
-            <div style={{padding:'16px 24px', borderBottom:'1px solid #eee', display:'flex', alignItems:'center', gap:'16px', background:'#f0f4ff'}}>
-              <span style={{fontSize:'13px', color:'#555'}}><FaThermometerHalf /> <strong>Mapas de Calor FEM generados</strong> (Desplazamiento, Momentos Mx/My, Cortante, Acero As X/Y, Ratio Vu/φVc)</span>
-              <a
-                href={`data:image/png;base64,${results.heatmap_base64}`}
-                download={`mapas_calor_${projectName.replace(/\s+/g,'_')}.png`}
-                style={{background:'#3f51b5', color:'#fff', padding:'6px 14px', borderRadius:'6px', textDecoration:'none', fontSize:'12px', whiteSpace:'nowrap', flexShrink:0}}
-              >
-                <FaDownload /> Descargar PNG (8 paneles)
-              </a>
+          {/* Mapas de Calor Interactivos */}
+          {results.heatmaps && (
+            <div style={{padding:'20px 24px', borderBottom:'1px solid #eee', background:'#fff'}}>
+              <h4 style={{margin:'0 0 12px 0', color:'#333'}}><FaThermometerHalf style={{color:'#1A6BB5'}}/> Mapas de Calor Interactivos</h4>
+              <div style={{display:'flex', flexWrap:'wrap', gap:'15px', justifyContent:'center'}}>
+                <InteractiveHeatmap dataMatrix={results.heatmaps.w_mm} title="Desplazamiento (w)" unit="mm" lx={params.Lx} ly={params.Ly} />
+                <InteractiveHeatmap dataMatrix={results.heatmaps.Mx_kNm} title="Momento Mx" unit="kNm/m" lx={params.Lx} ly={params.Ly} />
+                <InteractiveHeatmap dataMatrix={results.heatmaps.My_kNm} title="Momento My" unit="kNm/m" lx={params.Lx} ly={params.Ly} />
+                <InteractiveHeatmap dataMatrix={results.heatmaps.Vu_kN} title="Cortante Vu" unit="kN/m" lx={params.Lx} ly={params.Ly} />
+              </div>
             </div>
           )}
 
@@ -2129,14 +1903,11 @@ export default function CalculadoraLosaFundacion() {
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px'}}>
                 <h4 style={{margin:0, color:'#333'}}><FaClipboardList /> Presupuesto Estimado</h4>
                 <div style={{display:'flex', gap:'8px'}}>
-                  <button className="btn-success" onClick={descargarMemoriaCalculoHtml} style={{background:'#673ab7', display:'flex', alignItems:'center', gap:'8px', border:'none', padding:'8px 12px', borderRadius:'4px', color:'#fff', cursor:'pointer'}}>
-                    <FaBook /> Memoria (HTML)
+                  <button className="btn-success" onClick={descargarMemoriaCalculoHtml} style={{background:'#1A6BB5', display:'flex', alignItems:'center', gap:'8px', border:'none', padding:'8px 12px', borderRadius:'4px', color:'#fff', cursor:'pointer'}}>
+                    <FaBook /> Memoria de Cálculo
                   </button>
                   <button className="btn-success" onClick={descargarExcel} style={{background:'#1976d2', display:'flex', alignItems:'center', gap:'8px', border:'none', padding:'8px 12px', borderRadius:'4px', color:'#fff', cursor:'pointer'}}>
                     <FaFileExcel /> Excel Fórmulas
-                  </button>
-                  <button className="btn-success" onClick={descargarMemoriaPDF} style={{background:'#0d47a1', display:'flex', alignItems:'center', gap:'8px', border:'none', padding:'8px 12px', borderRadius:'4px', color:'#fff', cursor:'pointer'}}>
-                    <FaFilePdf /> Memoria (PDF)
                   </button>
                   <button className="btn-success" onClick={descargarPDFPresupuesto} style={{background:'#2e7d32', display:'flex', alignItems:'center', gap:'8px', border:'none', padding:'8px 12px', borderRadius:'4px', color:'#fff', cursor:'pointer'}}>
                     <FaFilePdf /> Descargar PDF
