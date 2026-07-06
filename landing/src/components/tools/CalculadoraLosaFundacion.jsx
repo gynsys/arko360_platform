@@ -282,6 +282,10 @@ export default function CalculadoraLosaFundacion() {
 
   // Interacción Canvas (Mouse & Snap)
   const [mouseCoord, setMouseCoord] = useState({ x: 0, y: 0 });
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [drawType, setDrawType] = useState('perimetral');
+  const [drawStart, setDrawStart] = useState(null);
+  const [drawEnd, setDrawEnd] = useState(null);
   
   const presupuesto = useMemo(() => generarPresupuesto(results, globalPrices, designParams), [results, globalPrices, designParams]);
   const presupuestoTotal = useMemo(() => presupuesto.reduce((acc, it) => acc + it.total, 0), [presupuesto]);
