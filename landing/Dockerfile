@@ -2,7 +2,7 @@
 FROM node:18-alpine AS build
 WORKDIR /app
 COPY package.json ./
-RUN npm install --no-package-lock
+RUN npm install --no-package-lock --legacy-peer-deps
 COPY . .
 RUN npm run build
 
