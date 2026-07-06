@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import './CalculadoraLosaFundacion.css';
 import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut } from 'lucide-react';
 import ExcelJS from 'exceljs';
@@ -388,6 +390,16 @@ export default function CalculadoraLosaFundacion() {
       theme: 'grid',
       headStyles: { fillColor: [30, 30, 47] },
       footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+      styles: { fontSize: 10 },
+      columnStyles: {
+        3: { halign: 'right' },
+        4: { halign: 'right', fontStyle: 'bold' }
+      }
+    });
+    
+    doc.save("Presupuesto_Materiales_Arko360.pdf");
+  };
+
   const descargarMemoriaCalculoHtml = () => {
     if (!results || !results.materials_computation) {
       toast.error("No hay resultados para generar memoria.");
