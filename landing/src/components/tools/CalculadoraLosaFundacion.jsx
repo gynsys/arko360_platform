@@ -6,6 +6,7 @@ import './CalculadoraLosaFundacion.css';
 import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus } from 'react-icons/fa';
 
 // ============================================
 // FOUNDATION SLAB EDITOR - HIBRIDO v2
@@ -446,9 +447,9 @@ export default function CalculadoraLosaFundacion() {
     const nu = payload.materials.nu || 0.2;
     const D_kNm = (payload.materials.E * Math.pow(h, 3)) / (12 * (1 - Math.pow(nu, 2))) / 1000;
     
-    addLine("D = E · h³ / [12(1 - ν²)]", 12, 'italic');
-    addLine(`Sustituyendo para este proyecto (h=${h.toFixed(2)}m, E=${E_MPa.toFixed(0)} MPa, ν=${nu}):`);
-    addLine(`D = (${E_MPa.toFixed(0)} MPa · ${(h).toFixed(2)}³ m³) / (12 · (1 - ${nu}²)) = ${D_kNm.toFixed(2)} kN·m`);
+    addLine("D = E · h^3 / [12(1 - v^2)]", 12, 'italic');
+    addLine(`Sustituyendo para este proyecto (h=${h.toFixed(2)}m, E=${E_MPa.toFixed(0)} MPa, v=${nu}):`);
+    addLine(`D = (${E_MPa.toFixed(0)} MPa · ${(h).toFixed(2)}^3 m^3) / (12 · (1 - ${nu}^2)) = ${D_kNm.toFixed(2)} kN·m`);
     y += 5;
 
     // 3. Discretización
@@ -458,16 +459,16 @@ export default function CalculadoraLosaFundacion() {
     y += 3;
     
     addLine("3.2 Operador Biarmónico Discretizado (Estrella de 13 puntos)", 12, 'bold');
-    addLine("∇⁴wᵢ,ⱼ ≈ (1/h⁴) · [20wᵢ,ⱼ - 8Σw_vecinos + 2Σw_diagonales + Σw_2h]");
+    addLine("Nabla^4 w ≈ (1/h^4) · [20w - 8*Sum(w_vec) + 2*Sum(w_diag) + Sum(w_2h)]");
     addLine("Visualmente, los coeficientes forman la siguiente matriz en la cuadrícula:", 10, 'normal');
     doc.setFont('courier', 'normal');
     addLine("           [+1]");
     addLine("            | ");
-    addLine("   [+2]───[-8]───[+2]");
+    addLine("   [+2]---[-8]---[+2]");
     addLine("    |       |       |");
-    addLine("  [-8]───[+20]───[-8]");
+    addLine("  [-8]---[+20]---[-8]");
     addLine("    |       |       |");
-    addLine("   [+2]───[-8]───[+2]");
+    addLine("   [+2]---[-8]---[+2]");
     addLine("            | ");
     addLine("           [+1]");
     doc.setFont('helvetica', 'normal');
@@ -556,10 +557,10 @@ export default function CalculadoraLosaFundacion() {
 
     // 6. Diseño del Armado
     addLine("6. Diseño del Armado (ACI 318)", 14, 'bold', [33, 150, 243]);
-    addLine("Con los momentos calculados, el acero de refuerzo requerido se determina por flexión, pero la cuantía mínima por retracción de fraguado y temperatura (ρ_min = 0.0018) suele gobernar en losas de fundación.");
+    addLine("Con los momentos calculados, el acero de refuerzo requerido se determina por flexión, pero la cuantía mínima por retracción de fraguado y temperatura (rho_min = 0.0018) suele gobernar en losas de fundación.");
     
     const As_min = results.As_min_cm2_m || (0.0018 * 100 * (payload.geometry.h * 100));
-    addLine(`- Acero mínimo requerido (As_min): ${As_min.toFixed(2)} cm²/m`);
+    addLine(`- Acero mínimo requerido (As_min): ${As_min.toFixed(2)} cm^2/m`);
     
     let max_as_x = 0; let max_as_y = 0;
     if (results.bands) {
@@ -568,8 +569,8 @@ export default function CalculadoraLosaFundacion() {
         if (b.As_y_cm2_m > max_as_y) max_as_y = b.As_y_cm2_m;
       });
     }
-    addLine(`- Acero calculado por flexión en X: ${max_as_x.toFixed(2)} cm²/m`);
-    addLine(`- Acero calculado por flexión en Y: ${max_as_y.toFixed(2)} cm²/m`);
+    addLine(`- Acero calculado por flexión en X: ${max_as_x.toFixed(2)} cm^2/m`);
+    addLine(`- Acero calculado por flexión en Y: ${max_as_y.toFixed(2)} cm^2/m`);
     
     if (max_as_x <= As_min && max_as_y <= As_min) {
       addLine("CONCLUSIÓN: El acero mínimo rige el diseño. Los requerimientos estructurales son menores a la cuantía mínima.", 10, 'bold', [46, 125, 50]);
@@ -1655,16 +1656,16 @@ export default function CalculadoraLosaFundacion() {
           {results && !error && (
             <div className="audit-actions">
               <button className="btn-primary-results" onClick={() => setShowResultsModal(true)}>
-                📊 Ver Resultados
+                <FaChartBar /> Ver Resultados
               </button>
               <button className="btn-secondary" onClick={downloadHTML} style={{background: '#e3f2fd', borderColor: '#90caf9'}}>
-                📄 Plano HTML
+                <FaFileCode /> Plano HTML
               </button>
               <button className="btn-secondary" onClick={downloadAuditJSON}>
-                ⬇️ JSON Auditoría
+                <FaDownload /> JSON Auditoría
               </button>
               <button className="btn-success" onClick={saveToDatabase} disabled={saving}>
-                💾 {saving ? 'Guardando...' : 'Guardar'}
+                <FaSave /> {saving ? 'Guardando...' : 'Guardar'}
               </button>
               <button
                 className="btn-secondary"
@@ -1672,7 +1673,7 @@ export default function CalculadoraLosaFundacion() {
                 onClick={() => { setSaveAsName(projectName); setShowSaveAsModal(true); }}
                 disabled={!results}
               >
-                📂 Guardar Como
+                <FaFolderPlus /> Guardar Como
               </button>
             </div>
           )}
@@ -1983,13 +1984,13 @@ export default function CalculadoraLosaFundacion() {
           {/* Mapa de calor - solo descarga */}
           {results.heatmap_base64 && (
             <div style={{padding:'16px 24px', borderBottom:'1px solid #eee', display:'flex', alignItems:'center', gap:'16px', background:'#f0f4ff'}}>
-              <span style={{fontSize:'13px', color:'#555'}}>🌡️ <strong>Mapas de Calor FEM generados</strong> (Desplazamiento, Momentos Mx/My, Cortante, Acero As X/Y, Ratio Vu/φVc)</span>
+              <span style={{fontSize:'13px', color:'#555'}}><FaThermometerHalf /> <strong>Mapas de Calor FEM generados</strong> (Desplazamiento, Momentos Mx/My, Cortante, Acero As X/Y, Ratio Vu/φVc)</span>
               <a
                 href={`data:image/png;base64,${results.heatmap_base64}`}
                 download={`mapas_calor_${projectName.replace(/\s+/g,'_')}.png`}
                 style={{background:'#3f51b5', color:'#fff', padding:'6px 14px', borderRadius:'6px', textDecoration:'none', fontSize:'12px', whiteSpace:'nowrap', flexShrink:0}}
               >
-                ⬇️ Descargar PNG (8 paneles)
+                <FaDownload /> Descargar PNG (8 paneles)
               </a>
             </div>
           )}
@@ -1997,7 +1998,7 @@ export default function CalculadoraLosaFundacion() {
           {/* Cantidades de Obra */}
           {results.materials_computation && (
             <div style={{padding:'20px 24px', borderBottom:'1px solid #eee', background:'#f5f7fa'}}>
-              <h4 style={{margin:'0 0 12px 0', color:'#333'}}>🏗️ Cómputos Métricos (Cantidades Estimadas)</h4>
+              <h4 style={{margin:'0 0 12px 0', color:'#333'}}><FaHardHat /> Cómputos Métricos (Cantidades Estimadas)</h4>
               <div style={{display:'flex', gap:'20px'}}>
                 <div style={{flex:1, background:'#fff', padding:'12px', borderRadius:'8px', border:'1px solid #e0e0e0'}}>
                   <strong>Volumen de Concreto:</strong>
@@ -2042,7 +2043,7 @@ export default function CalculadoraLosaFundacion() {
           {/* Tabla de Bandas */}
           {results.bands && (
             <div style={{padding:'20px 24px', overflowX:'auto'}}>
-              <h4 style={{margin:'0 0 12px 0', color:'#333'}}>Tabla de Armado de Bandas</h4>
+              <h4 style={{margin:'0 0 12px 0', color:'#333'}}><FaTable /> Tabla de Armado de Bandas</h4>
               <table className="coords-table" style={{minWidth:'720px', fontSize:'12px'}}>
                 <thead>
                   <tr style={{background:'#1e1e2f', color:'#fff'}}>
@@ -2093,19 +2094,19 @@ export default function CalculadoraLosaFundacion() {
           {presupuesto.length > 0 && (
             <div style={{padding:'20px 24px', overflowX:'auto', background:'#fff'}}>
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px'}}>
-                <h4 style={{margin:0, color:'#333'}}>📋 Presupuesto Estimado</h4>
+                <h4 style={{margin:0, color:'#333'}}><FaClipboardList /> Presupuesto Estimado</h4>
                 <div style={{display:'flex', gap:'8px'}}>
-                  <button className="btn-success" onClick={descargarMemoriaCalculoHtml} style={{background:'#673ab7'}}>
-                    📘 Memoria de Cálculo (HTML)
+                  <button className="btn-success" onClick={descargarMemoriaCalculoHtml} style={{background:'#673ab7', display:'flex', alignItems:'center', gap:'8px', border:'none', padding:'8px 12px', borderRadius:'4px', color:'#fff', cursor:'pointer'}}>
+                    <FaBook /> Memoria (HTML)
                   </button>
-                  <button className="btn-success" onClick={descargarExcel} style={{background:'#1976d2'}}>
-                    📄 Descargar Excel con Fórmulas
+                  <button className="btn-success" onClick={descargarExcel} style={{background:'#1976d2', display:'flex', alignItems:'center', gap:'8px', border:'none', padding:'8px 12px', borderRadius:'4px', color:'#fff', cursor:'pointer'}}>
+                    <FaFileExcel /> Excel Fórmulas
                   </button>
-                  <button className="btn-success" onClick={descargarMemoriaPDF} style={{background:'#00695c'}}>
-                    📄 Memoria de Cálculo (PDF)
+                  <button className="btn-success" onClick={descargarMemoriaPDF} style={{background:'#0d47a1', display:'flex', alignItems:'center', gap:'8px', border:'none', padding:'8px 12px', borderRadius:'4px', color:'#fff', cursor:'pointer'}}>
+                    <FaFilePdf /> Memoria (PDF)
                   </button>
-                  <button className="btn-success" onClick={descargarPDFPresupuesto} style={{background:'#2e7d32'}}>
-                    📄 Descargar PDF
+                  <button className="btn-success" onClick={descargarPDFPresupuesto} style={{background:'#2e7d32', display:'flex', alignItems:'center', gap:'8px', border:'none', padding:'8px 12px', borderRadius:'4px', color:'#fff', cursor:'pointer'}}>
+                    <FaFilePdf /> Descargar PDF
                   </button>
                 </div>
               </div>
@@ -2155,9 +2156,9 @@ export default function CalculadoraLosaFundacion() {
 
           {/* Footer */}
           <div style={{padding:'12px 24px', borderTop:'1px solid #eee', display:'flex', justifyContent:'flex-end', gap:'8px', background:'#fafafa', borderRadius:'0 0 12px 12px'}}>
-            <button className="btn-secondary" onClick={downloadAuditJSON}>⬇️ JSON Auditoría MKS</button>
-            <button className="btn-secondary" onClick={downloadHTML} style={{background:'#e3f2fd', borderColor:'#90caf9'}}>📄 Plano HTML</button>
-            <button onClick={() => setShowResultsModal(false)} className="btn-success">Cerrar</button>
+            <button className="btn-secondary" onClick={downloadAuditJSON} style={{display:'flex', alignItems:'center', gap:'6px'}}><FaDownload /> JSON Auditoría MKS</button>
+            <button className="btn-secondary" onClick={downloadHTML} style={{background:'#e3f2fd', borderColor:'#90caf9', display:'flex', alignItems:'center', gap:'6px'}}><FaFileCode /> Plano HTML</button>
+            <button onClick={() => setShowResultsModal(false)} className="btn-success" style={{background:'#4caf50', border:'none', color:'#fff'}}>Cerrar</button>
           </div>
         </div>
       </div>
