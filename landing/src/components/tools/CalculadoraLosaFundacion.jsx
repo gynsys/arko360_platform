@@ -475,7 +475,35 @@ export default function CalculadoraLosaFundacion() {
 
     // 4. Cargas
     addLine("4. Cargas de Paredes (Cargas Lineales)", 14, 'bold', [33, 150, 243]);
-    addLine("Concepto Clave: Una pared no es una carga distribuida en área (kN/m²), sino una carga lineal (kN/m). En diferencias finitas, debemos convertirla a una carga equivalente en los nodos numéricos dividiéndola entre el tamaño del diferencial (Δx o Δy). Adicionalmente se superpone el peso propio de la losa y la sobrecarga de uso.");
+    addLine("Concepto Clave: Una pared no es una carga distribuida en área (kN/m²), sino una carga lineal (kN/m). En diferencias finitas, debemos convertirla a una carga equivalente en los nodos numéricos dividiéndola entre el tamaño del diferencial (Δx o Δy).");
+    y += 3;
+    addLine("Desglose de cálculo de cargas lineales (W) por cada muro del proyecto:", 12, 'bold');
+    
+    if (payload.walls && payload.walls.length > 0) {
+      payload.walls.forEach((w, i) => {
+        const length = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
+        const vol_per_m = w.thickness * w.height;
+        let weight_kg_m = vol_per_m * w.density;
+        
+        let calcStr = `W = (${w.thickness.toFixed(2)}m · ${w.height.toFixed(2)}m · ${w.density} kg/m³`;
+        if (w.is_plastered) {
+             weight_kg_m += (2 * 0.015 * 2000 * w.height);
+             calcStr += ` + friso`;
+        }
+        calcStr += `) · 9.81 / 1000`;
+        const force_kN_m = (weight_kg_m * 9.81 / 1000);
+        const design_force = force_kN_m * w.load_factor;
+        
+        addLine(`Muro ${i+1} (${w.type}): L=${length.toFixed(2)}m`, 10, 'bold');
+        addLine(`${calcStr} = ${force_kN_m.toFixed(2)} kN/m`);
+        addLine(`Carga Última de Diseño (x${w.load_factor}): ${design_force.toFixed(2)} kN/m`, 10, 'italic');
+        y += 2;
+      });
+    } else {
+      addLine("No se definieron muros estructurales en este proyecto.", 10, 'italic');
+    }
+    
+    addLine("Adicionalmente, se superpone el peso propio de la losa y la sobrecarga de uso sobre todos los nodos de la malla.");
     y += 5;
 
     // 5. Ejemplo numérico resuelto
