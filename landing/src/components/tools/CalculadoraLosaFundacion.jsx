@@ -168,7 +168,7 @@ export default function CalculadoraLosaFundacion() {
   const svgRef = useRef(null);
 
   // Configuración de Losa y Perímetro
-  const [shape, setShape] = useState('rectangular');
+  const [shape, setShape] = useState('libre');
   const [params, setParams] = useState({
     Lx: 10, Ly: 10,       
     wingX: 4, wingY: 4,   
@@ -282,9 +282,6 @@ export default function CalculadoraLosaFundacion() {
 
   // Interacción Canvas (Mouse & Snap)
   const [mouseCoord, setMouseCoord] = useState({ x: 0, y: 0 });
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [drawStart, setDrawStart] = useState(null);
-  const [drawEnd, setDrawEnd] = useState(null); // Preview de la línea
   
   const presupuesto = useMemo(() => generarPresupuesto(results, globalPrices, designParams), [results, globalPrices, designParams]);
   const presupuestoTotal = useMemo(() => presupuesto.reduce((acc, it) => acc + it.total, 0), [presupuesto]);
@@ -656,7 +653,7 @@ export default function CalculadoraLosaFundacion() {
 
   const addInternalWall = (w) => {
     saveHistory();
-    setInternalWalls(prev => [...prev, { id: Date.now(), type: 'interno', x1: w.x1 || 0, y1: w.y1 || 0, x2: w.x2 || 1, y2: w.y2 || 1 }]);
+    setInternalWalls(prev => [...prev, { id: Date.now(), type: drawType, x1: w.x1 || 0, y1: w.y1 || 0, x2: w.x2 || 1, y2: w.y2 || 1 }]);
   };
 
   const updateInternalWall = (id, field, value) => {
@@ -785,11 +782,15 @@ export default function CalculadoraLosaFundacion() {
 
   // Construir el payload con el estado actual (muros, aberturas, parametros)
   const buildCurrentPayload = () => {
+    // Solo enviar muros reales al servidor
+    const structuralWalls = allWalls.filter(w => w.type === 'perimetral' || w.type === 'interno');
+    const losaLines = allWalls.filter(w => w.type === 'losa');
+    
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    if (allWalls.length === 0) {
-      minX = 0; minY = 0; maxX = 10; maxY = 10;
-    } else {
-      allWalls.forEach(w => {
+    
+    if (losaLines.length > 0) {
+      // Usa las líneas de losa dibujadas para la bounding box
+      losaLines.forEach(w => {
         if (w.x1 < minX) minX = w.x1;
         if (w.x2 < minX) minX = w.x2;
         if (w.x1 > maxX) maxX = w.x1;
@@ -799,12 +800,31 @@ export default function CalculadoraLosaFundacion() {
         if (w.y1 > maxY) maxY = w.y1;
         if (w.y2 > maxY) maxY = w.y2;
       });
+    } else if (structuralWalls.length > 0) {
+      // Auto-wrap walls si no hay líneas de losa
+      structuralWalls.forEach(w => {
+        if (w.x1 < minX) minX = w.x1;
+        if (w.x2 < minX) minX = w.x2;
+        if (w.x1 > maxX) maxX = w.x1;
+        if (w.x2 > maxX) maxX = w.x2;
+        if (w.y1 < minY) minY = w.y1;
+        if (w.y2 < minY) minY = w.y2;
+        if (w.y1 > maxY) maxY = w.y1;
+        if (w.y2 > maxY) maxY = w.y2;
+      });
+      // Aplica offset solo al auto-wrap
+      minX -= offset;
+      maxX += offset;
+      minY -= offset;
+      maxY += offset;
+    } else {
+      minX = 0; minY = 0; maxX = 10; maxY = 10;
     }
     
-    const slabLx = (maxX - minX) + 2 * offset;
-    const slabLy = (maxY - minY) + 2 * offset;
-    const offsetX = minX - offset;
-    const offsetY = minY - offset;
+    const slabLx = maxX - minX;
+    const slabLy = maxY - minY;
+    const offsetX = minX;
+    const offsetY = minY;
 
     return {
       project: projectName,
@@ -821,7 +841,7 @@ export default function CalculadoraLosaFundacion() {
         band_width_m: designParams.band_width_m > 0 ? designParams.band_width_m : 0,
         custom_mesh_cm2_m: designParams.custom_mesh_cm2_m || 0
       },
-      walls: allWalls.map(w => ({
+      walls: structuralWalls.map(w => ({
         x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
         thickness: w.thickness, height: w.height,
         density: w.density, type: w.type, load_factor: 1.5,
@@ -830,7 +850,7 @@ export default function CalculadoraLosaFundacion() {
           type: op.type, start_m: op.start_m, width_m: op.width_m, height_m: op.height_m
         }))
       })),
-      beams: perimeterWalls.map(w => ({
+      beams: perimeterWalls.filter(w => w.type === 'perimetral' || w.type === 'interno').map(w => ({
         x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
         width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
       })),
@@ -1504,6 +1524,12 @@ export default function CalculadoraLosaFundacion() {
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '10px' }}>
               <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
                 <h4 style={{margin:0}}>Plano Interactivo</h4>
+                <div style={{display:'flex', gap:'8px', marginLeft:'12px', border: '1px solid #ddd', padding: '4px', borderRadius: '6px', background: '#f5f5f5'}}>
+                  <button onClick={() => setDrawType('parcela')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'parcela' ? '2px solid #555' : '1px solid transparent', background: drawType === 'parcela' ? '#fff' : 'transparent', color: '#555', cursor: 'pointer', fontWeight: drawType === 'parcela' ? 'bold' : 'normal'}}>Parcela</button>
+                  <button onClick={() => setDrawType('losa')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'losa' ? '2px solid #ff9800' : '1px solid transparent', background: drawType === 'losa' ? '#fff' : 'transparent', color: '#ff9800', cursor: 'pointer', fontWeight: drawType === 'losa' ? 'bold' : 'normal'}}>Borde Losa</button>
+                  <button onClick={() => setDrawType('perimetral')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'perimetral' ? '2px solid #e53935' : '1px solid transparent', background: drawType === 'perimetral' ? '#fff' : 'transparent', color: '#e53935', cursor: 'pointer', fontWeight: drawType === 'perimetral' ? 'bold' : 'normal'}}>Muro Perim.</button>
+                  <button onClick={() => setDrawType('interno')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'interno' ? '2px solid #1e88e5' : '1px solid transparent', background: drawType === 'interno' ? '#fff' : 'transparent', color: '#1e88e5', cursor: 'pointer', fontWeight: drawType === 'interno' ? 'bold' : 'normal'}}>Muro Int.</button>
+                </div>
                 <div style={{display:'flex', gap:'4px', marginLeft:'12px'}}>
                   <button onClick={undo} disabled={historyPast.length === 0} title="Deshacer" style={{padding:'4px 8px', cursor: historyPast.length === 0 ? 'not-allowed' : 'pointer', background:'#fff', border:'1px solid #ccc', borderRadius:'4px'}}><Undo2 size={16} color={historyPast.length === 0 ? '#ccc' : '#333'}/></button>
                   <button onClick={redo} disabled={historyFuture.length === 0} title="Rehacer" style={{padding:'4px 8px', cursor: historyFuture.length === 0 ? 'not-allowed' : 'pointer', background:'#fff', border:'1px solid #ccc', borderRadius:'4px'}}><Redo2 size={16} color={historyFuture.length === 0 ? '#ccc' : '#333'}/></button>
@@ -1559,14 +1585,16 @@ export default function CalculadoraLosaFundacion() {
                 <line key={`vy_sub${i}`} x1={MARGIN} y1={toSvg(i*0.5)} x2={toSvg(params.Lx)} y2={toSvg(i*0.5)} stroke="#cfd8dc" strokeWidth="1" strokeDasharray="4,4" />
               ))}
 
-              {/* Parcela Máxima (Bounding Box del Terreno) */}
-              <rect x={MARGIN} y={MARGIN} width={toSvg(params.Lx)-MARGIN} height={toSvg(params.Ly)-MARGIN} fill="rgba(33, 150, 243, 0.03)" stroke="#2196f3" strokeDasharray="5,5" />
-              
-              {/* Losa Auto-calculada Visualmente */}
+              {/* Losa Auto-calculada (Auto-wrap) */}
               {(() => {
+                const losaLines = allWalls.filter(w => w.type === 'losa');
+                if (losaLines.length > 0) return null; // Si hay losa dibujada explícitamente, ocultar el auto-wrap
+
+                const structuralWalls = allWalls.filter(w => w.type === 'perimetral' || w.type === 'interno');
+                if (structuralWalls.length === 0) return null;
+                
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                if (allWalls.length === 0) return null;
-                allWalls.forEach(w => {
+                structuralWalls.forEach(w => {
                   if (w.x1 < minX) minX = w.x1;
                   if (w.x2 < minX) minX = w.x2;
                   if (w.x1 > maxX) maxX = w.x1;
@@ -1584,22 +1612,19 @@ export default function CalculadoraLosaFundacion() {
                   <rect x={toSvg(offsetX)} y={toSvg(offsetY)} width={slabLx * scale} height={slabLy * scale} fill="rgba(255, 152, 0, 0.08)" stroke="#ff9800" strokeWidth="2" strokeDasharray="3,3" />
                 );
               })()}
-              
-              {/* Referencia: Límites de Parcela y Frente */}
-              <text x={toSvg(params.Lx/2)} y={MARGIN + 15} fontSize="11" fill="#2196f3" textAnchor="middle" fontWeight="bold" opacity="0.6" style={{pointerEvents: 'none'}}>
-                LÍMITES DE PARCELA
-              </text>
-              <g transform={`translate(${toSvg(params.Lx/2)}, ${toSvg(params.Ly) + 15})`} style={{pointerEvents: 'none'}}>
-                <text x="0" y="10" fontSize="11" fill="#333" textAnchor="middle" fontWeight="bold">FRENTE</text>
-                <polygon points="-6,-2 6,-2 0,-12" fill="#333" />
-                <rect x="-2" y="-2" width="4" height="6" fill="#333" />
-              </g>
 
-              {/* Muros */}
+              {/* Muros y Líneas */}
               {allWalls.map(w => {
                 const isHovered = hoveredWallId === w.id;
-                const strokeColor = isHovered ? '#ff9800' : (w.type === 'perimetral' ? '#e53935' : '#1e88e5');
-                const strokeW = Math.max(isHovered ? 8 : 4, w.thickness * scale + (isHovered ? 4 : 0));
+                let strokeColor = '#1e88e5'; // interno
+                if (w.type === 'perimetral') strokeColor = '#e53935';
+                if (w.type === 'losa') strokeColor = '#ff9800';
+                if (w.type === 'parcela') strokeColor = '#9e9e9e';
+                if (isHovered) strokeColor = '#4caf50';
+
+                const isLineOnly = w.type === 'losa' || w.type === 'parcela';
+                const strokeW = isLineOnly ? (isHovered ? 4 : 2) : Math.max(isHovered ? 8 : 4, (w.thickness || 0.15) * scale + (isHovered ? 4 : 0));
+                const strokeDash = w.type === 'parcela' ? '6,6' : 'none';
 
                 return (
                 <g key={w.id} 
@@ -1620,6 +1645,7 @@ export default function CalculadoraLosaFundacion() {
                       x2={toSvg(w.x2)} y2={toSvg(w.y2)} 
                       stroke={strokeColor} 
                       strokeWidth={strokeW} strokeLinecap="round" 
+                      strokeDasharray={strokeDash}
                     />
                     {openings.filter(op => op.wall_id === w.id).map(op => {
                       const len = Math.sqrt((w.x2-w.x1)**2 + (w.y2-w.y1)**2);
@@ -1849,7 +1875,15 @@ export default function CalculadoraLosaFundacion() {
                     return (
                       <tr key={i} style={{background: i % 2 === 0 ? '#fff' : '#f9f9f9'}}>
                         <td>M{i+1}</td>
-                        <td><span style={{padding:'2px 6px', borderRadius:'3px', fontSize:'10px', background: b.type==='perimetral' ? '#ffebee' : '#e3f2fd', color: b.type==='perimetral' ? '#c62828' : '#1565c0'}}>{b.type==='perimetral' ? 'Perim.' : 'Interno'}</span></td>
+                        <td>
+                          <span style={{
+                            padding:'2px 6px', borderRadius:'3px', fontSize:'10px', 
+                            background: b.type==='perimetral' ? '#ffebee' : (b.type==='losa' ? '#fff3e0' : (b.type==='parcela' ? '#f5f5f5' : '#e3f2fd')), 
+                            color: b.type==='perimetral' ? '#c62828' : (b.type==='losa' ? '#e65100' : (b.type==='parcela' ? '#616161' : '#1565c0'))
+                          }}>
+                            {b.type==='perimetral' ? 'Perim.' : (b.type==='losa' ? 'Losa' : (b.type==='parcela' ? 'Parcela' : 'Interno'))}
+                          </span>
+                        </td>
                         <td>{b.band_width.toFixed(2)} m</td>
                         <td>{b.Mx_design_kNm_m.toFixed(2)}</td>
                         <td>{b.My_design_kNm_m.toFixed(2)}</td>
