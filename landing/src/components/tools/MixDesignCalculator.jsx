@@ -439,17 +439,17 @@ const MixDesignCalculator = () => {
           {/* Panel de Resultados */}
           <div className="lg:col-span-7">
             {/* Selector de Unidad con Bordes y Hover */}
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
               <label className="block text-sm font-extrabold text-slate-800 mb-3 uppercase tracking-wider">
                 Dosificación de Resultados en:
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {['Kg', 'Cuñetes', 'Paladas'].map((option) => (
                   <button
                     key={option}
                     type="button"
                     onClick={() => setUnit(option)}
-                    className={`py-2.5 px-4 text-sm font-extrabold rounded-xl border border-solid transition-all duration-200 shadow-sm ${
+                    className={`flex-1 min-w-[70px] py-2 px-2 sm:px-4 text-sm font-extrabold rounded-xl border border-solid transition-all duration-200 shadow-sm text-center ${
                       unit === option
                         ? 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600 hover:border-amber-700'
                         : 'bg-white border-slate-300 text-slate-700 hover:text-slate-900 hover:border-slate-400 hover:bg-slate-50'
@@ -464,15 +464,15 @@ const MixDesignCalculator = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               
               {/* Tarjeta Cemento */}
-              <div className="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700 relative overflow-hidden group">
+              <div className="bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-xl border border-slate-700 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-slate-700 rounded-full -mr-10 -mt-10 opacity-20 group-hover:scale-110 transition-transform"></div>
                 <h3 className="text-slate-300 font-medium text-sm flex items-center gap-2">
                   <HardHat className="w-4 h-4 text-slate-400" />
                   CEMENTO REQUERIDO
                 </h3>
                 <div className="mt-4 flex items-end gap-2">
-                  <span className="text-5xl font-black text-white tracking-tighter">{displayResults.cemento}</span>
-                  <span className="text-slate-400 font-medium pb-2">{displayResults.cementoUnit}</span>
+                  <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter">{displayResults.cemento}</span>
+                  <span className="text-slate-400 font-medium pb-1 sm:pb-2">{displayResults.cementoUnit}</span>
                 </div>
                 <p className="mt-4 text-xs text-slate-400 font-medium px-3 py-1 bg-slate-700/50 inline-block rounded-full">
                   ~ {(rawCement / 42.5).toFixed(1)} Sacos
@@ -480,52 +480,52 @@ const MixDesignCalculator = () => {
               </div>
 
               {/* Tarjeta Agua */}
-              <div className="bg-blue-600 p-6 rounded-2xl shadow-xl border border-blue-500 relative overflow-hidden group">
+              <div className="bg-blue-600 p-4 sm:p-6 rounded-2xl shadow-xl border border-blue-500 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 rounded-full -mr-10 -mt-10 opacity-50 group-hover:scale-110 transition-transform"></div>
                 <h3 className="text-blue-100 font-medium text-sm flex items-center gap-2">
                   <Droplets className="w-4 h-4 text-blue-200" />
                   AGUA REQUERIDA
                 </h3>
                 <div className="mt-4 flex items-end gap-2">
-                  <span className="text-5xl font-black text-white tracking-tighter">{displayResults.agua}</span>
-                  <span className="text-blue-200 font-medium pb-2">{displayResults.aguaUnit}</span>
+                  <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter">{displayResults.agua}</span>
+                  <span className="text-blue-200 font-medium pb-1 sm:pb-2">{displayResults.aguaUnit}</span>
                 </div>
               </div>
 
               {/* Tarjeta Arena */}
-              <div className="bg-amber-50 p-6 rounded-2xl shadow-sm border border-amber-200 relative overflow-hidden">
+              <div className="bg-amber-50 p-4 sm:p-6 rounded-2xl shadow-sm border border-amber-200 relative overflow-hidden">
                 <h3 className="text-amber-800 font-medium text-sm uppercase tracking-wider">ARENA</h3>
                 <div className="mt-4 flex items-end gap-2">
-                  <span className="text-4xl font-bold text-amber-600 tracking-tight">{displayResults.arena}</span>
+                  <span className="text-3xl sm:text-4xl font-bold text-amber-600 tracking-tight">{displayResults.arena}</span>
                   <span className="text-amber-500 font-medium pb-1">{displayResults.arenaUnit}</span>
                 </div>
                 <p className="mt-2 text-xs text-amber-600/70">Agregado Fino</p>
               </div>
 
               {/* Tarjeta Piedra */}
-              <div className="bg-slate-100 p-6 rounded-2xl shadow-sm border border-slate-300 relative overflow-hidden">
+              <div className="bg-slate-100 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-300 relative overflow-hidden">
                 <h3 className="text-slate-600 font-medium text-sm uppercase tracking-wider">PIEDRA PICADA</h3>
                 <div className="mt-4 flex items-end gap-2">
-                  <span className="text-4xl font-bold text-slate-800 tracking-tight">{displayResults.piedra}</span>
+                  <span className="text-3xl sm:text-4xl font-bold text-slate-800 tracking-tight">{displayResults.piedra}</span>
                   <span className="text-slate-500 font-medium pb-1">{displayResults.piedraUnit}</span>
                 </div>
                 <p className="mt-2 text-xs text-slate-500">Agregado Grueso</p>
               </div>
 
               {/* Resumen Densidad */}
-              <div className="sm:col-span-2 bg-gradient-to-r from-slate-900 to-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 flex items-center justify-between">
+              <div className="sm:col-span-2 bg-gradient-to-r from-slate-900 to-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg border border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="text-slate-300 font-medium text-sm">DENSIDAD DEL CONCRETO (DISEÑO)</h3>
                   <p className="text-slate-400 text-xs mt-1">Peso unitario para 1 m³ sin desperdicio</p>
                 </div>
-                <div className="text-right flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-amber-500">{results.densidad}</span>
+                <div className="text-left sm:text-right flex items-baseline gap-2">
+                  <span className="text-3xl sm:text-4xl font-bold text-amber-500">{results.densidad}</span>
                   <span className="text-slate-400 text-sm">Kg/m³</span>
                 </div>
               </div>
 
               {/* Resumen Costos */}
-              <div className="sm:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-emerald-500 mt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="sm:col-span-2 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-emerald-500 mt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="text-emerald-700 font-black text-lg">COSTO TOTAL ESTIMADO</h3>
                   <button onClick={() => setShowCostModal(true)} className="text-emerald-600 text-sm font-bold hover:underline mt-1 flex items-center gap-1">
