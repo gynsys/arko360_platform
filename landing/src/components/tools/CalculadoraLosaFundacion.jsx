@@ -398,6 +398,89 @@ export default function CalculadoraLosaFundacion() {
     doc.save("Presupuesto_Materiales_Arko360.pdf");
   };
 
+  const descargarMemoriaPDF = () => {
+    if (!results) return;
+    const doc = new jsPDF();
+    
+    // Configuración inicial
+    let y = 20;
+    const margin = 14;
+    const lineHeight = 6;
+    
+    const addLine = (text, size = 10, font = 'normal', color = [0,0,0]) => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFontSize(size);
+      doc.setFont('helvetica', font);
+      doc.setTextColor(color[0], color[1], color[2]);
+      
+      const splitText = doc.splitTextToSize(text, 210 - margin*2);
+      doc.text(splitText, margin, y);
+      y += (splitText.length * lineHeight);
+    };
+
+    // Título
+    addLine("Memoria de Cálculo Estructural - Losa de Fundación", 16, 'bold', [13, 71, 161]);
+    addLine(`Proyecto: ${projectName || 'Sin título'}`, 12, 'bold');
+    addLine(`Fecha: ${new Date().toLocaleDateString()}`, 10, 'normal');
+    y += 5;
+
+    // 1. Geometría y Materiales
+    addLine("1. Geometría y Parámetros del Suelo", 14, 'bold', [33, 150, 243]);
+    addLine(`Dimensiones Analizadas (Losa): ${results.inputs.geometry.Lx.toFixed(2)}m x ${results.inputs.geometry.Ly.toFixed(2)}m`);
+    addLine(`Espesor de la Losa (h): ${results.inputs.geometry.h.toFixed(2)} m`);
+    addLine(`Módulo de Balasto (k): ${(results.inputs.materials.k / 1e6).toFixed(2)} MN/m³`);
+    addLine(`Capacidad Portante Admisible (q_adm): ${(results.inputs.materials.q_adm / 98066.5).toFixed(2)} kgf/cm²`);
+    y += 5;
+
+    // 2. Materiales de Concreto Armado
+    addLine("2. Especificaciones de Concreto Armado (Norma ACI 318)", 14, 'bold', [33, 150, 243]);
+    addLine(`Resistencia a la compresión del concreto (f'c): ${(results.inputs.materials.f_c).toFixed(2)} MPa`);
+    addLine(`Límite de fluencia del acero (fy): ${(results.inputs.materials.f_y).toFixed(2)} MPa`);
+    addLine(`Recubrimiento libre: ${(results.inputs.materials.cover * 100).toFixed(1)} cm`);
+    y += 5;
+
+    // 3. Metodología de Cálculo
+    addLine("3. Metodología de Cálculo y Cargas", 14, 'bold', [33, 150, 243]);
+    addLine("El análisis estructural se realiza mediante el método de Diferencias Finitas para modelar una placa sobre fundación elástica de Winkler. La ecuación gobernante es la ecuación diferencial de placas de Kirchhoff:");
+    addLine("D ∇⁴w + k w = q(x,y)", 12, 'italic');
+    addLine("Donde D es la rigidez flexional de la placa, k es el módulo de reacción del suelo, y q(x,y) son las cargas aplicadas (peso propio, muros y sobrecarga).");
+    y += 5;
+
+    // 4. Resultados del Análisis de Suelo
+    addLine("4. Esfuerzos Transmitidos al Terreno", 14, 'bold', [33, 150, 243]);
+    const q_max_kgcm2 = (results.analysis.p_max_Pa / 98066.5).toFixed(3);
+    addLine(`Presión Máxima Calculada sobre el suelo (q_max): ${q_max_kgcm2} kgf/cm²`);
+    if (results.analysis.p_max_Pa <= results.inputs.materials.q_adm) {
+      addLine("VERIFICACIÓN: SATISFACTORIA. La presión máxima transmitida al suelo es MENOR a la capacidad portante admisible.", 10, 'bold', [46, 125, 50]);
+    } else {
+      addLine("VERIFICACIÓN: FALLA. La presión máxima SUPERA la capacidad portante admisible del suelo.", 10, 'bold', [198, 40, 40]);
+    }
+    y += 5;
+
+    // 5. Esfuerzos Flexionantes Máximos
+    addLine("5. Solicitaciones Máximas en la Losa", 14, 'bold', [33, 150, 243]);
+    addLine(`Momento Flector Máximo (Mxx): ${results.analysis.Mx_max_kNm.toFixed(2)} kN·m/m`);
+    addLine(`Momento Flector Máximo (Myy): ${results.analysis.My_max_kNm.toFixed(2)} kN·m/m`);
+    y += 5;
+
+    // 6. Diseño de Acero de Refuerzo (ACI 318)
+    addLine("6. Diseño de Acero de Refuerzo (ACI 318)", 14, 'bold', [33, 150, 243]);
+    addLine("Según ACI 318, la cuantía mínima de refuerzo por retracción de fraguado y temperatura para losas donde se emplean barras corrugadas grado 420 (60,000 psi) es:");
+    addLine("ρ_min = 0.0018", 12, 'italic');
+    addLine(`Acero mínimo requerido (As_min): ${(0.0018 * 100 * (results.inputs.geometry.h * 100)).toFixed(2)} cm²/m`);
+    addLine(`Acero principal requerido calculado en X: ${results.design.As_x_cm2_m.toFixed(2)} cm²/m`);
+    addLine(`Acero principal requerido calculado en Y: ${results.design.As_y_cm2_m.toFixed(2)} cm²/m`);
+    if (results.design.As_x_cm2_m <= 0.0018 * 100 * (results.inputs.geometry.h * 100) && results.design.As_y_cm2_m <= 0.0018 * 100 * (results.inputs.geometry.h * 100)) {
+      addLine("NOTA: Los requerimientos estructurales por flexión son menores que el acero mínimo. El diseño se rige por cuantía de retracción y temperatura (Malla general).", 10, 'normal', [85, 139, 47]);
+    }
+
+    doc.save(`Memoria_Calculo_${projectName.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
+  };
+
+
   const descargarMemoriaCalculoHtml = () => {
     if (!results || !results.materials_computation) {
       toast.error("No hay resultados para generar memoria.");
@@ -1915,6 +1998,9 @@ export default function CalculadoraLosaFundacion() {
                   </button>
                   <button className="btn-success" onClick={descargarExcel} style={{background:'#1976d2'}}>
                     📄 Descargar Excel con Fórmulas
+                  </button>
+                  <button className="btn-success" onClick={descargarMemoriaPDF} style={{background:'#00695c'}}>
+                    📄 Memoria de Cálculo (PDF)
                   </button>
                   <button className="btn-success" onClick={descargarPDFPresupuesto} style={{background:'#2e7d32'}}>
                     📄 Descargar PDF
