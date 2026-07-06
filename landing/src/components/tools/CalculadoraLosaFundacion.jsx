@@ -436,6 +436,33 @@ export default function CalculadoraLosaFundacion() {
       aberturasHtml = '<li>No se registraron puertas ni ventanas.</li>';
     }
 
+    const payload = buildCurrentPayload();
+    const E_MPa = payload.materials.E / 1e6;
+    const h_slab = payload.geometry.h;
+    const nu = payload.materials.nu || 0.2;
+    const E_kgf_cm2 = E_MPa * 10.197;
+    const D_kgfm = (payload.materials.E * Math.pow(h_slab, 3)) / (12 * (1 - Math.pow(nu, 2))) / 9.81;
+
+    const w_max_mm = results.heatmaps?.w_max_mm || results.displacements?.w_max_mm || 0;
+    const p_max = results.soil_pressure?.max_pressure_kN_m2 || 0;
+    const q_max_kgcm2 = (p_max / 98.0665).toFixed(3);
+    const q_adm_kgcm2 = (payload.materials.q_adm / 98066.5).toFixed(2);
+    const soil_ok = results.soil_pressure?.ok;
+    const mx_max = results.moments?.Mx_max_kNm_m || 0;
+    const my_max = results.moments?.My_max_kNm_m || 0;
+    
+    const b_cm = 100;
+    const h_cm = h_slab * 100;
+    const As_min = results.As_min_cm2_m || (0.0018 * b_cm * h_cm);
+    
+    let max_as_x = 0; let max_as_y = 0;
+    if (results.bands) {
+      results.bands.forEach(b => {
+        if (b.As_x_cm2_m > max_as_x) max_as_x = b.As_x_cm2_m;
+        if (b.As_y_cm2_m > max_as_y) max_as_y = b.As_y_cm2_m;
+      });
+    }
+
     const htmlContent = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -452,10 +479,50 @@ export default function CalculadoraLosaFundacion() {
 </head>
 <body>
   <h1>Memoria de Cálculo: ${projectName}</h1>
-  <p>Reporte generado automáticamente por Arko360. A continuación se detallan las fórmulas y consideraciones matemáticas para los cómputos métricos de este proyecto.</p>
+  <p>Reporte generado automáticamente por Arko360. A continuación se detallan las fórmulas y consideraciones matemáticas para el análisis estructural (FEM) y los cómputos métricos de este proyecto.</p>
+
+  <div class="card">
+    <h2>1. Ecuación Gobernante (Diferencias Finitas)</h2>
+    <p><strong>Placa sobre Fundación Elástica (Modelo de Winkler):</strong></p>
+    <div class="formula">
+      D · ∇⁴w(x,y) + k · w(x,y) = q(x,y)
+    </div>
+    <p>Rigidez a la Flexión (D):</p>
+    <div class="formula">
+      D = E · h³ / [12(1 - v²)]<br>
+      D = (${E_kgf_cm2.toFixed(0)} kgf/cm² · ${h_slab.toFixed(2)}³ m³) / (12 · (1 - ${nu}²)) = ${D_kgfm.toFixed(2)} kgf·m
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2. Solución Numérica del Proyecto</h2>
+    <ul>
+      <li>Dimensiones: ${payload.geometry.Lx.toFixed(2)}m × ${payload.geometry.Ly.toFixed(2)}m</li>
+      <li>Módulo de Balasto (k): ${(payload.materials.k / 9806.65).toFixed(2)} kgf/cm³</li>
+      <li>Deformación máxima (w_max): ${w_max_mm.toFixed(3)} mm</li>
+      <li>Presión máxima sobre suelo (q_max): ${q_max_kgcm2} kgf/cm² <strong style="color:${soil_ok?'#4caf50':'#f44336'}">${soil_ok ? `(CUMPLE < ${q_adm_kgcm2})` : `(FALLA > ${q_adm_kgcm2})`}</strong></li>
+      <li>Momento Flector Máx Mxx: ${(mx_max * 101.97).toFixed(2)} kgf·m/m</li>
+      <li>Momento Flector Máx Myy: ${(my_max * 101.97).toFixed(2)} kgf·m/m</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>3. Diseño del Armado (ACI 318)</h2>
+    <p><strong>Acero Mínimo por Temperatura:</strong></p>
+    <div class="formula">
+      As_min = ρ_min · b · h = 0.0018 · 100 cm · ${h_cm.toFixed(0)} cm = ${As_min.toFixed(2)} cm²/m
+    </div>
+    <p><strong>Acero Requerido por Flexión (Whitney):</strong></p>
+    <div class="formula">
+      As_flexion = Mu / [ φ · fy · (d - a/2) ]<br>
+      As_x (máx iterativo): ${max_as_x.toFixed(2)} cm²/m<br>
+      As_y (máx iterativo): ${max_as_y.toFixed(2)} cm²/m
+    </div>
+    <p><strong>Conclusión Estructural:</strong> <span style="color:${(max_as_x <= As_min && max_as_y <= As_min)?'#4caf50':'#ff9800'}; font-weight:bold;">${ (max_as_x <= As_min && max_as_y <= As_min) ? 'El acero MÍNIMO rige el diseño. La malla base general es suficiente.' : 'El acero por FLEXIÓN rige el diseño. Se requieren bandas de refuerzo extra bajo los muros más pesados.' }</span></p>
+  </div>
   
   <div class="card">
-    <h2>1. Losa de Fundación</h2>
+    <h2>4. Cómputos Métricos Losa</h2>
     <p><strong>Volumen de Concreto:</strong></p>
     <div class="formula">
       Fórmula: Área Neta de la Losa × Espesor<br>
@@ -478,7 +545,7 @@ export default function CalculadoraLosaFundacion() {
   
   ${s ? `
   <div class="card">
-    <h2>2. Superestructura (Mampostería)</h2>
+    <h2>5. Superestructura (Mampostería)</h2>
     <p><strong>Desglose de Áreas por Pared (Altura base: ${h.toFixed(2)}m):</strong></p>
     <div class="formula" style="background: #fff3e0; border-left-color: #ff9800; color: #e65100;">
       <ul>
@@ -520,7 +587,7 @@ export default function CalculadoraLosaFundacion() {
   </div>
   
   <div class="card">
-    <h2>3. Acabados y Pintura (Solo interior)</h2>
+    <h2>6. Acabados y Pintura (Solo interior)</h2>
     <p><strong>Pasta Profesional:</strong></p>
     <div class="formula">
       Rendimiento: 1 cuñete (4-5 galones) rinde ~25 m².<br>
