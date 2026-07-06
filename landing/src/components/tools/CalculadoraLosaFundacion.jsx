@@ -216,8 +216,11 @@ export default function CalculadoraLosaFundacion() {
             else if (n.includes('arena')) p.arena = m.precio_usd;
             else if (n.includes('piedra')) p.piedra = m.precio_usd;
             else if (n.includes('cabilla') && n.includes('5')) p.cabilla_5_2 = m.precio_usd;
+            else if (n.includes('cabilla') && (n.includes('6') || n.includes(' 6'))) p.cabilla_6 = m.precio_usd;
             else if (n.includes('cabilla') && n.includes('8')) p.cabilla_8 = m.precio_usd;
             else if (n.includes('cabilla') && n.includes('10')) p.cabilla_10 = m.precio_usd;
+            else if (n.includes('malla 6x6') || n.includes('3.43')) p.malla_6x6 = m.precio_usd;
+            else if (n.includes('malla sima') || (n.includes('malla') && n.includes('6'))) p.malla_sima = m.precio_usd;
             else if (n.includes('polvillo')) p.polvillo = m.precio_usd;
             else if (n.includes('pego')) p.pego = m.precio_usd;
             else if (n.includes('lija')) p.lija = m.precio_usd;
