@@ -939,10 +939,11 @@ export default function CalculadoraLosaFundacion() {
         if (w.y2 > maxY) maxY = w.y2;
       });
       // Aplica offset solo al auto-wrap
-      minX -= offset;
-      maxX += offset;
-      minY -= offset;
-      maxY += offset;
+      const numericOffset = parseFloat(offset) || 0;
+      minX -= numericOffset;
+      maxX += numericOffset;
+      minY -= numericOffset;
+      maxY += numericOffset;
     } else {
       minX = 0; minY = 0; maxX = 10; maxY = 10;
     }
@@ -1730,10 +1731,11 @@ export default function CalculadoraLosaFundacion() {
                   if (w.y1 > maxY) maxY = w.y1;
                   if (w.y2 > maxY) maxY = w.y2;
                 });
-                const slabLx = (maxX - minX) + 2 * offset;
-                const slabLy = (maxY - minY) + 2 * offset;
-                const offsetX = minX - offset;
-                const offsetY = minY - offset;
+                const numOffset = parseFloat(offset) || 0;
+                const slabLx = (maxX - minX) + 2 * numOffset;
+                const slabLy = (maxY - minY) + 2 * numOffset;
+                const offsetX = minX - numOffset;
+                const offsetY = minY - numOffset;
                 return (
                   <rect x={toSvg(offsetX)} y={toSvg(offsetY)} width={slabLx * scale} height={slabLy * scale} fill="rgba(255, 152, 0, 0.08)" stroke="#ff9800" strokeWidth="2" strokeDasharray="3,3" />
                 );
