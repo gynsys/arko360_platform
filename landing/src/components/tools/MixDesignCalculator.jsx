@@ -280,7 +280,7 @@ const MixDesignCalculator = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Panel de Entradas */}
-          <div className="lg:col-span-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div className="lg:col-span-5 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100">
               <Settings2 className="w-5 h-5 text-slate-400" />
               <h2 className="text-xl font-bold text-slate-800">Parámetros de Diseño</h2>

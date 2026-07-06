@@ -644,7 +644,75 @@ export default function CalculadoraLosaFundacion() {
   </div>
 
   <div class="card">
-    <h2>3. Solución Numérica del Proyecto</h2>
+    <h2>3. Discretización y Flujo de Cálculo</h2>
+    <p>Para resolver la ecuación diferencial, dividimos la losa en una cuadrícula regular con espaciamiento Δx = Δy = h. Esta discretización transforma el problema continuo en un sistema algebraico matricial.</p>
+    <pre class="formula" style="background:#f1f5f9; color:#334155; font-size:12px; line-height:1.2; overflow-x:auto;">
+      j=4  ●---●---●---●---●
+           |   |   |   |   |
+      j=3  ●---●---●---●---●
+           |   |   |   |   |
+      j=2  ●---●---●---●---●
+           |   |   |   |   |
+      j=1  ●---●---●---●---●
+           |   |   |   |   |
+      j=0  ●---●---●---●---●
+          i=0 i=1 i=2 i=3 i=4
+    </pre>
+    <p><strong>El flujo interno del Motor de Cálculo es:</strong></p>
+    <pre class="formula" style="background:#f1f5f9; color:#334155; font-size:12px; line-height:1.2; overflow-x:auto;">
+┌─────────────────────────────────────────┐
+│  1. DEFINIR DATOS                       │
+│     • Geometría de la losa              │
+│     • Propiedades del concreto (E, ν, h)│
+│     • Propiedades del suelo (k)         │
+│     • Cargas aplicadas (q)              │
+│     • Condiciones de borde              │
+├─────────────────────────────────────────┤
+│  2. DISCRETIZAR                         │
+│     • Elegir tamaño de malla (dx)       │
+│     • Crear cuadrícula de puntos        │
+│     • Identificar puntos interiores     │
+├─────────────────────────────────────────┤
+│  3. CONSTRUIR MATRIZ DEL SISTEMA        │
+│     • Para cada punto interior          │
+│     • Aplicar estrella de 13 puntos     │
+│     • Agregar término k·w               │
+│     • Vector de cargas = q              │
+├─────────────────────────────────────────┤
+│  4. RESOLVER SISTEMA                    │
+│     • A·w = b                           │
+│     • Usar eliminación Gaussiana        │
+│     • o métodos iterativos              │
+├─────────────────────────────────────────┤
+│  5. POST-PROCESAR                       │
+│     • Calcular presiones: p = k·w       │
+│     • Calcular momentos por derivadas   │
+│     • Diseñar armado (As)               │
+│     • Verificar equilibrio              │
+└─────────────────────────────────────────┘
+    </pre>
+  </div>
+
+  <div class="card">
+    <h2>4. Cargas de Paredes: Teoría</h2>
+    <p>Para modelar el peso que ejercen las paredes de mampostería sobre la losa, el motor distribuye linealmente sus cargas sobre los nodos de la malla que interceptan la trayectoria de la pared.</p>
+    <table>
+      <thead>
+        <tr><th>Tipo</th><th>Descripción</th><th>Unidades</th><th>Representación en Diferencias Finitas</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Carga uniforme</td><td>Piso, azotea, sobrecarga</td><td>kgf/m²</td><td>q(i,j) en todos los puntos interiores</td></tr>
+        <tr><td>Carga lineal</td><td>Pared de mampostería, tabiques</td><td>kgf/m</td><td>Fuerza total distribuida entre los nodos (línea)</td></tr>
+        <tr><td>Carga puntual</td><td>Columna, pilar metálico</td><td>kgf</td><td>Fuerza total aplicada en el nodo más cercano</td></tr>
+      </tbody>
+    </table>
+    <div class="formula">
+      q(i,j) = (F_lineal) / (Δx · Δy) · (longitud de influencia en el nodo)
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5. Solución Numérica del Proyecto</h2>
     <ul>
       <li>Dimensiones: ${payload.geometry.Lx.toFixed(2)}m × ${payload.geometry.Ly.toFixed(2)}m</li>
       <li>Módulo de Balasto (k): ${(payload.materials.k / 9806.65).toFixed(2)} kgf/cm³</li>
@@ -656,7 +724,7 @@ export default function CalculadoraLosaFundacion() {
   </div>
 
   <div class="card">
-    <h2>4. Diseño del Armado (ACI 318)</h2>
+    <h2>6. Diseño del Armado (ACI 318)</h2>
     <p><strong>Acero Mínimo por Temperatura:</strong></p>
     <div class="formula">
       As_min = ρ_min · b · h = 0.0018 · 100 cm · ${h_cm.toFixed(0)} cm = ${As_min.toFixed(2)} cm²/m
@@ -667,7 +735,8 @@ export default function CalculadoraLosaFundacion() {
       As_x (máx iterativo): ${max_as_x.toFixed(2)} cm²/m<br>
       As_y (máx iterativo): ${max_as_y.toFixed(2)} cm²/m
     </div>
-    <p><strong>Conclusión Estructural:</strong> <span style="color:${(max_as_x <= As_min && max_as_y <= As_min)?'#4caf50':'#ff9800'}; font-weight:bold;">${ (max_as_x <= As_min && max_as_y <= As_min) ? 'El acero MÍNIMO rige el diseño. La malla base general es suficiente.' : 'El acero por FLEXIÓN rige el diseño. Se requieren bandas de refuerzo extra bajo los muros más pesados.' }</span></p>
+    <p style="font-size:13px; color:#555;"><i>Nota Técnica: Si los esfuerzos flectores de la losa son bajos y la ecuación de Whitney arroja una cuantía menor que el mínimo normativo, el algoritmo reporta 0.00 cm²/m para la flexión puramente iterativa, demostrando matemáticamente que el acero por flexión no domina el diseño.</i></p>
+    <p><strong>Conclusión Estructural:</strong> <span style="color:${(max_as_x <= As_min && max_as_y <= As_min)?'#4caf50':'#ff9800'}; font-weight:bold;">${ (max_as_x <= As_min && max_as_y <= As_min) ? 'El acero MÍNIMO rige el diseño. La malla base general es suficiente (As_flexion < As_min).' : 'El acero por FLEXIÓN rige el diseño. Se requieren bandas de refuerzo extra bajo los muros más pesados.' }</span></p>
   </div>
   
 </body>
