@@ -557,10 +557,28 @@ export default function CalculadoraLosaFundacion() {
 
     // 6. Diseño del Armado
     addLine("6. Diseño del Armado (ACI 318)", 14, 'bold', [33, 150, 243]);
-    addLine("Con los momentos calculados, el acero de refuerzo requerido se determina por flexión, pero la cuantía mínima por retracción de fraguado y temperatura (rho_min = 0.0018) suele gobernar en losas de fundación.");
-    
-    const As_min = results.As_min_cm2_m || (0.0018 * 100 * (payload.geometry.h * 100));
-    addLine(`- Acero mínimo requerido (As_min): ${As_min.toFixed(2)} cm^2/m`);
+    addLine("El acero de refuerzo se diseña para resistir los momentos flectores máximos (Mu), pero por norma nunca debe ser menor al requerimiento por cambios volumétricos (temperatura y retracción de fraguado).");
+    y += 3;
+
+    addLine("6.1 Acero Mínimo por Temperatura (ACI 318)", 12, 'bold');
+    addLine("Para losas con acero corrugado Grado 60 (fy = 420 MPa), la cuantía geométrica mínima estipulada es rho_min = 0.0018. La fórmula para una franja unitaria (b = 100 cm) de losa es:");
+    addLine("As_min = rho_min · b · h", 12, 'italic');
+    const b_cm = 100;
+    const h_cm = payload.geometry.h * 100;
+    const As_min = results.As_min_cm2_m || (0.0018 * b_cm * h_cm);
+    addLine(`Sustituyendo: As_min = 0.0018 · 100 cm · ${h_cm.toFixed(0)} cm = ${As_min.toFixed(2)} cm^2/m`);
+    y += 3;
+
+    addLine("6.2 Acero Requerido por Flexión (Whitney)", 12, 'bold');
+    addLine("El acero necesario para resistir las tensiones de flexión pura se calcula mediante el bloque equivalente de compresiones de Whitney con la siguiente ecuación:");
+    addLine("As_flexion = Mu / [ phi · fy · (d - a/2) ]", 12, 'italic');
+    addLine("Donde:");
+    addLine("- Mu: Momento flector último amplificado (extraído de los picos en el análisis FEM)");
+    addLine("- phi: Factor de reducción de resistencia por flexión (0.90)");
+    addLine("- fy: Esfuerzo de fluencia del acero (420 MPa)");
+    addLine("- d: Peralte efectivo de la losa (h - recubrimiento)");
+    addLine("- a: Profundidad del bloque de compresión de concreto");
+    y += 2;
     
     let max_as_x = 0; let max_as_y = 0;
     if (results.bands) {
@@ -569,13 +587,21 @@ export default function CalculadoraLosaFundacion() {
         if (b.As_y_cm2_m > max_as_y) max_as_y = b.As_y_cm2_m;
       });
     }
-    addLine(`- Acero calculado por flexión en X: ${max_as_x.toFixed(2)} cm^2/m`);
-    addLine(`- Acero calculado por flexión en Y: ${max_as_y.toFixed(2)} cm^2/m`);
+    
+    addLine("Aplicando esta fórmula iterativa a los momentos flectores críticos calculados en el proyecto:");
+    addLine(`- As_flexion (Dirección X): ${max_as_x.toFixed(2)} cm^2/m`);
+    addLine(`- As_flexion (Dirección Y): ${max_as_y.toFixed(2)} cm^2/m`);
+    y += 3;
+
+    addLine("6.3 Verificación Final y Cuantía Gobernante", 12, 'bold');
+    addLine("Para garantizar la seguridad estructural y mitigar fisuración, el acero provisto en el diseño final debe ser el MAYOR valor entre As_min y As_flexion.");
     
     if (max_as_x <= As_min && max_as_y <= As_min) {
-      addLine("CONCLUSIÓN: El acero mínimo rige el diseño. Los requerimientos estructurales son menores a la cuantía mínima.", 10, 'bold', [46, 125, 50]);
+      addLine(`CONCLUSIÓN: El acero MÍNIMO rige el diseño.`, 10, 'bold', [46, 125, 50]);
+      addLine(`Como As_flexion (máx = ${Math.max(max_as_x, max_as_y).toFixed(2)} cm^2/m) es menor que As_min (${As_min.toFixed(2)} cm^2/m), los esfuerzos estructurales son bajos y están cubiertos por la malla base de temperatura.`);
     } else {
-      addLine("CONCLUSIÓN: El acero por flexión rige el diseño en las zonas críticas (bandas bajo muros).", 10, 'bold', [255, 152, 0]);
+      addLine("CONCLUSIÓN: El acero por FLEXIÓN rige el diseño en las zonas críticas.", 10, 'bold', [255, 152, 0]);
+      addLine(`Como As_flexion (máx = ${Math.max(max_as_x, max_as_y).toFixed(2)} cm^2/m) supera al As_min (${As_min.toFixed(2)} cm^2/m), es mandatorio colocar armadura de refuerzo extra (bandas) debajo de los muros más pesados.`);
     }
 
     doc.save(`Memoria_Calculo_${projectName.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
