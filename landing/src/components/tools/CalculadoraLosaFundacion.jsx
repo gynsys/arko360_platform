@@ -784,42 +784,65 @@ export default function CalculadoraLosaFundacion() {
   }, [isDrawing]);
 
   // Construir el payload con el estado actual (muros, aberturas, parametros)
-  const buildCurrentPayload = () => ({
-    project: projectName,
-    geometry: { Lx: params.Lx, Ly: params.Ly, h: params.h / 100 },
-    materials: {
-      f_c_kgcm2: designParams.fc,
-      f_c: designParams.fc / 10.197, // Convertir a MPa
-      f_y: designParams.fy / 10.197, // Convertir a MPa
-      cover: 0.05, bar_diam: 0.012,
-      gamma_horm: 2400, 
-      E: 4700 * Math.sqrt(designParams.fc / 10.197) * 1e6, 
-      nu: 0.2, k: 20e6,
-      q_adm: designParams.q_adm * 98066.5, // kgf/cm² a Pa
-      band_width_m: designParams.band_width_m > 0 ? designParams.band_width_m : 0,
-      custom_mesh_cm2_m: designParams.custom_mesh_cm2_m || 0
-    },
-    walls: allWalls.map(w => ({
-      x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
-      thickness: w.thickness, height: w.height,
-      density: w.density, type: w.type, load_factor: 1.5,
-      is_plastered: w.is_plastered,
-      openings: openings.filter(op => op.wall_id === w.id).map(op => ({
-        type: op.type, start_m: op.start_m, width_m: op.width_m, height_m: op.height_m
-      }))
-    })),
-    beams: perimeterWalls.map(w => ({
-      x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
-      width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
-    })),
-    mesh_nx: 40,
-    mesh_ny: 40,
-    extra_load: 300 * 9.81,
-    // Estado completo del plano para poder reabrirlo
-    _canvas_state: {
-      shape, params, designParams, wallHeight, internalWalls, openings, material
+  const buildCurrentPayload = () => {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    if (allWalls.length === 0) {
+      minX = 0; minY = 0; maxX = 10; maxY = 10;
+    } else {
+      allWalls.forEach(w => {
+        if (w.x1 < minX) minX = w.x1;
+        if (w.x2 < minX) minX = w.x2;
+        if (w.x1 > maxX) maxX = w.x1;
+        if (w.x2 > maxX) maxX = w.x2;
+        if (w.y1 < minY) minY = w.y1;
+        if (w.y2 < minY) minY = w.y2;
+        if (w.y1 > maxY) maxY = w.y1;
+        if (w.y2 > maxY) maxY = w.y2;
+      });
     }
-  });
+    
+    const slabLx = (maxX - minX) + 2 * offset;
+    const slabLy = (maxY - minY) + 2 * offset;
+    const offsetX = minX - offset;
+    const offsetY = minY - offset;
+
+    return {
+      project: projectName,
+      geometry: { Lx: slabLx, Ly: slabLy, h: params.h / 100 },
+      materials: {
+        f_c_kgcm2: designParams.fc,
+        f_c: designParams.fc / 10.197, // Convertir a MPa
+        f_y: designParams.fy / 10.197, // Convertir a MPa
+        cover: 0.05, bar_diam: 0.012,
+        gamma_horm: 2400, 
+        E: 4700 * Math.sqrt(designParams.fc / 10.197) * 1e6, 
+        nu: 0.2, k: 20e6,
+        q_adm: designParams.q_adm * 98066.5, // kgf/cm² a Pa
+        band_width_m: designParams.band_width_m > 0 ? designParams.band_width_m : 0,
+        custom_mesh_cm2_m: designParams.custom_mesh_cm2_m || 0
+      },
+      walls: allWalls.map(w => ({
+        x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
+        thickness: w.thickness, height: w.height,
+        density: w.density, type: w.type, load_factor: 1.5,
+        is_plastered: w.is_plastered,
+        openings: openings.filter(op => op.wall_id === w.id).map(op => ({
+          type: op.type, start_m: op.start_m, width_m: op.width_m, height_m: op.height_m
+        }))
+      })),
+      beams: perimeterWalls.map(w => ({
+        x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
+        width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
+      })),
+      mesh_nx: 40,
+      mesh_ny: 40,
+      extra_load: 300 * 9.81,
+      // Estado completo del plano para poder reabrirlo
+      _canvas_state: {
+        shape, params, designParams, wallHeight, internalWalls, openings, material, offset
+      }
+    };
+  };
 
   // Ejecutar Análisis
   const runAnalysis = async () => {
@@ -1285,8 +1308,8 @@ export default function CalculadoraLosaFundacion() {
             )}
 
             <div className="params-grid" style={{marginTop: '16px'}}>
-              <div className="param-item"><label>Lx Total (m):</label><input type="number" step="0.5" value={params.Lx} onChange={e => handleParamChange('Lx', e.target.value)} /></div>
-              <div className="param-item"><label>Ly Total (m):</label><input type="number" step="0.5" value={params.Ly} onChange={e => handleParamChange('Ly', e.target.value)} /></div>
+              <div className="param-item"><label>Parcela Lx (m):</label><input type="number" step="0.5" value={params.Lx} onChange={e => handleParamChange('Lx', e.target.value)} /></div>
+              <div className="param-item"><label>Parcela Ly (m):</label><input type="number" step="0.5" value={params.Ly} onChange={e => handleParamChange('Ly', e.target.value)} /></div>
               
               {(shape === 'L' || shape === 'U') && <div className="param-item"><label>Ancho Ala Izq (m):</label><input type="number" step="0.1" value={params.wingX} onChange={e => handleParamChange('wingX', e.target.value)} /></div>}
               {shape === 'L' && <div className="param-item"><label>Ancho Ala Inf (m):</label><input type="number" step="0.1" value={params.wingY} onChange={e => handleParamChange('wingY', e.target.value)} /></div>}
@@ -1536,8 +1559,31 @@ export default function CalculadoraLosaFundacion() {
                 <line key={`vy_sub${i}`} x1={MARGIN} y1={toSvg(i*0.5)} x2={toSvg(params.Lx)} y2={toSvg(i*0.5)} stroke="#cfd8dc" strokeWidth="1" strokeDasharray="4,4" />
               ))}
 
-              {/* Losa Máxima (Bounding Box) */}
+              {/* Parcela Máxima (Bounding Box del Terreno) */}
               <rect x={MARGIN} y={MARGIN} width={toSvg(params.Lx)-MARGIN} height={toSvg(params.Ly)-MARGIN} fill="rgba(33, 150, 243, 0.03)" stroke="#2196f3" strokeDasharray="5,5" />
+              
+              {/* Losa Auto-calculada Visualmente */}
+              {(() => {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                if (allWalls.length === 0) return null;
+                allWalls.forEach(w => {
+                  if (w.x1 < minX) minX = w.x1;
+                  if (w.x2 < minX) minX = w.x2;
+                  if (w.x1 > maxX) maxX = w.x1;
+                  if (w.x2 > maxX) maxX = w.x2;
+                  if (w.y1 < minY) minY = w.y1;
+                  if (w.y2 < minY) minY = w.y2;
+                  if (w.y1 > maxY) maxY = w.y1;
+                  if (w.y2 > maxY) maxY = w.y2;
+                });
+                const slabLx = (maxX - minX) + 2 * offset;
+                const slabLy = (maxY - minY) + 2 * offset;
+                const offsetX = minX - offset;
+                const offsetY = minY - offset;
+                return (
+                  <rect x={toSvg(offsetX)} y={toSvg(offsetY)} width={slabLx * scale} height={slabLy * scale} fill="rgba(255, 152, 0, 0.08)" stroke="#ff9800" strokeWidth="2" strokeDasharray="3,3" />
+                );
+              })()}
               
               {/* Referencia: Límites de Parcela y Frente */}
               <text x={toSvg(params.Lx/2)} y={MARGIN + 15} fontSize="11" fill="#2196f3" textAnchor="middle" fontWeight="bold" opacity="0.6" style={{pointerEvents: 'none'}}>
