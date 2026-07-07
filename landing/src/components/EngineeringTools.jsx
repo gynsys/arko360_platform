@@ -50,7 +50,7 @@ export default function EngineeringTools() {
       case 'mamposteria':
         return <CalculadoraMamposteria />;
       case 'losa-fundacion':
-        return <CalculadoraLosaFundacion />;
+        return <CalculadoraLosaFundacion onBack={() => setActiveTool(null)} />;
       default:
         return null;
     }
@@ -109,15 +109,17 @@ export default function EngineeringTools() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, y: 20 }}
             className="card"
-            style={{ padding: '32px', minHeight: '400px' }}
+            style={{ padding: activeTool === 'losa-fundacion' ? '0' : '32px', minHeight: '400px', overflow: 'hidden' }}
           >
-            <button 
-              className="btn btn-outline" 
-              style={{ marginBottom: '24px', padding: '8px 16px', fontSize: '14px' }}
-              onClick={() => setActiveTool(null)}
-            >
-              <ArrowLeft size={16} /> Volver al catálogo
-            </button>
+            {activeTool !== 'losa-fundacion' && (
+              <button 
+                className="btn btn-outline" 
+                style={{ marginBottom: '24px', padding: '8px 16px', fontSize: '14px' }}
+                onClick={() => setActiveTool(null)}
+              >
+                <ArrowLeft size={16} /> Volver al catálogo
+              </button>
+            )}
             {renderTool()}
           </motion.div>
         )}

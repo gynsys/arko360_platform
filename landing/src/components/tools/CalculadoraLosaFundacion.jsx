@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import './CalculadoraLosaFundacion.css';
-import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut } from 'lucide-react';
+import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut, ArrowLeft } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus } from 'react-icons/fa';
@@ -169,7 +169,7 @@ const generarPresupuesto = (results, prices, designParams) => {
   return items;
 };
 
-export default function CalculadoraLosaFundacion() {
+export default function CalculadoraLosaFundacion({ onBack }) {
   const svgRef = useRef(null);
 
   // Configuración de Losa y Perímetro
@@ -1575,10 +1575,21 @@ export default function CalculadoraLosaFundacion() {
       )}
 
       <div className="calc-header">
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-          <div>
-            <h2>Diseño de Losa de Fundación (Método Híbrido)</h2>
-            <p>Configura la losa (Plantillas) y divisiones internas (Tabla o Clics). Incluye JSON de Auditoría.</p>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+            {onBack && (
+              <button 
+                className="btn-secondary" 
+                style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.4)' }}
+                onClick={onBack}
+              >
+                &larr; Volver
+              </button>
+            )}
+            <div>
+              <h2 style={{margin: 0}}>Diseño de Losa de Fundación (Método Híbrido)</h2>
+              <p style={{margin: '4px 0 0', opacity: 0.9}}>Configura la losa (Plantillas) y divisiones internas (Tabla o Clics). Incluye JSON de Auditoría.</p>
+            </div>
           </div>
           <div className="header-actions">
             <input 
