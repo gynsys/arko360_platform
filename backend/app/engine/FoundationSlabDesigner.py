@@ -1252,10 +1252,31 @@ class FoundationSlabDesigner:
             x2, y2 = to_svg(wall.x2, wall.y2)
             svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{color}" stroke-width="{width:.1f}" stroke-linecap="round"/>')
             
-            # Etiqueta del muro M(idx+1)
+            # Etiqueta del muro M(idx+1) y armadura adicional
             cx, cy = to_svg((wall.x1 + wall.x2) / 2, (wall.y1 + wall.y2) / 2)
-            svg_parts.append(f'<rect x="{cx - 12}" y="{cy - 10}" width="24" height="20" rx="3" fill="rgba(255,255,255,0.85)" stroke="{color}" stroke-width="1"/>')
-            svg_parts.append(f'<text x="{cx}" y="{cy + 4}" font-family="sans-serif" font-size="12" font-weight="bold" fill="{color}" text-anchor="middle">M{idx+1}</text>')
+            As_min = self.rho_min * 1.0 * self.h * 1e4
+            try:
+                b = self.band_data[idx]
+                needs_extra = False
+                extra_txt = ""
+                if b['Asx_cm2_m'] > As_min + 0.05:
+                    needs_extra = True
+                    extra_txt += f"X: Ø{b['bar_x'].get('diam_mm',0)}@{b['bar_x'].get('sep_m',0)*100:.0f}cm "
+                if b['Asy_cm2_m'] > As_min + 0.05:
+                    needs_extra = True
+                    extra_txt += f"Y: Ø{b['bar_y'].get('diam_mm',0)}@{b['bar_y'].get('sep_m',0)*100:.0f}cm"
+                
+                if needs_extra:
+                    box_w = max(110, len(extra_txt) * 6.5)
+                    svg_parts.append(f'<rect x="{cx - box_w/2}" y="{cy - 10}" width="{box_w}" height="34" rx="3" fill="rgba(255,255,255,0.95)" stroke="{color}" stroke-width="1"/>')
+                    svg_parts.append(f'<text x="{cx}" y="{cy + 2}" font-family="sans-serif" font-size="12" font-weight="bold" fill="{color}" text-anchor="middle">M{idx+1}</text>')
+                    svg_parts.append(f'<text x="{cx}" y="{cy + 18}" font-family="sans-serif" font-size="11" fill="#e65100" font-weight="bold" text-anchor="middle">{extra_txt.strip()}</text>')
+                else:
+                    svg_parts.append(f'<rect x="{cx - 12}" y="{cy - 10}" width="24" height="20" rx="3" fill="rgba(255,255,255,0.85)" stroke="{color}" stroke-width="1"/>')
+                    svg_parts.append(f'<text x="{cx}" y="{cy + 4}" font-family="sans-serif" font-size="12" font-weight="bold" fill="{color}" text-anchor="middle">M{idx+1}</text>')
+            except:
+                svg_parts.append(f'<rect x="{cx - 12}" y="{cy - 10}" width="24" height="20" rx="3" fill="rgba(255,255,255,0.85)" stroke="{color}" stroke-width="1"/>')
+                svg_parts.append(f'<text x="{cx}" y="{cy + 4}" font-family="sans-serif" font-size="12" font-weight="bold" fill="{color}" text-anchor="middle">M{idx+1}</text>')
 
             # Dibujar aberturas (huecos visuales)
             if hasattr(wall, 'openings') and wall.openings:
