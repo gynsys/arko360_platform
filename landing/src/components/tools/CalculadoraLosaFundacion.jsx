@@ -1580,7 +1580,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             {onBack && (
               <button 
                 className="btn-secondary" 
-                style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.4)' }}
+                style={{ width: 'fit-content', whiteSpace: 'nowrap', padding: '6px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.4)' }}
                 onClick={onBack}
               >
                 &larr; Volver
@@ -1691,9 +1691,9 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               </select>
             </div>
             <div className="param-item checkbox" style={{ marginTop: '10px' }}>
-              <label>
-                <input type="checkbox" checked={designParams.is_plastered} onChange={e => handleDesignParamChange('is_plastered', e.target.checked)} />
-                Paredes Frisadas (+ Carga Muerta)
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: 'row', cursor: 'pointer' }}>
+                <input type="checkbox" checked={designParams.is_plastered} onChange={e => handleDesignParamChange('is_plastered', e.target.checked)} style={{ margin: 0 }} />
+                <span>Paredes Frisadas (+ Carga Muerta)</span>
               </label>
             </div>
           </div>
