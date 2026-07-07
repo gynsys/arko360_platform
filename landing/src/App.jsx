@@ -69,12 +69,7 @@ function BiblioPage() {
 function ToolsPage() {
   return (
     <main style={{ paddingTop: '120px', minHeight: '80vh', paddingBottom: '60px' }} className="container">
-      <div className="text-center" style={{ marginBottom: 48 }}>
-        <h1 className="section-title">Herramientas de <span>Ingeniería</span></h1>
-        <p className="section-subtitle" style={{ margin: '0 auto' }}>
-          Calculadoras y recursos técnicos para estimación de obra y diseño.
-        </p>
-      </div>
+
       <EngineeringTools />
     </main>
   );
