@@ -590,11 +590,15 @@ export default function CalculadoraLosaFundacion() {
     const matrixSize = nx * ny;
     
     let murosHtml = '';
+    let ejemploMuro = '';
     if (payload.walls && payload.walls.length > 0) {
       payload.walls.forEach((w, i) => {
         const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
         const F_lineal = w.thickness * w.height * w.density;
-        murosHtml += `<tr><td>Muro M${i+1} (${w.type})</td><td>${len.toFixed(2)} m</td><td>${w.thickness.toFixed(2)} m</td><td>${w.height.toFixed(2)} m</td><td>${F_lineal.toFixed(2)} kN/m</td></tr>`;
+        if (i === 0) {
+          ejemploMuro = `<br><em>Ejemplo Cálculo Muro M1: F_lineal = ${w.thickness.toFixed(2)}m (espesor) × ${w.height.toFixed(2)}m (altura) × ${w.density} kgf/m³ (densidad) = ${F_lineal.toFixed(2)} kgf/m</em>`;
+        }
+        murosHtml += `<tr><td>Muro M${i+1} (${w.type})</td><td>${len.toFixed(2)} m</td><td>${w.thickness.toFixed(2)} m</td><td>${w.height.toFixed(2)} m</td><td>${F_lineal.toFixed(2)} kgf/m</td></tr>`;
       });
     }
 
@@ -604,11 +608,16 @@ export default function CalculadoraLosaFundacion() {
     let bandasHtml = '';
     if (results.bands && results.bands.length > 0) {
       results.bands.forEach((b, i) => {
-        // En la fórmula didáctica mostramos el Mu_x y el d, el "a" varía según la compresión
+        // Mostrar la fórmula de Whitney y la regla del máximo
+        const as_x_calc = (b.Mx_design_kNm_m * 100) / (0.90 * fy_MPa * d_m); // Estimación teórica (cm2/m)
+        const as_y_calc = (b.My_design_kNm_m * 100) / (0.90 * fy_MPa * d_m); 
+        
         bandasHtml += `<li style="margin-bottom:10px;"><strong>Banda ${b.id} (Muro ${b.type}):</strong><br>
           Mu_x = ${b.Mx_design_kNm_m.toFixed(2)} kN·m/m, Mu_y = ${b.My_design_kNm_m.toFixed(2)} kN·m/m <br>
-          <span style="color:#0d47a1;">&rarr; As_x = ${b.Mx_design_kNm_m.toFixed(2)} / [ 0.90 · ${fy_MPa.toFixed(0)} MPa · (${d_m.toFixed(2)}m - a/2) ] = <strong>${b.Asx_cm2_m.toFixed(2)} cm²/m</strong></span><br>
-          <span style="color:#0d47a1;">&rarr; As_y = ${b.My_design_kNm_m.toFixed(2)} / [ 0.90 · ${fy_MPa.toFixed(0)} MPa · (${d_m.toFixed(2)}m - a/2) ] = <strong>${b.Asy_cm2_m.toFixed(2)} cm²/m</strong></span>
+          <span style="color:#0d47a1;">&rarr; As_x (teórico) = ${b.Mx_design_kNm_m.toFixed(2)} / [ 0.90 · ${fy_MPa.toFixed(0)} MPa · (${d_m.toFixed(2)}m - a/2) ] &asymp; ${as_x_calc.toFixed(2)} cm²/m</span><br>
+          <span style="color:#1b5e20;">&rarr; <strong>As_x (definitivo) = max( As_x_teórico, As_min ) = ${b.Asx_cm2_m.toFixed(2)} cm²/m</strong></span><br>
+          <span style="color:#0d47a1; margin-top:4px; display:inline-block;">&rarr; As_y (teórico) = ${b.My_design_kNm_m.toFixed(2)} / [ 0.90 · ${fy_MPa.toFixed(0)} MPa · (${d_m.toFixed(2)}m - a/2) ] &asymp; ${as_y_calc.toFixed(2)} cm²/m</span><br>
+          <span style="color:#1b5e20;">&rarr; <strong>As_y (definitivo) = max( As_y_teórico, As_min ) = ${b.Asy_cm2_m.toFixed(2)} cm²/m</strong></span>
         </li>`;
       });
     } else {
@@ -747,11 +756,12 @@ export default function CalculadoraLosaFundacion() {
     </table>
     <div class="formula">
       q(i,j) = (F_lineal) / (Δx · Δy) · (longitud de influencia en el nodo)
+      ${ejemploMuro}
     </div>
     <h3>Cargas Específicas del Proyecto (Muros)</h3>
     <table>
       <thead>
-        <tr><th>Identificador</th><th>Longitud</th><th>Espesor</th><th>Altura</th><th>Carga Lineal Calculada (kN/m)</th></tr>
+        <tr><th>Identificador</th><th>Longitud</th><th>Espesor</th><th>Altura</th><th>Carga Lineal Calculada (kgf/m)</th></tr>
       </thead>
       <tbody>
         ${murosHtml || '<tr><td colspan="5">No hay muros definidos para cargar linealmente.</td></tr>'}
@@ -776,6 +786,10 @@ export default function CalculadoraLosaFundacion() {
     <p>Condición Normativa de Suelo: <strong style="color:${soil_ok?'#4caf50':'#f44336'}">${soil_ok ? `CUMPLE (q_max ${q_max_kgcm2} < Capacidad Admisible ${q_adm_kgcm2} kgf/cm²)` : `FALLA (q_max ${q_max_kgcm2} > Capacidad Admisible ${q_adm_kgcm2} kgf/cm²)`}</strong></p>
 
     <h3>5.2 Esfuerzos Internos</h3>
+    <div class="formula" style="font-size: 13px;">
+      M_x = -D · [ (∂²w / ∂x²) + ν · (∂²w / ∂y²) ]<br>
+      M_y = -D · [ (∂²w / ∂y²) + ν · (∂²w / ∂x²) ]
+    </div>
     <p>Los momentos flectores máximos (Mx, My) dictarán el requerimiento de acero principal, y ocurren sistemáticamente debajo y en las cercanías de los muros o columnas más pesadas (los picos de tensión de la matriz):</p>
     <ul>
       <li>Momento Flector Máximo en X (Mxx): <strong>${(mx_max * 101.97).toFixed(2)} kgf·m/m</strong></li>
@@ -1205,6 +1219,7 @@ export default function CalculadoraLosaFundacion() {
       if (st.internalWalls) setInternalWalls(st.internalWalls);
       if (st.openings) setOpenings(st.openings);
       if (st.material) setMaterial(st.material);
+      if (st.offset !== undefined) setOffset(st.offset);
     } else if (inp) {
       if (inp.geometry) setParams(prev => ({ ...prev, Lx: inp.geometry.Lx, Ly: inp.geometry.Ly, h: inp.geometry.h * 100 }));
       if (inp.materials) {
