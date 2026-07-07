@@ -1184,7 +1184,7 @@ class FoundationSlabDesigner:
         scale = plot_size / max(self.Lx, self.Ly)
 
         def to_svg(x, y):
-            return (margin + x * scale, margin + (self.Ly - y) * scale)
+            return (margin + x * scale, margin + y * scale)
 
         # --- Construir SVG ---
         svg_parts = []
@@ -1201,6 +1201,21 @@ class FoundationSlabDesigner:
             x1, y1 = to_svg(0, y)
             x2, y2 = to_svg(self.Lx, y)
             svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="#e0e0e0" stroke-width="0.8"/>')
+
+        # Representación de Malla de Acero Base (Líneas discontinuas en todo el paño)
+        svg_parts.append(f'<path d="M {margin} {margin} h {self.Lx*scale} v {self.Ly*scale} h {-self.Lx*scale} Z" fill="none" stroke="#2196f3" stroke-width="2" stroke-dasharray="8,8" opacity="0.5"/>')
+        # Líneas internas de malla representativas
+        for mx in range(1, 5):
+            x = (self.Lx / 5) * mx
+            x1, y1 = to_svg(x, 0)
+            x2, y2 = to_svg(x, self.Ly)
+            svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="#2196f3" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.3"/>')
+        for my in range(1, 5):
+            y = (self.Ly / 5) * my
+            x1, y1 = to_svg(0, y)
+            x2, y2 = to_svg(self.Lx, y)
+            svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="#2196f3" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.3"/>')
+        svg_parts.append(f'<text x="{margin + self.Lx*scale/2}" y="{margin + self.Ly*scale/2}" font-family="sans-serif" font-size="14" fill="#0d47a1" opacity="0.6" text-anchor="middle">Armadura Base (Doble Malla)</text>')
 
         # Bandas de refuerzo (rectángulos centrados en muros)
         for wall in self.walls:
@@ -1230,12 +1245,17 @@ class FoundationSlabDesigner:
             x2, y2 = to_svg(beam.x2, beam.y2)
             svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="#4caf50" stroke-width="5" stroke-linecap="round" opacity="0.85"/>')
 
-        for wall in self.walls:
+        for idx, wall in enumerate(self.walls):
             color = "#e53935" if wall.wall_type == "perimetral" else "#1e88e5"
             width = max(2, wall.thickness * scale)
             x1, y1 = to_svg(wall.x1, wall.y1)
             x2, y2 = to_svg(wall.x2, wall.y2)
             svg_parts.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{color}" stroke-width="{width:.1f}" stroke-linecap="round"/>')
+            
+            # Etiqueta del muro M(idx+1)
+            cx, cy = to_svg((wall.x1 + wall.x2) / 2, (wall.y1 + wall.y2) / 2)
+            svg_parts.append(f'<rect x="{cx - 12}" y="{cy - 10}" width="24" height="20" rx="3" fill="rgba(255,255,255,0.85)" stroke="{color}" stroke-width="1"/>')
+            svg_parts.append(f'<text x="{cx}" y="{cy + 4}" font-family="sans-serif" font-size="12" font-weight="bold" fill="{color}" text-anchor="middle">M{idx+1}</text>')
 
             # Dibujar aberturas (huecos visuales)
             if hasattr(wall, 'openings') and wall.openings:

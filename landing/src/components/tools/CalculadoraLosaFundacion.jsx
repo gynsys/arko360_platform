@@ -799,8 +799,10 @@ export default function CalculadoraLosaFundacion() {
   </div>
 
   <div class="card">
-    <h2>6. Diseño del Armado (ACI 318)</h2>
-    <p><strong>Acero Mínimo por Temperatura:</strong></p>
+    <h2>6. Diseño del Armado (ACI 318-19)</h2>
+    
+    <h3>Acero Mínimo por Contracción y Temperatura (Sec. 24.4):</h3>
+    <p>La norma ACI 318-19, sección 24.4.3.2, establece que para losas donde se empleen barras corrugadas Grado 420 (fy = 420 MPa), la cuantía mínima de refuerzo ($\rho_{min}$) en cada dirección no debe ser menor a 0.0018 para resistir los esfuerzos térmicos y de retracción de fraguado.</p>
     <div class="formula">
       As_min = ρ_min · b · h = 0.0018 · 100 cm · ${h_cm.toFixed(0)} cm = ${As_min.toFixed(2)} cm²/m
     </div>
