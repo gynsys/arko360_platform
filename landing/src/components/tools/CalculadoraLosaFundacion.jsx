@@ -609,8 +609,9 @@ export default function CalculadoraLosaFundacion() {
     if (results.bands && results.bands.length > 0) {
       results.bands.forEach((b, i) => {
         // Mostrar la fórmula de Whitney y la regla del máximo
-        const as_x_calc = (b.Mx_design_kNm_m * 100) / (0.90 * fy_MPa * d_m); // Estimación teórica (cm2/m)
-        const as_y_calc = (b.My_design_kNm_m * 100) / (0.90 * fy_MPa * d_m); 
+        // Factor 10: Convierte la relación (kN·m/m) / (MPa * m) a cm²/m
+        const as_x_calc = (b.Mx_design_kNm_m * 10) / (0.90 * fy_MPa * d_m); // Estimación teórica (cm2/m)
+        const as_y_calc = (b.My_design_kNm_m * 10) / (0.90 * fy_MPa * d_m); 
         
         bandasHtml += `<li style="margin-bottom:10px;"><strong>Banda ${b.id} (Muro ${b.type}):</strong><br>
           Mu_x = ${b.Mx_design_kNm_m.toFixed(2)} kN·m/m, Mu_y = ${b.My_design_kNm_m.toFixed(2)} kN·m/m <br>
