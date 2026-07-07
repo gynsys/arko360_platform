@@ -590,18 +590,26 @@ export default function CalculadoraLosaFundacion() {
     const matrixSize = nx * ny;
     
     let murosHtml = '';
-    if (payload.loads && payload.loads.walls) {
-      payload.loads.walls.forEach((w, i) => {
+    if (payload.walls && payload.walls.length > 0) {
+      payload.walls.forEach((w, i) => {
         const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
         const F_lineal = w.thickness * w.height * w.density;
-        murosHtml += `<tr><td>Muro ${i+1} (${w.type})</td><td>${len.toFixed(2)} m</td><td>${w.thickness.toFixed(2)} m</td><td>${w.height.toFixed(2)} m</td><td>${F_lineal.toFixed(2)} kN/m</td></tr>`;
+        murosHtml += `<tr><td>Muro M${i+1} (${w.type})</td><td>${len.toFixed(2)} m</td><td>${w.thickness.toFixed(2)} m</td><td>${w.height.toFixed(2)} m</td><td>${F_lineal.toFixed(2)} kN/m</td></tr>`;
       });
     }
+
+    const fy_MPa = payload.materials.f_y; // MPa
+    const d_m = h_slab - 0.05; // 5 cm de recubrimiento
 
     let bandasHtml = '';
     if (results.bands && results.bands.length > 0) {
       results.bands.forEach((b, i) => {
-        bandasHtml += `<li><strong>Banda ${i+1} (Muro ${b.type}):</strong> Mu_x = ${b.Mx_design_kNm_m.toFixed(2)} kN·m/m, Mu_y = ${b.My_design_kNm_m.toFixed(2)} kN·m/m ➔ As_x = ${b.Asx_cm2_m.toFixed(2)} cm²/m, As_y = ${b.Asy_cm2_m.toFixed(2)} cm²/m</li>`;
+        // En la fórmula didáctica mostramos el Mu_x y el d, el "a" varía según la compresión
+        bandasHtml += `<li style="margin-bottom:10px;"><strong>Banda ${b.id} (Muro ${b.type}):</strong><br>
+          Mu_x = ${b.Mx_design_kNm_m.toFixed(2)} kN·m/m, Mu_y = ${b.My_design_kNm_m.toFixed(2)} kN·m/m <br>
+          <span style="color:#0d47a1;">&rarr; As_x = ${b.Mx_design_kNm_m.toFixed(2)} / [ 0.90 · ${fy_MPa.toFixed(0)} MPa · (${d_m.toFixed(2)}m - a/2) ] = <strong>${b.Asx_cm2_m.toFixed(2)} cm²/m</strong></span><br>
+          <span style="color:#0d47a1;">&rarr; As_y = ${b.My_design_kNm_m.toFixed(2)} / [ 0.90 · ${fy_MPa.toFixed(0)} MPa · (${d_m.toFixed(2)}m - a/2) ] = <strong>${b.Asy_cm2_m.toFixed(2)} cm²/m</strong></span>
+        </li>`;
       });
     } else {
       bandasHtml = `<li>No hay bandas a evaluar o diseño libre.</li>`;
@@ -630,13 +638,13 @@ export default function CalculadoraLosaFundacion() {
 
   <div class="card">
     <h2>1. Introducción al Problema</h2>
-    <p>Una losa de fundación es una placa de concreto que transmite las cargas de una estructura al suelo. El desafío de diseño es determinar:</p>
+    <p>Una losa de fundación es una placa de concreto que transmite las cargas de una estructura al suelo. Existen varios criterios y métodos teóricos para abordarlo:</p>
     <ul>
-      <li>Cuánto se deforma la losa</li>
-      <li>Qué presiones transmite al suelo</li>
-      <li>Qué momentos flectores y esfuerzos se generan</li>
+      <li><strong>Método Rígido Convencional:</strong> Asume que la losa es infinitamente rígida y que la presión del suelo es plana o lineal. Es muy conservador, impreciso para losas grandes o cargas asimétricas, y sobrestima cuantías de acero.</li>
+      <li><strong>Método Elástico Flexible (Winkler):</strong> Asume que el suelo es una cama de resortes elásticos independientes (k). La losa se flexiona y la presión del suelo varía dependiendo de la deformación en cada punto.</li>
+      <li><strong>Método de Elementos/Diferencias Finitas:</strong> Es la técnica matemática computacional para resolver las complejas ecuaciones diferenciales de la placa elástica flexible, encontrando los esfuerzos en cada milímetro de la estructura.</li>
     </ul>
-    <p>El método de diferencias finitas nos permite resolver numéricamente las ecuaciones diferenciales que gobiernan este problema, discretizando la losa en una cuadrícula de puntos.</p>
+    <p>Nuestra plataforma utiliza un <strong>Motor de Diferencias Finitas basado en el Modelo de Winkler</strong>, garantizando resultados óptimos, hiper-precisos y económicos frente al método rígido convencional.</p>
   </div>
 
   <div class="card">
@@ -753,13 +761,25 @@ export default function CalculadoraLosaFundacion() {
 
   <div class="card">
     <h2>5. Solución Numérica del Proyecto</h2>
+    <p>Tras plantear el sistema matricial <strong>[A]·{w} = {q}</strong> y resolverlo matemáticamente, obtenemos el vector de deformaciones locales {w} para cada nodo de la malla. A partir de allí se obtienen por derivación las presiones de suelo y esfuerzos flectores.</p>
     <ul>
-      <li>Dimensiones: ${payload.geometry.Lx.toFixed(2)}m × ${payload.geometry.Ly.toFixed(2)}m</li>
+      <li>Dimensiones Generales: ${payload.geometry.Lx.toFixed(2)}m × ${payload.geometry.Ly.toFixed(2)}m</li>
       <li>Módulo de Balasto (k): ${(payload.materials.k / 9806.65).toFixed(2)} kgf/cm³</li>
-      <li>Deformación máxima (w_max): ${w_max_mm.toFixed(3)} mm</li>
-      <li>Presión máxima sobre suelo (q_max): ${q_max_kgcm2} kgf/cm² <strong style="color:${soil_ok?'#4caf50':'#f44336'}">${soil_ok ? `(CUMPLE < ${q_adm_kgcm2})` : `(FALLA > ${q_adm_kgcm2})`}</strong></li>
-      <li>Momento Flector Máx Mxx: ${(mx_max * 101.97).toFixed(2)} kgf·m/m</li>
-      <li>Momento Flector Máx Myy: ${(my_max * 101.97).toFixed(2)} kgf·m/m</li>
+    </ul>
+    
+    <h3>5.1 Deformación y Presión de Suelo</h3>
+    <div class="formula">
+      w_max = max({w}) = ${w_max_mm.toFixed(3)} mm<br><br>
+      q_max = k · w_max<br>
+      q_max = ${(payload.materials.k / 9806.65).toFixed(2)} kgf/cm³ · ${w_max_mm.toFixed(3)} mm (ajustado a cm) = <strong>${q_max_kgcm2} kgf/cm²</strong>
+    </div>
+    <p>Condición Normativa de Suelo: <strong style="color:${soil_ok?'#4caf50':'#f44336'}">${soil_ok ? `CUMPLE (q_max ${q_max_kgcm2} < Capacidad Admisible ${q_adm_kgcm2} kgf/cm²)` : `FALLA (q_max ${q_max_kgcm2} > Capacidad Admisible ${q_adm_kgcm2} kgf/cm²)`}</strong></p>
+
+    <h3>5.2 Esfuerzos Internos</h3>
+    <p>Los momentos flectores máximos (Mx, My) dictarán el requerimiento de acero principal, y ocurren sistemáticamente debajo y en las cercanías de los muros o columnas más pesadas (los picos de tensión de la matriz):</p>
+    <ul>
+      <li>Momento Flector Máximo en X (Mxx): <strong>${(mx_max * 101.97).toFixed(2)} kgf·m/m</strong></li>
+      <li>Momento Flector Máximo en Y (Myy): <strong>${(my_max * 101.97).toFixed(2)} kgf·m/m</strong></li>
     </ul>
   </div>
 
