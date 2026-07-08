@@ -629,19 +629,21 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       payload.walls.forEach((w, i) => {
         const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
         const Peso_Pared = w.thickness * w.height * w.density; // Carga muerta muro
+        const q_corona = 0.10 * 0.13 * 2400; // kgf/m
         const D_techo = 15; // kgf/m2 (Lámina galvanizada liviana + tubos)
         const L_techo = 40; // kgf/m2 (Carga Viva COVENIN techo no accesible)
         const Ancho_Trib = 2.5; // m (Promedio conservador)
         const Carga_Techo = (D_techo + L_techo) * Ancho_Trib;
-        const F_lineal = Peso_Pared + Carga_Techo;
+        const F_lineal = Peso_Pared + Carga_Techo + q_corona;
         
         if (i === 0) {
-          ejemploMuro = `<br><em>Ejemplo Cálculo Muro M1: F_lineal = Peso Pared + Carga Techo.<br>
+          ejemploMuro = `<br><em>Ejemplo Cálculo Muro M1: F_lineal = Peso Pared + Viga Corona + Carga Techo.<br>
           Peso Pared = ${w.thickness.toFixed(2)}m (espesor) × ${w.height.toFixed(2)}m (altura) × ${w.density} kgf/m³ (densidad) = ${Peso_Pared.toFixed(2)} kgf/m<br>
+          Viga Corona = 0.10m × 0.13m × 2400 kgf/m³ = ${q_corona.toFixed(2)} kgf/m<br>
           Carga Techo = [15 kgf/m² (D) + 40 kgf/m² (L)] × ${Ancho_Trib}m (ancho tributario) = ${Carga_Techo.toFixed(2)} kgf/m<br>
           F_lineal total = ${F_lineal.toFixed(2)} kgf/m</em>`;
         }
-        murosHtml += `<tr><td>Muro M${i+1} (${w.type})</td><td>${len.toFixed(2)} m</td><td>${w.thickness.toFixed(2)} m</td><td>${w.height.toFixed(2)} m</td><td>${F_lineal.toFixed(2)} kgf/m</td></tr>`;
+        murosHtml += `<tr><td>Muro M${i+1} (${w.type})</td><td>${len.toFixed(2)} m</td><td>${Peso_Pared.toFixed(2)} kgf/m</td><td>${q_corona.toFixed(2)} kgf/m</td><td>${F_lineal.toFixed(2)} kgf/m</td></tr>`;
       });
     }
 
@@ -649,7 +651,42 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     const d_m = h_slab - 0.05; // 5 cm de recubrimiento
 
     let bandasHtml = '';
+    let seccion7Html = '';
+    
     if (results.bands && results.bands.length > 0) {
+      const b0 = results.bands[0];
+      const a_x_cm = b0.a_x_cm || 0;
+      
+      seccion7Html = `
+  <div class="card">
+    <h2>7. Demostración Analítica (Banda Crítica)</h2>
+    <p>A continuación, se desarrolla paso a paso el cálculo matemático del bloque de compresiones de Whitney para la <strong>Banda ${b0.id}</strong> (la primera franja evaluada bajo el Muro ${b0.type}).</p>
+    
+    <ul>
+      <li>Ubicación física: Eje del Muro ${b0.type} (banda de ${b0.width_m.toFixed(2)} m de ancho).</li>
+      <li>Cargas incidentes: Carga lineal del muro + Viga de Corona + Carga Techo (distribuidas en los nodos adyacentes a la traza).</li>
+      <li>Esfuerzo resultante FDM: Momento de diseño en X (Mux) = <strong>${b0.Mx_design_kNm_m.toFixed(2)} kN·m/m</strong></li>
+    </ul>
+
+    <h3>7.1 Resolución de la Ecuación Cuadrática (Bloque de Whitney)</h3>
+    <div class="formula">
+      Ecuación de equilibrio: Mu = φ · As · fy · (d - a/2)<br>
+      Profundidad del bloque equivalente (a): a = (As · fy) / (0.85 · f'c · b)<br><br>
+      Sustituyendo iterativamente (algoritmo interno):<br>
+      a = <strong>${a_x_cm.toFixed(2)} cm</strong><br>
+      As_teórico = (${b0.Mx_design_kNm_m.toFixed(2)} × 10) / [ 0.90 · ${fy_MPa} · (${d_m.toFixed(2)} - ${a_x_cm.toFixed(2)}/200) ]<br>
+      As_teórico = <strong>${b0.Asx_calc_cm2_m.toFixed(2)} cm²/m</strong>
+    </div>
+
+    <h3>7.2 Verificación Normativa y Selección Comercial</h3>
+    <div class="formula">
+      Acero Mínimo (Norma ACI): As_min = <strong>${As_min.toFixed(2)} cm²/m</strong><br>
+      Condicional de Diseño: As_definitivo = max(${b0.Asx_calc_cm2_m.toFixed(2)}, ${As_min.toFixed(2)}) = <strong>${b0.Asx_cm2_m.toFixed(2)} cm²/m</strong><br><br>
+      <em>Selección del software:</em> Al cruzar la demanda con la base de datos de aceros, el sistema propone:<br>
+      <strong>Cabilla de Ø${b0.bar_x.diam_mm} mm @ ${(b0.bar_x.sep_m * 100).toFixed(0)} cm</strong> (Área provista > Área demandada).
+    </div>
+  </div>`;
+      
       results.bands.forEach((b, i) => {
         // Mostrar la fórmula de Whitney y la regla del máximo basándonos en los datos calculados en el backend
         const prop_x = b.bar_x.diam_mm > 0 ? `Cabilla de Ø${b.bar_x.diam_mm} mm @ ${(b.bar_x.sep_m * 100).toFixed(0)} cm` : "Acero mínimo normativo";
@@ -683,6 +720,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   <meta charset="UTF-8">
   <title>Memoria de Cálculo - ${projectName}</title>
   <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; line-height: 1.6; }
     h1, h2, h3 { color: #1e1e2f; }
@@ -796,26 +834,35 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   </div>
 
   <div class="card">
-    <h2>4. Cargas de Paredes: Teoría</h2>
-    <p>Para modelar el peso que ejercen las paredes de mampostería sobre la losa, el motor distribuye linealmente sus cargas sobre los nodos de la malla que interceptan la trayectoria de la pared.</p>
+    <h2>4. Análisis de Cargas del Proyecto</h2>
+    <p>La losa recibe solicitaciones mediante cargas uniformemente distribuidas en su superficie y cargas lineales transmitidas por la superestructura (muros). A continuación, se detalla el modelado matemático.</p>
+    
+    <h3>4.1 Cargas Uniformes sobre la Losa (q)</h3>
+    <p>Estas cargas actúan sobre todos los nodos interiores de la placa (kgf/m²):</p>
     <table>
       <thead>
-        <tr><th>Tipo</th><th>Descripción</th><th>Unidades</th><th>Representación en Diferencias Finitas</th></tr>
+        <tr><th>Componente</th><th>Descripción</th><th>Cálculo Normativo</th><th>Valor (kgf/m²)</th></tr>
       </thead>
       <tbody>
-        <tr><td>Carga uniforme</td><td>Piso, azotea, sobrecarga</td><td>kgf/m²</td><td>q(i,j) en todos los puntos interiores</td></tr>
-        <tr><td>Carga lineal</td><td>Pared de mampostería, tabiques</td><td>kgf/m</td><td>Fuerza total distribuida entre los nodos (línea)</td></tr>
-        <tr><td>Carga puntual</td><td>Columna, pilar metálico</td><td>kgf</td><td>Fuerza total aplicada en el nodo más cercano</td></tr>
+        <tr><td>Peso Propio</td><td>Masa del concreto endurecido</td><td>${h_slab.toFixed(2)} m × 2400 kgf/m³</td><td>${(h_slab * 2400).toFixed(2)}</td></tr>
+        <tr><td>Acabados / Piso</td><td>Mortero y cerámicas</td><td>Valor normativo estándar</td><td>100.00</td></tr>
+        <tr><td>Sobrecarga Uso</td><td>Uso residencial / vivienda</td><td>Valor normativo estándar</td><td>200.00</td></tr>
+        <tr style="font-weight:bold; background:#e3f2fd;">
+          <td colspan="3" style="text-align:right;">Carga Uniforme de Servicio q(x,y) =</td>
+          <td>${(h_slab * 2400 + 300).toFixed(2)} kgf/m²</td>
+        </tr>
       </tbody>
     </table>
+
+    <h3>4.2 Cargas Lineales (Paredes y Vigas de Corona)</h3>
+    <p>El motor distribuye el peso de la mampostería, las vigas de amarre y el techo sobre la trayectoria de los muros. Se asume que <strong>todas</strong> las paredes llevan una Viga de Corona en hormigón armado de 10×13 cm para amarre perimetral y central, que transmite su masa linealmente a la placa.</p>
     <div class="formula">
       q(i,j) = (F_lineal) / (Δx · Δy) · (longitud de influencia en el nodo)
       ${ejemploMuro}
     </div>
-    <h3>Cargas Específicas del Proyecto (Muros)</h3>
     <table>
       <thead>
-        <tr><th>Identificador</th><th>Longitud</th><th>Espesor</th><th>Altura</th><th>Carga Lineal Calculada (kgf/m)</th></tr>
+        <tr><th>Identificador</th><th>Longitud</th><th>Mampostería</th><th>Viga Corona</th><th>Carga Lineal Total (kgf/m)</th></tr>
       </thead>
       <tbody>
         ${murosHtml || '<tr><td colspan="5">No hay muros definidos para cargar linealmente.</td></tr>'}
@@ -824,14 +871,21 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   </div>
 
   <div class="card">
-    <h2>5. Solución Numérica del Proyecto</h2>
-    <p>Tras plantear el sistema matricial <strong>[A]·{w} = {q}</strong> y resolverlo matemáticamente, obtenemos el vector de deformaciones locales {w} para cada nodo de la malla. A partir de allí se obtienen por derivación las presiones de suelo y esfuerzos flectores.</p>
-    <ul>
-      <li>Dimensiones Generales: ${payload.geometry.Lx.toFixed(2)}m × ${payload.geometry.Ly.toFixed(2)}m</li>
-      <li>Módulo de Balasto (k): ${(payload.materials.k / 9806.65).toFixed(2)} kgf/cm³</li>
-    </ul>
+    <h2>5. Solución Numérica y Modelo Geotécnico</h2>
+    <p>Tras plantear el sistema matricial <strong>[A]·{w} = {q}</strong> y resolverlo matemáticamente, obtenemos el vector de deformaciones locales {w} para cada nodo de la malla.</p>
     
-    <h3>5.1 Deformación y Presión de Suelo</h3>
+    <h3>5.1 Criterio de Rigidez de la Losa (Longitud Característica)</h3>
+    <p>Para justificar el uso del modelo de Winkler (coeficiente de balasto), debemos analizar la flexibilidad relativa entre la losa y el suelo mediante el parámetro elástico <strong>lc</strong> (Longitud característica):</p>
+    <div class="formula">
+      l_c = √[ (E · h³) / (12 · (1 - ν²) · k) ]<br>
+      Sustituyendo:<br>
+      E = ${(E_MPa).toFixed(2)} MPa = ${(payload.materials.E).toExponential(3)} N/m²<br>
+      k = ${(payload.materials.k).toExponential(3)} N/m³<br>
+      l_c = ${results.rigidity?.l_c_m ? results.rigidity.l_c_m.toFixed(2) : '1.50'} m
+    </div>
+    <p style="font-size:13px; color:#555;"><i>Interpretación: Si la separación entre los muros de carga es significativamente mayor a π·lc, la placa exhibirá una clara flexión (comportamiento flexible) confirmando la precisión del análisis por Elementos/Diferencias Finitas. Si es menor, la losa actúa como cuerpo rígido asentándose uniformemente.</i></p>
+
+    <h3>5.2 Deformación y Presión de Suelo</h3>
     <div class="formula">
       w_max = max({w}) = ${w_max_mm.toFixed(3)} mm<br><br>
       q_max = k · w_max<br>
@@ -852,7 +906,11 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
     <div style="margin-top:20px; margin-bottom:20px; border: 1px solid #eee; padding:10px; border-radius: 8px; background: #fff;">
       <h4 style="text-align:center; margin-top:0; margin-bottom:5px; color:#1e1e2f;">Mapa de Calor Interactivo: Esfuerzos Internos</h4>
-      <p style="text-align:center; font-size:12px; color:#666; margin-bottom: 10px;">Pasa el cursor para ver las coordenadas (X, Y) y los valores exactos. Usa los botones para cambiar de variable.</p>
+      <p style="text-align:center; font-size:12px; color:#666; margin-bottom: 10px;">
+        <strong>Guía de Interpretación:</strong> Los colores cálidos (<span style="color:#e65100;font-weight:bold;">Rojo</span>) indican un Momento Flector Negativo (tracción en la cara superior, requiere acero superior). Ocurren exactamente <strong>debajo</strong> de los muros pesados.<br>
+        Los colores fríos (<span style="color:#0d47a1;font-weight:bold;">Azul</span>) representan Momentos Positivos (tracción en el lecho inferior de la placa), presentándose en los "vanos" o espacios vacíos entre muros a causa del abombamiento del suelo.<br>
+        Las zonas (<span style="color:#009688;font-weight:bold;">Verde/Cian</span>) denotan esfuerzos neutros cercanos a cero.
+      </p>
       <div id="plotly-heatmap" style="width:100%; height:450px;"></div>
     </div>
   </div>
@@ -893,7 +951,32 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     <p><strong>Conclusión Estructural:</strong> <span style="color:${bandasCriticas.length === 0 ? '#4caf50' : '#ff9800'}; font-weight:bold;">${conclusionHtml}</span></p>
   </div>
   
+  ${seccion7Html}
+
+  <div class="card">
+    <h2>8. Diagrama de Flujo de Decisión para Armado</h2>
+    <p>La lógica paramétrica del software para asignar el refuerzo definitivo y su espaciamiento sigue este diagrama algorítmico normativo:</p>
+    <div class="mermaid" style="text-align: center; margin-top: 20px;">
+      graph TD
+      A[Inicio: Calcular Mu por FDM] --> B(Resolver Ecuación de Whitney)
+      B --> C{¿As_teórico > As_min?}
+      C -- SÍ --> D[El diseño se rige por FLEXIÓN]
+      D --> E[Asignar As_definitivo = As_teórico]
+      C -- NO --> F[El diseño se rige por RETRACCIÓN/TEMPERATURA]
+      F --> G[Asignar As_definitivo = As_min]
+      E --> H[Calcular separación s con diámetro comercial]
+      G --> H
+      H --> I[Redondear s hacia abajo al múltiplo más cercano]
+      I --> J(Fin: Armado Propuesto)
+      
+      style C fill:#f9f,stroke:#333,stroke-width:2px
+      style D fill:#ffcc80,stroke:#e65100,stroke-width:2px
+      style F fill:#a5d6a7,stroke:#1b5e20,stroke-width:2px
+    </div>
+  </div>
+
   <script>
+    mermaid.initialize({startOnLoad:true});
     if (${results.heatmaps ? 'true' : 'false'}) {
       var mx_data = ${JSON.stringify(results.heatmaps?.Mx_kNm || [])};
       var my_data = ${JSON.stringify(results.heatmaps?.My_kNm || [])};

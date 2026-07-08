@@ -31,6 +31,7 @@ class Wall:
     q_lineal: float = 0.0
     length: float = 0.0
     band_width: float = 0.0
+    q_corona_kgf_m: float = 0.0
     openings: List[Dict] = None
 
     def __post_init__(self):
@@ -148,8 +149,10 @@ class FoundationSlabDesigner:
         # Carga Viva (L): 40 kgf/m² (Cubierta liviana no accesible)
         trib_width = 2.5 # ancho tributario promedio (m)
         q_techo_kgf_m = (15 + 40) * trib_width
+        # Viga de corona (amarre) sobre los muros de mampostería: 10x13 cm
+        q_corona_kgf_m = 0.10 * 0.13 * 2400
         
-        q_lineal = ( (thickness * material_density + plaster_kg_m2) * height + q_techo_kgf_m ) * 9.81 * load_factor
+        q_lineal = ( (thickness * material_density + plaster_kg_m2) * height + q_techo_kgf_m + q_corona_kgf_m ) * 9.81 * load_factor
 
         # Ancho de banda de refuerzo: espesor + 2*d_eff, mínimo racional ~0.33m
         base_band = max(thickness + 2 * self.d_eff, 0.33)
@@ -164,6 +167,7 @@ class FoundationSlabDesigner:
             density=material_density, load_factor=load_factor,
             wall_type=wall_type, q_lineal=q_lineal,
             length=length, band_width=band_width,
+            q_corona_kgf_m=q_corona_kgf_m,
             openings=openings or []
         ))
         print(f"  Muro {wall_type}: ({x1:.2f},{y1:.2f})->({x2:.2f},{y2:.2f}) | "
@@ -1471,6 +1475,9 @@ class FoundationSlabDesigner:
         longitud_varilla_5_2mm = num_estribos * 0.50
         corona_5_2mm_bars = int(np.ceil(longitud_varilla_5_2mm / 6.0))
 
+        # Criterio de Rigidez (Winkler Characteristic Length)
+        l_c_m = ((self.E * self.h**3) / (12 * (1 - self.nu**2) * self.k))**(0.25)
+
         return {
             "displacements": {
                 "w_max_mm": float(np.max(np.abs(self.w)) * 1000)
@@ -1478,6 +1485,9 @@ class FoundationSlabDesigner:
             "moments": {
                 "Mx_max_kNm_m": float(np.max(np.abs(self.Mx)) / 1000),
                 "My_max_kNm_m": float(np.max(np.abs(self.My)) / 1000)
+            },
+            "rigidity": {
+                "l_c_m": float(l_c_m)
             },
             "shear": {
                 "Vu_max_kN_m": float(np.max(self.Vu) / 1000),
