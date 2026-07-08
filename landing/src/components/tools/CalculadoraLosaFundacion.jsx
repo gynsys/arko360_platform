@@ -142,10 +142,11 @@ const generarPresupuesto = (results, prices, designParams) => {
   // Acabados
   const area_total_muros = s.area_lisa_m2 + s.area_rustica_m2;
   
-  // Rendimiento real de friso a 1 cm de espesor base:
-  // 1 saco (42.5kg) rinde ~12.5 m2, 1 m3 de arena rinde ~100 m2
-  const cemento_friso = Math.ceil(area_total_muros / 12.5);
-  const arena_friso = +(area_total_muros / 100.0).toFixed(2);
+  // Rendimiento volumétrico real de friso a 1 cm de espesor base (Proporción 1:4):
+  const vol_neto_friso = area_total_muros * 0.01;
+  const vol_seco_friso = vol_neto_friso * 1.10;
+  const cemento_friso = Math.ceil(vol_seco_friso * 4.5); // 4.5 sacos por m3 de mortero seco
+  const arena_friso = +(vol_seco_friso * 1.05).toFixed(2); // 1.05 m3 por m3 de mortero seco
   
   if (cemento_friso > 0) {
     items.push({ chapter: 'Mampostería', material: 'Cemento Portland (Friso)', unit: 'sacos', qty: cemento_friso, pu: p.cemento, total: cemento_friso * p.cemento });
