@@ -2118,11 +2118,54 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
                 <h4 style={{margin:0}}>Plano Interactivo</h4>
                 <div style={{display:'flex', gap:'8px', marginLeft:'12px', border: '1px solid #ddd', padding: '4px', borderRadius: '6px', background: '#f5f5f5'}}>
-                  <button onClick={() => setDrawType('parcela')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'parcela' ? '2px solid #555' : '1px solid transparent', background: drawType === 'parcela' ? '#fff' : 'transparent', color: '#555', cursor: 'pointer', fontWeight: drawType === 'parcela' ? 'bold' : 'normal'}}>Parcela</button>
-                  <button onClick={() => setDrawType('losa')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'losa' ? '2px solid #ff9800' : '1px solid transparent', background: drawType === 'losa' ? '#fff' : 'transparent', color: '#ff9800', cursor: 'pointer', fontWeight: drawType === 'losa' ? 'bold' : 'normal'}}>Borde Losa</button>
-                  <button onClick={() => setDrawType('perimetral')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'perimetral' ? '2px solid #e53935' : '1px solid transparent', background: drawType === 'perimetral' ? '#fff' : 'transparent', color: '#e53935', cursor: 'pointer', fontWeight: drawType === 'perimetral' ? 'bold' : 'normal'}}>Muro Perim.</button>
-                  <button onClick={() => setDrawType('interno')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'interno' ? '2px solid #1e88e5' : '1px solid transparent', background: drawType === 'interno' ? '#fff' : 'transparent', color: '#1e88e5', cursor: 'pointer', fontWeight: drawType === 'interno' ? 'bold' : 'normal'}}>Muro Int.</button>
-                  <button onClick={() => setDrawType('columna')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'columna' ? '2px solid #9c27b0' : '1px solid transparent', background: drawType === 'columna' ? '#fff' : 'transparent', color: '#9c27b0', cursor: 'pointer', fontWeight: drawType === 'columna' ? 'bold' : 'normal'}}>Machón</button>
+                  <button onClick={() => setDrawType('parcela')} title="Parcela" style={{padding:'6px', borderRadius:'4px', border: drawType === 'parcela' ? '2px solid #555' : '1px solid transparent', background: drawType === 'parcela' ? '#fff' : 'transparent', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 20h20" strokeDasharray="4 4" />
+                      <path d="M5 20l3-9" strokeDasharray="4 4" />
+                      <path d="M19 20l-3-9" strokeDasharray="4 4" />
+                      <path d="M8 11h8" strokeDasharray="4 4" />
+                      <path d="M10 17v-4h4v4" />
+                      <path d="M8 17v-6h8v6" />
+                      <path d="M7 11l5-5 5 5" />
+                    </svg>
+                  </button>
+                  <button onClick={() => setDrawType('losa')} title="Borde Losa" style={{padding:'6px', borderRadius:'4px', border: drawType === 'losa' ? '2px solid #ff9800' : '1px solid transparent', background: drawType === 'losa' ? '#fff' : 'transparent', color: '#ff9800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 12l10 5 10-5-10-5z" fill="currentColor" fillOpacity="0.2" />
+                      <path d="M2 12v4l10 5 10-5v-4" />
+                    </svg>
+                  </button>
+                  <button onClick={() => setDrawType('perimetral')} title="Muro Perimetral" style={{padding:'6px', borderRadius:'4px', border: drawType === 'perimetral' ? '2px solid #e53935' : '1px solid transparent', background: drawType === 'perimetral' ? '#fff' : 'transparent', color: '#e53935', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="5" width="18" height="14" rx="1" />
+                      <path d="M3 12h18" /><path d="M3 8.5h18" /><path d="M3 15.5h18" />
+                      <path d="M8 5v3.5" /><path d="M16 5v3.5" />
+                      <path d="M12 8.5V12" />
+                      <path d="M7 12v3.5" /><path d="M17 12v3.5" />
+                      <path d="M12 15.5V19" />
+                    </svg>
+                  </button>
+                  <button onClick={() => setDrawType('interno')} title="Muro Interno" style={{padding:'6px', borderRadius:'4px', border: drawType === 'interno' ? '2px solid #1e88e5' : '1px solid transparent', background: drawType === 'interno' ? '#fff' : 'transparent', color: '#1e88e5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="3 3">
+                      <rect x="3" y="5" width="18" height="14" rx="1" />
+                      <path d="M3 12h18" /><path d="M3 8.5h18" /><path d="M3 15.5h18" />
+                      <path d="M8 5v3.5" /><path d="M16 5v3.5" />
+                      <path d="M12 8.5V12" />
+                      <path d="M7 12v3.5" /><path d="M17 12v3.5" />
+                      <path d="M12 15.5V19" />
+                    </svg>
+                  </button>
+                  <button onClick={() => setDrawType('columna')} title="Machón" style={{padding:'6px', borderRadius:'4px', border: drawType === 'columna' ? '2px solid #9c27b0' : '1px solid transparent', background: drawType === 'columna' ? '#fff' : 'transparent', color: '#9c27b0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 14l6-3 6 3v6l-6 3-6-3v-6z" />
+                      <path d="M6 14l6 3 6-3" />
+                      <path d="M12 17v7" />
+                      <path d="M10 12V2" />
+                      <path d="M14 12V2" />
+                      <path d="M8 5h8" />
+                      <path d="M8 9h8" />
+                    </svg>
+                  </button>
                 </div>
                 <div style={{display:'flex', gap:'4px', marginLeft:'12px'}}>
                   <button onClick={undo} disabled={historyPast.length === 0} title="Deshacer" style={{padding:'4px 8px', cursor: historyPast.length === 0 ? 'not-allowed' : 'pointer', background:'#fff', border:'1px solid #ccc', borderRadius:'4px'}}><Undo2 size={16} color={historyPast.length === 0 ? '#ccc' : '#333'}/></button>
