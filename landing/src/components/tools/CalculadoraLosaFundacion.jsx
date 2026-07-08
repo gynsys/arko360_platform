@@ -206,6 +206,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   // Muros Internos (Tabla)
   const [internalWalls, setInternalWalls] = useState([]);
   
+  // Machones / Columnas
+  const [columns, setColumns] = useState([]);
+  const [colConfig, setColConfig] = useState({ width: 0.15, length: 0.15, height: 2.70, load_kgf: 1000 });
+  
   // Estado de resultados
   const [results, setResults] = useState(null);
   const [lastPayload, setLastPayload] = useState(null);
@@ -264,7 +268,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const [historyFuture, setHistoryFuture] = useState([]);
 
   const saveHistory = () => {
-    setHistoryPast(prev => [...prev, { internalWalls: [...internalWalls], openings: [...openings] }]);
+    setHistoryPast(prev => [...prev, { internalWalls: [...internalWalls], openings: [...openings], columns: [...columns] }]);
     setHistoryFuture([]);
   };
 
@@ -272,18 +276,20 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     if (historyPast.length === 0) return;
     const previous = historyPast[historyPast.length - 1];
     setHistoryPast(prev => prev.slice(0, -1));
-    setHistoryFuture(prev => [{ internalWalls, openings }, ...prev]);
+    setHistoryFuture(prev => [{ internalWalls, openings, columns }, ...prev]);
     setInternalWalls(previous.internalWalls);
     setOpenings(previous.openings);
+    setColumns(previous.columns || []);
   };
 
   const redo = () => {
     if (historyFuture.length === 0) return;
     const next = historyFuture[0];
     setHistoryFuture(prev => prev.slice(1));
-    setHistoryPast(prev => [...prev, { internalWalls, openings }]);
+    setHistoryPast(prev => [...prev, { internalWalls, openings, columns }]);
     setInternalWalls(next.internalWalls);
     setOpenings(next.openings);
+    setColumns(next.columns || []);
   };
 
   // Interacción Canvas (Mouse & Snap)
@@ -652,6 +658,33 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
     let bandasHtml = '';
     let seccion7Html = '';
+    let punchingHtml = '';
+
+    if (results.punching_data && results.punching_data.length > 0) {
+      punchingHtml = `
+    <h3>5.3 Verificación de Punzonamiento (Corte Bidireccional)</h3>
+    <p>Según la sección 22.6 del ACI 318-19, se verifica el esfuerzo cortante en el perímetro crítico (a una distancia d/2) alrededor de machones y esquinas de muros:</p>
+    <table>
+      <thead>
+        <tr><th>Elemento</th><th>Vu (kN)</th><th>Vc (kN)</th><th>φVc (kN)</th><th>Ratio (Vu/φVc)</th><th>Estado</th></tr>
+      </thead>
+      <tbody>
+        ${results.punching_data.map(p => {
+          const statusColor = p.ok ? '#4caf50' : '#f44336';
+          const statusText = p.ok ? 'CUMPLE ✓' : 'NO CUMPLE ✗';
+          return \`<tr>
+            <td>\${p.id}</td>
+            <td>\${p.Vu_kN.toFixed(1)}</td>
+            <td>\${p.Vc_kN.toFixed(1)}</td>
+            <td>\${p.phiVc_kN.toFixed(1)}</td>
+            <td>\${p.ratio !== undefined ? p.ratio.toFixed(2) : '-'}</td>
+            <td style="color:\${statusColor}; font-weight:bold;">\${statusText}</td>
+          </tr>\`;
+        }).join('')}
+      </tbody>
+    </table>
+    `;
+    }
     
     if (results.bands && results.bands.length > 0) {
       const b0 = results.bands[0];
@@ -913,6 +946,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       </p>
       <div id="plotly-heatmap" style="width:100%; height:450px;"></div>
     </div>
+
+    ${punchingHtml}
   </div>
 
   <div class="card">
@@ -1188,6 +1223,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const handleSvgDoubleClick = () => {
+    if (drawType === 'columna') return; // Se dibuja con 1 click
+
     if (!isDrawing) {
       // Iniciar dibujo
       setIsDrawing(true);
@@ -1201,6 +1238,21 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       setIsDrawing(false);
       setDrawStart(null);
       setDrawEnd(null);
+    }
+  };
+
+  const handleSvgClick = () => {
+    if (drawType === 'columna') {
+      saveHistory();
+      setColumns(prev => [...prev, {
+        id: Date.now(),
+        x: mouseCoord.x,
+        y: mouseCoord.y,
+        width: colConfig.width,
+        length: colConfig.length,
+        height: colConfig.height,
+        load_kgf: colConfig.load_kgf
+      }]);
     }
   };
 
@@ -1355,12 +1407,15 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
         width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
       })),
+      columns: columns.map(c => ({
+        x: c.x - offsetX, y: c.y - offsetY, width: c.width, length: c.length, height: c.height, load_kgf: c.load_kgf
+      })),
       mesh_nx: 40,
       mesh_ny: 40,
       extra_load: 300 * 9.81,
       // Estado completo del plano para poder reabrirlo
       _canvas_state: {
-        shape, params, designParams, wallHeight, internalWalls, openings, material, offset
+        shape, params, designParams, wallHeight, internalWalls, openings, columns, material, offset
       }
     };
   };
@@ -2043,6 +2098,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                   <button onClick={() => setDrawType('losa')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'losa' ? '2px solid #ff9800' : '1px solid transparent', background: drawType === 'losa' ? '#fff' : 'transparent', color: '#ff9800', cursor: 'pointer', fontWeight: drawType === 'losa' ? 'bold' : 'normal'}}>Borde Losa</button>
                   <button onClick={() => setDrawType('perimetral')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'perimetral' ? '2px solid #e53935' : '1px solid transparent', background: drawType === 'perimetral' ? '#fff' : 'transparent', color: '#e53935', cursor: 'pointer', fontWeight: drawType === 'perimetral' ? 'bold' : 'normal'}}>Muro Perim.</button>
                   <button onClick={() => setDrawType('interno')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'interno' ? '2px solid #1e88e5' : '1px solid transparent', background: drawType === 'interno' ? '#fff' : 'transparent', color: '#1e88e5', cursor: 'pointer', fontWeight: drawType === 'interno' ? 'bold' : 'normal'}}>Muro Int.</button>
+                  <button onClick={() => setDrawType('columna')} style={{padding:'4px 8px', borderRadius:'4px', border: drawType === 'columna' ? '2px solid #9c27b0' : '1px solid transparent', background: drawType === 'columna' ? '#fff' : 'transparent', color: '#9c27b0', cursor: 'pointer', fontWeight: drawType === 'columna' ? 'bold' : 'normal'}}>Machón</button>
                 </div>
                 <div style={{display:'flex', gap:'4px', marginLeft:'12px'}}>
                   <button onClick={undo} disabled={historyPast.length === 0} title="Deshacer" style={{padding:'4px 8px', cursor: historyPast.length === 0 ? 'not-allowed' : 'pointer', background:'#fff', border:'1px solid #ccc', borderRadius:'4px'}}><Undo2 size={16} color={historyPast.length === 0 ? '#ccc' : '#333'}/></button>
@@ -2053,6 +2109,16 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 <span className="mouse-tracker">📍 X: {mouseCoord.x.toFixed(1)}m, Y: {mouseCoord.y.toFixed(1)}m</span>
               </div>
             </div>
+
+            {drawType === 'columna' && (
+              <div style={{display:'flex', gap:'12px', marginBottom: '10px', background: '#f3e5f5', padding: '8px', borderRadius: '6px', border: '1px solid #ce93d8'}}>
+                <label style={{fontSize: '13px', color: '#6a1b9a'}}><strong>Configuración Machón:</strong></label>
+                <label style={{fontSize: '13px'}}>Ancho (X) m: <input type="number" step="0.05" value={colConfig.width} onChange={e=>setColConfig({...colConfig, width: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
+                <label style={{fontSize: '13px'}}>Largo (Y) m: <input type="number" step="0.05" value={colConfig.length} onChange={e=>setColConfig({...colConfig, length: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
+                <label style={{fontSize: '13px'}}>Carga (kgf): <input type="number" step="100" value={colConfig.load_kgf} onChange={e=>setColConfig({...colConfig, load_kgf: parseFloat(e.target.value)||0})} style={{width: '70px'}}/></label>
+                <span style={{fontSize: '12px', color: '#6a1b9a', fontStyle: 'italic'}}>(Haz clic en el plano para ubicarlo)</span>
+              </div>
+            )}
             
             <svg 
               ref={svgRef}
@@ -2061,9 +2127,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               className={`drawing-board ${isDrawing ? 'drawing-mode' : ''}`}
               onMouseMove={handleMouseMove}
               onDoubleClick={handleSvgDoubleClick}
+              onClick={handleSvgClick}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              style={{ cursor: isDrawing ? 'crosshair' : 'pointer' }}
+              style={{ cursor: isDrawing ? 'crosshair' : (drawType === 'columna' ? 'crosshair' : 'pointer') }}
             >
               {/* Ejes X (Ruler Top) */}
               <rect x={0} y={0} width={CANVAS_SIZE} height={MARGIN-5} fill="#f0f0f0" />
@@ -2127,6 +2194,20 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                   <rect x={toSvg(offsetX)} y={toSvg(offsetY)} width={slabLx * scale} height={slabLy * scale} fill="rgba(255, 152, 0, 0.08)" stroke="#ff9800" strokeWidth="2" strokeDasharray="3,3" />
                 );
               })()}
+
+              {/* Render Columnas */}
+              {columns.map(c => (
+                <g key={c.id}>
+                  <rect 
+                    x={toSvg(c.x - c.width/2)} 
+                    y={toSvg(c.y - c.length/2)} 
+                    width={c.width * PIXELS_PER_METER} 
+                    height={c.length * PIXELS_PER_METER} 
+                    fill="#9c27b0" stroke="#7b1fa2" strokeWidth="2" 
+                  />
+                  <text x={toSvg(c.x)} y={toSvg(c.y - c.length/2) - 5} fontSize="10" textAnchor="middle" fill="#9c27b0" fontWeight="bold">C{String(c.id).slice(-3)}</text>
+                </g>
+              ))}
 
               {/* Muros y Líneas */}
               {allWalls.map(w => {

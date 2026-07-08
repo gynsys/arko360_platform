@@ -53,6 +53,18 @@ class Beam:
     length: float = 0.0
 
 
+@dataclass
+class Column:
+    x: float
+    y: float
+    width: float
+    length: float
+    height: float
+    load_kgf: float
+    P_u: float = 0.0  # Carga última en N
+    id: str = ""
+
+
 class FoundationSlabDesigner:
     """
     Diseñador de losa de cimentación por Método de la Grilla.
@@ -113,6 +125,7 @@ class FoundationSlabDesigner:
 
         self.walls: List[Wall] = []
         self.beams: List[Beam] = []
+        self.columns: List[Column] = []
         self.band_data = []  # Almacena resultados de bandas
         self.settlement_data = []
         self.punching_data = []
@@ -187,6 +200,17 @@ class FoundationSlabDesigner:
         ))
         print(f"  Viga {beam_type}: ({x1:.2f},{y1:.2f})->({x2:.2f},{y2:.2f}) | "
               f"{width*100:.0f}x{height*100:.0f} cm | q={q_self/1000:.2f} kN/m")
+
+    def add_column(self, x, y, width, length, height, load_kgf, id=""):
+        # Peso propio de la columna
+        W_self_kgf = width * length * height * 2400
+        total_load_kgf = load_kgf + W_self_kgf
+        P_u_N = total_load_kgf * 9.81 * 1.5  # Factored load
+        
+        self.columns.append(Column(
+            x=x, y=y, width=width, length=length, height=height, load_kgf=load_kgf, P_u=P_u_N, id=id
+        ))
+        print(f"  Machón {id}: ({x:.2f},{y:.2f}) | {width*100:.0f}x{length*100:.0f} cm | Pu={P_u_N/1000:.2f} kN")
 
     def _node_idx(self, i, j):
         return j * self.n_nodes_x + i
@@ -734,13 +758,36 @@ class FoundationSlabDesigner:
         return results
 
     def check_punching(self):
-        """Verificación simplificada de punzonamiento en esquinas (intersección muros perimetrales)."""
-        print("\n=== VERIFICACIÓN DE PUNZONAMIENTO EN ESQUINAS ===")
-        print(f"{'Esquina':<10} {'Vu (kN)':<12} {'Vc (kN)':<12} {'φVc (kN)':<12} {'Estado':<10}")
-        print("-" * 60)
+        """Verificación simplificada de punzonamiento en esquinas y machones."""
+        print("\n=== VERIFICACIÓN DE PUNZONAMIENTO EN ESQUINAS Y MACHONES ===")
+        print(f"{'Elemento':<15} {'Vu (kN)':<12} {'Vc (kN)':<12} {'φVc (kN)':<12} {'Ratio':<8} {'Estado':<10}")
+        print("-" * 75)
 
         results = []
-        # Buscar esquinas: extremos de muros perimetrales
+        d = self.d_eff
+        
+        # 1. Machones (Columnas)
+        for col in self.columns:
+            # Perímetro crítico b0 (ACI 318 Sec 22.6)
+            b0 = 2 * (col.width + d) + 2 * (col.length + d)
+            Vu = col.P_u  # N
+            
+            # Resistencia del concreto vc = 0.33 * sqrt(f'c) en MPa
+            # Vc = vc * b0 * d * 10^6 para tenerlo en Newtons
+            vc_MPa = 0.33 * self.lambda_aci * np.sqrt(self.f_c)
+            Vc = vc_MPa * 1e6 * b0 * d
+            phiVc = self.phi_punch * Vc
+            ratio = Vu / phiVc if phiVc > 0 else 0
+            ok = ratio <= 1.0
+
+            results.append({
+                'id': f"Machón {col.id}", 'type': 'columna',
+                'Vu_kN': float(Vu / 1000), 'Vc_kN': float(Vc / 1000),
+                'phiVc_kN': float(phiVc / 1000), 'ratio': float(ratio), 'ok': bool(ok)
+            })
+            print(f"Machón {col.id:<8} {Vu/1000:<12.1f} {Vc/1000:<12.1f} {phiVc/1000:<12.1f} {ratio:<8.2f} {'CUMPLE ✓' if ok else 'NO CUMPLE ✗'}")
+
+        # 2. Buscar esquinas: extremos de muros perimetrales
         corners = []
         for w in self.walls:
             if w.wall_type == "perimetral":
@@ -754,49 +801,38 @@ class FoundationSlabDesigner:
             if not any(np.hypot(x - ux, y - uy) < 0.3 for ux, uy, _ in unique_corners):
                 unique_corners.append((x, y, t))
 
-        d = self.d_eff
         for idx, (xc, yc, tw) in enumerate(unique_corners):
-            # Área crítica aproximada: cuadrado de lado (tw + d) centrado en esquina
-            side = tw + d
-            area_crit = side * side
+            # Área crítica aproximada para esquina:
+            # En esquina, b0 es un cuarto de perímetro o dos lados
+            side_x = tw + d/2
+            side_y = tw + d/2
+            b0 = side_x + side_y
+            area_crit = side_x * side_y
 
-            # Carga en el área: peso propio + carga de muros que convergen aquí
-            q_total = self.h * self.gamma_horm * 9.81
             # Sumar cargas de muros dentro del área crítica
             wall_load = 0.0
             for w in self.walls:
-                # Longitud del muro dentro del área crítica (aproximada)
-                dxw = max(0, min(w.x2, xc + side/2) - max(w.x1, xc - side/2))
-                dyw = max(0, min(w.y2, yc + side/2) - max(w.y1, yc - side/2))
-                # Mejor: distancia del extremo del muro a la esquina
                 d1 = np.hypot(w.x1 - xc, w.y1 - yc)
                 d2 = np.hypot(w.x2 - xc, w.y2 - yc)
-                if d1 < side or d2 < side:
-                    wall_load += w.q_lineal * side  # carga en longitud side
+                if d1 < 0.5 or d2 < 0.5:
+                    wall_load += w.q_lineal * max(side_x, side_y)
+            
+            # Carga del área crítica de la losa
+            q_slab = self.h * self.gamma_horm * 9.81 * 1.2 * area_crit
+            Vu = wall_load + q_slab
 
-            # Reacción de suelo en el área (aproximada por w promedio cercano)
-            i0 = int(np.clip(round(xc / self.dx), 0, self.nx))
-            j0 = int(np.clip(round(yc / self.dy), 0, self.ny))
-            w_avg = abs(self.w[j0, i0])
-            soil_react = self.k * w_avg * area_crit
-
-            Vu = wall_load + q_total * area_crit - soil_react
-            Vu = max(Vu, 0.0)
-
-            # Perímetro crítico para esquina (simplificado): 2*(tw + d) 
-            # (ACI 318 tiene fórmulas más complejas con βc, αs, etc.)
-            b0 = 2 * (tw + d) + 2 * d  # aproximado
-            Vc = 0.33 * self.lambda_aci * np.sqrt(self.f_c * 1e6) * b0 * d  # N
+            vc_MPa = 0.33 * self.lambda_aci * np.sqrt(self.f_c)
+            Vc = vc_MPa * 1e6 * b0 * d
             phiVc = self.phi_punch * Vc
+            ratio = Vu / phiVc if phiVc > 0 else 0
+            ok = ratio <= 1.0
 
-            ok = Vu <= phiVc
-            status = "OK ✓" if ok else "NO CUMPLE ✗"
             results.append({
-                'corner_id': idx, 'x': xc, 'y': yc,
-                'Vu_kN': Vu/1000, 'Vc_kN': Vc/1000, 'phiVc_kN': phiVc/1000,
-                'ok': ok
+                'id': f"Esquina {idx+1}", 'type': 'esquina',
+                'Vu_kN': float(Vu / 1000), 'Vc_kN': float(Vc / 1000),
+                'phiVc_kN': float(phiVc / 1000), 'ratio': float(ratio), 'ok': bool(ok)
             })
-            print(f"{idx:<10} {Vu/1000:<12.2f} {Vc/1000:<12.2f} {phiVc/1000:<12.2f} {status:<10}")
+            print(f"Esquina {idx+1:<7} {Vu/1000:<12.1f} {Vc/1000:<12.1f} {phiVc/1000:<12.1f} {ratio:<8.2f} {'CUMPLE ✓' if ok else 'NO CUMPLE ✗'}")
 
         self.punching_data = results
         all_ok = all(r['ok'] for r in results) if results else True
@@ -1467,13 +1503,31 @@ class FoundationSlabDesigner:
                 
         vol_vigas_corona_m3 = longitud_perimetral_m * 0.15 * 0.15
         
-        # Acero de vigas de corona: 3Ø10mm + Estribos Ø5.2mm @20cm (longitud estribo ~0.50m)
         longitud_varilla_10mm = longitud_perimetral_m * 3
         corona_10mm_bars = int(np.ceil(longitud_varilla_10mm / 6.0))
         
         num_estribos = int(np.ceil(longitud_perimetral_m / 0.20))
         longitud_varilla_5_2mm = num_estribos * 0.50
         corona_5_2mm_bars = int(np.ceil(longitud_varilla_5_2mm / 6.0))
+        
+        # --- Cálculo de Machones (Columnas) ---
+        vol_machones_m3 = sum(c.width * c.length * c.height for c in self.columns)
+        
+        machones_10mm_len = 0.0
+        machones_5_2mm_len = 0.0
+        for c in self.columns:
+            # 4 varillas principales por machón + 30cm anclaje
+            machones_10mm_len += 4 * (c.height + 0.30)
+            # Estribos cada 15cm
+            n_estribos_col = int(np.ceil(c.height / 0.15))
+            len_estribo_col = 2 * (c.width + c.length) - 0.10
+            machones_5_2mm_len += n_estribos_col * len_estribo_col
+            
+        corona_10mm_bars += int(np.ceil(machones_10mm_len / 6.0))
+        corona_5_2mm_bars += int(np.ceil(machones_5_2mm_len / 6.0))
+
+        # El volumen de machones es de la superestructura, se suma a vigas corona o muros de concreto
+        vol_vigas_corona_m3 += vol_machones_m3
 
         # Criterio de Rigidez (Winkler Characteristic Length)
         l_c_m = ((self.E * self.h**3) / (12 * (1 - self.nu**2) * self.k))**(0.25)
