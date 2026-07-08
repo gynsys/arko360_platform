@@ -657,11 +657,33 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     const fy_MPa = payload.materials.f_y; // MPa
     const d_m = h_slab - 0.05; // 5 cm de recubrimiento
 
+    let columnasHtml = '';
+    if (payload.columns && payload.columns.length > 0) {
+      columnasHtml = `
+    <h3>4.3 Cargas Puntuales (Machones / Columnas)</h3>
+    <p>Las cargas puntuales provenientes de machones o columnas estructurales se distribuyen sobre la losa utilizando funciones de forma bi-lineales que interpolan la carga hacia los nudos adyacentes más cercanos al parche de carga.</p>
+    <table>
+      <thead>
+        <tr><th>Identificador</th><th>Ubicación (X, Y)</th><th>Dimensión</th><th>Carga Asignada (kgf)</th><th>Carga Factorizada (kgf)</th></tr>
+      </thead>
+      <tbody>
+        ${payload.columns.map((c, i) => \`<tr>
+          <td>Machón C\${i+1}</td>
+          <td>(\${(c.x + offsetX).toFixed(2)}, \${(c.y + offsetY).toFixed(2)})</td>
+          <td>\${(c.width * 100).toFixed(0)}x\${(c.length * 100).toFixed(0)} cm</td>
+          <td>\${c.load_kgf.toFixed(2)}</td>
+          <td>\${(c.load_kgf * 1.5).toFixed(2)}</td>
+        </tr>\`).join('')}
+      </tbody>
+    </table>
+      `;
+    }
+
     let bandasHtml = '';
     let seccion7Html = '';
     let punchingHtml = '';
 
-    if (results.punching_data && results.punching_data.length > 0) {
+    if (results.punching && results.punching.length > 0) {
       punchingHtml = `
     <h3>5.3 Verificación de Punzonamiento (Corte Bidireccional)</h3>
     <p>Según la sección 22.6 del ACI 318-19, se verifica el esfuerzo cortante en el perímetro crítico (a una distancia d/2) alrededor de machones y esquinas de muros:</p>
@@ -670,7 +692,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         <tr><th>Elemento</th><th>Vu (kN)</th><th>Vc (kN)</th><th>phi_Vc (kN)</th><th>Ratio (Vu/phi_Vc)</th><th>Estado</th></tr>
       </thead>
       <tbody>
-        ${results.punching_data.map(p => {
+        ${results.punching.map(p => {
           const statusColor = p.ok ? '#4caf50' : '#f44336';
           const statusText = p.ok ? 'CUMPLE OK' : 'NO CUMPLE FAIL';
           return `<tr>
@@ -902,6 +924,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         ${murosHtml || '<tr><td colspan="5">No hay muros definidos para cargar linealmente.</td></tr>'}
       </tbody>
     </table>
+    ${columnasHtml}
   </div>
 
   <div class="card">
@@ -955,7 +978,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     <h2>6. Diseño del Armado (ACI 318-19)</h2>
     
     <h3>Acero Mínimo por Contracción y Temperatura (Sec. 24.4):</h3>
-    <p>La norma ACI 318-19, sección 24.4.3.2, establece que para losas donde se empleen barras corrugadas Grado 420 (fy = 420 MPa), la cuantía mínima de refuerzo ($\rho_{min}$) en cada dirección no debe ser menor a 0.0018 para resistir los esfuerzos térmicos y de retracción de fraguado.</p>
+    <p>La norma ACI 318-19, sección 24.4.3.2, establece que para losas donde se empleen barras corrugadas (fy = ${Math.round(fy_MPa * 10.197)} kgf/cm²), la cuantía mínima de refuerzo (ρ_min) en cada dirección no debe ser menor a 0.0018 para resistir los esfuerzos térmicos y de retracción de fraguado.</p>
     <div class="formula">
       As_min = ρ_min · b · h = 0.0018 · 100 cm · ${h_cm.toFixed(0)} cm = ${As_min.toFixed(2)} cm²/m
     </div>
