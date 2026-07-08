@@ -667,13 +667,13 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         <tr><th>Identificador</th><th>Ubicación (X, Y)</th><th>Dimensión</th><th>Carga Asignada (kgf)</th><th>Carga Factorizada (kgf)</th></tr>
       </thead>
       <tbody>
-        ${payload.columns.map((c, i) => \`<tr>
-          <td>Machón C\${i+1}</td>
-          <td>(\${(c.x + offsetX).toFixed(2)}, \${(c.y + offsetY).toFixed(2)})</td>
-          <td>\${(c.width * 100).toFixed(0)}x\${(c.length * 100).toFixed(0)} cm</td>
-          <td>\${c.load_kgf.toFixed(2)}</td>
-          <td>\${(c.load_kgf * 1.5).toFixed(2)}</td>
-        </tr>\`).join('')}
+        ${payload.columns.map((c, i) => `<tr>
+          <td>Machón C${i+1}</td>
+          <td>(${(c.x + offsetX).toFixed(2)}, ${(c.y + offsetY).toFixed(2)})</td>
+          <td>${(c.width * 100).toFixed(0)}x${(c.length * 100).toFixed(0)} cm</td>
+          <td>${c.load_kgf.toFixed(2)}</td>
+          <td>${(c.load_kgf * 1.5).toFixed(2)}</td>
+        </tr>`).join('')}
       </tbody>
     </table>
       `;
