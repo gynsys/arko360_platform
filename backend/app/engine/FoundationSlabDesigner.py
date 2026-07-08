@@ -1351,7 +1351,7 @@ class FoundationSlabDesigner:
                         x1_op = wall.x1 + t1 * (wall.x2 - wall.x1)
                         y1_op = wall.y1 + t1 * (wall.y2 - wall.y1)
                         x2_op = wall.x1 + t2 * (wall.x2 - wall.x1)
-                        y2_op = wall.y1 + t2 * (wall.y2 - w.y1)
+                        y2_op = wall.y1 + t2 * (wall.y2 - wall.y1)
                         
                         ox1, oy1 = to_svg(x1_op, y1_op)
                         ox2, oy2 = to_svg(x2_op, y2_op)
