@@ -633,6 +633,16 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       bandasHtml = `<li>No hay bandas a evaluar o diseño libre.</li>`;
     }
 
+    const bandasCriticas = results.bands ? results.bands.filter(b => b.Asx_cm2_m > As_min + 0.05 || b.Asy_cm2_m > As_min + 0.05) : [];
+    let conclusionHtml = '';
+    if (bandasCriticas.length === 0) {
+      conclusionHtml = 'Debido a la ligereza de la vivienda, la mayoría de las franjas internas se rigen por el acero mínimo de confinamiento y temperatura (As_min).';
+    } else {
+      const ids = bandasCriticas.map(b => b.id);
+      const idsText = ids.length === 1 ? `Banda ${ids[0]}` : `Bandas ${ids.slice(0, -1).join(', ')} y ${ids[ids.length - 1]}`;
+      conclusionHtml = `Debido a la ligereza de la vivienda, la mayoría de las franjas internas se rigen por el acero mínimo de confinamiento y temperatura (As_min). Sin embargo, en los muros perimetrales críticos (${idsText}), el acero por FLEXIÓN rige el diseño, requiriendo refuerzos adicionales.`;
+    }
+
     const htmlContent = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -825,8 +835,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       Máximo esfuerzo demandado en iteración X: ${max_as_x.toFixed(2)} cm²/m<br>
       Máximo esfuerzo demandado en iteración Y: ${max_as_y.toFixed(2)} cm²/m
     </div>
-    <p style="font-size:13px; color:#555;"><i>Nota Técnica: Si los esfuerzos flectores de la losa son bajos y la ecuación de Whitney arroja una cuantía menor que el mínimo normativo, el algoritmo reporta 0.00 cm²/m para la flexión puramente iterativa, demostrando matemáticamente que el acero por flexión no domina el diseño.</i></p>
-    <p><strong>Conclusión Estructural:</strong> <span style="color:${(max_as_x <= As_min && max_as_y <= As_min)?'#4caf50':'#ff9800'}; font-weight:bold;">${ (max_as_x <= As_min && max_as_y <= As_min) ? 'El acero MÍNIMO rige el diseño. La malla base general es suficiente (As_flexion < As_min).' : 'El acero por FLEXIÓN rige el diseño. Se requieren bandas de refuerzo extra bajo los muros más pesados.' }</span></p>
+    <p style="font-size:13px; color:#555;"><i>Nota Técnica: Si los esfuerzos flectores de la losa son bajos y la ecuación de Whitney arroja una cuantía menor que el mínimo normativo, el algoritmo reporta el valor bruto en flexión puramente iterativa, pero rige el acero normativo.</i></p>
+    <p><strong>Conclusión Estructural:</strong> <span style="color:${bandasCriticas.length === 0 ? '#4caf50' : '#ff9800'}; font-weight:bold;">${conclusionHtml}</span></p>
   </div>
   
 </body>
