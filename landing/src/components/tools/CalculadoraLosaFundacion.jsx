@@ -836,6 +836,19 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       Máximo esfuerzo demandado en iteración Y: ${max_as_y.toFixed(2)} cm²/m
     </div>
     <p style="font-size:13px; color:#555;"><i>Nota Técnica: Si los esfuerzos flectores de la losa son bajos y la ecuación de Whitney arroja una cuantía menor que el mínimo normativo, el algoritmo reporta el valor bruto en flexión puramente iterativa, pero rige el acero normativo.</i></p>
+    
+    <h3>Guía de Interpretación Práctica para el Estudiante:</h3>
+    <p>Para traducir el área de acero calculada (As definitivo) a un plano de construcción real, se selecciona un diámetro comercial de barra y se determina su separación (s) en centímetros utilizando la siguiente relación geométrica:</p>
+    <div class="formula">
+      s (cm) = [ Área_nominal_barra (cm²) / As_requerido (cm²/m) ] × 100
+    </div>
+    <p><strong>Ejemplo Numérico:</strong> Supongamos que el cálculo arrojó un As definitivo de <strong>3.85 cm²/m</strong> y decidimos utilizar barras comerciales de <strong>Ø7 mm</strong>.</p>
+    <ul>
+      <li>El área nominal de una barra de Ø7 mm es: <code>A_bar = (π · 0.7²) / 4 ≈ 0.385 cm²</code></li>
+      <li>Aplicando la ecuación: <code>s = (0.385 / 3.85) × 100 = 10 cm</code></li>
+      <li><strong>Resultado Práctico:</strong> Cabilla de Ø7 mm @ 10 cm. Por normativas y practicidad de construcción, esta separación teórica siempre se redondea hacia abajo al múltiplo conservador más cercano (ej. 10 cm, 12.5 cm, 15 cm) para garantizar siempre un área provista mayor o igual a la demandada.</li>
+    </ul>
+
     <p><strong>Conclusión Estructural:</strong> <span style="color:${bandasCriticas.length === 0 ? '#4caf50' : '#ff9800'}; font-weight:bold;">${conclusionHtml}</span></p>
   </div>
   
