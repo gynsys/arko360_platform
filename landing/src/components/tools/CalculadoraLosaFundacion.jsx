@@ -697,7 +697,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     <p>A continuación, se desarrolla paso a paso el cálculo matemático del bloque de compresiones de Whitney para la <strong>Banda ${b0.id}</strong> (la primera franja evaluada bajo el Muro ${b0.type}).</p>
     
     <ul>
-      <li>Ubicación física: Eje del Muro ${b0.type} (banda de ${b0.width_m.toFixed(2)} m de ancho).</li>
+      <li>Ubicación física: Eje del Muro ${b0.type} (banda de ${b0.band_width.toFixed(2)} m de ancho).</li>
       <li>Cargas incidentes: Carga lineal del muro + Viga de Corona + Carga Techo (distribuidas en los nodos adyacentes a la traza).</li>
       <li>Esfuerzo resultante FDM: Momento de diseño en X (Mux) = <strong>${b0.Mx_design_kNm_m.toFixed(2)} kN·m/m</strong></li>
     </ul>
