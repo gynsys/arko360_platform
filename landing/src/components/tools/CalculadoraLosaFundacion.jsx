@@ -437,7 +437,6 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         aberturasHtml += `<li>Abertura ${i+1} (${op.type}): ${w_op.toFixed(2)}m (Ancho) × ${h_op.toFixed(2)}m (Alto) = -${area.toFixed(2)} m² (descontado de mampostería)</li>`;
       });
     } else {
-    } else {
       aberturasHtml = '<li>No se registraron puertas ni ventanas.</li>';
     }
 
