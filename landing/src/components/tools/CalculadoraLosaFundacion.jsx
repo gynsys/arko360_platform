@@ -648,6 +648,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 <head>
   <meta charset="UTF-8">
   <title>Memoria de Cálculo - ${projectName}</title>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; line-height: 1.6; }
     h1, h2, h3 { color: #1e1e2f; }
@@ -814,6 +815,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       <li>Momento Flector Máximo en X (Mxx): <strong>${(mx_max * 101.97).toFixed(2)} kgf·m/m</strong></li>
       <li>Momento Flector Máximo en Y (Myy): <strong>${(my_max * 101.97).toFixed(2)} kgf·m/m</strong></li>
     </ul>
+
+    <div style="margin-top:20px; margin-bottom:20px; border: 1px solid #eee; padding:10px; border-radius: 8px; background: #fff;">
+      <h4 style="text-align:center; margin-top:0; margin-bottom:5px; color:#1e1e2f;">Mapa de Calor Interactivo: Esfuerzos Internos</h4>
+      <p style="text-align:center; font-size:12px; color:#666; margin-bottom: 10px;">Pasa el cursor para ver las coordenadas (X, Y) y los valores exactos. Usa los botones para cambiar de variable.</p>
+      <div id="plotly-heatmap" style="width:100%; height:450px;"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -852,6 +859,57 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     <p><strong>Conclusión Estructural:</strong> <span style="color:${bandasCriticas.length === 0 ? '#4caf50' : '#ff9800'}; font-weight:bold;">${conclusionHtml}</span></p>
   </div>
   
+  <script>
+    if (${results.heatmaps ? 'true' : 'false'}) {
+      var mx_data = ${JSON.stringify(results.heatmaps?.Mx_kNm || [])};
+      var my_data = ${JSON.stringify(results.heatmaps?.My_kNm || [])};
+      var vu_data = ${JSON.stringify(results.heatmaps?.Vu_kN || [])};
+      var nx = ${results.heatmaps?.nx || 21};
+      var ny = ${results.heatmaps?.ny || 21};
+      var Lx = ${payload.geometry.Lx};
+      var Ly = ${payload.geometry.Ly};
+      
+      var x_vals = [];
+      for(var i=0; i<=nx; i++) x_vals.push((i * Lx / nx).toFixed(2));
+      var y_vals = [];
+      for(var j=0; j<=ny; j++) y_vals.push((j * Ly / ny).toFixed(2));
+      
+      var traceMx = {
+        z: mx_data, x: x_vals, y: y_vals,
+        type: 'heatmap', colorscale: 'Jet',
+        hovertemplate: 'X: %{x} m<br>Y: %{y} m<br>Mxx: %{z:.2f} kN·m/m<extra></extra>',
+        name: 'Mxx'
+      };
+      var traceMy = {
+        z: my_data, x: x_vals, y: y_vals,
+        type: 'heatmap', colorscale: 'Jet', visible: false,
+        hovertemplate: 'X: %{x} m<br>Y: %{y} m<br>Myy: %{z:.2f} kN·m/m<extra></extra>',
+        name: 'Myy'
+      };
+      var traceVu = {
+        z: vu_data, x: x_vals, y: y_vals,
+        type: 'heatmap', colorscale: 'Portland', visible: false,
+        hovertemplate: 'X: %{x} m<br>Y: %{y} m<br>Vu: %{z:.2f} kN/m<extra></extra>',
+        name: 'Vu'
+      };
+      
+      var layout = {
+        margin: { t: 40, b: 40, l: 40, r: 20 },
+        xaxis: { title: 'Losa en X (m)', range: [0, Lx] },
+        yaxis: { title: 'Losa en Y (m)', range: [0, Ly], scaleanchor: 'x', scaleratio: 1 },
+        updatemenus: [{
+          y: 1.15, x: 0.5, xanchor: 'center', yanchor: 'top', direction: 'right',
+          buttons: [
+            { method: 'update', args: [{'visible': [true, false, false]}], label: 'Mxx (kN·m/m)' },
+            { method: 'update', args: [{'visible': [false, true, false]}], label: 'Myy (kN·m/m)' },
+            { method: 'update', args: [{'visible': [false, false, true]}], label: 'Vu (kN/m)' }
+          ]
+        }]
+      };
+      
+      Plotly.newPlot('plotly-heatmap', [traceMx, traceMy, traceVu], layout, {responsive: true});
+    }
+  </script>
 </body>
 </html>`;
     
