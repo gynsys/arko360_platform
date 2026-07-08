@@ -2202,8 +2202,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                   <rect 
                     x={toSvg(c.x - c.width/2)} 
                     y={toSvg(c.y - c.length/2)} 
-                    width={c.width * PIXELS_PER_METER} 
-                    height={c.length * PIXELS_PER_METER} 
+                    width={c.width * scale} 
+                    height={c.length * scale} 
                     fill="#9c27b0" stroke="#7b1fa2" strokeWidth="2" 
                   />
                   <text x={toSvg(c.x)} y={toSvg(c.y - c.length/2) - 5} fontSize="10" textAnchor="middle" fill="#9c27b0" fontWeight="bold">C{String(c.id).slice(-3)}</text>
