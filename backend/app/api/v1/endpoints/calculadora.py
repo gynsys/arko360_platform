@@ -128,9 +128,12 @@ def analyze_slab(data: SlabModelInput):
         gr.set_mesh(nx=data.mesh_nx, ny=data.mesh_ny)
 
         for w in data.walls:
-            gr.add_wall(w.x1, w.y1, w.x2, w.y2, w.thickness, w.height, w.density, w.load_factor, w.type)
+            openings_dicts = [op.model_dump() if hasattr(op, 'model_dump') else op.dict() for op in w.openings] if w.openings else None
+            gr.add_wall(w.x1, w.y1, w.x2, w.y2, w.thickness, w.height, w.density, w.load_factor, w.type, is_plastered=w.is_plastered, openings=openings_dicts)
         for b in data.beams:
             gr.add_beam(b.x1, b.y1, b.x2, b.y2, b.width, b.height, b.load_factor, b.type)
+        for c in data.columns:
+            gr.add_column(c.x, c.y, c.width, c.length, c.height, c.load_kgf, c.id)
 
         results = gr.run_full_analysis(extra_uniform_load=data.extra_load)
         return results

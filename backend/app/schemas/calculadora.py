@@ -70,6 +70,15 @@ class BeamInput(BaseModel):
     type: str = "zuncho"
     load_factor: float = 1.2
 
+class ColumnInput(BaseModel):
+    x: float
+    y: float
+    width: float
+    length: float
+    height: float
+    load_kgf: float
+    id: str = ""
+
 class DoorInput(BaseModel):
     wallId: int
     width: float
@@ -95,6 +104,7 @@ class SlabModelInput(BaseModel):
     materials: MaterialsInput = MaterialsInput()
     walls: List[WallInput]
     beams: List[BeamInput] = []
+    columns: List[ColumnInput] = []
     doors: List[DoorInput] = []
     mesh_nx: int = 40
     mesh_ny: int = 40
