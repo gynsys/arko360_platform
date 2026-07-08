@@ -143,7 +143,13 @@ class FoundationSlabDesigner:
         
         # Plaster weight: ~40kg/m2 per side -> 80kg/m2 total * height * g
         plaster_kg_m2 = 80 if is_plastered else 0
-        q_lineal = (thickness * material_density + plaster_kg_m2) * height * 9.81 * load_factor
+        # Cargas de Techo Liviano (COVENIN - Venezuela)
+        # Carga Muerta (D): 15 kgf/m² (Lámina galvanizada liviana + perfiles tubulares)
+        # Carga Viva (L): 40 kgf/m² (Cubierta liviana no accesible)
+        trib_width = 2.5 # ancho tributario promedio (m)
+        q_techo_kgf_m = (15 + 40) * trib_width
+        
+        q_lineal = ( (thickness * material_density + plaster_kg_m2) * height + q_techo_kgf_m ) * 9.81 * load_factor
 
         # Ancho de banda de refuerzo: espesor + 2*d_eff, mínimo racional ~0.33m
         base_band = max(thickness + 2 * self.d_eff, 0.33)
@@ -517,13 +523,16 @@ class FoundationSlabDesigner:
         b = 1.0
         As_min_val = self.rho_min * b * self.h
         As = np.full_like(Mu, As_min_val)
+        a = np.zeros_like(Mu)
+        As_calc = np.zeros_like(Mu)
         mask = Mu > 1e-3
-        disc = d**2 - 2 * Mu[mask] / (phi * 0.85 * fc * b)
-        disc = np.maximum(disc, 0)
-        a = d - np.sqrt(disc)
-        As_calc = 0.85 * fc * b * a / fy
-        As[mask] = np.maximum(As_calc, As_min_val)
-        return As
+        if np.any(mask):
+            disc = d**2 - 2 * Mu[mask] / (phi * 0.85 * fc * b)
+            disc = np.maximum(disc, 0)
+            a[mask] = d - np.sqrt(disc)
+            As_calc[mask] = 0.85 * fc * b * a[mask] / fy
+            As[mask] = np.maximum(As_calc[mask], As_min_val)
+        return As, a, As_calc
 
     def define_reinforcement_bands(self, load_factor=1.5):
         """
@@ -564,8 +573,11 @@ class FoundationSlabDesigner:
             My_band_max = np.max(np.abs(My[band_mask])) if np.any(band_mask) else 0.0
 
             # Diseñar armadura para toda la banda con estos momentos
-            Asx_band = self._calc_steel(np.array([Mx_band_max]))[0]
-            Asy_band = self._calc_steel(np.array([My_band_max]))[0]
+            Asx_band, ax_band, Asx_calc_band = self._calc_steel(np.array([Mx_band_max]))
+            Asx_band, ax_band, Asx_calc_band = Asx_band[0], ax_band[0], Asx_calc_band[0]
+
+            Asy_band, ay_band, Asy_calc_band = self._calc_steel(np.array([My_band_max]))
+            Asy_band, ay_band, Asy_calc_band = Asy_band[0], ay_band[0], Asy_calc_band[0]
 
             # Asignar a nodos de banda (solo si supera el mínimo ya puesto)
             self.Asx = np.where(band_mask, np.maximum(self.Asx, Asx_band), self.Asx)
@@ -584,6 +596,10 @@ class FoundationSlabDesigner:
                 'My_design_kNm_m': float(My_band_max / 1000),
                 'Asx_cm2_m': float(Asx_band * 1e4),
                 'Asy_cm2_m': float(Asy_band * 1e4),
+                'a_x_cm': float(ax_band * 100),
+                'a_y_cm': float(ay_band * 100),
+                'Asx_calc_cm2_m': float(Asx_calc_band * 1e4),
+                'Asy_calc_cm2_m': float(Asy_calc_band * 1e4),
                 'bar_x': {k: (float(v) if isinstance(v, (np.floating, float)) else v) for k, v in bar_x.items()},
                 'bar_y': {k: (float(v) if isinstance(v, (np.floating, float)) else v) for k, v in bar_y.items()}
             })

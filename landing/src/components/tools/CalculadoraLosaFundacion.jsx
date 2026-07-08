@@ -594,9 +594,18 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     if (payload.walls && payload.walls.length > 0) {
       payload.walls.forEach((w, i) => {
         const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
-        const F_lineal = w.thickness * w.height * w.density;
+        const Peso_Pared = w.thickness * w.height * w.density; // Carga muerta muro
+        const D_techo = 15; // kgf/m2 (Lámina galvanizada liviana + tubos)
+        const L_techo = 40; // kgf/m2 (Carga Viva COVENIN techo no accesible)
+        const Ancho_Trib = 2.5; // m (Promedio conservador)
+        const Carga_Techo = (D_techo + L_techo) * Ancho_Trib;
+        const F_lineal = Peso_Pared + Carga_Techo;
+        
         if (i === 0) {
-          ejemploMuro = `<br><em>Ejemplo Cálculo Muro M1: F_lineal = ${w.thickness.toFixed(2)}m (espesor) × ${w.height.toFixed(2)}m (altura) × ${w.density} kgf/m³ (densidad) = ${F_lineal.toFixed(2)} kgf/m</em>`;
+          ejemploMuro = `<br><em>Ejemplo Cálculo Muro M1: F_lineal = Peso Pared + Carga Techo.<br>
+          Peso Pared = ${w.thickness.toFixed(2)}m (espesor) × ${w.height.toFixed(2)}m (altura) × ${w.density} kgf/m³ (densidad) = ${Peso_Pared.toFixed(2)} kgf/m<br>
+          Carga Techo = [15 kgf/m² (D) + 40 kgf/m² (L)] × ${Ancho_Trib}m (ancho tributario) = ${Carga_Techo.toFixed(2)} kgf/m<br>
+          F_lineal total = ${F_lineal.toFixed(2)} kgf/m</em>`;
         }
         murosHtml += `<tr><td>Muro M${i+1} (${w.type})</td><td>${len.toFixed(2)} m</td><td>${w.thickness.toFixed(2)} m</td><td>${w.height.toFixed(2)} m</td><td>${F_lineal.toFixed(2)} kgf/m</td></tr>`;
       });
@@ -608,17 +617,16 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     let bandasHtml = '';
     if (results.bands && results.bands.length > 0) {
       results.bands.forEach((b, i) => {
-        // Mostrar la fórmula de Whitney y la regla del máximo
-        // Factor 10: Convierte la relación (kN·m/m) / (MPa * m) a cm²/m
-        const as_x_calc = (b.Mx_design_kNm_m * 10) / (0.90 * fy_MPa * d_m); // Estimación teórica (cm2/m)
-        const as_y_calc = (b.My_design_kNm_m * 10) / (0.90 * fy_MPa * d_m); 
+        // Mostrar la fórmula de Whitney y la regla del máximo basándonos en los datos calculados en el backend
+        const prop_x = b.bar_x.diam_mm > 0 ? `Cabilla de Ø${b.bar_x.diam_mm} mm @ ${(b.bar_x.sep_m * 100).toFixed(0)} cm` : "Acero mínimo normativo";
+        const prop_y = b.bar_y.diam_mm > 0 ? `Cabilla de Ø${b.bar_y.diam_mm} mm @ ${(b.bar_y.sep_m * 100).toFixed(0)} cm` : "Acero mínimo normativo";
         
         bandasHtml += `<li style="margin-bottom:10px;"><strong>Banda ${b.id} (Muro ${b.type}):</strong><br>
           Mu_x = ${b.Mx_design_kNm_m.toFixed(2)} kN·m/m, Mu_y = ${b.My_design_kNm_m.toFixed(2)} kN·m/m <br>
-          <span style="color:#0d47a1;">&rarr; As_x (teórico) = ${b.Mx_design_kNm_m.toFixed(2)} / [ 0.90 · ${fy_MPa.toFixed(0)} MPa · (${d_m.toFixed(2)}m - a/2) ] &asymp; ${as_x_calc.toFixed(2)} cm²/m</span><br>
-          <span style="color:#1b5e20;">&rarr; <strong>As_x (definitivo) = max( As_x_teórico, As_min ) = ${b.Asx_cm2_m.toFixed(2)} cm²/m</strong></span><br>
-          <span style="color:#0d47a1; margin-top:4px; display:inline-block;">&rarr; As_y (teórico) = ${b.My_design_kNm_m.toFixed(2)} / [ 0.90 · ${fy_MPa.toFixed(0)} MPa · (${d_m.toFixed(2)}m - a/2) ] &asymp; ${as_y_calc.toFixed(2)} cm²/m</span><br>
-          <span style="color:#1b5e20;">&rarr; <strong>As_y (definitivo) = max( As_y_teórico, As_min ) = ${b.Asy_cm2_m.toFixed(2)} cm²/m</strong></span>
+          <span style="color:#0d47a1;">&rarr; (Dir X) a = ${b.a_x_cm ? b.a_x_cm.toFixed(2) : 0} cm &rarr; As_x (teórico) = ${b.Asx_calc_cm2_m.toFixed(2)} cm²/m</span><br>
+          <span style="color:#1b5e20;">&rarr; <strong>As_x (definitivo) = max( As_x_teórico, As_min ) = ${b.Asx_cm2_m.toFixed(2)} cm²/m</strong> &rarr; Propuesta: <em>${prop_x}</em></span><br>
+          <span style="color:#0d47a1; margin-top:4px; display:inline-block;">&rarr; (Dir Y) a = ${b.a_y_cm ? b.a_y_cm.toFixed(2) : 0} cm &rarr; As_y (teórico) = ${b.Asy_calc_cm2_m.toFixed(2)} cm²/m</span><br>
+          <span style="color:#1b5e20;">&rarr; <strong>As_y (definitivo) = max( As_y_teórico, As_min ) = ${b.Asy_cm2_m.toFixed(2)} cm²/m</strong> &rarr; Propuesta: <em>${prop_y}</em></span>
         </li>`;
       });
     } else {
