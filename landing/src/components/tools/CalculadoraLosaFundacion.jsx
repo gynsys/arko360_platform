@@ -673,14 +673,14 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         ${results.punching_data.map(p => {
           const statusColor = p.ok ? '#4caf50' : '#f44336';
           const statusText = p.ok ? 'CUMPLE ✓' : 'NO CUMPLE ✗';
-          return \`<tr>
-            <td>\${p.id}</td>
-            <td>\${p.Vu_kN.toFixed(1)}</td>
-            <td>\${p.Vc_kN.toFixed(1)}</td>
-            <td>\${p.phiVc_kN.toFixed(1)}</td>
-            <td>\${p.ratio !== undefined ? p.ratio.toFixed(2) : '-'}</td>
-            <td style="color:\${statusColor}; font-weight:bold;">\${statusText}</td>
-          </tr>\`;
+          return `<tr>
+            <td>${p.id}</td>
+            <td>${p.Vu_kN.toFixed(1)}</td>
+            <td>${p.Vc_kN.toFixed(1)}</td>
+            <td>${p.phiVc_kN.toFixed(1)}</td>
+            <td>${p.ratio !== undefined ? p.ratio.toFixed(2) : '-'}</td>
+            <td style="color:${statusColor}; font-weight:bold;">${statusText}</td>
+          </tr>`;
         }).join('')}
       </tbody>
     </table>
