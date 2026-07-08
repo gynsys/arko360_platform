@@ -437,8 +437,40 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         aberturasHtml += `<li>Abertura ${i+1} (${op.type}): ${w_op.toFixed(2)}m (Ancho) × ${h_op.toFixed(2)}m (Alto) = -${area.toFixed(2)} m² (descontado de mampostería)</li>`;
       });
     } else {
+    } else {
       aberturasHtml = '<li>No se registraron puertas ni ventanas.</li>';
     }
+
+    const payload = buildCurrentPayload();
+    const Lx = payload.geometry.Lx || 10;
+    const Ly = payload.geometry.Ly || 10;
+    const area_losa_m2 = Lx * Ly;
+    
+    // Concreto de Fundación
+    const cemento_losa_sacos = Math.ceil(mc.concrete_vol_m3 * 9.5);
+    const arena_losa_m3 = (mc.concrete_vol_m3 * 0.55).toFixed(2);
+    const piedra_losa_m3 = (mc.concrete_vol_m3 * 0.67).toFixed(2);
+
+    // Acero General
+    let textoAceroGeneral = '';
+    const custom_mesh_cm2_m = designParams?.custom_mesh_cm2_m || 0;
+    if (custom_mesh_cm2_m === 0.61 || custom_mesh_cm2_m === 1.88) {
+      const num_mallas_real = Math.ceil((area_losa_m2 * 1.10) / (2.60 * 6.00));
+      textoAceroGeneral = `Material: Malla Electrosoldada (Formato comercial 2.6m x 6.0m)<br>
+      Área neta de placa: ${area_losa_m2.toFixed(2)} m²<br>
+      Área a cubrir con 10% de solape de seguridad: ${(area_losa_m2 * 1.10).toFixed(2)} m²<br>
+      Láminas requeridas: <strong>${num_mallas_real} láminas</strong> (Tipo Trucson)`;
+    } else {
+      textoAceroGeneral = `Material: Cabillas / Varillas Corrugadas de 6m<br>
+      Peso Total Acero General: ${mc.steel_weight_general_kg.toFixed(2)} kg<br>
+      Cabillas requeridas: <strong>${mc.general_bars_6m} unidades</strong>`;
+    }
+
+    // Materiales de Friso
+    const vol_neto_friso = area_total * 0.01;
+    const vol_seco_friso = vol_neto_friso * 1.10;
+    const sacos_cemento_friso = Math.ceil(vol_seco_friso * 4.5);
+    const arena_friso = (vol_seco_friso * 1.05).toFixed(2);
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="es">
@@ -460,17 +492,18 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   
   <div class="card">
     <h2>1. Losa de Fundación</h2>
-    <p><strong>Volumen de Concreto:</strong></p>
+    <p><strong>Volumen de Concreto (f'c = 210 kgf/cm²):</strong></p>
     <div class="formula">
-      Fórmula: Área Neta de la Losa × Espesor<br>
-      Resultado: ${mc.concrete_vol_m3.toFixed(2)} m³
+      Volumen Neto de la Losa: ${mc.concrete_vol_m3.toFixed(2)} m³<br><br>
+      <em>Desglose de Preparación en Obra:</em><br>
+      - Cemento Portland: ~9.5 sacos por m³ = <strong>${cemento_losa_sacos} sacos</strong><br>
+      - Arena Lavada: ~0.55 m³ por m³ = <strong>${arena_losa_m3} m³</strong><br>
+      - Piedra Picada: ~0.67 m³ por m³ = <strong>${piedra_losa_m3} m³</strong>
     </div>
     
     <p><strong>Acero General (Malla):</strong></p>
     <div class="formula">
-      Fórmula: Cuantía mínima o Malla Personalizada<br>
-      Peso Total Acero General: ${mc.steel_weight_general_kg.toFixed(2)} kg<br>
-      Equivalente en Varillas (o planchas según el material elegido): ${mc.general_bars_6m} und
+      ${textoAceroGeneral}
     </div>
     
     <p><strong>Acero de Bandas (Refuerzo inferior bajo muros):</strong></p>
@@ -496,30 +529,32 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     </div>
 
     <p><strong>Área Neta Total de Muros a Frisar:</strong><br>
-    Se considera 1 cara exterior y 1 interior para muros perimetrales, y 2 caras interiores para muros internos. A esta área bruta se le resta el área de las puertas y ventanas dibujadas.</p>
+    Se considera 1 cara exterior y 1 interior para muros perimetrales, y 2 caras interiores para muros internos. A esta área bruta se le resta el área de las puertas y ventanas dibujadas (aberturas).</p>
     <div class="formula">
       Área Lisa (Interna) = ${s.area_lisa_m2.toFixed(2)} m²<br>
       Área Rústica (Externa) = ${s.area_rustica_m2.toFixed(2)} m²<br>
       Área Neta Total a frisar = ${area_total.toFixed(2)} m²
     </div>
     
-    <p><strong>Cemento Portland para Friso (1 cm espesor):</strong></p>
+    <p><strong>Cemento Portland para Friso (Proporción 1:4 a 1 cm de espesor):</strong></p>
     <div class="formula">
-      Rendimiento Base: 1 saco (42.5kg) rinde ~12.5 m² a 1cm de espesor (Proporción 1:4).<br>
-      Sacos = Área Total / 12.5 = Math.ceil(${area_total.toFixed(2)} / 12.5) = ${Math.ceil(area_total / 12.5)} sacos
+      Volumen Neto de Mortero: ${area_total.toFixed(2)} m² × 0.01 m = ${vol_neto_friso.toFixed(2)} m³<br>
+      Volumen Seco (+10% Desperdicio Constructivo): ${vol_seco_friso.toFixed(2)} m³<br>
+      Rendimiento: 4.5 sacos por cada m³ de mortero seco.<br>
+      Sacos requeridos: <strong>${sacos_cemento_friso} sacos</strong>
     </div>
     
     <p><strong>Arena Lavada para Friso:</strong></p>
     <div class="formula">
-      Rendimiento Base: 1 m³ de arena rinde ~100 m² a 1cm de espesor.<br>
-      Volumen Arena = Área Total / 100 = ${( area_total / 100.0 ).toFixed(2)} m³
+      Rendimiento: 1.05 m³ de arena por cada m³ de mortero seco.<br>
+      Volumen de arena requerido: <strong>${arena_friso} m³</strong>
     </div>
     
     <p><strong>Bloques de Arcilla:</strong></p>
     <div class="formula">
       Rendimiento Base: 12.5 bloques por m² de pared.<br>
-      Bloques 15cm = Área muros de 15cm (${s.bloques_15_m2.toFixed(2)} m²) × 12.5 = ${Math.ceil(s.bloques_15_m2 * 12.5)} und<br>
-      Bloques 12cm = Área muros de 12cm (${s.bloques_12_m2.toFixed(2)} m²) × 12.5 = ${Math.ceil(s.bloques_12_m2 * 12.5)} und
+      Bloques 15cm = Área Neta (${s.bloques_15_m2.toFixed(2)} m²) × 12.5 = <strong>${Math.ceil(s.bloques_15_m2 * 12.5)} und</strong><br>
+      Bloques 12cm = Área Neta (${s.bloques_12_m2.toFixed(2)} m²) × 12.5 = <strong>${Math.ceil(s.bloques_12_m2 * 12.5)} und</strong>
     </div>
   </div>
   
@@ -528,13 +563,13 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     <p><strong>Pasta Profesional:</strong></p>
     <div class="formula">
       Rendimiento: 1 cuñete (4-5 galones) rinde ~25 m².<br>
-      Cuñetes requeridos = Área Lisa (${s.area_lisa_m2.toFixed(2)} m²) / 25 = Math.ceil(${s.area_lisa_m2 / 25.0}) = ${Math.ceil(s.area_lisa_m2 / 25.0)} cuñetes
+      Cuñetes requeridos: <strong>${Math.ceil(s.area_lisa_m2 / 25.0)} cuñetes</strong>
     </div>
     
     <p><strong>Pintura:</strong></p>
     <div class="formula">
       Rendimiento: 1 galón rinde ~20 m² a dos manos.<br>
-      Galones requeridos = Área Lisa (${s.area_lisa_m2.toFixed(2)} m²) / 20 = Math.ceil(${s.area_lisa_m2 / 20.0}) = ${Math.ceil(s.area_lisa_m2 / 20.0)} galones
+      Galones requeridos: <strong>${Math.ceil(s.area_lisa_m2 / 20.0)} galones</strong>
     </div>
   </div>
   ` : ''}
