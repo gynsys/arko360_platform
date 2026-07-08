@@ -165,7 +165,11 @@ class FoundationSlabDesigner:
         # Viga de corona (amarre) sobre los muros de mampostería: 10x13 cm
         q_corona_kgf_m = 0.10 * 0.13 * 2400
         
-        q_lineal = ( (thickness * material_density + plaster_kg_m2) * height + q_techo_kgf_m + q_corona_kgf_m ) * 9.81 * load_factor
+        op_area = sum(op.get('width_m', 0) * op.get('height_m', 0) for op in (openings or []))
+        net_area = max(0, length * height - op_area)
+        effective_height = net_area / length if length > 0 else height
+        
+        q_lineal = ( (thickness * material_density + plaster_kg_m2) * effective_height + q_techo_kgf_m + q_corona_kgf_m ) * 9.81 * load_factor
 
         # Ancho de banda de refuerzo: espesor + 2*d_eff, mínimo racional ~0.33m
         base_band = max(thickness + 2 * self.d_eff, 0.33)
