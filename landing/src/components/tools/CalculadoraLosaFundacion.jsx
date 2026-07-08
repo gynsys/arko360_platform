@@ -667,12 +667,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     <p>Según la sección 22.6 del ACI 318-19, se verifica el esfuerzo cortante en el perímetro crítico (a una distancia d/2) alrededor de machones y esquinas de muros:</p>
     <table>
       <thead>
-        <tr><th>Elemento</th><th>Vu (kN)</th><th>Vc (kN)</th><th>φVc (kN)</th><th>Ratio (Vu/φVc)</th><th>Estado</th></tr>
+        <tr><th>Elemento</th><th>Vu (kN)</th><th>Vc (kN)</th><th>phi_Vc (kN)</th><th>Ratio (Vu/phi_Vc)</th><th>Estado</th></tr>
       </thead>
       <tbody>
         ${results.punching_data.map(p => {
           const statusColor = p.ok ? '#4caf50' : '#f44336';
-          const statusText = p.ok ? 'CUMPLE ✓' : 'NO CUMPLE ✗';
+          const statusText = p.ok ? 'CUMPLE OK' : 'NO CUMPLE FAIL';
           return `<tr>
             <td>${p.id}</td>
             <td>${p.Vu_kN.toFixed(1)}</td>
