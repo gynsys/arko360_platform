@@ -539,9 +539,9 @@ class FoundationSlabDesigner:
         print(f"\nVerificación de cortante (ACI 318):")
         print(f"  Vu_max = {np.max(self.Vu)/1000:.3f} kN/m")
         print(f"  Vc = {self.Vc/1000:.3f} kN/m")
-        print(f"  φVc = {self.phiVc/1000:.3f} kN/m")
-        print(f"  Ratio Vu/φVc max = {np.max(self.shear_ratio):.3f}")
-        print(f"  Estado: {'CUMPLE ✓' if np.all(self.shear_ok) else 'NO CUMPLE ✗'}")
+        print(f"  phi_Vc = {self.phiVc/1000:.3f} kN/m")
+        print(f"  Ratio Vu/phi_Vc max = {np.max(self.shear_ratio):.3f}")
+        print(f"  Estado: {'CUMPLE OK' if np.all(self.shear_ok) else 'NO CUMPLE FAIL'}")
         if not np.all(self.shear_ok):
             n_fail = np.sum(~self.shear_ok)
             print(f"  Nodos que no cumplen: {n_fail} de {self.n_nodes} ({100*n_fail/self.n_nodes:.1f}%)")
@@ -717,8 +717,8 @@ class FoundationSlabDesigner:
     def check_differential_settlements(self):
         """Verifica asentamientos diferenciales bajo cada muro."""
         print("\n=== VERIFICACIÓN DE ASENTAMIENTOS DIFERENCIALES ===")
-        print(f"Criterio: L/Δs >= {self.max_settlement_ratio} (mampostería/cubierta liviana)")
-        print(f"{'Muro':<6} {'Tipo':<12} {'Long. (m)':<10} {'Δw (mm)':<10} {'Ratio L/Δ':<12} {'Estado':<10}")
+        print(f"Criterio: L/Dw >= {self.max_settlement_ratio} (mampostería/cubierta liviana)")
+        print(f"{'Muro':<6} {'Tipo':<12} {'Long. (m)':<10} {'Dw (mm)':<10} {'Ratio L/Dw':<12} {'Estado':<10}")
         print("-" * 70)
 
         results = []
@@ -748,7 +748,7 @@ class FoundationSlabDesigner:
                 ratio = 99999.0
 
             ok = ratio >= self.max_settlement_ratio
-            status = "OK ✓" if ok else "NO CUMPLE ✗"
+            status = "OK" if ok else "NO CUMPLE FAIL"
 
             results.append({
                 'id': int(idx), 'type': str(wall.wall_type), 'length': float(wall.length),
@@ -758,13 +758,13 @@ class FoundationSlabDesigner:
 
         self.settlement_data = results
         all_ok = all(r['ok'] for r in results) if results else True
-        print(f"\nEstado global asentamientos: {'CUMPLE ✓' if all_ok else 'NO CUMPLE ✗'}")
+        print(f"\nEstado global asentamientos: {'CUMPLE OK' if all_ok else 'NO CUMPLE FAIL'}")
         return results
 
     def check_punching(self):
         """Verificación simplificada de punzonamiento en esquinas y machones."""
         print("\n=== VERIFICACIÓN DE PUNZONAMIENTO EN ESQUINAS Y MACHONES ===")
-        print(f"{'Elemento':<15} {'Vu (kN)':<12} {'Vc (kN)':<12} {'φVc (kN)':<12} {'Ratio':<8} {'Estado':<10}")
+        print(f"{'Elemento':<15} {'Vu (kN)':<12} {'Vc (kN)':<12} {'phi_Vc (kN)':<12} {'Ratio':<8} {'Estado':<10}")
         print("-" * 75)
 
         results = []
@@ -789,7 +789,7 @@ class FoundationSlabDesigner:
                 'Vu_kN': float(Vu / 1000), 'Vc_kN': float(Vc / 1000),
                 'phiVc_kN': float(phiVc / 1000), 'ratio': float(ratio), 'ok': bool(ok)
             })
-            print(f"Machón {col.id:<8} {Vu/1000:<12.1f} {Vc/1000:<12.1f} {phiVc/1000:<12.1f} {ratio:<8.2f} {'CUMPLE ✓' if ok else 'NO CUMPLE ✗'}")
+            print(f"Machón {col.id:<8} {Vu/1000:<12.1f} {Vc/1000:<12.1f} {phiVc/1000:<12.1f} {ratio:<8.2f} {'CUMPLE OK' if ok else 'NO CUMPLE FAIL'}")
 
         # 2. Buscar esquinas: extremos de muros perimetrales
         corners = []
@@ -836,11 +836,11 @@ class FoundationSlabDesigner:
                 'Vu_kN': float(Vu / 1000), 'Vc_kN': float(Vc / 1000),
                 'phiVc_kN': float(phiVc / 1000), 'ratio': float(ratio), 'ok': bool(ok)
             })
-            print(f"Esquina {idx+1:<7} {Vu/1000:<12.1f} {Vc/1000:<12.1f} {phiVc/1000:<12.1f} {ratio:<8.2f} {'CUMPLE ✓' if ok else 'NO CUMPLE ✗'}")
+            print(f"Esquina {idx+1:<7} {Vu/1000:<12.1f} {Vc/1000:<12.1f} {phiVc/1000:<12.1f} {ratio:<8.2f} {'CUMPLE OK' if ok else 'NO CUMPLE FAIL'}")
 
         self.punching_data = results
         all_ok = all(r['ok'] for r in results) if results else True
-        print(f"\nEstado global punzonamiento: {'CUMPLE ✓' if all_ok else 'NO CUMPLE ✗'}")
+        print(f"\nEstado global punzonamiento: {'CUMPLE OK' if all_ok else 'NO CUMPLE FAIL'}")
         return results
 
     def generate_design_report(self):
@@ -866,7 +866,7 @@ class FoundationSlabDesigner:
         # 3. Cortante
         print(f"\n3. CORTANTE")
         print(f"   Vu_max = {np.max(self.Vu)/1000:.2f} kN/m")
-        print(f"   φVc = {self.phiVc/1000:.2f} kN/m")
+        print(f"   phi_Vc = {self.phiVc/1000:.2f} kN/m")
         print(f"   Estado: {'CUMPLE' if np.all(self.shear_ok) else 'NO CUMPLE'}")
 
         # 4. Bandas ya impresas en define_reinforcement_bands
@@ -909,7 +909,7 @@ class FoundationSlabDesigner:
         # 4. Cortante
         ax = axes[0, 3]
         im = ax.contourf(self.X, self.Y, self.Vu/1000, levels=20, cmap='YlOrRd')
-        ax.set_title(f'Cortante Vu [kN/m]\nφVc={self.phiVc/1000:.1f} kN/m')
+        ax.set_title(f'Cortante Vu [kN/m]\nphi_Vc={self.phiVc/1000:.1f} kN/m')
         ax.set_xlabel('x [m]'); ax.set_ylabel('y [m]')
         plt.colorbar(im, ax=ax)
 
@@ -930,7 +930,7 @@ class FoundationSlabDesigner:
         # 7. Ratio cortante
         ax = axes[1, 2]
         im = ax.contourf(self.X, self.Y, self.shear_ratio, levels=15, cmap='RdYlGn_r')
-        ax.set_title(f'Ratio Vu/φVc\n{"CUMPLE ✓" if np.all(self.shear_ok) else "NO CUMPLE ✗"}')
+        ax.set_title(f'Ratio Vu/phi_Vc\n{"CUMPLE OK" if np.all(self.shear_ok) else "NO CUMPLE FAIL"}')
         ax.set_xlabel('x [m]'); ax.set_ylabel('y [m]')
         plt.colorbar(im, ax=ax)
 
