@@ -332,6 +332,17 @@ class FoundationSlabDesigner:
                 node = self._node_idx(i, j)
                 F[self._dof(node, 0)] += q_eff * dl
 
+        # 2.5 Cargas puntuales (Columnas / Machones)
+        for col in self.columns:
+            # Distribuir al nodo más cercano
+            i = int(round(col.x / self.dx))
+            j = int(round(col.y / self.dy))
+            i = np.clip(i, 0, self.nx)
+            j = np.clip(j, 0, self.ny)
+            node = self._node_idx(i, j)
+            # col.P_u ya está en Newtons factorizados
+            F[self._dof(node, 0)] += col.P_u
+
         # 3. Cargas de vigas de amarre (mismo método concentrado)
         for beam in self.beams:
             x1, y1, x2, y2 = beam.x1, beam.y1, beam.x2, beam.y2
