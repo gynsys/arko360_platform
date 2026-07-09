@@ -580,6 +580,13 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       Bloques 15cm = Área Neta (${s.bloques_15_m2.toFixed(2)} m²) × 12.5 = <strong>${Math.ceil(s.bloques_15_m2 * 12.5)} und</strong><br>
       Bloques 12cm = Área Neta (${s.bloques_12_m2.toFixed(2)} m²) × 12.5 = <strong>${Math.ceil(s.bloques_12_m2 * 12.5)} und</strong>
     </div>
+
+    <p><strong>Vigas Corona / Amarre:</strong></p>
+    <div class="formula">
+      Volumen Neto de Concreto: ${s.vol_vigas_corona_m3.toFixed(2)} m³<br>
+      Acero Longitudinal (10mm): <strong>${s.corona_10mm_bars} varillas</strong><br>
+      Acero Transversal (Estribos 5.2mm): <strong>${s.corona_5_2mm_bars} varillas</strong>
+    </div>
   </div>
   
   <div class="card">
