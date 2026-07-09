@@ -1571,6 +1571,7 @@ class FoundationSlabDesigner:
             "bands": self.band_data,
             "As_min_cm2_m": As_min_cm2,
             "settlements": self.settlement_data,
+            "punching": self.punching_data,
             "svg_plan": self.get_svg_plan(),
             "heatmaps": {
                 "w_mm": (self.w * 1000).tolist(),
