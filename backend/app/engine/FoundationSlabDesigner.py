@@ -1538,11 +1538,11 @@ class FoundationSlabDesigner:
             len_estribo_col = 2 * (c.width + c.length) - 0.10
             machones_5_2mm_len += n_estribos_col * len_estribo_col
             
-        corona_10mm_bars += int(np.ceil(machones_10mm_len / 6.0))
-        corona_5_2mm_bars += int(np.ceil(machones_5_2mm_len / 6.0))
-
-        # El volumen de machones es de la superestructura, se suma a vigas corona o muros de concreto
-        vol_vigas_corona_m3 += vol_machones_m3
+        machones_10mm_bars = int(np.ceil(machones_10mm_len / 6.0))
+        machones_5_2mm_bars = int(np.ceil(machones_5_2mm_len / 6.0))
+        
+        corona_10mm_bars += machones_10mm_bars
+        corona_5_2mm_bars += machones_5_2mm_bars
 
         # Criterio de Rigidez (Winkler Characteristic Length)
         l_c_m = ((self.E * self.h**3) / (12 * (1 - self.nu**2) * self.k))**(0.25)
@@ -1599,7 +1599,10 @@ class FoundationSlabDesigner:
                     "bloques_12_m2": bloques_12_m2,
                     "vol_vigas_corona_m3": vol_vigas_corona_m3,
                     "corona_10mm_bars": corona_10mm_bars,
-                    "corona_5_2mm_bars": corona_5_2mm_bars
+                    "corona_5_2mm_bars": corona_5_2mm_bars,
+                    "vol_machones_m3": vol_machones_m3,
+                    "machones_10mm_bars": machones_10mm_bars,
+                    "machones_5_2mm_bars": machones_5_2mm_bars
                 }
             }
         }

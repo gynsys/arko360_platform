@@ -129,6 +129,24 @@ const generarPresupuesto = (results, prices, designParams) => {
     items.push({ chapter: 'Mampostería', material: 'Cabilla de 5.2 mm (Estribos)', unit: 'und', qty: s.corona_5_2mm_bars, pu: p.cabilla_5_2, total: s.corona_5_2mm_bars * p.cabilla_5_2 });
   }
 
+  // ==== CAPÍTULO: MACHONES / COLUMNAS ====
+  const vol_machon = s.vol_machones_m3 || 0;
+  if (vol_machon > 0) {
+    const cemento_machon = Math.ceil(vol_machon * 9.5); // Concreto más resistente para machones
+    const arena_machon = +(vol_machon * 0.55).toFixed(2);
+    const piedra_machon = +(vol_machon * 0.67).toFixed(2);
+    items.push({ chapter: 'Machones', material: 'Cemento Portland (Machón)', unit: 'sacos', qty: cemento_machon, pu: p.cemento, total: cemento_machon * p.cemento });
+    items.push({ chapter: 'Machones', material: 'Arena Lavada (Machón)', unit: 'm³', qty: arena_machon, pu: p.arena, total: arena_machon * p.arena });
+    items.push({ chapter: 'Machones', material: 'Piedra picada (Machón)', unit: 'm³', qty: piedra_machon, pu: p.piedra, total: piedra_machon * p.piedra });
+
+    if (s.machones_10mm_bars > 0) {
+      items.push({ chapter: 'Machones', material: 'Cabilla de 10 mm (Longitudinal)', unit: 'und', qty: s.machones_10mm_bars, pu: p.cabilla_10, total: s.machones_10mm_bars * p.cabilla_10 });
+    }
+    if (s.machones_5_2mm_bars > 0) {
+      items.push({ chapter: 'Machones', material: 'Cabilla de 5.2 mm (Estribos)', unit: 'und', qty: s.machones_5_2mm_bars, pu: p.cabilla_5_2, total: s.machones_5_2mm_bars * p.cabilla_5_2 });
+    }
+  }
+
   // Bloques
   if (s.bloques_15_m2 > 0) {
     const qty = Math.ceil(s.bloques_15_m2 * 12.5);
@@ -578,6 +596,23 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       Galones requeridos: <strong>${Math.ceil(s.area_lisa_m2 / 20.0)} galones</strong>
     </div>
   </div>
+  ${(s.vol_machones_m3 || 0) > 0 ? `
+  <div class="card">
+    <h2>4. Machones / Columnas</h2>
+    <p><strong>Volumen de Concreto:</strong></p>
+    <div class="formula">
+      Volumen Neto de Machones: ${s.vol_machones_m3.toFixed(2)} m³<br><br>
+      <em>Desglose de Preparación en Obra:</em><br>
+      - Cemento Portland: ~9.5 sacos por m³ = <strong>${Math.ceil(s.vol_machones_m3 * 9.5)} sacos</strong><br>
+      - Arena Lavada: ~0.55 m³ por m³ = <strong>${(s.vol_machones_m3 * 0.55).toFixed(2)} m³</strong><br>
+      - Piedra Picada: ~0.67 m³ por m³ = <strong>${(s.vol_machones_m3 * 0.67).toFixed(2)} m³</strong>
+    </div>
+    <p><strong>Acero de Machones:</strong></p>
+    <div class="formula">
+      Acero Longitudinal (10mm): <strong>${s.machones_10mm_bars || 0} varillas</strong> (4 por machón + anclaje)<br>
+      Acero Transversal (Estribos 5.2mm): <strong>${s.machones_5_2mm_bars || 0} varillas</strong> (@ 15cm)
+    </div>
+  </div>` : ''}
   ` : ''}
   
 </body>
@@ -2216,6 +2251,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 <label style={{fontSize: '13px', color: '#6a1b9a'}}><strong>Configuración Machón:</strong></label>
                 <label style={{fontSize: '13px'}}>Ancho (X) m: <input type="number" step="0.05" value={colConfig.width} onChange={e=>setColConfig({...colConfig, width: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
                 <label style={{fontSize: '13px'}}>Largo (Y) m: <input type="number" step="0.05" value={colConfig.length} onChange={e=>setColConfig({...colConfig, length: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
+                <label style={{fontSize: '13px'}}>Alto (Z) m: <input type="number" step="0.1" value={colConfig.height} onChange={e=>setColConfig({...colConfig, height: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
                 <label style={{fontSize: '13px'}}>Carga (kgf): <input type="number" step="100" value={colConfig.load_kgf} onChange={e=>setColConfig({...colConfig, load_kgf: parseFloat(e.target.value)||0})} style={{width: '70px'}}/></label>
                 <span style={{fontSize: '12px', color: '#6a1b9a', fontStyle: 'italic'}}>(Haz clic en el plano para ubicarlo)</span>
               </div>
