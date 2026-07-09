@@ -1506,6 +1506,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       if (st.wallHeight) setWallHeight(st.wallHeight);
       if (st.internalWalls) setInternalWalls(st.internalWalls);
       if (st.openings) setOpenings(st.openings);
+      if (st.columns) setColumns(st.columns);
       if (st.material) setMaterial(st.material);
       if (st.offset !== undefined) setOffset(st.offset);
     } else if (inp) {
@@ -2103,11 +2104,45 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         <div style={{ position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 10, alignSelf: 'flex-start', background: '#fff', padding: '10px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
           <h5 style={{margin: '0', fontSize: '12px', color: '#666', textAlign:'center', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>Arrastrar</h5>
           <div className="drag-toolbox" style={{display:'flex', flexDirection:'column', gap:'8px'}}>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left')} className="drag-item" title="Puerta Izquierda (Adentro)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}><DoorClosed size={20} color="#555" style={{margin:'0 auto 4px'}}/ >P. Izq<br/><small>(Adentro)</small></div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left_out')} className="drag-item" title="Puerta Izquierda (Afuera)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}><DoorClosed size={20} color="#555" style={{margin:'0 auto 4px'}}/ >P. Izq<br/><small>(Afuera)</small></div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right')} className="drag-item" title="Puerta Derecha (Adentro)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}><DoorOpen size={20} color="#555" style={{margin:'0 auto 4px'}}/ >P. Der<br/><small>(Adentro)</small></div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right_out')} className="drag-item" title="Puerta Derecha (Afuera)" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}><DoorOpen size={20} color="#555" style={{margin:'0 auto 4px'}}/ >P. Der<br/><small>(Afuera)</small></div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'window')} className="drag-item" title="Ventana" style={{fontSize:'12px', padding:'8px 4px', textAlign:'center', lineHeight:'1.2'}}><AppWindow size={20} color="#555" style={{margin:'0 auto 4px'}}/ >Ventana</div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left')} className="drag-item" title="Puerta Izquierda (Adentro)" style={{padding:'8px', cursor:'grab', display:'flex', justifyContent:'center'}}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
+                <rect x="2" y="20" width="4" height="4" fill="#555" stroke="none" />
+                <rect x="18" y="20" width="4" height="4" fill="#555" stroke="none" />
+                <path d="M4 20 L4 4" />
+                <path d="M4 4 A16 16 0 0 1 20 20" strokeDasharray="2 3" />
+              </svg>
+            </div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left_out')} className="drag-item" title="Puerta Izquierda (Afuera)" style={{padding:'8px', cursor:'grab', display:'flex', justifyContent:'center'}}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
+                <rect x="2" y="0" width="4" height="4" fill="#555" stroke="none" />
+                <rect x="18" y="0" width="4" height="4" fill="#555" stroke="none" />
+                <path d="M4 4 L4 20" />
+                <path d="M4 20 A16 16 0 0 0 20 4" strokeDasharray="2 3" />
+              </svg>
+            </div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right')} className="drag-item" title="Puerta Derecha (Adentro)" style={{padding:'8px', cursor:'grab', display:'flex', justifyContent:'center'}}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
+                <rect x="2" y="20" width="4" height="4" fill="#555" stroke="none" />
+                <rect x="18" y="20" width="4" height="4" fill="#555" stroke="none" />
+                <path d="M20 20 L20 4" />
+                <path d="M20 4 A16 16 0 0 0 4 20" strokeDasharray="2 3" />
+              </svg>
+            </div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right_out')} className="drag-item" title="Puerta Derecha (Afuera)" style={{padding:'8px', cursor:'grab', display:'flex', justifyContent:'center'}}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
+                <rect x="2" y="0" width="4" height="4" fill="#555" stroke="none" />
+                <rect x="18" y="0" width="4" height="4" fill="#555" stroke="none" />
+                <path d="M20 4 L20 20" />
+                <path d="M20 20 A16 16 0 0 1 4 4" strokeDasharray="2 3" />
+              </svg>
+            </div>
+            <div draggable onDragStart={(e) => handleDragStart(e, 'window')} className="drag-item" title="Ventana" style={{padding:'8px', cursor:'grab', display:'flex', justifyContent:'center'}}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
+                <rect x="1" y="8" width="22" height="8" />
+                <rect x="1" y="9" width="12" height="3" fill="#e0e0e0" />
+                <rect x="11" y="12" width="12" height="3" fill="#e0e0e0" />
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -2116,8 +2151,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           <div className="canvas-wrapper hybrid-canvas">
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '10px' }}>
               <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
-                <h4 style={{margin:0}}>Plano Interactivo</h4>
-                <div style={{display:'flex', gap:'8px', marginLeft:'12px', border: '1px solid #ddd', padding: '4px', borderRadius: '6px', background: '#f5f5f5'}}>
+                <div style={{display:'flex', gap:'8px', marginLeft:'0px', border: '1px solid #ddd', padding: '4px', borderRadius: '6px', background: '#f5f5f5'}}>
                   <button onClick={() => setDrawType('parcela')} title="Parcela" style={{padding:'6px', borderRadius:'4px', border: drawType === 'parcela' ? '2px solid #555' : '1px solid transparent', background: drawType === 'parcela' ? '#fff' : 'transparent', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M2 20h20" strokeDasharray="4 4" />
