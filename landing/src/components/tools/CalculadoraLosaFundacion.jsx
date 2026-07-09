@@ -1310,6 +1310,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const handleSvgClick = () => {
     if (drawType === 'columna') {
       saveHistory();
+      const loadCalc = colConfig.width * colConfig.length * colConfig.height * 2500;
       setColumns(prev => [...prev, {
         id: Date.now(),
         x: mouseCoord.x,
@@ -1317,7 +1318,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         width: colConfig.width,
         length: colConfig.length,
         height: colConfig.height,
-        load_kgf: colConfig.load_kgf
+        load_kgf: loadCalc
       }]);
     }
   };
@@ -2259,7 +2260,6 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 <label style={{fontSize: '13px'}}>Ancho (X) m: <input type="number" step="0.05" value={colConfig.width} onChange={e=>setColConfig({...colConfig, width: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
                 <label style={{fontSize: '13px'}}>Largo (Y) m: <input type="number" step="0.05" value={colConfig.length} onChange={e=>setColConfig({...colConfig, length: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
                 <label style={{fontSize: '13px'}}>Alto (Z) m: <input type="number" step="0.1" value={colConfig.height} onChange={e=>setColConfig({...colConfig, height: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
-                <label style={{fontSize: '13px'}}>Carga (kgf): <input type="number" step="100" value={colConfig.load_kgf} onChange={e=>setColConfig({...colConfig, load_kgf: parseFloat(e.target.value)||0})} style={{width: '70px'}}/></label>
                 <span style={{fontSize: '12px', color: '#6a1b9a', fontStyle: 'italic'}}>(Haz clic en el plano para ubicarlo)</span>
               </div>
             )}
