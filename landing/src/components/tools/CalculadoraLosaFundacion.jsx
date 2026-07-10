@@ -296,7 +296,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
   const saveHistory = () => {
     setHistoryPast(prev => {
-      const next = [...prev, { internalWalls: [...internalWalls], openings: [...openings], columns: [...columns] }];
+      const next = [...prev, { shape, internalWalls: [...internalWalls], openings: [...openings], columns: [...columns] }];
       return next.length > 50 ? next.slice(-50) : next;
     });
     setHistoryFuture([]);
@@ -306,7 +306,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     if (historyPast.length === 0) return;
     const previous = historyPast[historyPast.length - 1];
     setHistoryPast(prev => prev.slice(0, -1));
-    setHistoryFuture(prev => [{ internalWalls, openings, columns }, ...prev]);
+    setHistoryFuture(prev => [{ shape, internalWalls, openings, columns }, ...prev]);
+    if (previous.shape) setShape(previous.shape);
     setInternalWalls(previous.internalWalls);
     setOpenings(previous.openings);
     setColumns(previous.columns || []);
@@ -316,7 +317,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     if (historyFuture.length === 0) return;
     const next = historyFuture[0];
     setHistoryFuture(prev => prev.slice(1));
-    setHistoryPast(prev => [...prev, { internalWalls, openings, columns }]);
+    setHistoryPast(prev => [...prev, { shape, internalWalls, openings, columns }]);
+    if (next.shape) setShape(next.shape);
     setInternalWalls(next.internalWalls);
     setOpenings(next.openings);
     setColumns(next.columns || []);
@@ -1236,6 +1238,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
   const convertToManual = () => {
     if (shape === 'libre') return;
+    saveHistory();
     const perimeterCopy = perimeterWalls.map((w, i) => ({
       id: `man_${Date.now()}_${i}`,
       type: 'perimetral',
