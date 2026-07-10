@@ -1297,6 +1297,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const handleSvgDoubleClick = () => {
+    if (!drawType) return;
     if (drawType === 'columna') return; // Se dibuja con 1 click
 
     if (!isDrawing) {
@@ -1316,6 +1317,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const handleSvgClick = () => {
+    if (!drawType) return;
     if (drawType === 'columna') {
       saveHistory();
       const loadCalc = colConfig.width * colConfig.length * colConfig.height * 2500;
