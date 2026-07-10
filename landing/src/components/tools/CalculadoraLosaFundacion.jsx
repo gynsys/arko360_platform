@@ -401,7 +401,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 30);
     
     const tableData = [];
-    ['Losa de Fundación', 'Mampostería'].forEach(chap => {
+    ['Losa de Fundación', 'Mampostería', 'Machones'].forEach(chap => {
       const items = presupuesto.filter(p => p.chapter === chap);
       if (items.length > 0) {
         const sub = items.reduce((a, b) => a + b.total, 0);
@@ -731,7 +731,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     <p>Según la sección 22.6 del ACI 318-19, se verifica el esfuerzo cortante en el perímetro crítico (a una distancia d/2) alrededor de machones y esquinas de muros:</p>
     <table>
       <thead>
-        <tr><th>Elemento</th><th>Vu (kN)</th><th>Vc (kN)</th><th>phi_Vc (kN)</th><th>Ratio (Vu/phi_Vc)</th><th>Estado</th></tr>
+        <tr><th>Elemento</th><th>V<sub>u</sub> (kgf)</th><th>V<sub>c</sub> (kgf)</th><th>φV<sub>c</sub> (kgf)</th><th>Ratio (V<sub>u</sub>/φV<sub>c</sub>)</th><th>Estado</th></tr>
       </thead>
       <tbody>
         ${results.punching.map(p => {
@@ -739,9 +739,9 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           const statusText = p.ok ? 'CUMPLE OK' : 'NO CUMPLE FAIL';
           return `<tr>
             <td>${p.id}</td>
-            <td>${p.Vu_kN.toFixed(1)}</td>
-            <td>${p.Vc_kN.toFixed(1)}</td>
-            <td>${p.phiVc_kN.toFixed(1)}</td>
+            <td>${(p.Vu_kN * 101.9716).toFixed(1)}</td>
+            <td>${(p.Vc_kN * 101.9716).toFixed(1)}</td>
+            <td>${(p.phiVc_kN * 101.9716).toFixed(1)}</td>
             <td>${p.ratio !== undefined ? p.ratio.toFixed(2) : '-'}</td>
             <td style="color:${statusColor}; font-weight:bold;">${statusText}</td>
           </tr>`;
@@ -833,7 +833,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 </head>
 <body>
   <h1>Losa de Fundación por Diferencias Finitas</h1>
-  <p><strong>Métodos Numéricos en Ingeniería Estructural | Profesor: Asistente IA | Proyecto: ${projectName}</strong></p>
+  <p><strong>Proyecto: ${projectName}</strong></p>
 
   <div class="card">
     <h2>1. Introducción al Problema</h2>
@@ -1475,7 +1475,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
       })),
       columns: columns.map(c => ({
-        x: c.x - offsetX, y: c.y - offsetY, width: c.width, length: c.length, height: c.height, load_kgf: c.load_kgf
+        x: c.x - offsetX, y: c.y - offsetY, width: c.width, length: c.length, height: c.height, load_kgf: c.width * c.length * c.height * 2500
       })),
       mesh_nx: 40,
       mesh_ny: 40,
@@ -2341,7 +2341,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
               {/* Render Columnas */}
               {columns.map(c => (
-                <g key={c.id}>
+                <g key={c.id} style={{cursor: 'pointer'}} onDoubleClick={(e) => { e.stopPropagation(); saveHistory(); setColumns(columns.filter(col => col.id !== c.id)); }} title="Doble clic para eliminar">
                   <rect 
                     x={toSvg(c.x - c.width/2)} 
                     y={toSvg(c.y - c.length/2)} 
@@ -2671,7 +2671,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {['Losa de Fundación', 'Mampostería'].map((chap) => {
+                  {['Losa de Fundación', 'Mampostería', 'Machones'].map((chap) => {
                     const items = presupuesto.filter(p => p.chapter === chap);
                     if (items.length === 0) return null;
                     const subtotal = items.reduce((acc, it) => acc + it.total, 0);
