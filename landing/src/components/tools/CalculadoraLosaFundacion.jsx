@@ -243,6 +243,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const [globalPrices, setGlobalPrices] = useState(FALLBACK_PRECIOS);
 
   useEffect(() => {
+    // Hide footer to get more space
+    const footer = document.querySelector('footer');
+    if (footer) footer.style.display = 'none';
+
     const fetchMaterials = async () => {
       try {
         const res = await fetch(`${API_BASE}/materials/`);
@@ -276,6 +280,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       }
     };
     fetchMaterials();
+
+    return () => {
+      if (footer) footer.style.display = 'block';
+    };
   }, []);
 
   // Hover interactivo (bidireccional SVG <-> Tabla)
