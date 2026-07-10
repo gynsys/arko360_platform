@@ -1524,7 +1524,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
       })),
       columns: columns.map(c => ({
-        x: c.x - offsetX, y: c.y - offsetY, width: c.width, length: c.length, height: c.height, load_kgf: c.load_kgf || (c.width * c.length * c.height * 2500)
+        x: c.x - offsetX, y: c.y - offsetY, width: c.width, length: c.length, height: c.height, load_kgf: c.width * c.length * c.height * 2500
       })),
       mesh_nx: 40,
       mesh_ny: 40,
