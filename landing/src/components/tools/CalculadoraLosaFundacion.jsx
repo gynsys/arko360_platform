@@ -1967,7 +1967,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             )}
             <div>
               <h2 style={{margin: 0}}>Diseño de Losa de Fundación (Método Híbrido)</h2>
-              <p style={{margin: '4px 0 0', opacity: 0.9}}>Configura la losa (Plantillas) y divisiones internas (Tabla o Clics). Incluye JSON de Auditoría.</p>
+
             </div>
           </div>
           <div className="header-actions">
