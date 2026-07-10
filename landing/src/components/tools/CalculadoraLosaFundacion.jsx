@@ -228,6 +228,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   // Machones / Columnas
   const [columns, setColumns] = useState([]);
   const [colConfig, setColConfig] = useState({ width: 0.15, length: 0.15, height: 2.70, load_kgf: 1000 });
+  const [gridStep, setGridStep] = useState(0.5);
   
   // Estado de resultados
   const [results, setResults] = useState(null);
@@ -1155,7 +1156,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     }
   };
 
-  const snapToGrid = (val) => Math.round(val * 2) / 2; // Snap a 0.5m
+  const snapToGrid = (val) => gridStep > 0 ? Math.round(val / gridStep) * gridStep : val;
 
   // Escala para el SVG
   const CANVAS_SIZE = 500;
@@ -2033,6 +2034,16 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               )}
               
               <div className="param-item"><label>Espesor Losa (cm):</label><input type="number" value={params.h} onChange={e => handleParamChange('h', e.target.value)} /></div>
+              <div className="param-item">
+                <label>Paso de Cuadrícula (Snap m):</label>
+                <select value={gridStep} onChange={e => setGridStep(parseFloat(e.target.value))}>
+                  <option value={0.5}>0.50m (Recomendado)</option>
+                  <option value={0.25}>0.25m</option>
+                  <option value={0.1}>0.10m</option>
+                  <option value={0.05}>0.05m</option>
+                  <option value={0}>Libre (Sin Imán)</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -2316,6 +2327,29 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 <label style={{fontSize: '13px'}}>Largo (Y) m: <input type="number" step="0.05" value={colConfig.length} onChange={e=>setColConfig({...colConfig, length: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
                 <label style={{fontSize: '13px'}}>Alto (Z) m: <input type="number" step="0.1" value={colConfig.height} onChange={e=>setColConfig({...colConfig, height: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
                 <span style={{fontSize: '12px', color: '#6a1b9a', fontStyle: 'italic'}}>(Haz clic en el plano para ubicarlo)</span>
+              </div>
+            )}
+            
+            {selectedElement && selectedElement.type === 'columna' && (
+              <div style={{display:'flex', gap:'12px', marginBottom: '10px', background: '#fff9c4', padding: '8px', borderRadius: '6px', border: '1px solid #fbc02d', alignItems: 'center'}}>
+                <label style={{fontSize: '13px', color: '#f57f17'}}><strong>Machón Seleccionado:</strong></label>
+                {(() => {
+                  const c = columns.find(col => col.id === selectedElement.id);
+                  if (!c) return null;
+                  return (
+                    <>
+                      <label style={{fontSize: '13px'}}>Pos X (m): <input type="number" step="0.01" value={c.x.toFixed(2)} onChange={e=>{
+                        const nx = parseFloat(e.target.value);
+                        setColumns(columns.map(col => col.id === c.id ? {...col, x: isNaN(nx) ? c.x : nx} : col));
+                      }} style={{width: '60px'}}/></label>
+                      <label style={{fontSize: '13px'}}>Pos Y (m): <input type="number" step="0.01" value={c.y.toFixed(2)} onChange={e=>{
+                        const ny = parseFloat(e.target.value);
+                        setColumns(columns.map(col => col.id === c.id ? {...col, y: isNaN(ny) ? c.y : ny} : col));
+                      }} style={{width: '60px'}}/></label>
+                      <span style={{fontSize: '12px', color: '#f57f17', marginLeft: 'auto'}}>(Presiona <b>Suprimir</b> para eliminar)</span>
+                    </>
+                  );
+                })()}
               </div>
             )}
             
