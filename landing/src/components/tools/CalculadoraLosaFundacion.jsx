@@ -1386,13 +1386,16 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
 
-  // Botón: Cancelar dibujo con Escape
+  // Botón: Cancelar dibujo o soltar herramienta con Escape
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isDrawing) {
-        setIsDrawing(false);
-        setDrawStart(null);
-        setDrawEnd(null);
+      if (e.key === 'Escape') {
+        if (isDrawing) {
+          setIsDrawing(false);
+          setDrawStart(null);
+          setDrawEnd(null);
+        }
+        setDrawType(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -2195,6 +2198,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '10px' }}>
               <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
                 <div style={{display:'flex', gap:'8px', marginLeft:'0px', border: '1px solid #ddd', padding: '4px', borderRadius: '6px', background: '#f5f5f5'}}>
+                  <button onClick={() => setDrawType(null)} title="Seleccionar / Soltar" style={{padding:'6px', borderRadius:'4px', border: !drawType ? '2px solid #333' : '1px solid transparent', background: !drawType ? '#e0e0e0' : 'transparent', color: '#333', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+                      <path d="M13 13l6 6" />
+                    </svg>
+                  </button>
                   <button onClick={() => setDrawType('parcela')} title="Parcela" style={{padding:'6px', borderRadius:'4px', border: drawType === 'parcela' ? '2px solid #555' : '1px solid transparent', background: drawType === 'parcela' ? '#fff' : 'transparent', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M2 20h20" strokeDasharray="4 4" />
