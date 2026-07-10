@@ -295,7 +295,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const [historyFuture, setHistoryFuture] = useState([]);
 
   const saveHistory = () => {
-    setHistoryPast(prev => [...prev, { internalWalls: [...internalWalls], openings: [...openings], columns: [...columns] }]);
+    setHistoryPast(prev => {
+      const next = [...prev, { internalWalls: [...internalWalls], openings: [...openings], columns: [...columns] }];
+      return next.length > 50 ? next.slice(-50) : next;
+    });
     setHistoryFuture([]);
   };
 
@@ -473,7 +476,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       aberturasHtml = '<li>No se registraron puertas ni ventanas.</li>';
     }
 
-    const payload = buildCurrentPayload();
+    const payload = lastPayload || buildCurrentPayload();
     const Lx = payload.geometry.Lx || 10;
     const Ly = payload.geometry.Ly || 10;
     const area_losa_m2 = Lx * Ly;
@@ -643,11 +646,11 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const descargarMemoriaCalculoHtml = () => {
-    if (!results || !results.materials_computation) {
-      toast.error("No hay resultados para generar memoria.");
+    if (!results || !results.settlements) {
+      toast.error("Ejecuta el análisis primero para generar la memoria.");
       return;
     }
-    const payload = buildCurrentPayload();
+    const payload = lastPayload || buildCurrentPayload();
     const E_MPa = payload.materials.E / 1e6;
     const h_slab = payload.geometry.h;
     const nu = payload.materials.nu || 0.2;
@@ -1217,14 +1220,17 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
   const allWalls = useMemo(() => {
     const matProps = MATERIALS[material];
-    const formattedInternal = internalWalls.map(w => ({
-      ...w,
-      type: w.type || 'interno',
-      thickness: w.type === 'interno' ? 0.12 : matProps.thickness,
-      height: parseFloat(wallHeight) || 2.7,
-      density: matProps.density,
-      is_plastered: designParams.is_plastered
-    }));
+    const formattedInternal = internalWalls.map(w => {
+      const type = w.type || 'interno';
+      return {
+        ...w,
+        type,
+        thickness: type === 'interno' ? 0.12 : matProps.thickness,
+        height: parseFloat(wallHeight) || 2.7,
+        density: matProps.density,
+        is_plastered: designParams.is_plastered
+      };
+    });
     return [...perimeterWalls, ...formattedInternal];
   }, [perimeterWalls, internalWalls, material, wallHeight, designParams.is_plastered]);
 
@@ -1243,7 +1249,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       return op;
     }));
     
-    setInternalWalls(prev => [...perimeterCopy, ...prev]);
+    setInternalWalls(prev => [
+      ...perimeterCopy,
+      ...prev.filter(w => !String(w.id).startsWith('man_') && w.type !== 'perimetral')
+    ]);
     setShape('libre');
   };
 
@@ -1488,7 +1497,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
       })),
       columns: columns.map(c => ({
-        x: c.x - offsetX, y: c.y - offsetY, width: c.width, length: c.length, height: c.height, load_kgf: c.width * c.length * c.height * 2500
+        x: c.x - offsetX, y: c.y - offsetY, width: c.width, length: c.length, height: c.height, load_kgf: c.load_kgf || (c.width * c.length * c.height * 2500)
       })),
       mesh_nx: 40,
       mesh_ny: 40,
@@ -2297,7 +2306,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             >
               {/* Ejes X (Ruler Top) */}
               <rect x={0} y={0} width={CANVAS_SIZE} height={MARGIN-5} fill="#f0f0f0" />
-              {Array.from({ length: Math.ceil(params.Lx) + 1 }).map((_, i) => (
+              {Array.from({ length: Math.floor(params.Lx) + 1 }).map((_, i) => (
                 <g key={`rx${i}`}>
                   <line x1={toSvg(i)} y1={MARGIN-5} x2={toSvg(i)} y2={MARGIN} stroke="#333" strokeWidth="1.5" />
                   <text x={toSvg(i)} y={MARGIN-10} fontSize="10" textAnchor="middle" fill="#555">{i}</text>
@@ -2306,7 +2315,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
               {/* Ejes Y (Ruler Left) */}
               <rect x={0} y={0} width={MARGIN-5} height={CANVAS_SIZE} fill="#f0f0f0" />
-              {Array.from({ length: Math.ceil(params.Ly) + 1 }).map((_, i) => (
+              {Array.from({ length: Math.floor(params.Ly) + 1 }).map((_, i) => (
                 <g key={`ry${i}`}>
                   <line x1={MARGIN-5} y1={toSvg(i)} x2={MARGIN} y2={toSvg(i)} stroke="#333" strokeWidth="1.5" />
                   <text x={MARGIN-10} y={toSvg(i)+3} fontSize="10" textAnchor="end" fill="#555">{i}</text>
@@ -2314,18 +2323,18 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               ))}
 
               {/* Grid Mayor (1m) e Intenso */}
-              {Array.from({ length: Math.ceil(params.Lx) + 1 }).map((_, i) => (
+              {Array.from({ length: Math.floor(params.Lx) + 1 }).map((_, i) => (
                 <line key={`vx${i}`} x1={toSvg(i)} y1={MARGIN} x2={toSvg(i)} y2={toSvg(params.Ly)} stroke="#b0bec5" strokeWidth="1.5" opacity="0.6" />
               ))}
-              {Array.from({ length: Math.ceil(params.Ly) + 1 }).map((_, i) => (
+              {Array.from({ length: Math.floor(params.Ly) + 1 }).map((_, i) => (
                 <line key={`vy${i}`} x1={MARGIN} y1={toSvg(i)} x2={toSvg(params.Lx)} y2={toSvg(i)} stroke="#b0bec5" strokeWidth="1.5" opacity="0.6" />
               ))}
               
               {/* Grid Menor (0.5m) */}
-              {Array.from({ length: Math.ceil(params.Lx) * 2 }).map((_, i) => (
+              {Array.from({ length: Math.floor(params.Lx / 0.5) + 1 }).map((_, i) => (
                 <line key={`vx_sub${i}`} x1={toSvg(i*0.5)} y1={MARGIN} x2={toSvg(i*0.5)} y2={toSvg(params.Ly)} stroke="#cfd8dc" strokeWidth="1" strokeDasharray="4,4" />
               ))}
-              {Array.from({ length: Math.ceil(params.Ly) * 2 }).map((_, i) => (
+              {Array.from({ length: Math.floor(params.Ly / 0.5) + 1 }).map((_, i) => (
                 <line key={`vy_sub${i}`} x1={MARGIN} y1={toSvg(i*0.5)} x2={toSvg(params.Lx)} y2={toSvg(i*0.5)} stroke="#cfd8dc" strokeWidth="1" strokeDasharray="4,4" />
               ))}
 
