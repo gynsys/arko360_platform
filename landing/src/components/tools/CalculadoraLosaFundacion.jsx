@@ -291,6 +291,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const [hoveredWallId, setHoveredWallId] = useState(null);
   const [hoveredOpeningId, setHoveredOpeningId] = useState(null);
   const [selectedElement, setSelectedElement] = useState(null);
+  const [selectionBox, setSelectionBox] = useState(null);
+  const isDraggingRef = useRef(false);
   const stateRef = useRef(null);
 
   // Undo / Redo para muros y aberturas
@@ -1304,7 +1306,19 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     const py = e.clientY - rect.top;
     const mx = toMeters(px, true);
     const my = toMeters(py, true);
+    const rawMx = toMeters(px, false);
+    const rawMy = toMeters(py, false);
     setMouseCoord({ x: mx, y: my });
+
+    setSelectionBox(prev => {
+      if (prev) {
+        if (Math.abs(prev.startX - rawMx) > 0.1 || Math.abs(prev.startY - rawMy) > 0.1) {
+          isDraggingRef.current = true;
+        }
+        return { ...prev, currentX: rawMx, currentY: rawMy };
+      }
+      return prev;
+    });
 
     if (isDrawing && drawStart) {
       setDrawEnd({ x: mx, y: my });
@@ -1332,6 +1346,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const handleSvgClick = () => {
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      return;
+    }
     if (!drawType) {
       setSelectedElement(null);
       return;
@@ -2359,11 +2377,39 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               height={CANVAS_SIZE} 
               className={`drawing-board ${isDrawing ? 'drawing-mode' : ''}`}
               onMouseMove={handleMouseMove}
+              onMouseDown={(e) => {
+                if (!drawType) {
+                  const rect = svgRef.current.getBoundingClientRect();
+                  const px = e.clientX - rect.left;
+                  const py = e.clientY - rect.top;
+                  const mx = toMeters(px, false);
+                  const my = toMeters(py, false);
+                  setSelectionBox({ startX: mx, startY: my, currentX: mx, currentY: my });
+                  isDraggingRef.current = false;
+                }
+              }}
+              onMouseUp={(e) => {
+                if (selectionBox) {
+                  const minX = Math.min(selectionBox.startX, selectionBox.currentX);
+                  const maxX = Math.max(selectionBox.startX, selectionBox.currentX);
+                  const minY = Math.min(selectionBox.startY, selectionBox.currentY);
+                  const maxY = Math.max(selectionBox.startY, selectionBox.currentY);
+                  if (isDraggingRef.current) {
+                    const foundCols = columns.filter(c => c.x >= minX && c.x <= maxX && c.y >= minY && c.y <= maxY);
+                    if (foundCols.length > 0) {
+                      setSelectedElement({ type: 'columna', id: foundCols[0].id });
+                    } else {
+                      setSelectedElement(null);
+                    }
+                  }
+                  setSelectionBox(null);
+                }
+              }}
               onDoubleClick={handleSvgDoubleClick}
               onClick={handleSvgClick}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              style={{ cursor: isDrawing ? 'crosshair' : (drawType === 'columna' ? 'crosshair' : 'pointer') }}
+              style={{ cursor: isDrawing ? 'crosshair' : (drawType === 'columna' ? 'crosshair' : 'pointer'), userSelect: 'none' }}
             >
               {/* Ejes X (Ruler Top) */}
               <rect x={0} y={0} width={CANVAS_SIZE} height={MARGIN-5} fill="#f0f0f0" />
@@ -2433,6 +2479,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 const isSel = selectedElement && selectedElement.type === 'columna' && selectedElement.id === c.id;
                 return (
                 <g key={c.id} style={{cursor: 'pointer'}} 
+                   onMouseDown={(e) => e.stopPropagation()}
                    onClick={(e) => { 
                      e.stopPropagation(); 
                      setSelectedElement({ type: 'columna', id: c.id }); 
@@ -2451,6 +2498,21 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 </g>
               )})}
 
+              {/* Render Selection Box */}
+              {selectionBox && isDraggingRef.current && (
+                <rect 
+                  x={toSvg(Math.min(selectionBox.startX, selectionBox.currentX))}
+                  y={toSvg(Math.min(selectionBox.startY, selectionBox.currentY))}
+                  width={(Math.max(selectionBox.startX, selectionBox.currentX) - Math.min(selectionBox.startX, selectionBox.currentX)) * scale}
+                  height={(Math.max(selectionBox.startY, selectionBox.currentY) - Math.min(selectionBox.startY, selectionBox.currentY)) * scale}
+                  fill="rgba(33, 150, 243, 0.2)"
+                  stroke="#2196f3"
+                  strokeWidth="1"
+                  strokeDasharray="4 2"
+                  pointerEvents="none"
+                />
+              )}
+              
               {/* Muros y Líneas */}
               {allWalls.map(w => {
                 const isHovered = hoveredWallId === w.id;
