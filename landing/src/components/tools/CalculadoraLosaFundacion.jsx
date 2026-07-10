@@ -2401,7 +2401,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 <g key={c.id} style={{cursor: 'pointer'}} 
                    onClick={(e) => { 
                      e.stopPropagation(); 
-                     if (!drawType) setSelectedElement({ type: 'columna', id: c.id }); 
+                     setSelectedElement({ type: 'columna', id: c.id }); 
+                     setDrawType(null);
                    }}
                    onDoubleClick={(e) => { e.stopPropagation(); saveHistory(); setColumns(columns.filter(col => col.id !== c.id)); setSelectedElement(null); }} 
                    title="Clic para seleccionar y presionar Suprimir. Doble clic para eliminar rápido">
