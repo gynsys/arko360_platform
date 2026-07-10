@@ -289,6 +289,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   // Hover interactivo (bidireccional SVG <-> Tabla)
   const [hoveredWallId, setHoveredWallId] = useState(null);
   const [hoveredOpeningId, setHoveredOpeningId] = useState(null);
+  const [selectedElement, setSelectedElement] = useState(null);
+  const stateRef = useRef(null);
 
   // Undo / Redo para muros y aberturas
   const [historyPast, setHistoryPast] = useState([]);
@@ -1329,7 +1331,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const handleSvgClick = () => {
-    if (!drawType) return;
+    if (!drawType) {
+      setSelectedElement(null);
+      return;
+    }
     if (drawType === 'columna') {
       saveHistory();
       const loadCalc = colConfig.width * colConfig.length * colConfig.height * 2500;
@@ -1408,21 +1413,40 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
 
-  // Botón: Cancelar dibujo o soltar herramienta con Escape
+  // Actualizar ref para listeners globales (evita stale closures sin re-registrar useEffect)
+  stateRef.current = {
+    isDrawing, drawType, selectedElement, saveHistory,
+    setColumns, setInternalWalls, setOpenings,
+    setIsDrawing, setDrawStart, setDrawEnd, setDrawType, setSelectedElement
+  };
+
+  // Botón: Cancelar dibujo, soltar herramienta con Escape o borrar con Suprimir
   useEffect(() => {
     const handleKeyDown = (e) => {
+      const state = stateRef.current;
+      if (!state) return;
+      
       if (e.key === 'Escape') {
-        if (isDrawing) {
-          setIsDrawing(false);
-          setDrawStart(null);
-          setDrawEnd(null);
+        if (state.isDrawing) {
+          state.setIsDrawing(false);
+          state.setDrawStart(null);
+          state.setDrawEnd(null);
         }
-        setDrawType(null);
+        state.setDrawType(null);
+        state.setSelectedElement(null);
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (state.selectedElement && !state.isDrawing && !state.drawType) {
+          state.saveHistory();
+          if (state.selectedElement.type === 'columna') {
+            state.setColumns(prev => prev.filter(c => c.id !== state.selectedElement.id));
+          }
+          state.setSelectedElement(null);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isDrawing]);
+  }, []);
 
   // Construir el payload con el estado actual (muros, aberturas, parametros)
   const buildCurrentPayload = () => {
@@ -2371,18 +2395,26 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               })()}
 
               {/* Render Columnas */}
-              {columns.map(c => (
-                <g key={c.id} style={{cursor: 'pointer'}} onDoubleClick={(e) => { e.stopPropagation(); saveHistory(); setColumns(columns.filter(col => col.id !== c.id)); }} title="Doble clic para eliminar">
+              {columns.map(c => {
+                const isSel = selectedElement && selectedElement.type === 'columna' && selectedElement.id === c.id;
+                return (
+                <g key={c.id} style={{cursor: 'pointer'}} 
+                   onClick={(e) => { 
+                     e.stopPropagation(); 
+                     if (!drawType) setSelectedElement({ type: 'columna', id: c.id }); 
+                   }}
+                   onDoubleClick={(e) => { e.stopPropagation(); saveHistory(); setColumns(columns.filter(col => col.id !== c.id)); setSelectedElement(null); }} 
+                   title="Clic para seleccionar y presionar Suprimir. Doble clic para eliminar rápido">
                   <rect 
                     x={toSvg(c.x - c.width/2)} 
                     y={toSvg(c.y - c.length/2)} 
                     width={c.width * scale} 
                     height={c.length * scale} 
-                    fill="#9c27b0" stroke="#7b1fa2" strokeWidth="2" 
+                    fill={isSel ? "#e1bee7" : "#9c27b0"} stroke={isSel ? "#d50000" : "#7b1fa2"} strokeWidth={isSel ? "3" : "2"} 
                   />
-                  <text x={toSvg(c.x)} y={toSvg(c.y - c.length/2) - 5} fontSize="10" textAnchor="middle" fill="#9c27b0" fontWeight="bold">C{String(c.id).slice(-3)}</text>
+                  <text x={toSvg(c.x)} y={toSvg(c.y - c.length/2) - 5} fontSize="10" textAnchor="middle" fill={isSel ? "#d50000" : "#9c27b0"} fontWeight="bold">C{String(c.id).slice(-3)}</text>
                 </g>
-              ))}
+              )})}
 
               {/* Muros y Líneas */}
               {allWalls.map(w => {
