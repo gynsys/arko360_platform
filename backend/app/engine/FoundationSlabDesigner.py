@@ -1338,16 +1338,23 @@ class FoundationSlabDesigner:
                     extra_txt += f"Y: Ø{b['bar_y'].get('diam_mm',0)}@{b['bar_y'].get('sep_m',0)*100:.0f}cm"
                 
                 if needs_extra:
-                    box_w = max(110, len(extra_txt) * 6.5)
-                    svg_parts.append(f'<rect x="{cx - box_w/2}" y="{cy - 10}" width="{box_w}" height="34" rx="3" fill="rgba(255,255,255,0.95)" stroke="{color}" stroke-width="1"/>')
-                    svg_parts.append(f'<text x="{cx}" y="{cy + 2}" font-family="sans-serif" font-size="12" font-weight="bold" fill="{color}" text-anchor="middle">M{idx+1}</text>')
-                    svg_parts.append(f'<text x="{cx}" y="{cy + 18}" font-family="sans-serif" font-size="11" fill="#e65100" font-weight="bold" text-anchor="middle">{extra_txt.strip()}</text>')
+                    # Dibuja la etiqueta con un borde naranja para denotar que tiene acero adicional
+                    svg_parts.append(f'<rect x="{cx - 12}" y="{cy - 10}" width="24" height="20" rx="3" fill="rgba(255,255,255,0.9)" stroke="#e65100" stroke-width="2"/>')
+                    svg_parts.append(f'<text x="{cx}" y="{cy + 4}" font-family="sans-serif" font-size="12" font-weight="bold" fill="#e65100" text-anchor="middle">M{idx+1}</text>')
                 else:
                     svg_parts.append(f'<rect x="{cx - 12}" y="{cy - 10}" width="24" height="20" rx="3" fill="rgba(255,255,255,0.85)" stroke="{color}" stroke-width="1"/>')
                     svg_parts.append(f'<text x="{cx}" y="{cy + 4}" font-family="sans-serif" font-size="12" font-weight="bold" fill="{color}" text-anchor="middle">M{idx+1}</text>')
             except:
                 svg_parts.append(f'<rect x="{cx - 12}" y="{cy - 10}" width="24" height="20" rx="3" fill="rgba(255,255,255,0.85)" stroke="{color}" stroke-width="1"/>')
                 svg_parts.append(f'<text x="{cx}" y="{cy + 4}" font-family="sans-serif" font-size="12" font-weight="bold" fill="{color}" text-anchor="middle">M{idx+1}</text>')
+
+        # Dibujar machones (columnas)
+        for col in self.columns:
+            cx, cy = to_svg(col.x, col.y)
+            w_px = max(4, col.width * scale)
+            h_px = max(4, col.length * scale)
+            svg_parts.append(f'<rect x="{cx - w_px/2:.1f}" y="{cy - h_px/2:.1f}" width="{w_px:.1f}" height="{h_px:.1f}" fill="#333" stroke="#000" stroke-width="1"/>')
+
 
             # Dibujar aberturas (huecos visuales)
             if hasattr(wall, 'openings') and wall.openings:

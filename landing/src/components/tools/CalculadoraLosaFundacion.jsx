@@ -2688,6 +2688,49 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             <div style={{padding:'20px 24px', borderBottom:'1px solid #eee'}}>
               <h4 style={{margin:'0 0 12px 0', color:'#333'}}>Plano Estructural</h4>
               <div style={{background:'#fafafa', border:'1px solid #eee', borderRadius:'8px', padding:'12px', overflow:'auto'}} dangerouslySetInnerHTML={{__html: results.svg_plan}} />
+              
+              {/* Tabla de Armadura Adicional (Muros) */}
+              {results.bands && (
+                <div style={{marginTop: '20px'}}>
+                  <h5 style={{margin:'0 0 10px 0', color:'#444'}}>Armadura Adicional Requerida (Bandas de Refuerzo)</h5>
+                  <div style={{overflowX: 'auto'}}>
+                    <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left'}}>
+                      <thead>
+                        <tr style={{background: '#f1f1f1', borderBottom: '2px solid #ccc'}}>
+                          <th style={{padding: '8px'}}>Muro</th>
+                          <th style={{padding: '8px'}}>Acero Adicional X</th>
+                          <th style={{padding: '8px'}}>Acero Adicional Y</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {results.bands.map((b, idx) => {
+                          const asMin = results.As_min_cm2_m || 0;
+                          const reqX = b.Asx_cm2_m > asMin + 0.05;
+                          const reqY = b.Asy_cm2_m > asMin + 0.05;
+                          if (!reqX && !reqY) return null;
+                          return (
+                            <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
+                              <td style={{padding: '8px', fontWeight: 'bold', color: '#e65100'}}>M{idx+1}</td>
+                              <td style={{padding: '8px', color: reqX ? '#d32f2f' : 'inherit'}}>{reqX ? `Ø${b.bar_x?.diam_mm}@${Math.round(b.bar_x?.sep_m * 100)}cm` : '-'}</td>
+                              <td style={{padding: '8px', color: reqY ? '#1976d2' : 'inherit'}}>{reqY ? `Ø${b.bar_y?.diam_mm}@${Math.round(b.bar_y?.sep_m * 100)}cm` : '-'}</td>
+                            </tr>
+                          );
+                        })}
+                        {results.bands.every(b => {
+                          const asMin = results.As_min_cm2_m || 0;
+                          return !(b.Asx_cm2_m > asMin + 0.05) && !(b.Asy_cm2_m > asMin + 0.05);
+                        }) && (
+                          <tr>
+                            <td colSpan="3" style={{padding: '12px', textAlign: 'center', color: '#666', fontStyle: 'italic'}}>
+                              No se requiere acero adicional. La malla base cubre toda la demanda.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

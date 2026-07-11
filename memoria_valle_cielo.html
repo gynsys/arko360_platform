@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Memoria de Cálculo - Valle Cielo</title>
+    <!-- MathJax -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1, h2, h3 { color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .alert { background-color: #f8f9fa; border-left: 4px solid #0366d6; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .alert strong { color: #0366d6; }
+        hr { border: 0; border-top: 1px solid #ddd; margin: 30px 0; }
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="background:#fff3cd; color:#856404; padding:15px; text-align:center; margin-bottom:30px; border-radius:4px; font-weight:bold;">
+        Presiona Ctrl + P (o Cmd + P) en este momento para imprimir a PDF.<br>
+        (Espera unos segundos a que carguen las fórmulas matemáticas)
+    </div>
+
+    <h1>Memoria de Cálculo Estructural Matemática</h1>
+    <h2>Proyecto: Valle Cielo (Noibert Laya)</h2>
+    
+    <p>Esta memoria de cálculo demuestra paso a paso la verificación matemática y el diseño estructural de la losa de fundación para el proyecto Valle Cielo, utilizando los principios de la elasticidad (Placas sobre fundación elástica de Winkler) y las normativas ACI 318.</p>
+
+    <hr>
+
+    <h2>1. Parámetros de Diseño y Materiales</h2>
+
+    <h3>1.1. Propiedades Geométricas</h3>
+    <ul>
+        <li><strong>Dimensiones de la Parcela:</strong> \( L_x = 10.0 \text{ m} \), \( L_y = 10.0 \text{ m} \)</li>
+        <li><strong>Área Total de Fundación (\( A \)):</strong> \( 100.0 \text{ m}^2 \)</li>
+        <li><strong>Espesor de la Losa (\( h \)):</strong> \( 0.10 \text{ m} \) (10 cm)</li>
+        <li><strong>Inercia de la Sección por metro (\( I \)):</strong> 
+            \[ I = \frac{b \cdot h^3}{12} = \frac{1.0 \cdot 0.10^3}{12} = 8.33 \times 10^{-5} \text{ m}^4/\text{m} \]
+        </li>
+    </ul>
+
+    <h3>1.2. Propiedades de los Materiales</h3>
+    <ul>
+        <li><strong>Resistencia del Concreto (\( f'_c \)):</strong> \( 210 \text{ kgf/cm}^2 \) (21 MPa)</li>
+        <li><strong>Módulo de Elasticidad del Concreto (\( E_c \)):</strong> 
+            \[ E_c = 15100 \sqrt{f'_c} = 15100 \sqrt{210} \approx 218,819 \text{ kgf/cm}^2 = 21,881.9 \text{ MPa} \]
+        </li>
+        <li><strong>Esfuerzo de Fluencia del Acero (\( f_y \)):</strong> \( 4200 \text{ kgf/cm}^2 \) (420 MPa)</li>
+        <li><strong>Módulo de Balasto del Suelo (\( K_s \)):</strong> Estimado matemáticamente en \( 20,000 \text{ kN/m}^3 \)</li>
+        <li><strong>Capacidad Portante Admisible (\( q_{adm} \)):</strong> \( 1.5 \text{ kgf/cm}^2 = 150.04 \text{ kN/m}^2 \)</li>
+    </ul>
+
+    <hr>
+
+    <h2>2. Verificación de Presiones sobre el Terreno</h2>
+
+    <h3>2.1. Presión Máxima de Contacto</h3>
+    <p>Del análisis computacional MEF, se extrae el desplazamiento máximo:</p>
+    <ul>
+        <li><strong>Desplazamiento máximo calculado (\( w_{max} \)):</strong> \( 4.30 \text{ mm} = 0.0043 \text{ m} \)</li>
+    </ul>
+    <p>La presión máxima de contacto es:</p>
+    \[ q_{max} = 20,000 \text{ kN/m}^3 \cdot 0.0043 \text{ m} = 86.00 \text{ kN/m}^2 \]
+
+    <h3>2.2. Chequeo de Admisibilidad</h3>
+    \[ q_{max} = 86.00 \text{ kN/m}^2 \le q_{adm} = 150.04 \text{ kN/m}^2 \]
+    <div class="alert"><strong>CUMPLE:</strong> Factor de Seguridad al suelo \( FS = 150.04 / 86.00 = 1.74 \).</div>
+
+    <hr>
+
+    <h2>3. Diseño del Acero de Refuerzo (Flexión)</h2>
+
+    <h3>3.1. Cuantía Mínima por Retracción y Temperatura (ACI 318)</h3>
+    \[ A_{s,min} = \rho_{min} \cdot b \cdot h = 0.0018 \cdot 100 \text{ cm} \cdot 10 \text{ cm} = 1.80 \text{ cm}^2/\text{m} \]
+
+    <h3>3.2. Selección del Armado (Malla General)</h3>
+    <ul>
+        <li><strong>Requerido:</strong> \( 1.80 \text{ cm}^2/\text{m} \)</li>
+        <li><strong>Propuesto:</strong> Varillas \( \varnothing 7 \text{ mm} \) espaciadas a \( 20 \text{ cm} \).</li>
+    </ul>
+    \[ A_{s,provisto} = \frac{100 \text{ cm}}{20 \text{ cm}} \cdot 0.3848 \text{ cm}^2 = 1.92 \text{ cm}^2/\text{m} \]
+    <div class="alert"><strong>CUMPLE:</strong> \( 1.92 \ge 1.80 \)</div>
+
+    <hr>
+
+    <h2>4. Verificación a Cortante y Punzonado</h2>
+
+    <h3>4.1. Cortante Unidireccional (Viga Ancha)</h3>
+    <p>Capacidad del concreto al corte por metro de ancho (\( d \approx 7 \text{ cm} \)):</p>
+    \[ \phi V_c = \phi \cdot 0.53 \sqrt{f'_c} \cdot b \cdot d = 45.75 \text{ kN/m} \]
+    <p>Cortante máximo inducido (FEA): \( V_{u,max} = 7.80 \text{ kN/m} \)</p>
+    <div class="alert"><strong>CUMPLE:</strong> \( 7.80 < 45.75 \)</div>
+
+    <h3>4.2. Cortante Bidireccional (Punzonado de Machones)</h3>
+    <p>Machón de soporte de \( 15 \times 15 \text{ cm} \) (\( c = 15 \text{ cm} \)). Carga \( P = 151.8 \text{ kgf} \).</p>
+    <p>Perímetro Crítico (\( b_0 \)):</p>
+    \[ b_0 = 4 \times (c + d) = 4 \times (15 + 7) = 88 \text{ cm} \]
+    <p>Esfuerzo cortante último (\( v_u \)):</p>
+    \[ v_u = \frac{P}{b_0 \cdot d} = \frac{151.8}{88 \cdot 7} = 0.25 \text{ kgf/cm}^2 \]
+    <p>Capacidad al Punzonado (\( \phi v_c \)):</p>
+    \[ \phi v_c = \phi \cdot 1.06 \sqrt{f'_c} = 0.75 \cdot 1.06 \sqrt{210} \approx 11.5 \text{ kgf/cm}^2 \]
+    <div class="alert"><strong>CUMPLE:</strong> \( v_u = 0.25 \ll 11.5 \). No requiere ábacos ni capiteles.</div>
+
+    <hr>
+
+    <h2>5. Verificación de Deformaciones (Asentamientos)</h2>
+    <p>Asentamiento Diferencial Máximo (\( \Delta w \)) en muro de 10m: \( 2.95 \text{ mm} \)</p>
+    \[ Ratio = \frac{10000 \text{ mm}}{2.95 \text{ mm}} \approx 3389 > 500 \]
+    <div class="alert"><strong>CUMPLE:</strong> Losa suficientemente rígida.</div>
+
+    <hr>
+
+    <h2>6. Cómputos Métricos Derivados</h2>
+    <ul>
+        <li><strong>Volumen de Concreto (Losa):</strong> \( 10.0 \text{ m}^3 \)</li>
+        <li><strong>Acero General Requerido:</strong> 156 Cabillas (de 6m) \( \varnothing 7 \text{mm} \)</li>
+        <li><strong>Acero de Refuerzo en Vigas Corona / Zunchos:</strong> \( \approx 31.5 \text{ kg} \)</li>
+    </ul>
+</body>
+</html>
