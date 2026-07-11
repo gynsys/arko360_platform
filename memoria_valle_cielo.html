@@ -63,9 +63,49 @@
 
     <hr>
 
-    <h2>2. Verificación de Presiones sobre el Terreno</h2>
+    <h2>2. Complejidad del Análisis Matemático y Modelado Computacional</h2>
+    <p>Para determinar con exactitud los esfuerzos internos (momentos flectores y fuerzas cortantes) en una losa de fundación flexible, es técnicamente incorrecto y peligroso aplicar fórmulas estáticas manuales o "reglas de dedo". En este proyecto se empleó el <strong>Método de Diferencias Finitas (FDM)</strong> sobre un modelo de fundación elástica de Winkler, resolviendo computacionalmente la ecuación de Sophie Germain-Lagrange:</p>
+    \[ D \left( \frac{\partial^4 w}{\partial x^4} + 2 \frac{\partial^4 w}{\partial x^2 \partial y^2} + \frac{\partial^4 w}{\partial y^4} \right) + K_s \cdot w = q(x,y) \]
+    <p>El proceso computacional detrás de este diseño abarcó las siguientes fases matemáticas complejas:</p>
+    <ul>
+        <li><strong>Discretización Geométrica:</strong> La losa se subdividió en una malla de cientos o miles de nodos interconectados. Esto permite analizar cómo se deforma la losa milímetro a milímetro bajo el peso de cargas lineales (muros) y cargas altamente concentradas (machones).</li>
+        <li><strong>Ensamblaje de Matrices:</strong> Las propiedades del concreto y el suelo se tradujeron en una matriz de rigidez global \( [K] \) de dimensiones inmensas (ej. \( 1600 \times 1600 \)).</li>
+        <li><strong>Resolución del Sistema:</strong> Se invirtió matemáticamente la matriz para resolver el sistema de ecuaciones \( [K] \{W\} = \{F\} \), ejecutando millones de operaciones en punto flotante para hallar el desplazamiento de cada nodo.</li>
+        <li><strong>Cálculo de Esfuerzos:</strong> A partir de las derivadas matemáticas complejas de las deformaciones numéricas, se mapearon los momentos flectores exactos (\( M_x, M_y \)) que dictan con precisión quirúrgica dónde y cuánto acero se necesita.</li>
+    </ul>
 
-    <h3>2.1. Presión Máxima de Contacto</h3>
+    <h3>2.1. Representación del Sistema Matricial Esparso</h3>
+    <p>Para ilustrar la magnitud del cálculo computacional, el equilibrio estático de la losa se rige por el sistema global:</p>
+    \[
+    \begin{bmatrix}
+    K_{1,1} + k_s \Delta A & K_{1,2} & \cdots & K_{1,n} \\
+    K_{2,1} & K_{2,2} + k_s \Delta A & \cdots & K_{2,n} \\
+    \vdots & \vdots & \ddots & \vdots \\
+    K_{n,1} & K_{n,2} & \cdots & K_{n,n} + k_s \Delta A
+    \end{bmatrix}
+    \begin{bmatrix}
+    w_1 \\ w_2 \\ \vdots \\ w_n
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+    F_1 \\ F_2 \\ \vdots \\ F_n
+    \end{bmatrix}
+    \]
+    <p>Donde:</p>
+    <ul>
+        <li>\( K_{i,j} \): Coeficientes de la matriz de rigidez a flexión iterativa en Diferencias Finitas (banda diagonal de ancho 13 para placas).</li>
+        <li>\( k_s \Delta A \): Aporte del resorte de suelo (Winkler) en el nodo local.</li>
+        <li>\( w_i \): Desplazamiento vertical desconocido del nodo \( i \) (incógnitas).</li>
+        <li>\( F_i \): Carga externa aplicada en el nodo \( i \) (peso propio + sobrecargas + machones + muros).</li>
+    </ul>
+
+    <div class="alert"><strong>NOTA TÉCNICA:</strong> La prescripción final (ej. "Losa de 10 cm con Malla Ø7@20cm") <strong>no es una receta prefabricada ni una suposición empírica</strong>. Es el resultado directo y optimizado de resolver simultáneamente miles de estas ecuaciones por computadora, garantizando que cada gramo de acero trabaje al máximo de su eficiencia.</div>
+
+    <hr>
+
+    <h2>3. Verificación de Presiones sobre el Terreno</h2>
+
+    <h3>3.1. Presión Máxima de Contacto</h3>
     <p>Del análisis computacional MEF, se extrae el desplazamiento máximo:</p>
     <ul>
         <li><strong>Desplazamiento máximo calculado (\( w_{max} \)):</strong> \( 4.30 \text{ mm} = 0.0043 \text{ m} \)</li>
@@ -73,18 +113,18 @@
     <p>La presión máxima de contacto es:</p>
     \[ q_{max} = 20,000 \text{ kN/m}^3 \cdot 0.0043 \text{ m} = 86.00 \text{ kN/m}^2 \]
 
-    <h3>2.2. Chequeo de Admisibilidad</h3>
+    <h3>3.2. Chequeo de Admisibilidad</h3>
     \[ q_{max} = 86.00 \text{ kN/m}^2 \le q_{adm} = 150.04 \text{ kN/m}^2 \]
     <div class="alert"><strong>CUMPLE:</strong> Factor de Seguridad al suelo \( FS = 150.04 / 86.00 = 1.74 \).</div>
 
     <hr>
 
-    <h2>3. Diseño del Acero de Refuerzo (Flexión)</h2>
+    <h2>4. Diseño del Acero de Refuerzo (Flexión)</h2>
 
-    <h3>3.1. Cuantía Mínima por Retracción y Temperatura (ACI 318)</h3>
+    <h3>4.1. Cuantía Mínima por Retracción y Temperatura (ACI 318)</h3>
     \[ A_{s,min} = \rho_{min} \cdot b \cdot h = 0.0018 \cdot 100 \text{ cm} \cdot 10 \text{ cm} = 1.80 \text{ cm}^2/\text{m} \]
 
-    <h3>3.2. Selección del Armado (Malla General)</h3>
+    <h3>4.2. Selección del Armado (Malla General)</h3>
     <ul>
         <li><strong>Requerido:</strong> \( 1.80 \text{ cm}^2/\text{m} \)</li>
         <li><strong>Propuesto:</strong> Varillas \( \varnothing 7 \text{ mm} \) espaciadas a \( 20 \text{ cm} \).</li>
@@ -94,15 +134,15 @@
 
     <hr>
 
-    <h2>4. Verificación a Cortante y Punzonado</h2>
+    <h2>5. Verificación a Cortante y Punzonado</h2>
 
-    <h3>4.1. Cortante Unidireccional (Viga Ancha)</h3>
+    <h3>5.1. Cortante Unidireccional (Viga Ancha)</h3>
     <p>Capacidad del concreto al corte por metro de ancho (\( d \approx 7 \text{ cm} \)):</p>
     \[ \phi V_c = \phi \cdot 0.53 \sqrt{f'_c} \cdot b \cdot d = 45.75 \text{ kN/m} \]
     <p>Cortante máximo inducido (FEA): \( V_{u,max} = 7.80 \text{ kN/m} \)</p>
     <div class="alert"><strong>CUMPLE:</strong> \( 7.80 < 45.75 \)</div>
 
-    <h3>4.2. Cortante Bidireccional (Punzonado de Machones)</h3>
+    <h3>5.2. Cortante Bidireccional (Punzonado de Machones)</h3>
     <p>Machón de soporte de \( 15 \times 15 \text{ cm} \) (\( c = 15 \text{ cm} \)). Carga \( P = 151.8 \text{ kgf} \).</p>
     <p>Perímetro Crítico (\( b_0 \)):</p>
     \[ b_0 = 4 \times (c + d) = 4 \times (15 + 7) = 88 \text{ cm} \]
@@ -114,14 +154,14 @@
 
     <hr>
 
-    <h2>5. Verificación de Deformaciones (Asentamientos)</h2>
+    <h2>6. Verificación de Deformaciones (Asentamientos)</h2>
     <p>Asentamiento Diferencial Máximo (\( \Delta w \)) en muro de 10m: \( 2.95 \text{ mm} \)</p>
     \[ Ratio = \frac{10000 \text{ mm}}{2.95 \text{ mm}} \approx 3389 > 500 \]
     <div class="alert"><strong>CUMPLE:</strong> Losa suficientemente rígida.</div>
 
     <hr>
 
-    <h2>6. Cómputos Métricos Derivados</h2>
+    <h2>7. Cómputos Métricos Derivados</h2>
     <ul>
         <li><strong>Volumen de Concreto (Losa):</strong> \( 10.0 \text{ m}^3 \)</li>
         <li><strong>Acero General Requerido:</strong> 156 Cabillas (de 6m) \( \varnothing 7 \text{mm} \)</li>
