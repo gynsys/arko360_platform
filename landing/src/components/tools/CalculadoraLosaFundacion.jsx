@@ -2646,8 +2646,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                       const ux = (ox2-ox1)/w_px;
                       const uy = (oy2-oy1)/w_px;
                       // Perpendicular: determines opening direction based on wall drawing direction
-                      let vx = -uy;
-                      let vy = ux;
+                      let vx = uy;
+                      let vy = -ux;
 
                       if (op.type.startsWith('door')) {
                         const isLeft = op.type.includes('left');

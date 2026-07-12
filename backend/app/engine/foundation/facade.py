@@ -44,7 +44,7 @@ class FoundationSlabDesigner(
         Mx_max = float(np.max(np.abs(self.Mx))) / 1000 if hasattr(self, 'Mx') else 0.0
         My_max = float(np.max(np.abs(self.My))) / 1000 if hasattr(self, 'My') else 0.0
         Vu_max = float(np.max(np.abs(self.Vu))) / 1000 if hasattr(self, 'Vu') else 0.0
-        phi_Vc_val = float(np.min(self.phi_Vc)) / 1000 if hasattr(self, 'phi_Vc') else 0.0
+        phi_Vc_val = float(np.min(self.phiVc)) / 1000 if hasattr(self, 'phiVc') else 0.0
         shear_ok_val = bool(np.all(self.shear_ok)) if hasattr(self, 'shear_ok') else False
 
         max_pressure = (w_max / 1000.0) * self.k if hasattr(self, 'w') else 0.0
@@ -75,10 +75,10 @@ class FoundationSlabDesigner(
             results["heatmaps"] = {
                 "nx": self.n_nodes_x,
                 "ny": self.n_nodes_y,
-                "w_mm": (self.w * 1000).flatten().tolist(),
-                "Mx_kNm": (self.Mx / 1000).flatten().tolist(),
-                "My_kNm": (self.My / 1000).flatten().tolist(),
-                "Vu_kN": (self.Vu / 1000).flatten().tolist()
+                "w_mm": (self.w * 1000).tolist(),
+                "Mx_kNm": (self.Mx / 1000).tolist(),
+                "My_kNm": (self.My / 1000).tolist(),
+                "Vu_kN": (self.Vu / 1000).tolist()
             }
             results["heatmaps"]["w_max_mm"] = w_max
             
