@@ -1159,7 +1159,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     }
   };
 
-  const snapToGrid = (val) => gridStep > 0 ? Math.round(val / gridStep) * gridStep : val;
+  const snapToGrid = useCallback((val) => gridStep > 0 ? Math.round(val / gridStep) * gridStep : val, [gridStep]);
 
   // Escala para el SVG
   const CANVAS_SIZE = 500;
@@ -1175,7 +1175,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     if (m < 0) m = 0;
     if (doSnap) m = snapToGrid(m);
     return m;
-  }, [scale]);
+  }, [scale, snapToGrid]);
 
   // Generar vértices del perímetro según la plantilla y offset
   const getPerimeterVertices = useCallback(() => {
@@ -1546,7 +1546,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         width: 0.20, height: 0.30, type: 'zuncho', load_factor: 1.2
       })),
       columns: columns.map(c => ({
-        x: c.x - offsetX, y: c.y - offsetY, width: c.width, length: c.length, height: c.height, load_kgf: c.width * c.length * c.height * 2500
+        x: c.x - offsetX, y: c.y - offsetY, width: c.width, length: c.length, height: c.height, load_kgf: c.load_kgf
       })),
       mesh_nx: 40,
       mesh_ny: 40,
@@ -1691,7 +1691,23 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         peso_factored_kg: +(P_kg * (w.load_factor || 1.5)).toFixed(1)
       };
     });
-    const P_total_kg = P_losa_kg + P_sc_kg + P_muros_kg;
+    
+    let P_machones_kg = 0;
+    const machonLoads = (lastPayload.columns || []).map((c, idx) => {
+      const vol_m3 = c.width * c.length * c.height;
+      const W_self_kgf = vol_m3 * 2400; // Igual que en el backend
+      const total_kg = c.load_kgf + W_self_kgf;
+      P_machones_kg += total_kg * 1.5; // Factored
+      return {
+        id: `Machón ${idx + 1}`,
+        dimensiones_m: `${c.width} x ${c.length} x ${c.height}`,
+        carga_aplicada_kg: c.load_kgf,
+        peso_propio_kg: +W_self_kgf.toFixed(1),
+        carga_total_factored_kg: +(total_kg * 1.5).toFixed(1)
+      };
+    });
+
+    const P_total_kg = P_losa_kg + P_sc_kg + P_muros_kg + P_machones_kg;
     
     const fc_Pa = lastPayload.materials?.f_c || 25e6;
     const fc_MPa = fc_Pa > 1000 ? fc_Pa / 1e6 : fc_Pa; // handle if already MPa
@@ -1723,10 +1739,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         peso_propio_losa_kg: +P_losa_kg.toFixed(1),
         sobrecarga_sc_kg: +P_sc_kg.toFixed(1),
         peso_muros_factored_kg: +P_muros_kg.toFixed(1),
+        peso_machones_factored_kg: +P_machones_kg.toFixed(1),
         carga_total_kg: +P_total_kg.toFixed(1),
         carga_total_kN: +(P_total_kg * 9.81 / 1000).toFixed(2),
         presion_media_suelo_kgf_m2: +(P_total_kg / A_losa).toFixed(1),
-        detalle_muros: wallLoads
+        detalle_muros: wallLoads,
+        detalle_machones: machonLoads
       },
       resultados_FEM: {
         desplazamiento_max_mm: results.displacements?.w_max_mm,
@@ -1737,13 +1755,13 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         verificacion_cortante: results.shear?.shear_ok ? 'CUMPLE' : 'NO CUMPLE',
         presion_max_suelo_kN_m2: results.soil_pressure?.max_pressure_kN_m2,
         q_adm_kN_m2: results.soil_pressure?.q_adm_kN_m2,
-        verificacion_suelo: results.soil_pressure?.ok ? 'CUMPLE' : 'NO CUMPLE'
+        verificacion_suelo: results.soil_pressure?.ok ? 'CUMPLE' : 'NO CUMPLE',
+        punzonamiento: results.punching || {}
       },
       diseno_armado_bandas: results.bands,
       acero_minimo_cm2_m: results.As_min_cm2_m,
       observaciones: [
         'Verificación por cortante unidireccional (ACI 318 §11.3)',
-        'El punzonamiento no es crítico para losas con muros (sin columnas puntuales)',
         'Bandas de refuerzo concentradas bajo cada muro según distribución FEM',
         `Fáctor de seguridad en presión suelo: ${results.soil_pressure?.q_adm_kN_m2 && results.soil_pressure?.max_pressure_kN_m2 ? (results.soil_pressure.q_adm_kN_m2 / results.soil_pressure.max_pressure_kN_m2).toFixed(2) : 'N/A'}`
       ],
@@ -2058,7 +2076,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               <div className="param-item">
                 <label>Paso de Cuadrícula (Snap m):</label>
                 <select value={gridStep} onChange={e => setGridStep(parseFloat(e.target.value))}>
-                  <option value={0.5}>0.50m (Recomendado)</option>
+                  <option value={0.5}>0.50m</option>
                   <option value={0.25}>0.25m</option>
                   <option value={0.1}>0.10m</option>
                   <option value={0.05}>0.05m</option>
