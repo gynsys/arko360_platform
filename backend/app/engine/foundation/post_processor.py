@@ -21,156 +21,71 @@ class PostProcessor:
 
     def compute_moments(self) -> tuple:
         """
-        Calculate plate bending moments Mx, My, Mxy using finite-difference curvatures.
-
-        Returns
-        -------
-        Mx  : np.ndarray  (N·m/m)
-        My  : np.ndarray  (N·m/m)
-        Mxy : np.ndarray  (N·m/m)
+        Calculate plate bending moments Mx, My, Mxy using FEM shape functions and apply Wood-Armer.
+        Returns Wood-Armer design moments.
         """
-        w = self.w
-        dx, dy = self.dx, self.dy
-        D_plate = self.E * self.h**3 / (12 * (1 - self.nu**2))
-        nu = self.nu
-        nx, ny = self.nx, self.ny
+        from app.engine.fem_shell import get_quad_plate_internal_forces
+        
+        self.Mx = np.zeros((self.n_nodes_y, self.n_nodes_x))
+        self.My = np.zeros((self.n_nodes_y, self.n_nodes_x))
+        self.Mxy = np.zeros((self.n_nodes_y, self.n_nodes_x))
+        self.Qx = np.zeros((self.n_nodes_y, self.n_nodes_x))
+        self.Qy = np.zeros((self.n_nodes_y, self.n_nodes_x))
+        counts = np.zeros((self.n_nodes_y, self.n_nodes_x))
 
-        self.Mx = np.zeros_like(w)
-        self.My = np.zeros_like(w)
-        self.Mxy = np.zeros_like(w)
+        for j in range(self.ny):
+            for i in range(self.nx):
+                n1 = j * self.n_nodes_x + i
+                n2 = j * self.n_nodes_x + (i + 1)
+                n3 = (j + 1) * self.n_nodes_x + (i + 1)
+                n4 = (j + 1) * self.n_nodes_x + i
+                
+                nodes_local = [
+                    [self.x[i], self.y[j]],
+                    [self.x[i+1], self.y[j]],
+                    [self.x[i+1], self.y[j+1]],
+                    [self.x[i], self.y[j+1]]
+                ]
+                
+                u_local = np.zeros(12)
+                for k, nid in enumerate([n1, n2, n3, n4]):
+                    u_local[3*k+0] = self.U[3*nid+0]
+                    u_local[3*k+1] = self.U[3*nid+1]
+                    u_local[3*k+2] = self.U[3*nid+2]
+                    
+                forces = get_quad_plate_internal_forces(nodes_local, u_local, self.E, self.nu, self.h)
+                
+                for r, c in [(j,i), (j,i+1), (j+1,i+1), (j+1,i)]:
+                    self.Mx[r, c] += forces["Mx"]
+                    self.My[r, c] += forces["My"]
+                    self.Mxy[r, c] += forces["Mxy"]
+                    self.Qx[r, c] += forces["Vx"]
+                    self.Qy[r, c] += forces["Vy"]
+                    counts[r, c] += 1
+                    
+        self.Mx /= np.maximum(counts, 1)
+        self.My /= np.maximum(counts, 1)
+        self.Mxy /= np.maximum(counts, 1)
+        self.Qx /= np.maximum(counts, 1)
+        self.Qy /= np.maximum(counts, 1)
 
-        for j in range(self.n_nodes_y):
-            for i in range(self.n_nodes_x):
-                # Second derivative in x
-                if 1 <= i <= nx - 1:
-                    d2wdx2 = (w[j, i + 1] - 2 * w[j, i] + w[j, i - 1]) / dx**2
-                elif i == 0:
-                    d2wdx2 = (
-                        2 * w[j, i] - 5 * w[j, i + 1]
-                        + 4 * w[j, i + 2] - w[j, i + 3]
-                    ) / dx**2
-                else:
-                    d2wdx2 = (
-                        2 * w[j, i] - 5 * w[j, i - 1]
-                        + 4 * w[j, i - 2] - w[j, i - 3]
-                    ) / dx**2
+        # Wood-Armer Equations for design moments (Envelope of top/bottom)
+        # Mud_x = |Mx| + |Mxy|
+        # Mud_y = |My| + |Mxy|
+        self.Mx_raw = self.Mx.copy()
+        self.My_raw = self.My.copy()
+        
+        self.Mx = np.abs(self.Mx) + np.abs(self.Mxy)
+        self.My = np.abs(self.My) + np.abs(self.Mxy)
 
-                # Second derivative in y
-                if 1 <= j <= ny - 1:
-                    d2wdy2 = (w[j + 1, i] - 2 * w[j, i] + w[j - 1, i]) / dy**2
-                elif j == 0:
-                    d2wdy2 = (
-                        2 * w[j, i] - 5 * w[j + 1, i]
-                        + 4 * w[j + 2, i] - w[j + 3, i]
-                    ) / dy**2
-                else:
-                    d2wdy2 = (
-                        2 * w[j, i] - 5 * w[j - 1, i]
-                        + 4 * w[j - 2, i] - w[j - 3, i]
-                    ) / dy**2
-
-                # Mixed derivative (interior nodes only)
-                if 1 <= i <= nx - 1 and 1 <= j <= ny - 1:
-                    d2wdxdy = (
-                        w[j + 1, i + 1] - w[j + 1, i - 1]
-                        - w[j - 1, i + 1] + w[j - 1, i - 1]
-                    ) / (4 * dx * dy)
-                else:
-                    d2wdxdy = 0.0
-
-                self.Mx[j, i] = D_plate * (d2wdx2 + nu * d2wdy2)
-                self.My[j, i] = D_plate * (d2wdy2 + nu * d2wdx2)
-                self.Mxy[j, i] = D_plate * (1 - nu) * d2wdxdy
-
-        print(f"  Mx_max = {np.max(np.abs(self.Mx)) / 1000:.3f} kN·m/m")
-        print(f"  My_max = {np.max(np.abs(self.My)) / 1000:.3f} kN·m/m")
+        print(f"  Mx_design_max (Wood-Armer) = {np.max(self.Mx) / 1000:.3f} kN·m/m")
+        print(f"  My_design_max (Wood-Armer) = {np.max(self.My) / 1000:.3f} kN·m/m")
         return self.Mx, self.My, self.Mxy
 
     def compute_shear(self) -> tuple:
         """
-        Calculate plate shear forces Qx, Qy and verify against ACI 318 one-way shear.
-
-        Returns
-        -------
-        Qx       : np.ndarray  (N/m)
-        Qy       : np.ndarray  (N/m)
-        Vu       : np.ndarray  max(|Qx|, |Qy|) per node (N/m)
-        shear_ok : np.ndarray  bool, True where Vu ≤ φVc
+        Calculate plate shear forces Qx, Qy (already extracted from FEM) and verify against ACI 318.
         """
-        w = self.w
-        dx, dy = self.dx, self.dy
-        D = self.E * self.h**3 / (12 * (1 - self.nu**2))
-        nx, ny = self.nx, self.ny
-
-        # Laplacian of w at every node
-        laplacian = np.zeros_like(w)
-        for j in range(self.n_nodes_y):
-            for i in range(self.n_nodes_x):
-                if 1 <= i <= nx - 1:
-                    d2wdx2 = (w[j, i + 1] - 2 * w[j, i] + w[j, i - 1]) / dx**2
-                elif i == 0:
-                    d2wdx2 = (
-                        2 * w[j, i] - 5 * w[j, i + 1]
-                        + 4 * w[j, i + 2] - w[j, i + 3]
-                    ) / dx**2
-                else:
-                    d2wdx2 = (
-                        2 * w[j, i] - 5 * w[j, i - 1]
-                        + 4 * w[j, i - 2] - w[j, i - 3]
-                    ) / dx**2
-
-                if 1 <= j <= ny - 1:
-                    d2wdy2 = (w[j + 1, i] - 2 * w[j, i] + w[j - 1, i]) / dy**2
-                elif j == 0:
-                    d2wdy2 = (
-                        2 * w[j, i] - 5 * w[j + 1, i]
-                        + 4 * w[j + 2, i] - w[j + 3, i]
-                    ) / dy**2
-                else:
-                    d2wdy2 = (
-                        2 * w[j, i] - 5 * w[j - 1, i]
-                        + 4 * w[j - 2, i] - w[j - 3, i]
-                    ) / dy**2
-
-                laplacian[j, i] = d2wdx2 + d2wdy2
-
-        # Qx = -D * d(∇²w)/dx,  Qy = -D * d(∇²w)/dy
-        self.Qx = np.zeros_like(w)
-        self.Qy = np.zeros_like(w)
-        for j in range(self.n_nodes_y):
-            for i in range(self.n_nodes_x):
-                if 1 <= i <= nx - 1:
-                    dlapdx = (laplacian[j, i + 1] - laplacian[j, i - 1]) / (2 * dx)
-                elif i == 0:
-                    dlapdx = (
-                        -3 * laplacian[j, i]
-                        + 4 * laplacian[j, i + 1]
-                        - laplacian[j, i + 2]
-                    ) / (2 * dx)
-                else:
-                    dlapdx = (
-                        3 * laplacian[j, i]
-                        - 4 * laplacian[j, i - 1]
-                        + laplacian[j, i - 2]
-                    ) / (2 * dx)
-
-                if 1 <= j <= ny - 1:
-                    dlapdy = (laplacian[j + 1, i] - laplacian[j - 1, i]) / (2 * dy)
-                elif j == 0:
-                    dlapdy = (
-                        -3 * laplacian[j, i]
-                        + 4 * laplacian[j + 1, i]
-                        - laplacian[j + 2, i]
-                    ) / (2 * dy)
-                else:
-                    dlapdy = (
-                        3 * laplacian[j, i]
-                        - 4 * laplacian[j - 1, i]
-                        + laplacian[j - 2, i]
-                    ) / (2 * dy)
-
-                self.Qx[j, i] = -D * dlapdx
-                self.Qy[j, i] = -D * dlapdy
 
         self.Vu = np.maximum(np.abs(self.Qx), np.abs(self.Qy))
         bw_mm = 1000

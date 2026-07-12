@@ -9,7 +9,7 @@ from app.schemas.calculadora import (
     SlabModelInput
 )
 from app.core.logging import logger
-from app.engine.FoundationSlabDesigner import FoundationSlabDesigner
+from app.engine.foundation.facade import FoundationSlabDesigner
 
 router = APIRouter()
 

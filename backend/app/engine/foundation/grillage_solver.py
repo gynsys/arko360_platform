@@ -16,6 +16,7 @@ from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
 
 from .models import Beam, Column, Wall
+from app.engine.fem_shell import get_quad_plate_local_stiffness
 
 
 class GrillageSolver:
@@ -422,40 +423,34 @@ class GrillageSolver:
                 node = self._node_idx(ni, nj)
                 F[self._dof(node, 0)] += q_self * seg_len
 
-        # 4. Rigidez de vigas de la losa en dirección X
-        for j in range(self.n_nodes_y):
+        # 4 & 5. Rigidez de la losa (Elementos Finitos Placa Mindlin 12x12)
+        nu_concrete = 0.2
+        for j in range(self.ny):
             for i in range(self.nx):
+                # Nodos del cuadrilátero (orden Anti-horario: BL, BR, TR, TL)
                 n1 = self._node_idx(i, j)
                 n2 = self._node_idx(i + 1, j)
-                EI = self.E * (self.dy * self.h**3) / 12
-                J = self.dy * self.h**3 / 3.0
-                GJ = self.G * J
-                L = self.dx
-                k_elem = self._beam_stiffness_x(EI, GJ, L)
+                n3 = self._node_idx(i + 1, j + 1)
+                n4 = self._node_idx(i, j + 1)
+                
+                nodes_local = [
+                    [self.x[i], self.y[j]],
+                    [self.x[i+1], self.y[j]],
+                    [self.x[i+1], self.y[j+1]],
+                    [self.x[i], self.y[j+1]]
+                ]
+                
+                k_elem = get_quad_plate_local_stiffness(nodes_local, self.E, nu_concrete, self.h)
+                
                 dofs = (
-                    [self._dof(n1, d) for d in range(3)]
-                    + [self._dof(n2, d) for d in range(3)]
+                    [self._dof(n1, d) for d in range(3)] +
+                    [self._dof(n2, d) for d in range(3)] +
+                    [self._dof(n3, d) for d in range(3)] +
+                    [self._dof(n4, d) for d in range(3)]
                 )
-                for r in range(6):
-                    for c in range(6):
-                        K[dofs[r], dofs[c]] += k_elem[r, c]
-
-        # 5. Rigidez de vigas de la losa en dirección Y
-        for i in range(self.n_nodes_x):
-            for j in range(self.ny):
-                n1 = self._node_idx(i, j)
-                n2 = self._node_idx(i, j + 1)
-                EI = self.E * (self.dx * self.h**3) / 12
-                J = self.dx * self.h**3 / 3.0
-                GJ = self.G * J
-                L = self.dy
-                k_elem = self._beam_stiffness_y(EI, GJ, L)
-                dofs = (
-                    [self._dof(n1, d) for d in range(3)]
-                    + [self._dof(n2, d) for d in range(3)]
-                )
-                for r in range(6):
-                    for c in range(6):
+                
+                for r in range(12):
+                    for c in range(12):
                         K[dofs[r], dofs[c]] += k_elem[r, c]
 
         # 6. Rigidez adicional de vigas de amarre perimetrales
@@ -517,6 +512,7 @@ class GrillageSolver:
         print("\nResolviendo sistema de grillage...")
         K, F = self._build_system(extra_uniform_load)
         U = spsolve(K, F)
+        self.U = U
 
         self.w = U[0::3].reshape(self.n_nodes_y, self.n_nodes_x)
         self.thetax = U[1::3].reshape(self.n_nodes_y, self.n_nodes_x)
