@@ -1319,9 +1319,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     return () => el.removeEventListener('wheel', handleWheel);
   }, []);
 
-  // Pan con Ctrl+arrastrar
+  // Pan con Ctrl+arrastrar o Botón Central (Rueda)
   const handlePanStart = useCallback((e) => {
-    if (!e.ctrlKey && !e.metaKey) return;
+    // Activar con Ctrl, Meta o botón central del ratón (rueda)
+    if (!e.ctrlKey && !e.metaKey && e.button !== 1) return;
     e.preventDefault();
     isPanningRef.current = true;
     panStartRef.current = { x: e.clientX, y: e.clientY, ox: panOffset.x, oy: panOffset.y };
@@ -2456,7 +2457,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               className={`drawing-board ${isDrawing ? 'drawing-mode' : ''}`}
               onMouseMove={handleMouseMove}
               onMouseDown={(e) => {
-                if (e.ctrlKey || e.metaKey) { handlePanStart(e); return; }
+                if (e.ctrlKey || e.metaKey || e.button === 1) { handlePanStart(e); return; }
                 if (!drawType) {
                   const rect = svgRef.current.getBoundingClientRect();
                   const px = e.clientX - rect.left;

@@ -138,6 +138,9 @@ def analyze_slab(data: SlabModelInput):
         results = gr.run_full_analysis(extra_uniform_load=data.extra_load)
         return results
     except Exception as e:
+        import traceback
+        with open("error_trace.txt", "w") as f:
+            f.write(traceback.format_exc())
         logger.error(f"Error en analyze_slab: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno durante el análisis FEM.")
 

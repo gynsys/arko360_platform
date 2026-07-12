@@ -35,56 +35,51 @@ class FoundationSlabDesigner(
         except ImportError:
             pass
 
-        # 1. Preparar datos de bandas
-        bandas_list = []
-        for bd in self.band_data:
-            b_dict = {
-                'id': bd['id'],
-                'eje': bd['eje'],
-                'start_m': bd['start_m'],
-                'end_m': bd['end_m'],
-                'L_banda_m': bd['L_banda_m'],
-                'ancho_m': bd['ancho_m'],
-                'As_min_cm2_m': bd['As_min_cm2_m'],
-                'As_req_cm2_m': bd['As_req_cm2_m'],
-                'acero': bd['acero']
-            }
-            bandas_list.append(b_dict)
-
-        # 2. Asentamientos
-        asentamientos = {
-            'max_w_mm': round(np.max(np.abs(self.w)) * 1000, 2) if hasattr(self, 'w') else 0.0,
-            'diferenciales': self.settlement_data
-        }
-
-        # 3. Punzonamiento
-        punzonamiento = self.punching_data
-
-        # 4. Cantidades y Materiales
-        cantidades = self._compute_quantities()
-
-        # 5. Generar plano SVG
-        svg_plan = self.get_svg_plan()
-        
-        # 6. Reporte en texto (opcional, útil para debugging o logs)
+        # Reporte en texto (opcional, útil para debugging o logs)
         self.generate_design_report()
 
-        return {
-            'status': 'success',
-            'losa': {
-                'Lx': self.Lx,
-                'Ly': self.Ly,
-                'h': self.h,
-                'f_c': self.f_c,
-                'f_y': self.f_y
+        As_min_val = self.rho_min * 1.0 * self.h
+
+        w_max = float(np.max(np.abs(self.w))) * 1000 if hasattr(self, 'w') else 0.0
+        Mx_max = float(np.max(np.abs(self.Mx))) / 1000 if hasattr(self, 'Mx') else 0.0
+        My_max = float(np.max(np.abs(self.My))) / 1000 if hasattr(self, 'My') else 0.0
+        Vu_max = float(np.max(np.abs(self.Vu))) / 1000 if hasattr(self, 'Vu') else 0.0
+        phi_Vc_val = float(np.min(self.phi_Vc)) / 1000 if hasattr(self, 'phi_Vc') else 0.0
+        shear_ok_val = bool(np.all(self.shear_ok)) if hasattr(self, 'shear_ok') else False
+
+        max_pressure = (w_max / 1000.0) * self.k if hasattr(self, 'w') else 0.0
+        soil_ok = max_pressure <= self.q_adm
+
+        results = {
+            "inputs": {
+                "geometry": {"Lx": self.Lx, "Ly": self.Ly, "h": self.h},
             },
-            'resultados': {
-                'bandas': bandas_list,
-                'asentamientos': asentamientos,
-                'punzonamiento': punzonamiento,
-                'cantidades': cantidades
+            "displacements": {"w_max_mm": w_max},
+            "moments": {"Mx_max_kNm_m": Mx_max, "My_max_kNm_m": My_max},
+            "shear": {"Vu_max_kN_m": Vu_max, "phiVc_kN_m": phi_Vc_val, "shear_ok": shear_ok_val},
+            "soil_pressure": {
+                "max_pressure_kN_m2": max_pressure / 1000.0,
+                "q_adm_kN_m2": self.q_adm / 1000.0,
+                "ok": soil_ok
             },
-            'planos': {
-                'svg_base64': svg_plan
-            }
+            "As_min_cm2_m": As_min_val * 1e4,
+            "bands": self.band_data,
+            "punching": self.punching_data,
+            "settlements": self.settlement_data,
+            "svg_plan": self.get_svg_plan(),
+            "materials_computation": self._compute_quantities()
         }
+        
+        # Heatmaps
+        if hasattr(self, 'w') and hasattr(self, 'Mx'):
+            results["heatmaps"] = {
+                "nx": self.n_nodes_x,
+                "ny": self.n_nodes_y,
+                "w_mm": (self.w * 1000).flatten().tolist(),
+                "Mx_kNm": (self.Mx / 1000).flatten().tolist(),
+                "My_kNm": (self.My / 1000).flatten().tolist(),
+                "Vu_kN": (self.Vu / 1000).flatten().tolist()
+            }
+            results["heatmaps"]["w_max_mm"] = w_max
+            
+        return results
