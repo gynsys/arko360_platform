@@ -1522,7 +1522,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         f_c_kgcm2: designParams.fc,
         f_c: designParams.fc / 10.197, // Convertir a MPa
         f_y: designParams.fy / 10.197, // Convertir a MPa
-        cover: 0.05, bar_diam: 0.012,
+        bar_diam: 0.012,
         gamma_horm: 2400, 
         E: 4700 * Math.sqrt(designParams.fc / 10.197) * 1e6, 
         nu: 0.2, k: 20e6,
