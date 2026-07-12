@@ -190,6 +190,11 @@ const generarPresupuesto = (results, prices, designParams) => {
 
 export default function CalculadoraLosaFundacion({ onBack }) {
   const svgRef = useRef(null);
+  // Zoom & Pan state
+  const [zoom, setZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
 
   // Configuración de Losa y Perímetro
   const [shape, setShape] = useState('libre');
@@ -1169,13 +1174,15 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   
   // Convertir metros a pixeles SVG
   const toSvg = useCallback((m) => MARGIN + (m * scale), [scale]);
-  // Convertir pixeles a metros (con snap opcional)
+  // Convertir pixeles a metros (con snap opcional) — tiene en cuenta zoom y pan del viewBox
   const toMeters = useCallback((px, doSnap = false) => {
-    let m = (px - MARGIN) / scale;
-    if (m < 0) m = 0;
+    const maxDim = Math.max(params.Lx, params.Ly, 1);
+    // px es relativo al elemento SVG; ajustar por zoom y pan del viewBox
+    let m = (px / zoom - panOffset.x - MARGIN) / scale;
+    m = Math.max(0, Math.min(m, maxDim));
     if (doSnap) m = snapToGrid(m);
     return m;
-  }, [scale, snapToGrid]);
+  }, [scale, snapToGrid, params.Lx, params.Ly, zoom, panOffset]);
 
   // Generar vértices del perímetro según la plantilla y offset
   const getPerimeterVertices = useCallback(() => {
@@ -1299,14 +1306,50 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     setOpenings(prev => prev.filter(op => op.id !== id));
   };
 
+  // Zoom con rueda del mouse
+  const handleWheel = useCallback((e) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    setZoom(prev => Math.max(0.5, Math.min(8, prev * zoomFactor)));
+  }, []);
+
+  // Pan con Ctrl+arrastrar
+  const handlePanStart = useCallback((e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    isPanningRef.current = true;
+    panStartRef.current = { x: e.clientX, y: e.clientY, ox: panOffset.x, oy: panOffset.y };
+  }, [panOffset]);
+
+  const handlePanMove = useCallback((e) => {
+    if (!isPanningRef.current) return;
+    const dx = (e.clientX - panStartRef.current.x) / zoom;
+    const dy = (e.clientY - panStartRef.current.y) / zoom;
+    setPanOffset({ x: panStartRef.current.ox + dx, y: panStartRef.current.oy + dy });
+  }, [zoom]);
+
+  const handlePanEnd = useCallback(() => {
+    isPanningRef.current = false;
+  }, []);
+
+  const resetZoom = useCallback(() => {
+    setZoom(1);
+    setPanOffset({ x: 0, y: 0 });
+  }, []);
+
   // Lógica del Mouse (Tracker y Dibujo con Snap)
   const handleMouseMove = (e) => {
     if (!svgRef.current) return;
+    if (isPanningRef.current) {
+      handlePanMove(e);
+      return;
+    }
     const rect = svgRef.current.getBoundingClientRect();
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top;
-    const mx = toMeters(px, true);
-    const my = toMeters(py, true);
+    // Clamp a los límites exactos del canvas después del snap
+    const mx = Math.max(0, Math.min(toMeters(px, true), params.Lx));
+    const my = Math.max(0, Math.min(toMeters(py, true), params.Ly));
     const rawMx = toMeters(px, false);
     const rawMy = toMeters(py, false);
     setMouseCoord({ x: mx, y: my });
@@ -2357,6 +2400,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               </div>
               <div style={{display:'flex', gap:'12px', alignItems:'center'}}>
                 <span className="mouse-tracker">📍 X: {mouseCoord.x.toFixed(1)}m, Y: {mouseCoord.y.toFixed(1)}m</span>
+                {/* Botones de Zoom */}
+                <div style={{display:'flex', gap:'3px', alignItems:'center', border:'1px solid #ddd', borderRadius:'6px', padding:'3px 6px', background:'#f5f5f5'}}>
+                  <button onClick={() => setZoom(z => Math.min(8, z * 1.3))} title="Acercar" style={{padding:'2px 7px', fontSize:'16px', fontWeight:'bold', background:'transparent', border:'none', cursor:'pointer', lineHeight:1}}>+</button>
+                  <button onClick={resetZoom} title="Restablecer zoom" style={{padding:'2px 6px', fontSize:'11px', background:'transparent', border:'none', cursor:'pointer', color:'#555', minWidth:'40px'}}>{Math.round(zoom*100)}%</button>
+                  <button onClick={() => setZoom(z => Math.max(0.5, z / 1.3))} title="Alejar" style={{padding:'2px 7px', fontSize:'16px', fontWeight:'bold', background:'transparent', border:'none', cursor:'pointer', lineHeight:1}}>−</button>
+                </div>
               </div>
             </div>
 
@@ -2397,9 +2446,11 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               ref={svgRef}
               width={CANVAS_SIZE} 
               height={CANVAS_SIZE} 
+              viewBox={`${-panOffset.x * zoom} ${-panOffset.y * zoom} ${CANVAS_SIZE / zoom} ${CANVAS_SIZE / zoom}`}
               className={`drawing-board ${isDrawing ? 'drawing-mode' : ''}`}
               onMouseMove={handleMouseMove}
               onMouseDown={(e) => {
+                if (e.ctrlKey || e.metaKey) { handlePanStart(e); return; }
                 if (!drawType) {
                   const rect = svgRef.current.getBoundingClientRect();
                   const px = e.clientX - rect.left;
@@ -2411,6 +2462,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 }
               }}
               onMouseUp={(e) => {
+                if (isPanningRef.current) { handlePanEnd(); return; }
                 if (selectionBox) {
                   const minX = Math.min(selectionBox.startX, selectionBox.currentX);
                   const maxX = Math.max(selectionBox.startX, selectionBox.currentX);
@@ -2427,11 +2479,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                   setSelectionBox(null);
                 }
               }}
-              onDoubleClick={handleSvgDoubleClick}
+              onDoubleClick={(e) => { if (!drawType && (e.ctrlKey || e.metaKey || zoom !== 1)) { resetZoom(); return; } handleSvgDoubleClick(e); }}
               onClick={handleSvgClick}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              style={{ cursor: isDrawing ? 'crosshair' : (drawType === 'columna' ? 'crosshair' : 'pointer'), userSelect: 'none' }}
+              onWheel={handleWheel}
+              style={{ cursor: isPanningRef.current ? 'grabbing' : (isDrawing ? 'crosshair' : (drawType === 'columna' ? 'crosshair' : 'pointer')), userSelect: 'none', touchAction: 'none' }}
             >
               {/* Ejes X (Ruler Top) */}
               <rect x={0} y={0} width={CANVAS_SIZE} height={MARGIN-5} fill="#f0f0f0" />
