@@ -2068,7 +2068,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 &larr; Volver
               </button>
             )}
-            <h2 style={{margin: 0, fontSize: '16px', fontWeight: '400'}}>Diseño de Losa de Fundación (Método Híbrido)</h2>
+
           </div>
           <div className="header-actions" style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
             <button 
@@ -2097,41 +2097,158 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       <div className="calc-body">
         {/* PANEL IZQUIERDO: CONTROLES */}
         
-        {/* NEW HORIZONTAL TOOLBAR */}
-        <div style={{ padding: '8px 16px', background: '#fff', borderBottom: '1px solid #ddd', display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', width: '100%', zIndex: 10 }}>
-          <button className={`toolbar-btn ${activeModal === 'geometry' ? 'active' : ''}`} onClick={() => setActiveModal('geometry')} style={{display:'flex', alignItems:'center', gap:'6px', background: activeModal === 'geometry' ? '#e3f2fd' : 'none', border:'none', cursor:'pointer', color: activeModal === 'geometry' ? '#1A6BB5' : '#555', padding:'6px 12px', borderRadius:'6px', fontWeight:'500'}}>
-            <FaDrawPolygon /> Geometría
+        {/* VERTICAL ICON TOOLBAR */}
+        <div style={{
+          position: 'absolute', left: 0, top: 0, bottom: 0,
+          width: '48px',
+          background: '#1e2235',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          paddingTop: '10px',
+          gap: '4px',
+          zIndex: 20,
+          boxShadow: '2px 0 8px rgba(0,0,0,0.15)'
+        }}>
+          {/* Separador */}
+          <div style={{ width: '32px', height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+
+          {/* Botón Geometría */}
+          <button
+            onClick={() => setActiveModal(activeModal === 'geometry' ? null : 'geometry')}
+            title="Geometría de Losa"
+            style={{
+              background: activeModal === 'geometry' ? '#1A6BB5' : 'transparent',
+              border: 'none', borderRadius: '8px',
+              color: activeModal === 'geometry' ? '#fff' : 'rgba(255,255,255,0.65)',
+              width: '36px', height: '36px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', fontSize: '16px',
+              transition: 'all 0.15s'
+            }}
+          >
+            <FaDrawPolygon />
           </button>
-          <button className={`toolbar-btn ${activeModal === 'materials' ? 'active' : ''}`} onClick={() => setActiveModal('materials')} style={{display:'flex', alignItems:'center', gap:'6px', background: activeModal === 'materials' ? '#e3f2fd' : 'none', border:'none', cursor:'pointer', color: activeModal === 'materials' ? '#1A6BB5' : '#555', padding:'6px 12px', borderRadius:'6px', fontWeight:'500'}}>
-            <FaCubes /> Materiales y Muros
+
+          {/* Botón Materiales */}
+          <button
+            onClick={() => setActiveModal(activeModal === 'materials' ? null : 'materials')}
+            title="Materiales y Muros"
+            style={{
+              background: activeModal === 'materials' ? '#1A6BB5' : 'transparent',
+              border: 'none', borderRadius: '8px',
+              color: activeModal === 'materials' ? '#fff' : 'rgba(255,255,255,0.65)',
+              width: '36px', height: '36px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', fontSize: '16px',
+              transition: 'all 0.15s'
+            }}
+          >
+            <FaCubes />
           </button>
-          <button className={`toolbar-btn ${activeModal === 'fem' ? 'active' : ''}`} onClick={() => setActiveModal('fem')} style={{display:'flex', alignItems:'center', gap:'6px', background: activeModal === 'fem' ? '#e3f2fd' : 'none', border:'none', cursor:'pointer', color: activeModal === 'fem' ? '#1A6BB5' : '#555', padding:'6px 12px', borderRadius:'6px', fontWeight:'500'}}>
-            <FaCogs /> Parámetros Diseño
+
+          {/* Botón Parámetros Diseño */}
+          <button
+            onClick={() => setActiveModal(activeModal === 'fem' ? null : 'fem')}
+            title="Parámetros de Diseño FEM"
+            style={{
+              background: activeModal === 'fem' ? '#1A6BB5' : 'transparent',
+              border: 'none', borderRadius: '8px',
+              color: activeModal === 'fem' ? '#fff' : 'rgba(255,255,255,0.65)',
+              width: '36px', height: '36px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', fontSize: '16px',
+              transition: 'all 0.15s'
+            }}
+          >
+            <FaCogs />
           </button>
-          <button className={`toolbar-btn ${activeModal === 'walls' ? 'active' : ''}`} onClick={() => setActiveModal('walls')} style={{display:'flex', alignItems:'center', gap:'6px', background: activeModal === 'walls' ? '#e3f2fd' : 'none', border:'none', cursor:'pointer', color: activeModal === 'walls' ? '#1A6BB5' : '#555', padding:'6px 12px', borderRadius:'6px', fontWeight:'500'}}>
-            <FaColumns /> Muros Internos
+
+          {/* Botón Muros Internos */}
+          <button
+            onClick={() => setActiveModal(activeModal === 'walls' ? null : 'walls')}
+            title="Muros Internos y Columnas"
+            style={{
+              background: activeModal === 'walls' ? '#1A6BB5' : 'transparent',
+              border: 'none', borderRadius: '8px',
+              color: activeModal === 'walls' ? '#fff' : 'rgba(255,255,255,0.65)',
+              width: '36px', height: '36px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', fontSize: '16px',
+              transition: 'all 0.15s'
+            }}
+          >
+            <FaColumns />
           </button>
-          <button className={`toolbar-btn ${activeModal === 'openings' ? 'active' : ''}`} onClick={() => setActiveModal('openings')} style={{display:'flex', alignItems:'center', gap:'6px', background: activeModal === 'openings' ? '#e3f2fd' : 'none', border:'none', cursor:'pointer', color: activeModal === 'openings' ? '#1A6BB5' : '#555', padding:'6px 12px', borderRadius:'6px', fontWeight:'500'}}>
-            <FaDoorOpen /> Aberturas Listado
+
+          {/* Botón Aberturas */}
+          <button
+            onClick={() => setActiveModal(activeModal === 'openings' ? null : 'openings')}
+            title="Listado de Aberturas"
+            style={{
+              background: activeModal === 'openings' ? '#1A6BB5' : 'transparent',
+              border: 'none', borderRadius: '8px',
+              color: activeModal === 'openings' ? '#fff' : 'rgba(255,255,255,0.65)',
+              width: '36px', height: '36px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', fontSize: '16px',
+              transition: 'all 0.15s'
+            }}
+          >
+            <FaDoorOpen />
           </button>
-          
-          <div style={{ width: '1px', height: '24px', background: '#ddd', margin: '0 8px' }} />
-          <span style={{ fontSize: '13px', color: '#666', marginRight: '8px' }}>Arrastrar al Lienzo:</span>
-          
-          <div draggable onDragStart={(e) => handleDragStart(e, 'door_left')} title="Puerta Izquierda (Adentro)" style={{ cursor:'grab', display:'flex', alignItems:'center', justifyContent:'center', padding:'4px', border:'1px solid #eee', borderRadius:'4px', background:'#fafafa' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5"><rect x="2" y="20" width="4" height="4" fill="#555" stroke="none" /><rect x="18" y="20" width="4" height="4" fill="#555" stroke="none" /><path d="M4 20 L4 4" /><path d="M4 4 A16 16 0 0 1 20 20" strokeDasharray="2 3" /></svg>
+
+          {/* Separador arrastrar */}
+          <div style={{ width: '32px', height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+
+          {/* Puerta Izq Adentro */}
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'door_left')}
+            title="Puerta Izquierda (Adentro)"
+            style={{ cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '8px', background: 'transparent' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5"><rect x="2" y="20" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><rect x="18" y="20" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><path d="M4 20 L4 4" /><path d="M4 4 A16 16 0 0 1 20 20" strokeDasharray="2 3" /></svg>
           </div>
-          <div draggable onDragStart={(e) => handleDragStart(e, 'door_left_out')} title="Puerta Izquierda (Afuera)" style={{ cursor:'grab', display:'flex', alignItems:'center', justifyContent:'center', padding:'4px', border:'1px solid #eee', borderRadius:'4px', background:'#fafafa' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5"><rect x="2" y="0" width="4" height="4" fill="#555" stroke="none" /><rect x="18" y="0" width="4" height="4" fill="#555" stroke="none" /><path d="M4 4 L4 20" /><path d="M4 20 A16 16 0 0 0 20 4" strokeDasharray="2 3" /></svg>
+
+          {/* Puerta Izq Afuera */}
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'door_left_out')}
+            title="Puerta Izquierda (Afuera)"
+            style={{ cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '8px', background: 'transparent' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5"><rect x="2" y="0" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><rect x="18" y="0" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><path d="M4 4 L4 20" /><path d="M4 20 A16 16 0 0 0 20 4" strokeDasharray="2 3" /></svg>
           </div>
-          <div draggable onDragStart={(e) => handleDragStart(e, 'door_right')} title="Puerta Derecha (Adentro)" style={{ cursor:'grab', display:'flex', alignItems:'center', justifyContent:'center', padding:'4px', border:'1px solid #eee', borderRadius:'4px', background:'#fafafa' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5"><rect x="2" y="20" width="4" height="4" fill="#555" stroke="none" /><rect x="18" y="20" width="4" height="4" fill="#555" stroke="none" /><path d="M20 20 L20 4" /><path d="M20 4 A16 16 0 0 0 4 20" strokeDasharray="2 3" /></svg>
+
+          {/* Puerta Der Adentro */}
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'door_right')}
+            title="Puerta Derecha (Adentro)"
+            style={{ cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '8px', background: 'transparent' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5"><rect x="2" y="20" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><rect x="18" y="20" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><path d="M20 20 L20 4" /><path d="M20 4 A16 16 0 0 0 4 20" strokeDasharray="2 3" /></svg>
           </div>
-          <div draggable onDragStart={(e) => handleDragStart(e, 'door_right_out')} title="Puerta Derecha (Afuera)" style={{ cursor:'grab', display:'flex', alignItems:'center', justifyContent:'center', padding:'4px', border:'1px solid #eee', borderRadius:'4px', background:'#fafafa' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5"><rect x="2" y="0" width="4" height="4" fill="#555" stroke="none" /><rect x="18" y="0" width="4" height="4" fill="#555" stroke="none" /><path d="M20 4 L20 20" /><path d="M20 20 A16 16 0 0 1 4 4" strokeDasharray="2 3" /></svg>
+
+          {/* Puerta Der Afuera */}
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'door_right_out')}
+            title="Puerta Derecha (Afuera)"
+            style={{ cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '8px', background: 'transparent' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5"><rect x="2" y="0" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><rect x="18" y="0" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><path d="M20 4 L20 20" /><path d="M20 20 A16 16 0 0 1 4 4" strokeDasharray="2 3" /></svg>
           </div>
-          <div draggable onDragStart={(e) => handleDragStart(e, 'window')} title="Ventana" style={{ cursor:'grab', display:'flex', alignItems:'center', justifyContent:'center', padding:'4px', border:'1px solid #eee', borderRadius:'4px', background:'#fafafa' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5"><rect x="2" y="4" width="20" height="16" rx="2" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="12" y1="4" x2="12" y2="20" /></svg>
+
+          {/* Ventana */}
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'window')}
+            title="Ventana"
+            style={{ cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '8px', background: 'transparent' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5"><rect x="2" y="4" width="20" height="16" rx="2" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="12" y1="4" x2="12" y2="20" /></svg>
           </div>
         </div>
 
@@ -2371,7 +2488,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         </div>
       )}
 {/* PANEL DERECHO: VISTA PREVIA Y RESULTADOS */}
-        <div className="calc-content" style={{ flex: '1', minWidth: 0 }}>
+        <div className="calc-content" style={{ flex: '1', minWidth: 0, marginLeft: '48px' }}>
           <div className="canvas-wrapper hybrid-canvas">
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '10px' }}>
               <div style={{display:'flex', gap:'12px', alignItems:'center'}}>

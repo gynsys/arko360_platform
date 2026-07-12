@@ -33,7 +33,9 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
+
 
 .calc-sidebar {
   width: 320px;
