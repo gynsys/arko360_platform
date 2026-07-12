@@ -1306,11 +1306,17 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     setOpenings(prev => prev.filter(op => op.id !== id));
   };
 
-  // Zoom con rueda del mouse
-  const handleWheel = useCallback((e) => {
-    e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-    setZoom(prev => Math.max(0.5, Math.min(8, prev * zoomFactor)));
+  // Zoom con rueda del mouse (attached via useEffect to prevent passive warning)
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const handleWheel = (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      setZoom(prev => Math.max(0.5, Math.min(8, prev * zoomFactor)));
+    };
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
   }, []);
 
   // Pan con Ctrl+arrastrar
@@ -2483,7 +2489,6 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               onClick={handleSvgClick}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              onWheel={handleWheel}
               style={{ cursor: isPanningRef.current ? 'grabbing' : (isDrawing ? 'crosshair' : (drawType === 'columna' ? 'crosshair' : 'pointer')), userSelect: 'none', touchAction: 'none' }}
             >
               {/* Ejes X (Ruler Top) */}
