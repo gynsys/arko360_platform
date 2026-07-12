@@ -210,7 +210,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     q_adm: 1.5, // kgf/cm² (antes 150 kN/m²)
     band_width_m: 0, // 0 = Auto calculado en backend
     is_plastered: false, // Friso global
-    custom_mesh_cm2_m: 0 // 0 = Auto
+    custom_mesh_cm2_m: 0, // 0 = Auto
+    cover: 5 // Recubrimiento en cm
   });
   
   // Guardado y Carga de Base de Datos
@@ -1527,7 +1528,9 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         nu: 0.2, k: 20e6,
         q_adm: designParams.q_adm * 98066.5, // kgf/cm² a Pa
         band_width_m: designParams.band_width_m > 0 ? designParams.band_width_m : 0,
-        custom_mesh_cm2_m: designParams.custom_mesh_cm2_m || 0
+        custom_mesh_cm2_m: designParams.custom_mesh_cm2_m || 0,
+        cover: (designParams.cover || 5) / 100 // cm a metros
+
       },
       walls: structuralWalls.map(w => ({
         x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
@@ -2073,6 +2076,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               <div className="param-item"><label>f'c Concreto (kgf/cm²):</label><input type="number" step="10" value={designParams.fc} onChange={e => handleDesignParamChange('fc', parseFloat(e.target.value))} /></div>
               <div className="param-item"><label>fy Acero (kgf/cm²):</label><input type="number" step="100" value={designParams.fy} onChange={e => handleDesignParamChange('fy', parseFloat(e.target.value))} /></div>
               <div className="param-item"><label>Cap. Portante (kgf/cm²):</label><input type="number" step="0.1" value={designParams.q_adm} onChange={e => handleDesignParamChange('q_adm', parseFloat(e.target.value))} title="1.5 kgf/cm² = 15000 kgf/m²" /></div>
+              <div className="param-item"><label>Recubrimiento (cm):</label><input type="number" step="0.5" value={designParams.cover} onChange={e => handleDesignParamChange('cover', parseFloat(e.target.value))} title="Distancia al centroide del acero" /></div>
               <div className="param-item"><label>Ancho Banda (m):</label><input type="number" step="0.05" value={designParams.band_width_m} onChange={e => handleDesignParamChange('band_width_m', parseFloat(e.target.value))} title="0 = Auto (Calculado min)" /></div>
               <div className="param-item">
                 <label>Acero General (Malla):</label>
@@ -2698,6 +2702,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                       <thead>
                         <tr style={{background: '#f1f1f1', borderBottom: '2px solid #ccc'}}>
                           <th style={{padding: '8px'}}>Muro</th>
+                          <th style={{padding: '8px'}}>Ancho Banda</th>
                           <th style={{padding: '8px'}}>Acero Adicional X</th>
                           <th style={{padding: '8px'}}>Acero Adicional Y</th>
                         </tr>
@@ -2711,6 +2716,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                           return (
                             <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
                               <td style={{padding: '8px', fontWeight: 'bold', color: '#e65100'}}>M{idx+1}</td>
+                              <td style={{padding: '8px', color: '#666'}}>{b.band_width?.toFixed(2) || '-'} m</td>
                               <td style={{padding: '8px', color: reqX ? '#d32f2f' : 'inherit'}}>{reqX ? `Ø${b.bar_x?.diam_mm}@${Math.round(b.bar_x?.sep_m * 100)}cm` : '-'}</td>
                               <td style={{padding: '8px', color: reqY ? '#1976d2' : 'inherit'}}>{reqY ? `Ø${b.bar_y?.diam_mm}@${Math.round(b.bar_y?.sep_m * 100)}cm` : '-'}</td>
                             </tr>
