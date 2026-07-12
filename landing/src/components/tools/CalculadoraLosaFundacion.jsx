@@ -6,7 +6,7 @@ import './CalculadoraLosaFundacion.css';
 import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut, ArrowLeft } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus } from 'react-icons/fa';
+import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus, FaDrawPolygon, FaCubes, FaColumns, FaDoorOpen, FaCogs } from 'react-icons/fa';
 import InteractiveHeatmap from './InteractiveHeatmap';
 
 // ============================================
@@ -248,6 +248,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   // Aberturas (Puertas y Ventanas) Drag & Drop
   const [openings, setOpenings] = useState([]);
   const [globalPrices, setGlobalPrices] = useState(FALLBACK_PRECIOS);
+  const [activeModal, setActiveModal] = useState(null); // 'geometry', 'materials', 'fem', 'openings', 'walls'
 
   useEffect(() => {
     // Hide footer to get more space
@@ -787,7 +788,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     <ul>
       <li>Ubicación física: Eje del Muro ${b0.type} (banda de ${b0.band_width.toFixed(2)} m de ancho).</li>
       <li>Cargas incidentes: Carga lineal del muro + Viga de Corona + Carga Techo (distribuidas en los nodos adyacentes a la traza).</li>
-      <li>Esfuerzo resultante FDM: Momento de diseño en X (Mux) = <strong>${b0.Mx_design_kNm_m.toFixed(2)} kN·m/m</strong></li>
+      <li>Esfuerzo resultante FDM: Momento de diseño en X (Mux) = <strong>${(b0.Mx_design_kNm_m * 101.9716).toFixed(2)} kgf·m/m</strong></li>
     </ul>
 
     <h3>7.1 Resolución de la Ecuación Cuadrática (Bloque de Whitney)</h3>
@@ -815,7 +816,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         const prop_y = b.bar_y.diam_mm > 0 ? `Cabilla de Ø${b.bar_y.diam_mm} mm @ ${(b.bar_y.sep_m * 100).toFixed(0)} cm` : "Acero mínimo normativo";
         
         bandasHtml += `<li style="margin-bottom:10px;"><strong>Banda ${b.id} (Muro ${b.type}):</strong><br>
-          Mu_x = ${b.Mx_design_kNm_m.toFixed(2)} kN·m/m, Mu_y = ${b.My_design_kNm_m.toFixed(2)} kN·m/m <br>
+          Mu_x = ${(b.Mx_design_kNm_m * 101.9716).toFixed(2)} kgf·m/m, Mu_y = ${(b.My_design_kNm_m * 101.9716).toFixed(2)} kgf·m/m <br>
           <span style="color:#0d47a1;">&rarr; (Dir X) a = ${b.a_x_cm ? b.a_x_cm.toFixed(2) : 0} cm &rarr; As_x (teórico) = ${b.Asx_calc_cm2_m.toFixed(2)} cm²/m</span><br>
           <span style="color:#1b5e20;">&rarr; <strong>As_x (definitivo) = max( As_x_teórico, As_min ) = ${b.Asx_cm2_m.toFixed(2)} cm²/m</strong> &rarr; Propuesta: <em>${prop_x}</em></span><br>
           <span style="color:#0d47a1; margin-top:4px; display:inline-block;">&rarr; (Dir Y) a = ${b.a_y_cm ? b.a_y_cm.toFixed(2) : 0} cm &rarr; As_y (teórico) = ${b.Asy_calc_cm2_m.toFixed(2)} cm²/m</span><br>
@@ -1119,19 +1120,19 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       var traceMx = {
         z: mx_data, x: x_vals, y: y_vals,
         type: 'heatmap', colorscale: 'Jet',
-        hovertemplate: 'X: %{x} m<br>Y: %{y} m<br>Mxx: %{z:.2f} kN·m/m<extra></extra>',
+        hovertemplate: 'X: %{x} m<br>Y: %{y} m<br>Mxx: %{z:.2f} kgf·m/m<extra></extra>',
         name: 'Mxx'
       };
       var traceMy = {
         z: my_data, x: x_vals, y: y_vals,
         type: 'heatmap', colorscale: 'Jet', visible: false,
-        hovertemplate: 'X: %{x} m<br>Y: %{y} m<br>Myy: %{z:.2f} kN·m/m<extra></extra>',
+        hovertemplate: 'X: %{x} m<br>Y: %{y} m<br>Myy: %{z:.2f} kgf·m/m<extra></extra>',
         name: 'Myy'
       };
       var traceVu = {
         z: vu_data, x: x_vals, y: y_vals,
         type: 'heatmap', colorscale: 'Portland', visible: false,
-        hovertemplate: 'X: %{x} m<br>Y: %{y} m<br>Vu: %{z:.2f} kN/m<extra></extra>',
+        hovertemplate: 'X: %{x} m<br>Y: %{y} m<br>Vu: %{z:.2f} kgf/m<extra></extra>',
         name: 'Vu'
       };
       
@@ -1142,9 +1143,9 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         updatemenus: [{
           y: 1.15, x: 0.5, xanchor: 'center', yanchor: 'top', direction: 'right',
           buttons: [
-            { method: 'update', args: [{'visible': [true, false, false]}], label: 'Mxx (kN·m/m)' },
-            { method: 'update', args: [{'visible': [false, true, false]}], label: 'Myy (kN·m/m)' },
-            { method: 'update', args: [{'visible': [false, false, true]}], label: 'Vu (kN/m)' }
+            { method: 'update', args: [{'visible': [true, false, false]}], label: 'Mxx (kgf·m/m)' },
+            { method: 'update', args: [{'visible': [false, true, false]}], label: 'Myy (kgf·m/m)' },
+            { method: 'update', args: [{'visible': [false, false, true]}], label: 'Vu (kgf/m)' }
           ]
         }]
       };
@@ -1838,8 +1839,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           <td>M${i+1}</td>
           <td>${b.type === 'perimetral' ? 'Perimetral' : 'Interno'}</td>
           <td>${b.band_width.toFixed(2)} m</td>
-          <td>${b.Mx_design_kNm_m.toFixed(2)}</td>
-          <td>${b.My_design_kNm_m.toFixed(2)}</td>
+          <td>${(b.Mx_design_kNm_m * 101.9716).toFixed(2)}</td>
+          <td>${(b.My_design_kNm_m * 101.9716).toFixed(2)}</td>
           <td>${b.Asx_cm2_m.toFixed(2)}</td>
           <td>${b.Asy_cm2_m.toFixed(2)}</td>
           <td>${px}</td>
@@ -1873,7 +1874,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     <thead>
       <tr>
         <th>Muro</th><th>Tipo</th><th>Ancho banda</th>
-        <th>Mx diseño<br>(kN·m/m)</th><th>My diseño<br>(kN·m/m)</th>
+        <th>Mx diseño<br>(kgf·m/m)</th><th>My diseño<br>(kgf·m/m)</th>
         <th>Asx<br>(cm²/m)</th><th>Asy<br>(cm²/m)</th>
         <th>Prop. X</th><th>Prop. Y</th><th>Estado</th>
       </tr>
@@ -1984,6 +1985,19 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
   return (
     <>
+    {loading && (
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(5px)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        zIndex: 9999
+      }}>
+        <div style={{ width: '50px', height: '50px', border: '5px solid #ccc', borderTopColor: '#1A6BB5', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <h3 style={{ marginTop: '20px', color: '#1A6BB5' }}>Calculando Método de Elementos Finitos (FEM)...</h3>
+        <p style={{ color: '#666' }}>Por favor, espere un momento.</p>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    )}
     <div className="calc-losa-container">
       {/* MODAL PARA ABRIR PROYECTO */}
       {showSaveAsModal && (
@@ -2042,32 +2056,38 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         </div>
       )}
 
-      <div className="calc-header">
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px'}}>
+      <div className="calc-header" style={{ width: '100%' }}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
           <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
             {onBack && (
               <button 
                 className="btn-secondary" 
-                style={{ width: 'fit-content', whiteSpace: 'nowrap', padding: '6px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.4)' }}
+                style={{ whiteSpace: 'nowrap', padding: '4px 10px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '4px', cursor: 'pointer' }}
                 onClick={onBack}
               >
                 &larr; Volver
               </button>
             )}
-            <div>
-              <h2 style={{margin: 0}}>Diseño de Losa de Fundación (Método Híbrido)</h2>
-
-            </div>
+            <h2 style={{margin: 0, fontSize: '16px', fontWeight: '400'}}>Diseño de Losa de Fundación (Método Híbrido)</h2>
           </div>
-          <div className="header-actions">
+          <div className="header-actions" style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <button 
+              className="btn-primary" 
+              onClick={runAnalysis} 
+              disabled={loading}
+              style={{ background: '#4caf50', border: 'none', color: '#fff', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+            >
+              <FaCogs /> {loading ? 'Calculando...' : 'Ejecutar Análisis Estructural'}
+            </button>
             <input 
               type="text" 
               value={projectName} 
               onChange={e => setProjectName(e.target.value)} 
               placeholder="Nombre del Proyecto"
               className="project-name-input"
+              style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '13px', width: '180px' }}
             />
-            <button className="btn-secondary" onClick={() => { setShowOpenModal(true); fetchRuns(); }}>
+            <button className="btn-secondary" onClick={() => { setShowOpenModal(true); fetchRuns(); }} style={{ padding: '6px 12px', fontSize: '13px', background: '#fff', color: '#333', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
               📂 Abrir Proyecto
             </button>
           </div>
@@ -2076,10 +2096,53 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
       <div className="calc-body">
         {/* PANEL IZQUIERDO: CONTROLES */}
-        <div className="calc-sidebar">
+        
+        {/* NEW HORIZONTAL TOOLBAR */}
+        <div style={{ padding: '8px 16px', background: '#fff', borderBottom: '1px solid #ddd', display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', width: '100%', zIndex: 10 }}>
+          <button className={`toolbar-btn ${activeModal === 'geometry' ? 'active' : ''}`} onClick={() => setActiveModal('geometry')} style={{display:'flex', alignItems:'center', gap:'6px', background: activeModal === 'geometry' ? '#e3f2fd' : 'none', border:'none', cursor:'pointer', color: activeModal === 'geometry' ? '#1A6BB5' : '#555', padding:'6px 12px', borderRadius:'6px', fontWeight:'500'}}>
+            <FaDrawPolygon /> Geometría
+          </button>
+          <button className={`toolbar-btn ${activeModal === 'materials' ? 'active' : ''}`} onClick={() => setActiveModal('materials')} style={{display:'flex', alignItems:'center', gap:'6px', background: activeModal === 'materials' ? '#e3f2fd' : 'none', border:'none', cursor:'pointer', color: activeModal === 'materials' ? '#1A6BB5' : '#555', padding:'6px 12px', borderRadius:'6px', fontWeight:'500'}}>
+            <FaCubes /> Materiales y Muros
+          </button>
+          <button className={`toolbar-btn ${activeModal === 'fem' ? 'active' : ''}`} onClick={() => setActiveModal('fem')} style={{display:'flex', alignItems:'center', gap:'6px', background: activeModal === 'fem' ? '#e3f2fd' : 'none', border:'none', cursor:'pointer', color: activeModal === 'fem' ? '#1A6BB5' : '#555', padding:'6px 12px', borderRadius:'6px', fontWeight:'500'}}>
+            <FaCogs /> Parámetros Diseño
+          </button>
+          <button className={`toolbar-btn ${activeModal === 'walls' ? 'active' : ''}`} onClick={() => setActiveModal('walls')} style={{display:'flex', alignItems:'center', gap:'6px', background: activeModal === 'walls' ? '#e3f2fd' : 'none', border:'none', cursor:'pointer', color: activeModal === 'walls' ? '#1A6BB5' : '#555', padding:'6px 12px', borderRadius:'6px', fontWeight:'500'}}>
+            <FaColumns /> Muros Internos
+          </button>
+          <button className={`toolbar-btn ${activeModal === 'openings' ? 'active' : ''}`} onClick={() => setActiveModal('openings')} style={{display:'flex', alignItems:'center', gap:'6px', background: activeModal === 'openings' ? '#e3f2fd' : 'none', border:'none', cursor:'pointer', color: activeModal === 'openings' ? '#1A6BB5' : '#555', padding:'6px 12px', borderRadius:'6px', fontWeight:'500'}}>
+            <FaDoorOpen /> Aberturas Listado
+          </button>
           
-          <div className="control-group">
-            <h3>1. Forma de la Losa</h3>
+          <div style={{ width: '1px', height: '24px', background: '#ddd', margin: '0 8px' }} />
+          <span style={{ fontSize: '13px', color: '#666', marginRight: '8px' }}>Arrastrar al Lienzo:</span>
+          
+          <div draggable onDragStart={(e) => handleDragStart(e, 'door_left')} title="Puerta Izquierda (Adentro)" style={{ cursor:'grab', display:'flex', alignItems:'center', justifyContent:'center', padding:'4px', border:'1px solid #eee', borderRadius:'4px', background:'#fafafa' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5"><rect x="2" y="20" width="4" height="4" fill="#555" stroke="none" /><rect x="18" y="20" width="4" height="4" fill="#555" stroke="none" /><path d="M4 20 L4 4" /><path d="M4 4 A16 16 0 0 1 20 20" strokeDasharray="2 3" /></svg>
+          </div>
+          <div draggable onDragStart={(e) => handleDragStart(e, 'door_left_out')} title="Puerta Izquierda (Afuera)" style={{ cursor:'grab', display:'flex', alignItems:'center', justifyContent:'center', padding:'4px', border:'1px solid #eee', borderRadius:'4px', background:'#fafafa' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5"><rect x="2" y="0" width="4" height="4" fill="#555" stroke="none" /><rect x="18" y="0" width="4" height="4" fill="#555" stroke="none" /><path d="M4 4 L4 20" /><path d="M4 20 A16 16 0 0 0 20 4" strokeDasharray="2 3" /></svg>
+          </div>
+          <div draggable onDragStart={(e) => handleDragStart(e, 'door_right')} title="Puerta Derecha (Adentro)" style={{ cursor:'grab', display:'flex', alignItems:'center', justifyContent:'center', padding:'4px', border:'1px solid #eee', borderRadius:'4px', background:'#fafafa' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5"><rect x="2" y="20" width="4" height="4" fill="#555" stroke="none" /><rect x="18" y="20" width="4" height="4" fill="#555" stroke="none" /><path d="M20 20 L20 4" /><path d="M20 4 A16 16 0 0 0 4 20" strokeDasharray="2 3" /></svg>
+          </div>
+          <div draggable onDragStart={(e) => handleDragStart(e, 'door_right_out')} title="Puerta Derecha (Afuera)" style={{ cursor:'grab', display:'flex', alignItems:'center', justifyContent:'center', padding:'4px', border:'1px solid #eee', borderRadius:'4px', background:'#fafafa' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5"><rect x="2" y="0" width="4" height="4" fill="#555" stroke="none" /><rect x="18" y="0" width="4" height="4" fill="#555" stroke="none" /><path d="M20 4 L20 20" /><path d="M20 20 A16 16 0 0 1 4 4" strokeDasharray="2 3" /></svg>
+          </div>
+          <div draggable onDragStart={(e) => handleDragStart(e, 'window')} title="Ventana" style={{ cursor:'grab', display:'flex', alignItems:'center', justifyContent:'center', padding:'4px', border:'1px solid #eee', borderRadius:'4px', background:'#fafafa' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5"><rect x="2" y="4" width="20" height="16" rx="2" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="12" y1="4" x2="12" y2="20" /></svg>
+          </div>
+        </div>
+
+      {activeModal === 'geometry' && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)} style={{zIndex: 50, background:'transparent', pointerEvents:'none'}}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{position:'absolute', left:'20px', top:'100px', maxWidth:'320px', pointerEvents:'auto', boxShadow:'0 10px 25px rgba(0,0,0,0.2)', padding:'16px'}}>
+            <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
+                <h3 style={{margin:0, fontSize:'15px', color:'#1A6BB5'}}>📐 Geometría de Losa</h3>
+                <button onClick={()=>setActiveModal(null)} className="btn-secondary" style={{padding:'2px 8px', fontSize:'12px'}}>✕</button>
+            </div>
+            
             <div className="shape-selector" style={{marginBottom: '12px'}}>
               {SHAPES.map(s => (
                 <button 
@@ -2124,7 +2187,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               
               <div className="param-item"><label>Espesor Losa (cm):</label><input type="number" value={params.h} onChange={e => handleParamChange('h', e.target.value)} /></div>
               <div className="param-item">
-                <label>Paso de Cuadrícula (Snap m):</label>
+                <label>Paso Cuadrícula (Snap m):</label>
                 <select value={gridStep} onChange={e => setGridStep(parseFloat(e.target.value))}>
                   <option value={0.5}>0.50m</option>
                   <option value={0.25}>0.25m</option>
@@ -2134,13 +2197,54 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 </select>
               </div>
             </div>
+            
+            <button className="btn-primary" style={{width:'100%', marginTop:'16px'}} onClick={()=>setActiveModal(null)}>Listo</button>
           </div>
-
-          <div className="control-group">
-            <h3>2. Muros y Suelo</h3>
+        </div>
+      )}
+      
+      {activeModal === 'materials' && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)} style={{zIndex: 50, background:'transparent', pointerEvents:'none'}}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{position:'absolute', left:'150px', top:'100px', maxWidth:'320px', pointerEvents:'auto', boxShadow:'0 10px 25px rgba(0,0,0,0.2)', padding:'16px'}}>
+            <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
+                <h3 style={{margin:0, fontSize:'15px', color:'#1A6BB5'}}>🧱 Materiales y Muros</h3>
+                <button onClick={()=>setActiveModal(null)} className="btn-secondary" style={{padding:'2px 8px', fontSize:'12px'}}>✕</button>
+            </div>
+            
             <div className="params-grid">
               <div className="param-item"><label>Offset / Retiro (m):</label><input type="number" step="0.05" value={offset} onChange={e => setOffset(e.target.value)} /></div>
               <div className="param-item"><label>Alto Muros (m):</label><input type="number" step="0.1" value={wallHeight} onChange={e => setWallHeight(e.target.value)} /></div>
+            </div>
+            
+            <div className="param-item" style={{ marginTop: '10px' }}>
+              <label>Material Constructivo:</label>
+              <select value={material} onChange={e => setMaterial(e.target.value)} style={{ width: '100%', padding: '8px' }}>
+                {Object.entries(MATERIALS).map(([k, v]) => (
+                  <option key={k} value={k}>{v.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="param-item checkbox" style={{ marginTop: '10px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: 'row', cursor: 'pointer' }}>
+                <input type="checkbox" checked={designParams.is_plastered} onChange={e => handleDesignParamChange('is_plastered', e.target.checked)} style={{ margin: 0 }} />
+                <span>Paredes Frisadas (+ Carga Muerta)</span>
+              </label>
+            </div>
+            
+            <button className="btn-primary" style={{width:'100%', marginTop:'16px'}} onClick={()=>setActiveModal(null)}>Listo</button>
+          </div>
+        </div>
+      )}
+      
+      {activeModal === 'fem' && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)} style={{zIndex: 50, background:'transparent', pointerEvents:'none'}}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{position:'absolute', left:'300px', top:'100px', maxWidth:'350px', pointerEvents:'auto', boxShadow:'0 10px 25px rgba(0,0,0,0.2)', padding:'16px'}}>
+            <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
+                <h3 style={{margin:0, fontSize:'15px', color:'#1A6BB5'}}>⚙️ Parámetros de Diseño</h3>
+                <button onClick={()=>setActiveModal(null)} className="btn-secondary" style={{padding:'2px 8px', fontSize:'12px'}}>✕</button>
+            </div>
+            
+            <div className="params-grid">
               <div className="param-item"><label>f'c Concreto (kgf/cm²):</label><input type="number" step="10" value={designParams.fc} onChange={e => handleDesignParamChange('fc', parseFloat(e.target.value))} /></div>
               <div className="param-item"><label>fy Acero (kgf/cm²):</label><input type="number" step="100" value={designParams.fy} onChange={e => handleDesignParamChange('fy', parseFloat(e.target.value))} /></div>
               <div className="param-item"><label>Cap. Portante (kgf/cm²):</label><input type="number" step="0.1" value={designParams.q_adm} onChange={e => handleDesignParamChange('q_adm', parseFloat(e.target.value))} title="1.5 kgf/cm² = 15000 kgf/m²" /></div>
@@ -2161,74 +2265,94 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               </div>
             </div>
             
-            <div className="param-item" style={{ marginTop: '10px' }}>
-              <label>Material Constructivo:</label>
-              <select value={material} onChange={e => setMaterial(e.target.value)} style={{ width: '100%', padding: '8px' }}>
-                {Object.entries(MATERIALS).map(([k, v]) => (
-                  <option key={k} value={k}>{v.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="param-item checkbox" style={{ marginTop: '10px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: 'row', cursor: 'pointer' }}>
-                <input type="checkbox" checked={designParams.is_plastered} onChange={e => handleDesignParamChange('is_plastered', e.target.checked)} style={{ margin: 0 }} />
-                <span>Paredes Frisadas (+ Carga Muerta)</span>
-              </label>
-            </div>
+            <button className="btn-primary" style={{width:'100%', marginTop:'16px'}} onClick={()=>setActiveModal(null)}>Listo</button>
           </div>
+        </div>
+      )}
 
-          <div className="control-group">
-            <h3>3. Muros Internos (Coord. o Clics)</h3>
-            <p className="help-text">Doble clic en el gráfico para dibujar (con Snap) o llena la tabla.</p>
-            <table className="coords-table">
-              <thead>
-                <tr>
-                  <th>Tipo</th><th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {internalWalls.map(w => (
-                  <tr 
-                    key={w.id} 
-                    className={hoveredWallId === w.id ? 'highlighted-row' : ''}
-                    onMouseEnter={() => setHoveredWallId(w.id)}
-                    onMouseLeave={() => setHoveredWallId(null)}
-                  >
-                    <td>
-                      <select value={w.type} onChange={e => updateInternalWall(w.id, 'type', e.target.value)} style={{width:'50px', padding:'2px', fontSize:'10px'}}>
-                        <option value="interno">Int.</option>
-                        <option value="perimetral">Per.</option>
-                      </select>
-                    </td>
-                    <td><input type="number" step="0.5" value={w.x1} onChange={e => updateInternalWall(w.id, 'x1', e.target.value)} /></td>
-                    <td><input type="number" step="0.5" value={w.y1} onChange={e => updateInternalWall(w.id, 'y1', e.target.value)} /></td>
-                    <td><input type="number" step="0.5" value={w.x2} onChange={e => updateInternalWall(w.id, 'x2', e.target.value)} /></td>
-                    <td><input type="number" step="0.5" value={w.y2} onChange={e => updateInternalWall(w.id, 'y2', e.target.value)} /></td>
-                    <td><button className="del-btn" onClick={() => removeInternalWall(w.id)}>X</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {activeModal === 'walls' && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)} style={{zIndex: 50}}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth:'800px', padding:'20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
+                <h3 style={{margin:0, fontSize:'16px', color:'#1A6BB5'}}>🧱 Muros Internos y Columnas</h3>
+                <button onClick={()=>setActiveModal(null)} className="btn-secondary" style={{padding:'4px 8px'}}>✕</button>
+            </div>
+            
+            <div style={{display:'flex', gap:'20px'}}>
+                <div style={{flex: 1}}>
+                    <h4 style={{marginTop:0}}>Muros Internos</h4>
+                    <p style={{fontSize:'12px', color:'#666'}}>Puedes agregarlos haciendo Shift+Clic en el lienzo o usando esta tabla.</p>
+                    <div className="table-container" style={{maxHeight:'300px'}}>
+                      <table className="coords-table">
+                        <thead><tr><th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th></tr></thead>
+                        <tbody>
+                          {internalWalls.map((w, i) => (
+                            <tr key={w.id} className={hoveredWallId === w.id ? 'highlighted-row' : ''} onMouseEnter={() => setHoveredWallId(w.id)} onMouseLeave={() => setHoveredWallId(null)}>
+                              <td><input type="number" step="0.5" value={w.x1} onChange={e => updateInternalWall(w.id, 'x1', e.target.value)}/></td>
+                              <td><input type="number" step="0.5" value={w.y1} onChange={e => updateInternalWall(w.id, 'y1', e.target.value)}/></td>
+                              <td><input type="number" step="0.5" value={w.x2} onChange={e => updateInternalWall(w.id, 'x2', e.target.value)}/></td>
+                              <td><input type="number" step="0.5" value={w.y2} onChange={e => updateInternalWall(w.id, 'y2', e.target.value)}/></td>
+                              <td><button className="del-btn" onClick={() => removeInternalWall(w.id)}>X</button></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <button className="add-btn" onClick={() => addInternalWall({})}>+ Añadir Muro</button>
+                </div>
+                
+                <div style={{flex: 1}}>
+                    <h4 style={{marginTop:0}}>Columnas</h4>
+                    <p style={{fontSize:'12px', color:'#666'}}>Puedes agregarlas con Alt+Clic en el lienzo.</p>
+                    <div className="params-grid" style={{marginBottom:'10px', background:'#f5f5f5', padding:'10px', borderRadius:'6px'}}>
+                      <div className="param-item"><label>b (m):</label><input type="number" step="0.05" value={colConfig.width} onChange={e => setColConfig({...colConfig, width: parseFloat(e.target.value)})} /></div>
+                      <div className="param-item"><label>t (m):</label><input type="number" step="0.05" value={colConfig.length} onChange={e => setColConfig({...colConfig, length: parseFloat(e.target.value)})} /></div>
+                      <div className="param-item"><label>Carga (kgf):</label><input type="number" step="100" value={colConfig.load_kgf} onChange={e => setColConfig({...colConfig, load_kgf: parseFloat(e.target.value)})} /></div>
+                    </div>
+                    
+                    <div className="table-container" style={{maxHeight:'200px'}}>
+                      <table className="coords-table">
+                        <thead><tr><th>X</th><th>Y</th><th>Carga</th><th></th></tr></thead>
+                        <tbody>
+                          {columns.map(c => (
+                            <tr key={c.id}>
+                              <td>{c.x.toFixed(2)}</td><td>{c.y.toFixed(2)}</td><td>{c.load_kgf}</td>
+                              <td><button className="del-btn" onClick={() => setColumns(columns.filter(col => col.id !== c.id))}>X</button></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <button className="add-btn" onClick={() => setColumns([...columns, { id: Date.now(), x: params.Lx/2, y: params.Ly/2, ...colConfig }])}>+ Añadir Columna</button>
+                </div>
+            </div>
+            
+            <button className="btn-primary" style={{width:'100%', marginTop:'20px'}} onClick={()=>setActiveModal(null)}>Cerrar Panel</button>
+          </div>
+        </div>
+      )}
 
-            {/* Tabla de Aberturas (si hay) */}
-            {openings.length > 0 && (
-               <div className="structural-table" style={{marginTop: '24px'}}>
-                 <h4>Vanos y Aberturas (Drag & Drop)</h4>
+      {activeModal === 'openings' && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)} style={{zIndex: 50}}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth:'500px', padding:'20px'}}>
+            <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
+                <h3 style={{margin:0, fontSize:'16px', color:'#1A6BB5'}}>🚪 Listado de Aberturas</h3>
+                <button onClick={()=>setActiveModal(null)} className="btn-secondary" style={{padding:'4px 8px'}}>✕</button>
+            </div>
+            
+            {openings.length === 0 ? (
+               <p style={{color:'#666', fontSize:'13px', textAlign:'center', padding:'20px'}}>No hay aberturas. Arrastra una desde la barra superior hacia los muros.</p>
+            ) : (
+               <div className="table-container" style={{maxHeight:'300px'}}>
                  <table className="coords-table">
-                   <thead><tr><th>Vano</th><th>Muro ID</th><th>Inicio (m)</th><th>Ancho (m)</th><th>Alto (m)</th><th></th></tr></thead>
+                   <thead><tr><th>Tipo</th><th>Muro</th><th>Inicio</th><th>L</th><th>H</th><th></th></tr></thead>
                    <tbody>
                      {openings.map(op => {
-                       let Icon = AppWindow;
-                       let label = 'Ventana';
-                       if (op.type.startsWith('door_left')) { Icon = DoorClosed; label = 'Puerta (Izq)'; }
+                       let Icon = AppWindow; let label = 'Ventana';
+                       if (op.type.startsWith('door_left')) { Icon = DoorOpen; label = 'Puerta (Izq)'; }
                        if (op.type.startsWith('door_right')) { Icon = DoorOpen; label = 'Puerta (Der)'; }
                        return (
-                       <tr 
-                         key={op.id}
-                         className={hoveredOpeningId === op.id ? 'highlighted-row' : ''}
-                         onMouseEnter={() => setHoveredOpeningId(op.id)}
-                         onMouseLeave={() => setHoveredOpeningId(null)}
-                       >
+                       <tr key={op.id} className={hoveredOpeningId === op.id ? 'highlighted-row' : ''} onMouseEnter={() => setHoveredOpeningId(op.id)} onMouseLeave={() => setHoveredOpeningId(null)}>
                          <td style={{display:'flex', alignItems:'center', gap:'6px'}}><Icon size={16} color="#666"/> {label}</td>
                          <td>{String(op.wall_id).substring(0,8)}</td>
                          <td>{op.start_m.toFixed(2)}</td>
@@ -2242,104 +2366,11 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                </div>
             )}
             
-            <button className="add-btn" onClick={() => addInternalWall({})}>+ Añadir Muro Interno</button>
-          </div>
-
-          <button className="analyze-btn" onClick={runAnalysis} disabled={loading}>
-            {loading ? 'Calculando FEM...' : 'Ejecutar Análisis Estructural'}
-          </button>
-          {error && <div className="error-box">{error}</div>}
-
-          {/* Botones de Auditoría (Aparecen si hay resultados) */}
-          {results && !error && (
-            <div className="audit-actions">
-              <button className="btn-primary-results" onClick={() => setShowResultsModal(true)}>
-                <FaChartBar /> Ver Resultados
-              </button>
-              <button className="btn-secondary" onClick={downloadHTML} style={{background: '#e3f2fd', borderColor: '#90caf9'}}>
-                <FaFileCode /> Plano HTML
-              </button>
-              <button className="btn-secondary" onClick={downloadAuditJSON}>
-                <FaDownload /> JSON Auditoría
-              </button>
-              <button className="btn-success" onClick={saveToDatabase} disabled={saving}>
-                <FaSave /> {saving ? 'Guardando...' : 'Guardar'}
-              </button>
-              <button
-                className="btn-secondary"
-                style={{borderColor:'#4caf50', color:'#2e7d32'}}
-                onClick={() => { setSaveAsName(projectName); setShowSaveAsModal(true); }}
-                disabled={!results}
-              >
-                <FaFolderPlus /> Guardar Como
-              </button>
-            </div>
-          )}
-
-          {/* Estado rápido inline (sin abrir modal) */}
-          {results && !error && (
-            <div style={{display:'flex', gap:'8px', flexWrap:'wrap', marginTop:'8px'}}>
-              <span className={`status-badge ${results.shear?.shear_ok ? 'ok' : 'fail'}`}>
-                Cortante: {results.shear?.shear_ok ? '✓ OK' : '✗ Revisar'}
-              </span>
-              <span className={`status-badge ${results.soil_pressure?.ok ? 'ok' : 'fail'}`}>
-                Suelo: {results.soil_pressure?.ok ? '✓ OK' : '✗ Revisar'}
-              </span>
-              <span className="status-badge info">
-                wₘₐₓ = {(results.displacements?.w_max_mm || 0).toFixed(2)} mm
-              </span>
-            </div>
-          )}
-
-        </div>
-
-        {/* TOOLBAR VERTICAL FLOTANTE (STICKY) */}
-        <div style={{ position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 10, alignSelf: 'flex-start', background: '#fff', padding: '10px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-          <h5 style={{margin: '0', fontSize: '12px', color: '#666', textAlign:'center', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>Arrastrar</h5>
-          <div className="drag-toolbox" style={{display:'flex', flexDirection:'column', gap:'8px'}}>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left')} className="drag-item" title="Puerta Izquierda (Adentro)" style={{padding:'8px', cursor:'grab', display:'flex', justifyContent:'center'}}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
-                <rect x="2" y="20" width="4" height="4" fill="#555" stroke="none" />
-                <rect x="18" y="20" width="4" height="4" fill="#555" stroke="none" />
-                <path d="M4 20 L4 4" />
-                <path d="M4 4 A16 16 0 0 1 20 20" strokeDasharray="2 3" />
-              </svg>
-            </div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_left_out')} className="drag-item" title="Puerta Izquierda (Afuera)" style={{padding:'8px', cursor:'grab', display:'flex', justifyContent:'center'}}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
-                <rect x="2" y="0" width="4" height="4" fill="#555" stroke="none" />
-                <rect x="18" y="0" width="4" height="4" fill="#555" stroke="none" />
-                <path d="M4 4 L4 20" />
-                <path d="M4 20 A16 16 0 0 0 20 4" strokeDasharray="2 3" />
-              </svg>
-            </div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right')} className="drag-item" title="Puerta Derecha (Adentro)" style={{padding:'8px', cursor:'grab', display:'flex', justifyContent:'center'}}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
-                <rect x="2" y="20" width="4" height="4" fill="#555" stroke="none" />
-                <rect x="18" y="20" width="4" height="4" fill="#555" stroke="none" />
-                <path d="M20 20 L20 4" />
-                <path d="M20 4 A16 16 0 0 0 4 20" strokeDasharray="2 3" />
-              </svg>
-            </div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'door_right_out')} className="drag-item" title="Puerta Derecha (Afuera)" style={{padding:'8px', cursor:'grab', display:'flex', justifyContent:'center'}}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
-                <rect x="2" y="0" width="4" height="4" fill="#555" stroke="none" />
-                <rect x="18" y="0" width="4" height="4" fill="#555" stroke="none" />
-                <path d="M20 4 L20 20" />
-                <path d="M20 20 A16 16 0 0 1 4 4" strokeDasharray="2 3" />
-              </svg>
-            </div>
-            <div draggable onDragStart={(e) => handleDragStart(e, 'window')} className="drag-item" title="Ventana" style={{padding:'8px', cursor:'grab', display:'flex', justifyContent:'center'}}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
-                <rect x="1" y="8" width="22" height="8" />
-                <rect x="1" y="9" width="12" height="3" fill="#e0e0e0" />
-                <rect x="11" y="12" width="12" height="3" fill="#e0e0e0" />
-              </svg>
-            </div>
+            <button className="btn-primary" style={{width:'100%', marginTop:'16px'}} onClick={()=>setActiveModal(null)}>Cerrar Panel</button>
           </div>
         </div>
-
-        {/* PANEL DERECHO: VISTA PREVIA Y RESULTADOS */}
+      )}
+{/* PANEL DERECHO: VISTA PREVIA Y RESULTADOS */}
         <div className="calc-content" style={{ flex: '1', minWidth: 0 }}>
           <div className="canvas-wrapper hybrid-canvas">
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '10px' }}>
@@ -2730,12 +2761,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       <div className="modal-overlay" style={{alignItems:'flex-start', padding:'20px', overflowY:'auto'}} onClick={() => setShowResultsModal(false)}>
         <div className="modal-content" style={{maxWidth:'960px', width:'100%', margin:'auto', padding:'0'}} onClick={e => e.stopPropagation()}>
           {/* Header */}
-          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 24px', borderBottom:'1px solid #eee', background:'#1e1e2f', borderRadius:'12px 12px 0 0'}}>
+          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 24px', borderBottom:'1px solid #eee', background:'#1A6BB5', borderRadius:'12px 12px 0 0'}}>
             <div>
               <h3 style={{margin:0, color:'#fff', fontSize:'16px'}}>📊 Resultados del Análisis Estructural (ACI 318)</h3>
-              <small style={{color:'#aaa'}}>{projectName}</small>
+              <small style={{color:'#e0e0e0'}}>{projectName}</small>
             </div>
-            <button onClick={() => setShowResultsModal(false)} style={{background:'none', border:'1px solid #555', color:'#fff', borderRadius:'6px', padding:'4px 12px', cursor:'pointer', fontSize:'14px'}}>✕ Cerrar</button>
+            <button onClick={() => setShowResultsModal(false)} style={{background:'none', border:'1px solid rgba(255,255,255,0.5)', color:'#fff', borderRadius:'6px', padding:'4px 12px', cursor:'pointer', fontSize:'14px'}}>✕ Cerrar</button>
           </div>
 
           {/* Cards de métricas clave */}
@@ -2743,17 +2774,17 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             {[{
               label:'Asentamiento Máx', val: `${(results.displacements?.w_max_mm||0).toFixed(2)} mm`, ok: true
             },{
-              label:'Momento Mx Máx', val: `${(results.moments?.Mx_max_kNm_m||0).toFixed(2)} kN·m/m`, ok: true
+              label:'Momento Mx Máx', val: `${((results.moments?.Mx_max_kNm_m||0)*101.9716).toFixed(0)} kgf·m/m`, ok: true
             },{
-              label:'Momento My Máx', val: `${(results.moments?.My_max_kNm_m||0).toFixed(2)} kN·m/m`, ok: true
+              label:'Momento My Máx', val: `${((results.moments?.My_max_kNm_m||0)*101.9716).toFixed(0)} kgf·m/m`, ok: true
             },{
-              label:'Cortante Vu Máx', val: `${(results.shear?.Vu_max_kN_m||0).toFixed(1)} kN/m`, ok: results.shear?.shear_ok
+              label:'Cortante Vu Máx', val: `${((results.shear?.Vu_max_kN_m||0)*101.9716).toFixed(0)} kgf/m`, ok: results.shear?.shear_ok
             },{
-              label:'φVc Cap.', val: `${(results.shear?.phiVc_kN_m||0).toFixed(1)} kN/m`, ok: results.shear?.shear_ok
+              label:'φVc Cap.', val: `${((results.shear?.phiVc_kN_m||0)*101.9716).toFixed(0)} kgf/m`, ok: results.shear?.shear_ok
             },{
-              label:'Presión Suelo', val: results.soil_pressure ? `${results.soil_pressure.max_pressure_kN_m2.toFixed(1)} kN/m²` : '-', ok: results.soil_pressure?.ok
+              label:'Presión Suelo', val: results.soil_pressure ? `${(results.soil_pressure.max_pressure_kN_m2*101.9716).toFixed(0)} kgf/m²` : '-', ok: results.soil_pressure?.ok
             },{
-              label:'q_adm', val: results.soil_pressure ? `${results.soil_pressure.q_adm_kN_m2.toFixed(0)} kN/m²` : '-', ok: true
+              label:'q_adm', val: results.soil_pressure ? `${(results.soil_pressure.q_adm_kN_m2*101.9716).toFixed(0)} kgf/m²` : '-', ok: true
             },{
               label:'Acero Mínimo', val: `${(results.As_min_cm2_m||0).toFixed(2)} cm²/m`, ok: true
             }].map((c, i) => (
@@ -2823,9 +2854,9 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               <h4 style={{margin:'0 0 12px 0', color:'#333'}}><FaThermometerHalf style={{color:'#1A6BB5'}}/> Mapas de Calor Interactivos</h4>
               <div style={{display:'flex', flexWrap:'wrap', gap:'15px', justifyContent:'center'}}>
                 <InteractiveHeatmap dataMatrix={results.heatmaps.w_mm} title="Desplazamiento (w)" unit="mm" lx={params.Lx} ly={params.Ly} />
-                <InteractiveHeatmap dataMatrix={results.heatmaps.Mx_kNm} title="Momento Mx" unit="kNm/m" lx={params.Lx} ly={params.Ly} />
-                <InteractiveHeatmap dataMatrix={results.heatmaps.My_kNm} title="Momento My" unit="kNm/m" lx={params.Lx} ly={params.Ly} />
-                <InteractiveHeatmap dataMatrix={results.heatmaps.Vu_kN} title="Cortante Vu" unit="kN/m" lx={params.Lx} ly={params.Ly} />
+                <InteractiveHeatmap dataMatrix={results.heatmaps.Mx_kNm.map(r => r.map(v => v * 101.9716))} title="Momento Mx" unit="kgf·m/m" lx={params.Lx} ly={params.Ly} />
+                <InteractiveHeatmap dataMatrix={results.heatmaps.My_kNm.map(r => r.map(v => v * 101.9716))} title="Momento My" unit="kgf·m/m" lx={params.Lx} ly={params.Ly} />
+                <InteractiveHeatmap dataMatrix={results.heatmaps.Vu_kN.map(r => r.map(v => v * 101.9716))} title="Cortante Vu" unit="kgf/m" lx={params.Lx} ly={params.Ly} />
               </div>
             </div>
           )}
@@ -2885,7 +2916,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                   <tr style={{background:'#1e1e2f', color:'#fff'}}>
                     <th style={{color:'#fff'}}>Muro</th><th style={{color:'#fff'}}>Tipo</th>
                     <th style={{color:'#fff'}}>Ancho Banda</th>
-                    <th style={{color:'#fff'}}>Mx (kN·m/m)</th><th style={{color:'#fff'}}>My (kN·m/m)</th>
+                    <th style={{color:'#fff'}}>Mx (kgf·m/m)</th><th style={{color:'#fff'}}>My (kgf·m/m)</th>
                     <th style={{color:'#fff'}}>Asx (cm²/m)</th><th style={{color:'#fff'}}>Asy (cm²/m)</th>
                     <th style={{color:'#fff'}}>Prop. X</th><th style={{color:'#fff'}}>Prop. Y</th>
                     <th style={{color:'#fff'}}></th>
@@ -2911,8 +2942,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                           </span>
                         </td>
                         <td>{b.band_width.toFixed(2)} m</td>
-                        <td>{b.Mx_design_kNm_m.toFixed(2)}</td>
-                        <td>{b.My_design_kNm_m.toFixed(2)}</td>
+                        <td>{(b.Mx_design_kNm_m * 101.9716).toFixed(2)}</td>
+                        <td>{(b.My_design_kNm_m * 101.9716).toFixed(2)}</td>
                         <td style={{fontWeight:'600'}}>{b.Asx_cm2_m.toFixed(2)}</td>
                         <td style={{fontWeight:'600'}}>{b.Asy_cm2_m.toFixed(2)}</td>
                         <td>{px}</td>
