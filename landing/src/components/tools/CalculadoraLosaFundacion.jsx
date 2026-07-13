@@ -935,7 +935,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     <h3>3.2 Matriz de Rigidez Local del Elemento (12x12)</h3>
     <p>Cada elemento cuadrilátero de 4 nodos acopla la flexión y rigidez a cortante mediante una matriz de rigidez elástica de 12x12:</p>
     <div class="formula" style="font-size:12px; overflow-x:auto;">
-      [K_elem] = \int [B]^T [D_placa] [B] dA
+      [K_elem] = ∫ [B]^T [D_placa] [B] dA
     </div>
     <p style="font-size:13px; color:#555;">Donde [B] relaciona las curvaturas con los desplazamientos nodales e interpolaciones bilineales, y [D_placa] es la rigidez del material constitutivo de la losa.</p>
 
