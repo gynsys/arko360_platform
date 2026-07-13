@@ -144,6 +144,16 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   box-sizing: border-box;
+  text-align: center;
+}
+
+.coords-table input::-webkit-outer-spin-button,
+.coords-table input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.coords-table input[type=number] {
+  -moz-appearance: textfield;
 }
 
 .del-btn {
