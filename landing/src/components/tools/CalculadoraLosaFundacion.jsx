@@ -920,58 +920,64 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   </div>
 
   <div class="card">
-    <h2>3. Discretización y Flujo de Cálculo</h2>
-    <p>Para resolver la ecuación diferencial, dividimos la losa en una cuadrícula regular. El sistema de ecuaciones algebraicas (matriz) que resuelve el motor es de tamaño <strong>${matrixSize} × ${matrixSize}</strong> nodos.</p>
+    <h2>3. Formulación por Elementos Finitos (FEM) y Flujo de Cálculo</h2>
+    <p>Para analizar el comportamiento estructural de la losa, el motor utiliza el <strong>Método de Elementos Finitos (FEM)</strong> en lugar de aproximaciones tradicionales por diferencias finitas. Esto nos permite modelar losas de forma libre y condiciones de carga complejas con gran precisión física.</p>
+    
+    <h3>3.1 El Grado de Libertad Nodal y Discretización</h3>
+    <p>La losa se subdivide en una cuadrícula regular de elementos cuadriláteros planos (Quad Plate Elements) de Mindlin. Cada nodo posee <strong>3 grados de libertad (DOF)</strong>:</p>
     <ul>
-      <li>Nodos en X (nx): ${nx}</li>
-      <li>Nodos en Y (ny): ${ny}</li>
-      <li>Espaciamiento Δx: ${dx.toFixed(3)} m</li>
-      <li>Espaciamiento Δy: ${dy.toFixed(3)} m</li>
+      <li>Desplazamiento vertical en Z: <code>w</code> (m)</li>
+      <li>Rotación alrededor del eje X: <code>θ_x</code> (rad)</li>
+      <li>Rotación alrededor del eje Y: <code>θ_y</code> (rad)</li>
     </ul>
-    <p>La discretización transforma el problema continuo en un sistema algebraico matricial (A·w = b), que modela la interacción entre la losa, la carga y el suelo (k·w).</p>
-    <pre class="formula" style="background:#f1f5f9; color:#334155; font-size:12px; line-height:1.2; overflow-x:auto;">
-      j=4  ●---●---●---●---●
-           |   |   |   |   |
-      j=3  ●---●---●---●---●
-           |   |   |   |   |
-      j=2  ●---●---●---●---●
-           |   |   |   |   |
-      j=1  ●---●---●---●---●
-           |   |   |   |   |
-      j=0  ●---●---●---●---●
-          i=0 i=1 i=2 i=3 i=4
-    </pre>
-    <p><strong>El flujo interno del Motor de Cálculo es:</strong></p>
+    <p>Para una grilla de <strong>${nx} × ${ny}</strong> subdivisiones (nodos totales: <strong>${matrixSize}</strong>), el sistema de ecuaciones posee un tamaño matricial de <strong>${matrixSize * 3} × ${matrixSize * 3}</strong> grados de libertad.</p>
+
+    <h3>3.2 Matriz de Rigidez Local del Elemento (12x12)</h3>
+    <p>Cada elemento cuadrilátero de 4 nodos acopla la flexión y rigidez a cortante mediante una matriz de rigidez elástica de 12x12:</p>
+    <div class="formula" style="font-size:12px; overflow-x:auto;">
+      [K_elem] = \int [B]^T [D_placa] [B] dA
+    </div>
+    <p style="font-size:13px; color:#555;">Donde [B] relaciona las curvaturas con los desplazamientos nodales e interpolaciones bilineales, y [D_placa] es la rigidez del material constitutivo de la losa.</p>
+
+    <h3>3.3 Acoplamiento del Suelo elástico (Winkler)</h3>
+    <p>El suelo se introduce directamente en la diagonal de la matriz de rigidez global. Cada resorte de suelo añade rigidez vertical en el DOF traslacional del nodo:</p>
+    <div class="formula">
+      K_suelo = k_balasto · A_tributaria
+    </div>
+    <p><strong>Ejemplo de Montaje Nodal:</strong> Para un nodo interior con un área tributaria de ${dx.toFixed(2)}m × ${dy.toFixed(2)}m = ${(dx * dy).toFixed(4)} m² y un balasto de ${(payload.materials.k / 9806.65).toFixed(2)} kgf/cm³ (equivalente a ${(payload.materials.k).toExponential(2)} N/m³), la rigidez vertical añadida al sistema en ese nodo es:</p>
+    <div class="formula">
+      K_diagonal = ${(payload.materials.k).toExponential(2)} N/m³ × ${(dx * dy).toFixed(4)} m² = ${(payload.materials.k * dx * dy).toExponential(2)} N/m
+    </div>
+
+    <h3>3.4 Diagrama del Flujo de Cálculo FEM</h3>
     <pre class="formula" style="background:#f1f5f9; color:#334155; font-size:12px; line-height:1.2; overflow-x:auto;">
 ┌─────────────────────────────────────────┐
-│  1. DEFINIR DATOS                       │
-│     • Geometría de la losa              │
-│     • Propiedades del concreto (E, ν, h)│
-│     • Propiedades del suelo (k)         │
-│     • Cargas aplicadas (q)              │
-│     • Condiciones de borde              │
+│  1. DEFINICIÓN DE GEOMETRÍA Y PROPIEDADES│
+│     • Lx, Ly, espesor (h), material (E, ν)│
+│     • Suelo (resorte k) y coordenadas   │
 ├─────────────────────────────────────────┤
-│  2. DISCRETIZAR                         │
-│     • Elegir tamaño de malla (dx)       │
-│     • Crear cuadrícula de puntos        │
-│     • Identificar puntos interiores     │
+│  2. MESHING / DISCRETIZACIÓN            │
+│     • Generar nodos y cuadriláteros     │
+│     • Asignar coordenadas globales      │
 ├─────────────────────────────────────────┤
-│  3. CONSTRUIR MATRIZ DEL SISTEMA        │
-│     • Para cada punto interior          │
-│     • Aplicar estrella de 13 puntos     │
-│     • Agregar término k·w               │
-│     • Vector de cargas = q              │
+│  3. ENSAMBLAJE MATRICIAL GLOBAL         │
+│     • Rigidez de placa (Quad 12x12)     │
+│     • Rigidez de vigas de amarre (6x6)  │
+│     • Agregar resortes de suelo Winkler │
+│       K_diag += k * Area_tributaria     │
 ├─────────────────────────────────────────┤
-│  4. RESOLVER SISTEMA                    │
-│     • A·w = b                           │
-│     • Usar eliminación Gaussiana        │
-│     • o métodos iterativos              │
+│  4. ASAMBLEA DEL VECTOR DE CARGAS {F}    │
+│     • Peso propio y sobrecarga en nodos │
+│     • Muros y machones puntuales        │
 ├─────────────────────────────────────────┤
-│  5. POST-PROCESAR                       │
-│     • Calcular presiones: p = k·w       │
-│     • Calcular momentos por derivadas   │
-│     • Diseñar armado (As)               │
-│     • Verificar equilibrio              │
+│  5. RESOLVER SISTEMA RALO               │
+│     • [K_global] · {U} = {F}            │
+│     • Solución directa (spsolve)        │
+├─────────────────────────────────────────┤
+│  6. POST-PROCESAMIENTO Y DISEÑO         │
+│     • Presiones = k * w                 │
+│     • Momentos flectores (Mx, My)       │
+│     • Armado ACI 318 (Whitney)          │
 └─────────────────────────────────────────┘
     </pre>
   </div>
@@ -2325,7 +2331,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{position:'absolute', left:'20px', top:'100px', maxWidth:'320px', pointerEvents:'auto', boxShadow:'0 10px 25px rgba(0,0,0,0.2)', padding:'16px'}}>
             <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
                 <h3 style={{margin:0, fontSize:'15px', color:'#1A6BB5'}}>📐 Geometría de Losa</h3>
-                <button onClick={()=>setActiveModal(null)} className="btn-secondary" style={{padding:'2px 8px', fontSize:'12px'}}>✕</button>
+                <button onClick={() => setActiveModal(null)} style={{background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer', padding:'4px', width:'auto', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
             </div>
             
             <div className="shape-selector" style={{marginBottom: '12px'}}>
@@ -2393,7 +2399,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{position:'absolute', left:'150px', top:'100px', maxWidth:'320px', pointerEvents:'auto', boxShadow:'0 10px 25px rgba(0,0,0,0.2)', padding:'16px'}}>
             <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
                 <h3 style={{margin:0, fontSize:'15px', color:'#1A6BB5'}}>🧱 Materiales y Muros</h3>
-                <button onClick={()=>setActiveModal(null)} className="btn-secondary" style={{padding:'2px 8px', fontSize:'12px'}}>✕</button>
+                <button onClick={() => setActiveModal(null)} style={{background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer', padding:'4px', width:'auto', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
             </div>
             
             <div className="params-grid">
@@ -2426,7 +2432,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{position:'absolute', left:'300px', top:'100px', maxWidth:'350px', pointerEvents:'auto', boxShadow:'0 10px 25px rgba(0,0,0,0.2)', padding:'16px'}}>
             <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
                 <h3 style={{margin:0, fontSize:'15px', color:'#1A6BB5'}}>⚙️ Parámetros de Diseño</h3>
-                <button onClick={()=>setActiveModal(null)} className="btn-secondary" style={{padding:'2px 8px', fontSize:'12px'}}>✕</button>
+                <button onClick={() => setActiveModal(null)} style={{background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer', padding:'4px', width:'auto', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
             </div>
             
             <div className="params-grid">
@@ -2460,14 +2466,14 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth:'800px', padding:'20px'}}>
             <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
                 <h3 style={{margin:0, fontSize:'16px', color:'#1A6BB5'}}>🧱 Muros Internos y Columnas</h3>
-                <button onClick={()=>setActiveModal(null)} className="btn-secondary" style={{padding:'4px 8px'}}>✕</button>
+                <button onClick={() => setActiveModal(null)} style={{background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer', padding:'4px', width:'auto', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
             </div>
             
             <div style={{display:'flex', gap:'20px'}}>
                 <div style={{flex: 1}}>
                     <h4 style={{marginTop:0}}>Muros Internos</h4>
                     <p style={{fontSize:'12px', color:'#666'}}>Puedes agregarlos haciendo Shift+Clic en el lienzo o usando esta tabla.</p>
-                    <div className="table-container" style={{maxHeight:'300px'}}>
+                    <div className="table-container" style={{maxHeight:'300px', overflowY:'auto'}}>
                       <table className="coords-table">
                         <thead><tr><th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th></tr></thead>
                         <tbody>
@@ -2490,12 +2496,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                     <h4 style={{marginTop:0}}>Columnas</h4>
                     <p style={{fontSize:'12px', color:'#666'}}>Puedes agregarlas con Alt+Clic en el lienzo.</p>
                     <div className="params-grid" style={{marginBottom:'10px', background:'#f5f5f5', padding:'10px', borderRadius:'6px'}}>
-                      <div className="param-item"><label>b (m):</label><input type="number" step="0.05" value={colConfig.width} onChange={e => setColConfig({...colConfig, width: parseFloat(e.target.value)})} /></div>
-                      <div className="param-item"><label>t (m):</label><input type="number" step="0.05" value={colConfig.length} onChange={e => setColConfig({...colConfig, length: parseFloat(e.target.value)})} /></div>
-                      <div className="param-item"><label>Carga (kgf):</label><input type="number" step="100" value={colConfig.load_kgf} onChange={e => setColConfig({...colConfig, load_kgf: parseFloat(e.target.value)})} /></div>
+                      <div className="param-item"><label>b (m):</label><input type="number" step="0.05" value={colConfig.width} onChange={e => setColConfig({...colConfig, width: parseFloat(e.target.value) || 0})} /></div>
+                      <div className="param-item"><label>t (m):</label><input type="number" step="0.05" value={colConfig.length} onChange={e => setColConfig({...colConfig, length: parseFloat(e.target.value) || 0})} /></div>
+                      <div className="param-item"><label>Alto (Z) m:</label><input type="number" step="0.1" value={colConfig.height} onChange={e => setColConfig({...colConfig, height: parseFloat(e.target.value) || 0})} /></div>
                     </div>
                     
-                    <div className="table-container" style={{maxHeight:'200px'}}>
+                    <div className="table-container" style={{maxHeight:'200px', overflowY:'auto'}}>
                       <table className="coords-table">
                         <thead><tr><th>X</th><th>Y</th><th>Carga</th><th></th></tr></thead>
                         <tbody>
@@ -2508,7 +2514,18 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                         </tbody>
                       </table>
                     </div>
-                    <button className="add-btn" onClick={() => setColumns([...columns, { id: Date.now(), x: params.Lx/2, y: params.Ly/2, ...colConfig }])}>+ Añadir Columna</button>
+                    <button className="add-btn" onClick={() => {
+                      const loadCalc = colConfig.width * colConfig.length * colConfig.height * 2500;
+                      setColumns([...columns, { 
+                        id: Date.now(), 
+                        x: params.Lx/2, 
+                        y: params.Ly/2, 
+                        width: colConfig.width,
+                        length: colConfig.length,
+                        height: colConfig.height,
+                        load_kgf: loadCalc 
+                      }]);
+                    }}>+ Añadir Columna</button>
                 </div>
             </div>
             
@@ -2522,13 +2539,13 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth:'500px', padding:'20px'}}>
             <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
                 <h3 style={{margin:0, fontSize:'16px', color:'#1A6BB5'}}>🚪 Listado de Aberturas</h3>
-                <button onClick={()=>setActiveModal(null)} className="btn-secondary" style={{padding:'4px 8px'}}>✕</button>
+                <button onClick={() => setActiveModal(null)} style={{background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer', padding:'4px', width:'auto', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
             </div>
             
             {openings.length === 0 ? (
                <p style={{color:'#666', fontSize:'13px', textAlign:'center', padding:'20px'}}>No hay aberturas. Arrastra una desde la barra superior hacia los muros.</p>
             ) : (
-               <div className="table-container" style={{maxHeight:'300px'}}>
+               <div className="table-container" style={{maxHeight:'300px', overflowY:'auto'}}>
                  <table className="coords-table">
                    <thead><tr><th>Tipo</th><th>Muro</th><th>Inicio</th><th>L</th><th>H</th><th></th></tr></thead>
                    <tbody>
