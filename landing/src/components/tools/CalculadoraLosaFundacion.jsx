@@ -6,7 +6,7 @@ import './CalculadoraLosaFundacion.css';
 import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut, ArrowLeft } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus, FaDrawPolygon, FaCubes, FaColumns, FaDoorOpen, FaCogs } from 'react-icons/fa';
+import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus, FaDrawPolygon, FaCubes, FaColumns, FaDoorOpen, FaCogs, FaPlay } from 'react-icons/fa';
 import InteractiveHeatmap from './InteractiveHeatmap';
 
 // ============================================
@@ -2070,25 +2070,69 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             )}
 
           </div>
-          <div className="header-actions" style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+          <div className="header-actions" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            {/* Botón Run compacto */}
             <button 
-              className="btn-primary" 
               onClick={runAnalysis} 
               disabled={loading}
-              style={{ background: '#4caf50', border: 'none', color: '#fff', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+              title="Ejecutar Análisis Estructural"
+              style={{
+                background: loading ? '#81c784' : '#4caf50',
+                border: 'none', color: '#fff',
+                padding: '0 14px',
+                height: '32px',
+                borderRadius: '6px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontWeight: '700',
+                fontSize: '13px',
+                display: 'flex', alignItems: 'center', gap: '6px',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                whiteSpace: 'nowrap',
+                letterSpacing: '0.5px',
+                transition: 'background 0.2s'
+              }}
             >
-              <FaCogs /> {loading ? 'Calculando...' : 'Ejecutar Análisis Estructural'}
+              {loading
+                ? <><span style={{display:'inline-block', width:'13px', height:'13px', border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.8s linear infinite'}} /> Run<style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style></>
+                : <><FaPlay style={{fontSize:'11px'}} /> Run</>
+              }
             </button>
+
+            {/* Botón Ver Resultados — solo visible si hay resultados */}
+            {results && !error && (
+              <button
+                onClick={() => setShowResultsModal(true)}
+                title="Ver Resultados del Análisis"
+                style={{
+                  background: '#1A6BB5',
+                  border: 'none', color: '#fff',
+                  padding: '0 14px',
+                  height: '32px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '13px',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                  whiteSpace: 'nowrap',
+                  animation: 'fadeInBtn 0.3s ease',
+                }}
+              >
+                <FaChartBar style={{fontSize:'12px'}} /> Resultados
+                <style>{`@keyframes fadeInBtn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}`}</style>
+              </button>
+            )}
+
             <input 
               type="text" 
               value={projectName} 
               onChange={e => setProjectName(e.target.value)} 
               placeholder="Nombre del Proyecto"
               className="project-name-input"
-              style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '13px', width: '180px' }}
+              style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: '13px', width: '160px', outline: 'none' }}
             />
-            <button className="btn-secondary" onClick={() => { setShowOpenModal(true); fetchRuns(); }} style={{ padding: '6px 12px', fontSize: '13px', background: '#fff', color: '#333', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              📂 Abrir Proyecto
+            <button onClick={() => { setShowOpenModal(true); fetchRuns(); }} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+              📂 Abrir
             </button>
           </div>
         </div>
