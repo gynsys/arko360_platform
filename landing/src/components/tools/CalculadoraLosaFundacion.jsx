@@ -255,6 +255,21 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     const footer = document.querySelector('footer');
     if (footer) footer.style.display = 'none';
 
+    // Remove top margin 1 by modifying main container style
+    const mainEl = document.querySelector('main.container');
+    let origPaddingTop = '';
+    let origPaddingBottom = '';
+    let origMinHeight = '';
+    if (mainEl) {
+      origPaddingTop = mainEl.style.paddingTop;
+      origPaddingBottom = mainEl.style.paddingBottom;
+      origMinHeight = mainEl.style.minHeight;
+
+      mainEl.style.paddingTop = '70px'; // Sit right below navbar
+      mainEl.style.paddingBottom = '0px';
+      mainEl.style.minHeight = 'auto';
+    }
+
     const fetchMaterials = async () => {
       try {
         const res = await fetch(`${API_BASE}/materials/`);
@@ -291,6 +306,11 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
     return () => {
       if (footer) footer.style.display = 'block';
+      if (mainEl) {
+        mainEl.style.paddingTop = origPaddingTop;
+        mainEl.style.paddingBottom = origPaddingBottom;
+        mainEl.style.minHeight = origMinHeight;
+      }
     };
   }, []);
 
@@ -1331,8 +1351,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
   const handlePanMove = useCallback((e) => {
     if (!isPanningRef.current) return;
-    const dx = (e.clientX - panStartRef.current.x) / zoom;
-    const dy = (e.clientY - panStartRef.current.y) / zoom;
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const scaleFactorX = CANVAS_SIZE / (rect.width || CANVAS_SIZE);
+    const scaleFactorY = CANVAS_SIZE / (rect.height || CANVAS_SIZE);
+    const dx = ((e.clientX - panStartRef.current.x) * scaleFactorX) / zoom;
+    const dy = ((e.clientY - panStartRef.current.y) * scaleFactorY) / zoom;
     setPanOffset({ x: panStartRef.current.ox + dx, y: panStartRef.current.oy + dy });
   }, [zoom]);
 
@@ -1353,8 +1377,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       return;
     }
     const rect = svgRef.current.getBoundingClientRect();
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
+    const px = (e.clientX - rect.left) * (CANVAS_SIZE / (rect.width || CANVAS_SIZE));
+    const py = (e.clientY - rect.top) * (CANVAS_SIZE / (rect.height || CANVAS_SIZE));
     // Clamp a los límites exactos del canvas después del snap
     const mx = Math.max(0, Math.min(toMeters(px, true), params.Lx));
     const my = Math.max(0, Math.min(toMeters(py, true), params.Ly));
@@ -1432,8 +1456,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     if (!type) return;
 
     const rect = svgRef.current.getBoundingClientRect();
-    const dropX = toMeters(e.clientX - rect.left);
-    const dropY = toMeters(e.clientY - rect.top, false);
+    const dropX = toMeters((e.clientX - rect.left) * (CANVAS_SIZE / (rect.width || CANVAS_SIZE)));
+    const dropY = toMeters((e.clientY - rect.top) * (CANVAS_SIZE / (rect.height || CANVAS_SIZE)), false);
 
     // Encontrar muro más cercano
     let closestWall = null;
@@ -2652,8 +2676,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 if (e.ctrlKey || e.metaKey || e.button === 1) { handlePanStart(e); return; }
                 if (!drawType) {
                   const rect = svgRef.current.getBoundingClientRect();
-                  const px = e.clientX - rect.left;
-                  const py = e.clientY - rect.top;
+                  const px = (e.clientX - rect.left) * (CANVAS_SIZE / (rect.width || CANVAS_SIZE));
+                  const py = (e.clientY - rect.top) * (CANVAS_SIZE / (rect.height || CANVAS_SIZE));
                   const mx = toMeters(px, false);
                   const my = toMeters(py, false);
                   setSelectionBox({ startX: mx, startY: my, currentX: mx, currentY: my });
