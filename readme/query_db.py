@@ -11,16 +11,23 @@ runs = db.query(LosaCalculationRun).filter(LosaCalculationRun.nombre_proyecto.il
 for p in runs:
     print(f"=====================================")
     print(f"Run ID: {p.id}, Title: {p.nombre_proyecto}")
-    print("--- INPUTS ---")
-    if p.inputs:
-        data = p.inputs
-        if isinstance(data, str):
-            data = json.loads(data)
-        print(json.dumps(data, indent=2))
-    print("--- RESULTADOS ---")
-    if p.resultados:
-        res = p.resultados
-        if isinstance(res, str):
-            res = json.loads(res)
-        print(json.dumps(res, indent=2))
+    print("--- DATA ---")
+    if p.inputs and p.resultados:
+        data = p.inputs if isinstance(p.inputs, dict) else json.loads(p.inputs)
+        res = p.resultados if isinstance(p.resultados, dict) else json.loads(p.resultados)
+        
+        Lx = data.get("geometry", {}).get("Lx", 0)
+        Ly = data.get("geometry", {}).get("Ly", 0)
+        
+        nx = res.get("heatmaps", {}).get("nx", 0)
+        ny = res.get("heatmaps", {}).get("ny", 0)
+        
+        if nx > 1 and ny > 1:
+            dx = Lx / (nx - 1)
+            dy = Ly / (ny - 1)
+            print(f"Geometry: Lx = {Lx}m, Ly = {Ly}m")
+            print(f"Mesh Nodes: nx = {nx}, ny = {ny}")
+            print(f"Element Size (Spacing): dx = {dx:.3f}m, dy = {dy:.3f}m")
+        else:
+            print("No mesh data available.")
 db.close()

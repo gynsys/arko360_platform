@@ -2875,10 +2875,18 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                       const w_px = Math.sqrt((ox2-ox1)**2 + (oy2-oy1)**2);
                       if (w_px < 1) return null;
 
-                      // Unit vector along wall (in SVG coords)
-                      const ux = (ox2-ox1)/w_px;
-                      const uy = (oy2-oy1)/w_px;
-                      // Perpendicular: determines opening direction based on wall drawing direction
+                      let p1x = ox1, p1y = oy1;
+                      let p2x = ox2, p2y = oy2;
+                      // Ensure p1 is always to the "left" or "top" of p2 to match icon spatial orientation
+                      if (p1x > p2x || (Math.abs(p1x - p2x) < 0.001 && p1y > p2y)) {
+                        p1x = ox2; p1y = oy2;
+                        p2x = ox1; p2y = oy1;
+                      }
+
+                      // Unit vector along wall (in SVG coords), forced L-to-R or T-to-B
+                      const ux = (p2x-p1x)/w_px;
+                      const uy = (p2y-p1y)/w_px;
+                      // Perpendicular: always points "UP" for horizontal walls, or "RIGHT" for vertical walls
                       let vx = uy;
                       let vy = -ux;
 
@@ -2892,10 +2900,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                         }
 
                         // Hinge point and free end
-                        const hx = isLeft ? ox1 : ox2;
-                        const hy = isLeft ? oy1 : oy2;
-                        const ex = isLeft ? ox2 : ox1;
-                        const ey = isLeft ? oy2 : oy1;
+                        const hx = isLeft ? p1x : p2x;
+                        const hy = isLeft ? p1y : p2y;
+                        const ex = isLeft ? p2x : p1x;
+                        const ey = isLeft ? p2y : p1y;
                         // Leaf swings toward interior
                         const lx = hx + vx * w_px;
                         const ly = hy + vy * w_px;
