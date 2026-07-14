@@ -223,7 +223,7 @@ const DraggableModal = ({ children, onClose, title, width = '800px' }) => {
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className="modal-overlay" style={{zIndex: 50, background: 'transparent', pointerEvents: 'none'}}>
+    <div className="modal-overlay" style={{zIndex: 50, background: 'transparent', backdropFilter: 'none', WebkitBackdropFilter: 'none', pointerEvents: 'none'}}>
       <div 
         className="modal-content" 
         onClick={e => e.stopPropagation()} 
