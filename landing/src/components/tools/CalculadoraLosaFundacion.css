@@ -552,5 +552,4 @@
     height: 500px;
   }
 }
-. p r i m a r y - b t n   {   b a c k g r o u n d :   # 1 A 6 B B 5 ;   c o l o r :   # f f f ;   b o r d e r :   n o n e ;   p a d d i n g :   1 0 p x ;   b o r d e r - r a d i u s :   8 p x ;   c u r s o r :   p o i n t e r ;   f o n t - w e i g h t :   b o l d ;   t e x t - a l i g n :   c e n t e r ;   d i s p l a y :   i n l i n e - b l o c k ;   b o x - s i z i n g :   b o r d e r - b o x ;   t r a n s i t i o n :   b a c k g r o u n d   0 . 2 s   e a s e ;   }  
- 
+.primary-btn { background: #1A6BB5; color: #fff; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; display: inline-block; box-sizing: border-box; transition: background 0.2s ease; }
