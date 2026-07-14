@@ -1519,11 +1519,35 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     }
     const rect = svgRef.current.getBoundingClientRect();
     const { px, py } = getSvgPx(e, rect);
-    // Clamp a los límites exactos del canvas después del snap
-    const mx = Math.max(0, Math.min(toMetersX(px, true), params.Lx));
-    const my = Math.max(0, Math.min(toMetersY(py, true), params.Ly));
+    
     const rawMx = toMetersX(px, false);
     const rawMy = toMetersY(py, false);
+
+    // O-Snap (Object Snap) a vértices existentes (radio de 0.2m)
+    let snapMx = toMetersX(px, true);
+    let snapMy = toMetersY(py, true);
+    let minD = 0.2; // umbral de snap en metros
+    
+    const checkSnap = (x, y) => {
+      const d = Math.sqrt((rawMx - x) ** 2 + (rawMy - y) ** 2);
+      if (d < minD) {
+        minD = d;
+        snapMx = x;
+        snapMy = y;
+      }
+    };
+    // Revisar esquinas del canvas
+    checkSnap(0, 0); checkSnap(params.Lx, 0); checkSnap(0, params.Ly); checkSnap(params.Lx, params.Ly);
+    // Revisar todos los muros
+    allWalls.forEach(w => {
+      checkSnap(w.x1, w.y1);
+      checkSnap(w.x2, w.y2);
+    });
+
+    // Clamp a los límites exactos del canvas después del snap
+    const mx = Math.max(0, Math.min(snapMx, params.Lx));
+    const my = Math.max(0, Math.min(snapMy, params.Ly));
+
     setMouseCoord({ x: mx, y: my });
 
     setSelectionBox(prev => {
@@ -1537,19 +1561,31 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     });
 
     if (isDrawing && drawStart) {
-      // Ortho lock: redondear ángulo a mútiplos de 45° con Shift
-      if (e.shiftKey) {
+      // Si el usuario ingresó un valor en el HUD, respetamos esa longitud (O-Snap de longitud)
+      const manualLen = parseFloat(hudInput);
+      if (!isNaN(manualLen) && manualLen > 0) {
         const angle = Math.atan2(my - drawStart.y, mx - drawStart.x);
-        const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
-        const dist = Math.sqrt((mx - drawStart.x) ** 2 + (my - drawStart.y) ** 2);
+        const finalAngle = e.shiftKey ? Math.round(angle / (Math.PI / 4)) * (Math.PI / 4) : angle;
         setDrawEnd({
-          x: drawStart.x + Math.cos(snappedAngle) * dist,
-          y: drawStart.y + Math.sin(snappedAngle) * dist
+          x: drawStart.x + Math.cos(finalAngle) * manualLen,
+          y: drawStart.y + Math.sin(finalAngle) * manualLen
         });
-        setOrthoLock(true);
+        setOrthoLock(e.shiftKey);
       } else {
-        setDrawEnd({ x: mx, y: my });
-        setOrthoLock(false);
+        // Ortho lock: redondear ángulo a mútiplos de 45° con Shift
+        if (e.shiftKey) {
+          const angle = Math.atan2(my - drawStart.y, mx - drawStart.x);
+          const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+          const dist = Math.sqrt((mx - drawStart.x) ** 2 + (my - drawStart.y) ** 2);
+          setDrawEnd({
+            x: drawStart.x + Math.cos(snappedAngle) * dist,
+            y: drawStart.y + Math.sin(snappedAngle) * dist
+          });
+          setOrthoLock(true);
+        } else {
+          setDrawEnd({ x: mx, y: my });
+          setOrthoLock(false);
+        }
       }
       // Actualizar posición del HUD en coordenadas de pantalla
       setHudPos({ x: e.clientX + 18, y: e.clientY - 10 });
