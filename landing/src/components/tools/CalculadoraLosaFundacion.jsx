@@ -1866,12 +1866,28 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     const fy_MPa = (lastPayload.materials?.f_y || 420e6) > 1000 ? (lastPayload.materials.f_y / 1e6) : (lastPayload.materials?.f_y || 420);
     const fy_kgcm2 = +(fy_MPa * 10.197).toFixed(0);
 
+    const w_max = results.displacements?.w_max_mm || 0;
+    const L_min_mm = Math.min(Lx, Ly) * 1000;
+    const settlement_limit = L_min_mm / 500;
+    const hormigon_m3 = A_losa * h_m;
+    const malla_minimo_m2 = A_losa;
+    const acero_estimado = (A_losa * (results.As_min_cm2_m || 1.88) / 10000) * 7850;
+
     const auditData = {
       meta: {
         proyecto: lastPayload.project,
-        fecha: new Date().toISOString(),
-        norma: 'ACI 318 / COVENIN 1753',
+        fecha_generacion: new Date().toISOString(),
+        fecha_revision: "",
+        revisor: "Pendiente por asignar",
+        norma_referencia: 'ACI 318-19 / COVENIN 1753-2006',
         sistema_unidades: 'MKS (kgf, m, kgf/cm²)'
+      },
+      supuestos: {
+        tipo_suelo: "Por definir en estudio de suelos",
+        nivel_freatico: "Por definir",
+        coeficiente_balasto_k: `${(lastPayload.materials?.k_s || 20e6) / 1e6} MPa/m — (Asumido / A verificar con ensayo)`,
+        modelo_suelo: "Winkler (Resortes elásticos independientes)",
+        condicion_borde: "Libre"
       },
       parametros_diseno: {
         fc_kgf_cm2: fc_kgcm2,
@@ -1898,7 +1914,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         detalle_machones: machonLoads
       },
       resultados_FEM: {
-        desplazamiento_max_mm: results.displacements?.w_max_mm,
+        desplazamiento_max_mm: w_max,
         momento_Mx_max_kNm_m: results.moments?.Mx_max_kNm_m,
         momento_My_max_kNm_m: results.moments?.My_max_kNm_m,
         cortante_Vu_max_kN_m: results.shear?.Vu_max_kN_m,
@@ -1909,13 +1925,42 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         verificacion_suelo: results.soil_pressure?.ok ? 'CUMPLE' : 'NO CUMPLE',
         punzonamiento: results.punching || {}
       },
-      diseno_armado_bandas: results.bands,
+      verificaciones_adicionales: {
+        asentamiento_diferencial: {
+            delta_s_max_mm: w_max, 
+            limite_recomendado_mm: +settlement_limit.toFixed(2),
+            criterio: "L/500 (ACI 351.3R)", 
+            estado: w_max <= settlement_limit ? "CUMPLE" : "NO CUMPLE"
+        },
+        fisuracion_serviceability: { w_k_max_mm: 0.3, estado: "PENDIENTE" },
+        sismo_covenin_1756: { zona: "Por definir", analisis_dinamico: "PENDIENTE", estado: "PENDIENTE" }
+      },
+      cuantificacion_estimada: {
+        hormigon_m3: +hormigon_m3.toFixed(2),
+        acero_base_kg: +acero_estimado.toFixed(2),
+        malla_minima_m2: +malla_minimo_m2.toFixed(2)
+      },
+      detalle_armado_zonas_criticas: {
+        esquinas_losa: "PENDIENTE - Verificar refuerzo adicional por concentración de tensiones",
+        bajo_muros: "Ver bandas_refuerzo",
+        longitud_desarrollo_empalmes: "PENDIENTE"
+      },
+      checklist_revision_independiente: {
+        "Cargas muertas": { revisado: false, por: "", fecha: "" },
+        "Cargas vivas": { revisado: false, por: "", fecha: "" },
+        "Combinaciones de carga": { revisado: false, por: "", fecha: "" },
+        "Resultados FEM vs. manual": { revisado: false, por: "", fecha: "" },
+        "Armado mínimo": { revisado: true, por: "ARKO360", fecha: new Date().toISOString().split('T')[0] },
+        "Detalles constructivos": { revisado: false, por: "", fecha: "" }
+      },
+      bandas_refuerzo: results.bands,
       acero_minimo_cm2_m: results.As_min_cm2_m,
       observaciones: [
-        'Verificación por cortante unidireccional (ACI 318 §11.3)',
-        'Bandas de refuerzo concentradas bajo cada muro según distribución FEM',
+        'Verificación por cortante unidireccional (ACI 318 §11.3) incluida.',
+        'Las bandas de refuerzo están concentradas bajo cada muro según distribución FEM.',
         `Fáctor de seguridad en presión suelo: ${results.soil_pressure?.q_adm_kN_m2 && results.soil_pressure?.max_pressure_kN_m2 ? (results.soil_pressure.q_adm_kN_m2 / results.soil_pressure.max_pressure_kN_m2).toFixed(2) : 'N/A'}`
       ],
+      aprobacion: { estado: "EN_REVISION", firma: null },
       datos_entrada_raw: lastPayload
     };
     const blob = new Blob([JSON.stringify(auditData, null, 2)], { type: 'application/json' });
