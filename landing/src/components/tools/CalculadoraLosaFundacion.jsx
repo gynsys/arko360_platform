@@ -317,7 +317,20 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   // Aberturas (Puertas y Ventanas) Drag & Drop
   const [openings, setOpenings] = useState([]);
   const [globalPrices, setGlobalPrices] = useState(FALLBACK_PRECIOS);
-  const [activeModal, setActiveModal] = useState(null); // 'geometry', 'materials', 'fem', 'openings', 'walls'
+  const [activeModal, setActiveModal] = useState(null); // 'geometry', 'materials', 'fem', 'openings', 'walls', 'layers'
+
+  // ===== SISTEMA DE CAPAS =====
+  const LAYER_DEFS = [
+    { id: 'arq', name: 'Arquitectura', color: '#9c27b0', defaultLocked: false },
+    { id: 'est', name: 'Estructura',   color: '#e53935', defaultLocked: false },
+  ];
+  const [layers, setLayers] = useState([
+    { id: 'arq', name: 'Arquitectura', visible: true, locked: false, opacity: 0.35, image: null },
+    { id: 'est', name: 'Estructura',   visible: true, locked: false, opacity: 1.0,  image: null },
+  ]);
+  const [activeLayer, setActiveLayer] = useState('est'); // Capa activa para dibujar
+  const imgInputRef = useRef(null); // Ref para input de imagen de fondo
+  const [layerImportTarget, setLayerImportTarget] = useState(null); // qué capa recibe la imagen
 
   useEffect(() => {
     // Hide footer to get more space
@@ -435,6 +448,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const [hudPos, setHudPos] = useState({ x: 0, y: 0 }); // Posición en pantalla (px)
   const [orthoLock, setOrthoLock] = useState(false);  // Shift → bloqueo ortogonal
   const hudInputRef = useRef(null);
+  // ===== OFFSET =====
+  const [offsetSourceWall, setOffsetSourceWall] = useState(null); // muro seleccionado para offset
+  const [offsetPreview, setOffsetPreview] = useState(null);       // {x1,y1,x2,y2} línea preview
+  const [offsetDist, setOffsetDist] = useState(0.15);             // distancia del desfase en metros
   
   const presupuesto = useMemo(() => generarPresupuesto(results, globalPrices, designParams), [results, globalPrices, designParams]);
   const presupuestoTotal = useMemo(() => presupuesto.reduce((acc, it) => acc + it.total, 0), [presupuesto]);
@@ -1387,7 +1404,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
   const addInternalWall = (w) => {
     saveHistory();
-    setInternalWalls(prev => [...prev, { id: Date.now(), type: drawType, x1: w.x1 || 0, y1: w.y1 || 0, x2: w.x2 || 1, y2: w.y2 || 1 }]);
+    setInternalWalls(prev => [...prev, { id: Date.now(), type: drawType, layer_id: activeLayer, x1: w.x1 || 0, y1: w.y1 || 0, x2: w.x2 || 1, y2: w.y2 || 1 }]);
   };
 
   const updateInternalWall = (id, field, value) => {
@@ -1502,6 +1519,25 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       // Actualizar posición del HUD en coordenadas de pantalla
       setHudPos({ x: e.clientX + 18, y: e.clientY - 10 });
     }
+
+    // ===== OFFSET: preview en tiempo real =====
+    if (drawType === 'offset' && offsetSourceWall) {
+      const w = offsetSourceWall;
+      const dx = w.x2 - w.x1;
+      const dy = w.y2 - w.y1;
+      const L = Math.sqrt(dx * dx + dy * dy) || 1;
+      // Normal unitario (perpendicular al muro)
+      const nx = -dy / L;
+      const ny =  dx / L;
+      // Determinar lado según posición del cursor respecto al muro
+      const side = ((mx - w.x1) * nx + (my - w.y1) * ny) >= 0 ? 1 : -1;
+      const d = offsetDist * side;
+      setOffsetPreview({
+        x1: w.x1 + nx * d, y1: w.y1 + ny * d,
+        x2: w.x2 + nx * d, y2: w.y2 + ny * d,
+        side
+      });
+    }
   };
 
   // Confirmar el muro con las coordenadas actuales (drawEnd) o las del HUD
@@ -1538,6 +1574,18 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const handleSvgClick = () => {
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
+      return;
+    }
+
+    // ===== OFFSET: confirmar al hacer clic =====
+    if (drawType === 'offset' && offsetSourceWall && offsetPreview) {
+      saveHistory();
+      addInternalWall({
+        x1: offsetPreview.x1, y1: offsetPreview.y1,
+        x2: offsetPreview.x2, y2: offsetPreview.y2
+      });
+      setOffsetSourceWall(null);
+      setOffsetPreview(null);
       return;
     }
     if (!drawType) {
@@ -2453,8 +2501,45 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             <FaDoorOpen />
           </button>
 
+          {/* Botón Capas */}
+          <button
+            onClick={() => setActiveModal(activeModal === 'layers' ? null : 'layers')}
+            title="Capas"
+            style={{
+              background: activeModal === 'layers' ? '#1A6BB5' : 'transparent',
+              border: 'none', borderRadius: '8px',
+              color: activeModal === 'layers' ? '#fff' : 'rgba(255,255,255,0.65)',
+              width: '36px', height: '36px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', fontSize: '18px',
+              transition: 'all 0.15s'
+            }}
+          >
+            ≡
+          </button>
+
           {/* Separador arrastrar */}
           <div style={{ width: '32px', height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+
+          {/* Input oculto para importar imagen de capa */}
+          <input
+            ref={imgInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files[0];
+              if (!file || !layerImportTarget) return;
+              const reader = new FileReader();
+              reader.onload = ev => {
+                setLayers(prev => prev.map(l =>
+                  l.id === layerImportTarget ? { ...l, image: ev.target.result } : l
+                ));
+              };
+              reader.readAsDataURL(file);
+              e.target.value = '';
+            }}
+          />
 
           {/* Puerta Izq Adentro */}
           <div
@@ -2721,6 +2806,75 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         </DraggableModal>
       )}
 
+{/* MODAL CAPAS */}
+      {activeModal === 'layers' && (
+        <DraggableModal title="≡ Capas" onClose={() => setActiveModal(null)} width="320px">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {layers.map(layer => {
+              const isActive = activeLayer === layer.id;
+              const layerDef = LAYER_DEFS.find(d => d.id === layer.id);
+              return (
+                <div key={layer.id} style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '8px 10px', borderRadius: '8px',
+                  background: isActive ? 'rgba(26,107,181,0.1)' : '#f7f7f7',
+                  border: isActive ? '1.5px solid #1A6BB5' : '1.5px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s'
+                }} onClick={() => { if (!layer.locked) setActiveLayer(layer.id); }}>
+                  {/* Dot color */}
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: layerDef?.color || '#999', flexShrink: 0 }} />
+                  {/* Nombre */}
+                  <span style={{ flex: 1, fontSize: '13px', fontWeight: isActive ? 700 : 400, color: '#222' }}>
+                    {layer.name}
+                    {isActive && <span style={{ marginLeft: 6, fontSize: '10px', color: '#1A6BB5', fontWeight: 700 }}>✏ ACTIVA</span>}
+                  </span>
+                  {/* Visibilidad */}
+                  <button title={layer.visible ? 'Ocultar capa' : 'Mostrar capa'}
+                    onClick={e => { e.stopPropagation(); setLayers(prev => prev.map(l => l.id === layer.id ? { ...l, visible: !l.visible } : l)); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '15px', color: layer.visible ? '#1A6BB5' : '#bbb', padding: '2px' }}>
+                    {layer.visible ? '👁' : '🙈'}
+                  </button>
+                  {/* Bloquear */}
+                  <button title={layer.locked ? 'Desbloquear' : 'Bloquear'}
+                    onClick={e => { e.stopPropagation(); setLayers(prev => prev.map(l => l.id === layer.id ? { ...l, locked: !l.locked } : l)); if (layer.locked && activeLayer === layer.id) setActiveLayer('est'); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: layer.locked ? '#f57c00' : '#bbb', padding: '2px' }}>
+                    {layer.locked ? '🔒' : '🔓'}
+                  </button>
+                  {/* Imagen de fondo */}
+                  <button title="Importar imagen de fondo"
+                    onClick={e => { e.stopPropagation(); setLayerImportTarget(layer.id); setTimeout(() => imgInputRef.current?.click(), 50); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: layer.image ? '#43a047' : '#bbb', padding: '2px' }}>
+                    🖼
+                  </button>
+                  {/* Quitar imagen */}
+                  {layer.image && (
+                    <button title="Quitar imagen"
+                      onClick={e => { e.stopPropagation(); setLayers(prev => prev.map(l => l.id === layer.id ? { ...l, image: null } : l)); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: '#e53935', padding: '2px' }}>✕</button>
+                  )}
+                </div>
+              );
+            })}
+            {/* Opacidad de la capa seleccionada */}
+            {(() => { const al = layers.find(l => l.id === activeLayer); return al ? (
+              <div style={{ marginTop: '10px', padding: '10px', background: '#f0f4ff', borderRadius: '8px' }}>
+                <label style={{ fontSize: '12px', color: '#555', display: 'block', marginBottom: '6px' }}>
+                  Opacidad — <strong>{al.name}</strong>: {Math.round(al.opacity * 100)}%
+                </label>
+                <input type="range" min="0" max="1" step="0.05" value={al.opacity}
+                  onChange={e => setLayers(prev => prev.map(l => l.id === activeLayer ? { ...l, opacity: parseFloat(e.target.value) } : l))}
+                  style={{ width: '100%' }} />
+              </div>
+            ) : null; })()}
+            <div style={{ marginTop: '6px', fontSize: '11px', color: '#999', textAlign: 'center' }}>
+              Haz clic en una capa para activarla. Los muros nuevos se crean en la capa activa.
+            </div>
+            <button className="primary-btn" style={{ marginTop: '8px', width: '100%' }} onClick={() => setActiveModal(null)}>Cerrar</button>
+          </div>
+        </DraggableModal>
+      )}
+
 {/* PANEL DERECHO: VISTA PREVIA Y RESULTADOS */}
         <div className="calc-content" style={{ flex: '1', minWidth: 0, marginLeft: '48px' }}>
           <div className="canvas-wrapper hybrid-canvas">
@@ -2781,6 +2935,14 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                       <path d="M8 9h8" />
                     </svg>
                   </button>
+                  {/* Herramienta Offset */}
+                  <button onClick={() => { setDrawType('offset'); setOffsetSourceWall(null); setOffsetPreview(null); }} title="Offset / Desfase Paralelo" style={{padding:'6px', borderRadius:'4px', border: drawType === 'offset' ? '2px solid #00897b' : '1px solid transparent', background: drawType === 'offset' ? '#fff' : 'transparent', color: '#00897b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 6h16" />
+                      <path d="M4 12h12" strokeDasharray="3 2"/>
+                      <path d="M18 9l3 3-3 3" />
+                    </svg>
+                  </button>
                 </div>
                 <div style={{display:'flex', gap:'4px', marginLeft:'12px'}}>
                   <button onClick={undo} disabled={historyPast.length === 0} title="Deshacer" style={{padding:'4px 8px', cursor: historyPast.length === 0 ? 'not-allowed' : 'pointer', background:'#fff', border:'1px solid #ccc', borderRadius:'4px'}}><Undo2 size={16} color={historyPast.length === 0 ? '#ccc' : '#333'}/></button>
@@ -2805,6 +2967,25 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 <label style={{fontSize: '13px'}}>Largo (Y) m: <input type="number" step="0.05" value={colConfig.length} onChange={e=>setColConfig({...colConfig, length: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
                 <label style={{fontSize: '13px'}}>Alto (Z) m: <input type="number" step="0.1" value={colConfig.height} onChange={e=>setColConfig({...colConfig, height: parseFloat(e.target.value)||0})} style={{width: '60px'}}/></label>
                 <span style={{fontSize: '12px', color: '#6a1b9a', fontStyle: 'italic'}}>(Haz clic en el plano para ubicarlo)</span>
+              </div>
+            )}
+            {drawType === 'offset' && (
+              <div style={{display:'flex', gap:'14px', alignItems:'center', marginBottom: '10px', background: '#e0f2f1', padding: '8px 12px', borderRadius: '6px', border: '1px solid #80cbc4'}}>
+                <span style={{fontSize: '13px', color: '#00695c', fontWeight: 700}}>📏 Offset — Distancia:</span>
+                <input type="number" step="0.01" min="0.01" value={offsetDist}
+                  onChange={e => setOffsetDist(Math.max(0.01, parseFloat(e.target.value) || 0.15))}
+                  style={{width: '70px', padding: '3px 6px', borderRadius: '4px', border: '1px solid #80cbc4', fontWeight: 700, color: '#00695c'}}
+                />
+                <span style={{fontSize: '12px', color: '#00695c'}}>m</span>
+                <span style={{fontSize: '12px', color: '#555', fontStyle: 'italic'}}>
+                  {offsetSourceWall ? '✅ Muro seleccionado — mueve el cursor al lado deseado y haz clic para confirmar' : '👆 Haz clic sobre un muro para seleccionarlo'}
+                </span>
+                {offsetSourceWall && (
+                  <button onClick={() => { setOffsetSourceWall(null); setOffsetPreview(null); }}
+                    style={{marginLeft: 'auto', padding: '3px 10px', background: '#fff', border: '1px solid #80cbc4', borderRadius: '4px', cursor: 'pointer', color: '#00695c', fontSize: '12px'}}>
+                    Cancelar
+                  </button>
+                )}
               </div>
             )}
             
@@ -2873,6 +3054,20 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               onDrop={handleDrop}
               style={{ cursor: isPanningRef.current ? 'grabbing' : (isDrawing ? 'crosshair' : (drawType === 'columna' ? 'crosshair' : 'pointer')), userSelect: 'none', touchAction: 'none' }}
             >
+              {/* ===== CAPAS: Imágenes de fondo ===== */}
+              {layers.filter(l => l.visible && l.image).map(layer => (
+                <image
+                  key={`bg-${layer.id}`}
+                  href={layer.image}
+                  x={toSvg(0)} y={toSvg(0)}
+                  width={params.Lx * (CANVAS_SIZE - 2 * MARGIN) / Math.max(params.Lx, params.Ly)}
+                  height={params.Ly * (CANVAS_SIZE - 2 * MARGIN) / Math.max(params.Lx, params.Ly)}
+                  opacity={layer.opacity}
+                  preserveAspectRatio="none"
+                  style={{ pointerEvents: 'none' }}
+                />
+              ))}
+
               {/* Ejes X (Ruler Top) */}
               <rect x={0} y={0} width={CANVAS_SIZE} height={MARGIN-5} fill="#f0f0f0" />
               {Array.from({ length: Math.floor(params.Lx) + 1 }).map((_, i) => (
@@ -2992,7 +3187,14 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 <g key={w.id} 
                    onMouseEnter={() => setHoveredWallId(w.id)}
                    onMouseLeave={() => setHoveredWallId(null)}
-                   style={{ cursor: 'pointer' }}
+                   style={{ cursor: drawType === 'offset' ? 'copy' : 'pointer' }}
+                   onClick={e => {
+                     if (drawType === 'offset') {
+                       e.stopPropagation();
+                       setOffsetSourceWall(w);
+                       setOffsetPreview(null);
+                     }
+                   }}
                 >
                     {isHovered && (
                       <line 
@@ -3100,6 +3302,37 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                   x2={toSvg(drawEnd.x)} y2={toSvg(drawEnd.y)}
                   stroke="#ff9800" strokeWidth="4" strokeDasharray="5,5" strokeLinecap="round"
                 />
+              )}
+
+              {/* Pre-visualización Offset */}
+              {drawType === 'offset' && offsetPreview && (
+                <>
+                  {/* Línea paralela preview */}
+                  <line
+                    x1={toSvg(offsetPreview.x1)} y1={toSvg(offsetPreview.y1)}
+                    x2={toSvg(offsetPreview.x2)} y2={toSvg(offsetPreview.y2)}
+                    stroke="#00897b" strokeWidth="3" strokeDasharray="6,4" strokeLinecap="round"
+                  />
+                  {/* Líneas de cota (distancia visual) */}
+                  {offsetSourceWall && (
+                    <>
+                      <line
+                        x1={toSvg((offsetSourceWall.x1 + offsetSourceWall.x2)/2)}
+                        y1={toSvg((offsetSourceWall.y1 + offsetSourceWall.y2)/2)}
+                        x2={toSvg((offsetPreview.x1 + offsetPreview.x2)/2)}
+                        y2={toSvg((offsetPreview.y1 + offsetPreview.y2)/2)}
+                        stroke="#00897b" strokeWidth="1.5" strokeDasharray="3,3"
+                      />
+                      <text
+                        x={toSvg(((offsetSourceWall.x1 + offsetSourceWall.x2)/2 + (offsetPreview.x1 + offsetPreview.x2)/2) / 2)}
+                        y={toSvg(((offsetSourceWall.y1 + offsetSourceWall.y2)/2 + (offsetPreview.y1 + offsetPreview.y2)/2) / 2) - 6}
+                        fontSize="11" fill="#00695c" fontWeight="bold" textAnchor="middle"
+                      >
+                        {offsetDist.toFixed(2)}m
+                      </text>
+                    </>
+                  )}
+                </>
               )}
 
               {/* Punto indicador de Snap Mouse */}
