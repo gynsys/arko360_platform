@@ -1321,20 +1321,20 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   // Convertir metros a pixeles SVG
   const toSvg = useCallback((m) => MARGIN + (m * scale), [scale]);
   
-  // Convertir pixeles a metros (con snap opcional) — tiene en cuenta zoom y pan del viewBox
+  // Convertir pixeles a metros (con snap opcional)
   const toMetersX = useCallback((px, doSnap = false) => {
-    let m = (px / zoom - panOffset.x - MARGIN) / scale;
+    let m = (px - MARGIN) / scale;
     m = Math.max(0, Math.min(m, Math.max(params.Lx, 1)));
     if (doSnap) m = snapToGrid(m);
     return m;
-  }, [scale, snapToGrid, params.Lx, zoom, panOffset]);
+  }, [scale, snapToGrid, params.Lx]);
 
   const toMetersY = useCallback((py, doSnap = false) => {
-    let m = (py / zoom - panOffset.y - MARGIN) / scale;
+    let m = (py - MARGIN) / scale;
     m = Math.max(0, Math.min(m, Math.max(params.Ly, 1)));
     if (doSnap) m = snapToGrid(m);
     return m;
-  }, [scale, snapToGrid, params.Ly, zoom, panOffset]);
+  }, [scale, snapToGrid, params.Ly]);
 
   // Generar vértices del perímetro según la plantilla y offset
   const getPerimeterVertices = useCallback(() => {
@@ -1500,14 +1500,14 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     setPanOffset({ x: 0, y: 0 });
   }, []);
 
-  // Convierte posición de pantalla a píxeles del elemento SVG (CANVAS_SIZE coords).
-  // toMeters() aplica internamente zoom y panOffset, así que solo necesitamos
-  // escalar del tamaño CSS del SVG a CANVAS_SIZE.
-  const getSvgPx = (e, rect) => {
-    const cssToCanvas = CANVAS_SIZE / (rect.width || CANVAS_SIZE);
-    const px = (e.clientX - rect.left) * cssToCanvas;
-    const py = (e.clientY - rect.top) * cssToCanvas;
-    return { px, py };
+  // Convierte posición de pantalla a coordenadas del espacio de usuario del SVG
+  const getSvgPx = (e, svgElement) => {
+    if (!svgElement) return { px: 0, py: 0 };
+    const pt = svgElement.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgP = pt.matrixTransform(svgElement.getScreenCTM().inverse());
+    return { px: svgP.x, py: svgP.y };
   };
 
   // Lógica del Mouse (Tracker y Dibujo con Snap)
@@ -1517,8 +1517,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       handlePanMove(e);
       return;
     }
-    const rect = svgRef.current.getBoundingClientRect();
-    const { px, py } = getSvgPx(e, rect);
+    const { px, py } = getSvgPx(e, svgRef.current);
     
     const rawMx = toMetersX(px, false);
     const rawMy = toMetersY(py, false);
@@ -1688,8 +1687,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     const type = e.dataTransfer.getData('type');
     if (!type) return;
 
-    const rect = svgRef.current.getBoundingClientRect();
-    const { px, py } = getSvgPx(e, rect);
+    const { px, py } = getSvgPx(e, svgRef.current);
     const dropX = toMetersX(px);
     const dropY = toMetersY(py, false);
 
@@ -3141,8 +3139,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               onMouseDown={(e) => {
                 if (e.ctrlKey || e.metaKey || e.button === 1) { handlePanStart(e); return; }
                 if (!drawType) {
-                  const rect = svgRef.current.getBoundingClientRect();
-                  const { px, py } = getSvgPx(e, rect);
+                  const { px, py } = getSvgPx(e, svgRef.current);
                   const mx = toMetersX(px, false);
                   const my = toMetersY(py, false);
                   setSelectionBox({ startX: mx, startY: my, currentX: mx, currentY: my });
