@@ -1444,13 +1444,13 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     setPanOffset({ x: 0, y: 0 });
   }, []);
 
-  const getSvgCoords = (e, rect) => {
-    const vbW = CANVAS_SIZE / zoom;
-    const vbH = CANVAS_SIZE / zoom;
-    const vbX = -panOffset.x * zoom;
-    const vbY = -panOffset.y * zoom;
-    const px = vbX + ((e.clientX - rect.left) / (rect.width || CANVAS_SIZE)) * vbW;
-    const py = vbY + ((e.clientY - rect.top) / (rect.height || CANVAS_SIZE)) * vbH;
+  // Convierte posición de pantalla a píxeles del elemento SVG (CANVAS_SIZE coords).
+  // toMeters() aplica internamente zoom y panOffset, así que solo necesitamos
+  // escalar del tamaño CSS del SVG a CANVAS_SIZE.
+  const getSvgPx = (e, rect) => {
+    const cssToCanvas = CANVAS_SIZE / (rect.width || CANVAS_SIZE);
+    const px = (e.clientX - rect.left) * cssToCanvas;
+    const py = (e.clientY - rect.top) * cssToCanvas;
     return { px, py };
   };
 
@@ -1462,7 +1462,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       return;
     }
     const rect = svgRef.current.getBoundingClientRect();
-    const { px, py } = getSvgCoords(e, rect);
+    const { px, py } = getSvgPx(e, rect);
     // Clamp a los límites exactos del canvas después del snap
     const mx = Math.max(0, Math.min(toMeters(px, true), params.Lx));
     const my = Math.max(0, Math.min(toMeters(py, true), params.Ly));
@@ -1540,7 +1540,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     if (!type) return;
 
     const rect = svgRef.current.getBoundingClientRect();
-    const { px, py } = getSvgCoords(e, rect);
+    const { px, py } = getSvgPx(e, rect);
     const dropX = toMeters(px);
     const dropY = toMeters(py, false);
 
@@ -2809,7 +2809,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 if (e.ctrlKey || e.metaKey || e.button === 1) { handlePanStart(e); return; }
                 if (!drawType) {
                   const rect = svgRef.current.getBoundingClientRect();
-                  const { px, py } = getSvgCoords(e, rect);
+                  const { px, py } = getSvgPx(e, rect);
                   const mx = toMeters(px, false);
                   const my = toMeters(py, false);
                   setSelectionBox({ startX: mx, startY: my, currentX: mx, currentY: my });
