@@ -6,7 +6,7 @@ import './CalculadoraLosaFundacion.css';
 import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut, ArrowLeft } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus, FaDrawPolygon, FaCubes, FaColumns, FaDoorOpen, FaCogs, FaPlay } from 'react-icons/fa';
+import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus, FaDrawPolygon, FaCubes, FaColumns, FaDoorOpen, FaCogs, FaPlay, FaBorderAll } from 'react-icons/fa';
 import InteractiveHeatmap from './InteractiveHeatmap';
 
 // ============================================
@@ -2310,11 +2310,28 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           {/* Botón Muros Internos */}
           <button
             onClick={() => setActiveModal(activeModal === 'walls' ? null : 'walls')}
-            title="Muros Internos y Columnas"
+            title="Muros Internos"
             style={{
               background: activeModal === 'walls' ? '#1A6BB5' : 'transparent',
               border: 'none', borderRadius: '8px',
               color: activeModal === 'walls' ? '#fff' : 'rgba(255,255,255,0.65)',
+              width: '36px', height: '36px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', fontSize: '16px',
+              transition: 'all 0.15s'
+            }}
+          >
+            <FaBorderAll />
+          </button>
+
+          {/* Botón Columnas */}
+          <button
+            onClick={() => setActiveModal(activeModal === 'columns' ? null : 'columns')}
+            title="Columnas"
+            style={{
+              background: activeModal === 'columns' ? '#1A6BB5' : 'transparent',
+              border: 'none', borderRadius: '8px',
+              color: activeModal === 'columns' ? '#fff' : 'rgba(255,255,255,0.65)',
               width: '36px', height: '36px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', fontSize: '16px',
@@ -2511,67 +2528,67 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       )}
 
       {activeModal === 'walls' && (
-        <DraggableModal title="🧱 Muros Internos y Columnas" onClose={() => setActiveModal(null)} width="800px">
-            <div style={{display:'flex', gap:'20px'}}>
-                <div style={{flex: 1}}>
-                    <h4 style={{marginTop:0}}>Muros Internos</h4>
-                    <p style={{fontSize:'12px', color:'#666'}}>Puedes agregarlos haciendo Shift+Clic en el lienzo o usando esta tabla.</p>
-                    <div className="table-container" style={{maxHeight:'300px', overflowY:'auto'}}>
-                      <table className="coords-table">
-                        <thead><tr><th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th></tr></thead>
-                        <tbody>
-                          {internalWalls.map((w, i) => (
-                            <tr key={w.id} className={hoveredWallId === w.id ? 'highlighted-row' : ''} onMouseEnter={() => setHoveredWallId(w.id)} onMouseLeave={() => setHoveredWallId(null)}>
-                              <td><input type="number" step="0.5" value={w.x1} onChange={e => updateInternalWall(w.id, 'x1', e.target.value)}/></td>
-                              <td><input type="number" step="0.5" value={w.y1} onChange={e => updateInternalWall(w.id, 'y1', e.target.value)}/></td>
-                              <td><input type="number" step="0.5" value={w.x2} onChange={e => updateInternalWall(w.id, 'x2', e.target.value)}/></td>
-                              <td><input type="number" step="0.5" value={w.y2} onChange={e => updateInternalWall(w.id, 'y2', e.target.value)}/></td>
-                              <td><button className="del-btn" onClick={() => removeInternalWall(w.id)}>X</button></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <button className="add-btn" onClick={() => addInternalWall({})}>+ Añadir Muro</button>
+        <DraggableModal title="🧱 Muros Internos" onClose={() => setActiveModal(null)} width="400px">
+            <div>
+                <p style={{fontSize:'12px', color:'#666', marginTop:0}}>Puedes agregarlos haciendo Shift+Clic en el lienzo o usando esta tabla.</p>
+                <div className="table-container" style={{maxHeight:'300px', overflowY:'auto'}}>
+                  <table className="coords-table">
+                    <thead><tr><th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th></tr></thead>
+                    <tbody>
+                      {internalWalls.map((w, i) => (
+                        <tr key={w.id} className={hoveredWallId === w.id ? 'highlighted-row' : ''} onMouseEnter={() => setHoveredWallId(w.id)} onMouseLeave={() => setHoveredWallId(null)}>
+                          <td><input type="number" step="0.5" value={w.x1} onChange={e => updateInternalWall(w.id, 'x1', e.target.value)}/></td>
+                          <td><input type="number" step="0.5" value={w.y1} onChange={e => updateInternalWall(w.id, 'y1', e.target.value)}/></td>
+                          <td><input type="number" step="0.5" value={w.x2} onChange={e => updateInternalWall(w.id, 'x2', e.target.value)}/></td>
+                          <td><input type="number" step="0.5" value={w.y2} onChange={e => updateInternalWall(w.id, 'y2', e.target.value)}/></td>
+                          <td><button className="del-btn" onClick={() => removeInternalWall(w.id)}>X</button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button className="add-btn" onClick={() => addInternalWall({})}>+ Añadir Muro</button>
+            </div>
+            <button className="primary-btn" style={{marginTop:'20px', width:'100%'}} onClick={() => setActiveModal(null)}>Cerrar Panel</button>
+        </DraggableModal>
+      )}
+
+      {activeModal === 'columns' && (
+        <DraggableModal title="🏛️ Columnas" onClose={() => setActiveModal(null)} width="400px">
+            <div>
+                <p style={{fontSize:'12px', color:'#666', marginTop:0}}>Puedes agregarlas con Alt+Clic en el lienzo.</p>
+                <div className="params-grid" style={{marginBottom:'10px', background:'#f5f5f5', padding:'10px', borderRadius:'6px'}}>
+                  <div className="param-item"><label>b (m):</label><input type="number" step="0.05" value={colConfig.width} onChange={e => setColConfig({...colConfig, width: parseFloat(e.target.value) || 0})} /></div>
+                  <div className="param-item"><label>t (m):</label><input type="number" step="0.05" value={colConfig.length} onChange={e => setColConfig({...colConfig, length: parseFloat(e.target.value) || 0})} /></div>
+                  <div className="param-item"><label>Alto (Z) m:</label><input type="number" step="0.1" value={colConfig.height} onChange={e => setColConfig({...colConfig, height: parseFloat(e.target.value) || 0})} /></div>
                 </div>
                 
-                <div style={{flex: 1}}>
-                    <h4 style={{marginTop:0}}>Columnas</h4>
-                    <p style={{fontSize:'12px', color:'#666'}}>Puedes agregarlas con Alt+Clic en el lienzo.</p>
-                    <div className="params-grid" style={{marginBottom:'10px', background:'#f5f5f5', padding:'10px', borderRadius:'6px'}}>
-                      <div className="param-item"><label>b (m):</label><input type="number" step="0.05" value={colConfig.width} onChange={e => setColConfig({...colConfig, width: parseFloat(e.target.value) || 0})} /></div>
-                      <div className="param-item"><label>t (m):</label><input type="number" step="0.05" value={colConfig.length} onChange={e => setColConfig({...colConfig, length: parseFloat(e.target.value) || 0})} /></div>
-                      <div className="param-item"><label>Alto (Z) m:</label><input type="number" step="0.1" value={colConfig.height} onChange={e => setColConfig({...colConfig, height: parseFloat(e.target.value) || 0})} /></div>
-                    </div>
-                    
-                    <div className="table-container" style={{maxHeight:'200px', overflowY:'auto'}}>
-                      <table className="coords-table">
-                        <thead><tr><th>X</th><th>Y</th><th>Carga</th><th></th></tr></thead>
-                        <tbody>
-                          {columns.map(c => (
-                            <tr key={c.id}>
-                              <td>{c.x.toFixed(2)}</td><td>{c.y.toFixed(2)}</td><td>{c.load_kgf}</td>
-                              <td><button className="del-btn" onClick={() => setColumns(columns.filter(col => col.id !== c.id))}>X</button></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <button className="add-btn" onClick={() => {
-                      const loadCalc = colConfig.width * colConfig.length * colConfig.height * 2500;
-                      setColumns([...columns, { 
-                        id: Date.now(), 
-                        x: params.Lx/2, 
-                        y: params.Ly/2, 
-                        width: colConfig.width,
-                        length: colConfig.length,
-                        height: colConfig.height,
-                        load_kgf: loadCalc 
-                      }]);
-                    }}>+ Añadir Columna</button>
+                <div className="table-container" style={{maxHeight:'200px', overflowY:'auto'}}>
+                  <table className="coords-table">
+                    <thead><tr><th>X</th><th>Y</th><th>Carga</th><th></th></tr></thead>
+                    <tbody>
+                      {columns.map(c => (
+                        <tr key={c.id}>
+                          <td>{c.x.toFixed(2)}</td><td>{c.y.toFixed(2)}</td><td>{c.load_kgf}</td>
+                          <td><button className="del-btn" onClick={() => setColumns(columns.filter(col => col.id !== c.id))}>X</button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+                <button className="add-btn" onClick={() => {
+                  const loadCalc = colConfig.width * colConfig.length * colConfig.height * 2500;
+                  setColumns([...columns, { 
+                    id: Date.now(), 
+                    x: params.Lx/2, 
+                    y: params.Ly/2, 
+                    width: colConfig.width,
+                    length: colConfig.length,
+                    height: colConfig.height,
+                    load_kgf: loadCalc 
+                  }]);
+                }}>+ Añadir Columna</button>
             </div>
-            
             <button className="primary-btn" style={{marginTop:'20px', width:'100%'}} onClick={() => setActiveModal(null)}>Cerrar Panel</button>
         </DraggableModal>
       )}
