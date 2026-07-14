@@ -431,6 +431,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const [drawType, setDrawType] = useState('perimetral');
   const [drawStart, setDrawStart] = useState(null);
   const [drawEnd, setDrawEnd] = useState(null);
+  const [hudInput, setHudInput] = useState('');        // Texto del input de precisión
+  const [hudPos, setHudPos] = useState({ x: 0, y: 0 }); // Posición en pantalla (px)
+  const [orthoLock, setOrthoLock] = useState(false);  // Shift → bloqueo ortogonal
+  const hudInputRef = useRef(null);
   
   const presupuesto = useMemo(() => generarPresupuesto(results, globalPrices, designParams), [results, globalPrices, designParams]);
   const presupuestoTotal = useMemo(() => presupuesto.reduce((acc, it) => acc + it.total, 0), [presupuesto]);
@@ -1481,9 +1485,37 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     });
 
     if (isDrawing && drawStart) {
-      setDrawEnd({ x: mx, y: my });
+      // Ortho lock: redondear ángulo a mútiplos de 45° con Shift
+      if (e.shiftKey) {
+        const angle = Math.atan2(my - drawStart.y, mx - drawStart.x);
+        const snappedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+        const dist = Math.sqrt((mx - drawStart.x) ** 2 + (my - drawStart.y) ** 2);
+        setDrawEnd({
+          x: drawStart.x + Math.cos(snappedAngle) * dist,
+          y: drawStart.y + Math.sin(snappedAngle) * dist
+        });
+        setOrthoLock(true);
+      } else {
+        setDrawEnd({ x: mx, y: my });
+        setOrthoLock(false);
+      }
+      // Actualizar posición del HUD en coordenadas de pantalla
+      setHudPos({ x: e.clientX + 18, y: e.clientY - 10 });
     }
   };
+
+  // Confirmar el muro con las coordenadas actuales (drawEnd) o las del HUD
+  const commitWall = useCallback((overrideEnd = null) => {
+    const end = overrideEnd || drawEnd;
+    if (drawStart && end && (drawStart.x !== end.x || drawStart.y !== end.y)) {
+      addInternalWall({ x1: drawStart.x, y1: drawStart.y, x2: end.x, y2: end.y });
+    }
+    setIsDrawing(false);
+    setDrawStart(null);
+    setDrawEnd(null);
+    setHudInput('');
+    setOrthoLock(false);
+  }, [drawStart, drawEnd, addInternalWall]);
 
   const handleSvgDoubleClick = () => {
     if (!drawType) return;
@@ -1494,14 +1526,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       setIsDrawing(true);
       setDrawStart({ ...mouseCoord });
       setDrawEnd({ ...mouseCoord });
+      setHudInput('');
+      // Enfocar el input HUD en el siguiente render
+      setTimeout(() => hudInputRef.current?.focus(), 50);
     } else {
-      // Finalizar dibujo
-      if (drawStart && (drawStart.x !== mouseCoord.x || drawStart.y !== mouseCoord.y)) {
-        addInternalWall({ x1: drawStart.x, y1: drawStart.y, x2: mouseCoord.x, y2: mouseCoord.y });
-      }
-      setIsDrawing(false);
-      setDrawStart(null);
-      setDrawEnd(null);
+      // Finalizar con posición del cursor (doble clic clásico)
+      commitWall();
     }
   };
 
@@ -1597,7 +1627,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   stateRef.current = {
     isDrawing, drawType, selectedElement, saveHistory,
     setColumns, setInternalWalls, setOpenings,
-    setIsDrawing, setDrawStart, setDrawEnd, setDrawType, setSelectedElement
+    setIsDrawing, setDrawStart, setDrawEnd, setDrawType, setSelectedElement,
+    setHudInput, setOrthoLock
   };
 
   // Botón: Cancelar dibujo, soltar herramienta con Escape o borrar con Suprimir
@@ -1611,6 +1642,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           state.setIsDrawing(false);
           state.setDrawStart(null);
           state.setDrawEnd(null);
+          state.setHudInput('');
+          state.setOrthoLock(false);
         }
         state.setDrawType(null);
         state.setSelectedElement(null);
@@ -3073,7 +3106,74 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               <circle cx={toSvg(mouseCoord.x)} cy={toSvg(mouseCoord.y)} r="4" fill="#ff9800" />
 
             </svg>
-            {isDrawing && <div className="drawing-hint">Haz doble clic nuevamente para fijar el muro. Presiona ESC para cancelar.</div>}
+            {/* HUD: input flotante de precisión */}
+            {isDrawing && drawStart && (
+              <input
+                ref={hudInputRef}
+                type="number"
+                step="0.01"
+                min="0"
+                value={hudInput}
+                onChange={e => {
+                  const val = e.target.value;
+                  setHudInput(val);
+                  const len = parseFloat(val);
+                  if (!isNaN(len) && len > 0 && drawEnd) {
+                    // Calcular dirección actual del cursor
+                    let angle = Math.atan2(drawEnd.y - drawStart.y, drawEnd.x - drawStart.x);
+                    if (orthoLock) {
+                      angle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+                    }
+                    setDrawEnd({
+                      x: drawStart.x + Math.cos(angle) * len,
+                      y: drawStart.y + Math.sin(angle) * len
+                    });
+                  }
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.stopPropagation();
+                    commitWall();
+                  } else if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    setIsDrawing(false);
+                    setDrawStart(null);
+                    setDrawEnd(null);
+                    setHudInput('');
+                    setOrthoLock(false);
+                    setDrawType(null);
+                  }
+                }}
+                placeholder="Longitud (m)"
+                style={{
+                  position: 'fixed',
+                  left: hudPos.x,
+                  top: hudPos.y,
+                  width: '110px',
+                  padding: '4px 8px',
+                  background: 'rgba(15,25,45,0.92)',
+                  border: '1px solid #ff9800',
+                  borderRadius: '6px',
+                  color: '#ff9800',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  outline: 'none',
+                  zIndex: 9999,
+                  pointerEvents: 'auto',
+                  fontFamily: 'monospace',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.5)'
+                }}
+              />
+            )}
+            {isDrawing && (
+              <div className="drawing-hint">
+                {orthoLock ? '🔒 Ortho ON (Shift)' : '📐 Libre'}
+                {' · '}
+                {drawEnd && drawStart ? `L = ${Math.sqrt((drawEnd.x - drawStart.x)**2 + (drawEnd.y - drawStart.y)**2).toFixed(2)} m` : ''}
+                {' · '}
+                Escribe la longitud exacta y presiona <strong>Enter</strong>. Doble clic para fijar. <strong>ESC</strong> para cancelar.
+              </div>
+            )}
           </div>
 
           {/* Renderizado de Resultados — ahora en Modal */}
