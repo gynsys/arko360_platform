@@ -1817,7 +1817,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     const gamma_horm = 2400; // kg/m3
     const A_losa = Lx * Ly;
     const P_losa_kg = gamma_horm * A_losa * h_m;
-    const sc_kg_m2 = 300 / 9.81; // de extra_load N/m2 a kg/m2
+    const extra_load_n_m2 = lastPayload.extra_load || (300 * 9.81);
+    const sc_kg_m2 = +(extra_load_n_m2 / 9.81).toFixed(1); // de extra_load N/m2 a kg/m2
     const P_sc_kg = sc_kg_m2 * A_losa;
     
     let P_muros_kg = 0;
@@ -2601,7 +2602,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             ) : (
                <div className="table-container" style={{maxHeight:'300px', overflowY:'auto'}}>
                  <table className="coords-table">
-                   <thead><tr><th>Tipo</th><th>Muro</th><th>Inicio</th><th>L</th><th>H</th><th></th></tr></thead>
+                   <thead><tr><th>Tipo</th><th>Inicio</th><th>L</th><th>H</th><th></th></tr></thead>
                    <tbody>
                      {openings.map(op => {
                        let Icon = AppWindow; let label = 'Ventana';
@@ -2610,7 +2611,6 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                        return (
                        <tr key={op.id} className={hoveredOpeningId === op.id ? 'highlighted-row' : ''} onMouseEnter={() => setHoveredOpeningId(op.id)} onMouseLeave={() => setHoveredOpeningId(null)}>
                          <td style={{display:'flex', alignItems:'center', gap:'6px'}}><Icon size={16} color="#666"/> {label}</td>
-                         <td>{String(op.wall_id).substring(0,8)}</td>
                          <td>{op.start_m.toFixed(2)}</td>
                          <td>{op.width_m.toFixed(2)}</td>
                          <td>{op.height_m.toFixed(2)}</td>
