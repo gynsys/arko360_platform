@@ -188,6 +188,75 @@ const generarPresupuesto = (results, prices, designParams) => {
   return items;
 };
 
+const DraggableModal = ({ children, onClose, title, width = '800px' }) => {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+  };
+  
+  const handleMouseMove = useCallback((e) => {
+    if (isDragging) {
+      setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+    }
+  }, [isDragging, dragStart]);
+  
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+  
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    } else {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  return (
+    <div className="modal-overlay" style={{zIndex: 50, background: 'transparent', pointerEvents: 'none'}}>
+      <div 
+        className="modal-content" 
+        onClick={e => e.stopPropagation()} 
+        style={{
+          maxWidth: '95%', 
+          width: width, 
+          padding: '20px', 
+          pointerEvents: 'auto',
+          transform: `translate(${position.x}px, ${position.y}px)`,
+          position: 'relative',
+          boxShadow: '0 4px 30px rgba(0,0,0,0.3)',
+          border: '1px solid #ccc',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <div 
+          onMouseDown={handleMouseDown}
+          style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px', cursor: 'move', paddingBottom: '10px', borderBottom: '1px solid #eee', userSelect: 'none', flexShrink: 0}}
+        >
+            <h3 style={{margin:0, fontSize:'16px', color:'#1A6BB5'}}>{title}</h3>
+            <button onMouseDown={(e) => e.stopPropagation()} onClick={onClose} style={{background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer', padding:'4px', width:'auto', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
+        </div>
+        <div style={{overflowY: 'auto', flex: 1, paddingRight: '5px'}}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 export default function CalculadoraLosaFundacion({ onBack }) {
   const svgRef = useRef(null);
   // Zoom & Pan state
@@ -2305,35 +2374,9 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5"><rect x="2" y="20" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><rect x="18" y="20" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><path d="M20 20 L20 4" /><path d="M20 4 A16 16 0 0 0 4 20" strokeDasharray="2 3" /></svg>
           </div>
 
-          {/* Puerta Der Afuera */}
-          <div
-            draggable
-            onDragStart={(e) => handleDragStart(e, 'door_right_out')}
-            title="Puerta Derecha (Afuera)"
-            style={{ cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '8px', background: 'transparent' }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5"><rect x="2" y="0" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><rect x="18" y="0" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><path d="M20 4 L20 20" /><path d="M20 20 A16 16 0 0 1 4 4" strokeDasharray="2 3" /></svg>
-          </div>
-
-          {/* Ventana */}
-          <div
-            draggable
-            onDragStart={(e) => handleDragStart(e, 'window')}
-            title="Ventana"
-            style={{ cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '8px', background: 'transparent' }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5"><rect x="2" y="4" width="20" height="16" rx="2" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="12" y1="4" x2="12" y2="20" /></svg>
-          </div>
-        </div>
-
-      {activeModal === 'geometry' && (
-        <div className="modal-overlay" onClick={() => setActiveModal(null)} style={{zIndex: 50, background:'transparent', pointerEvents:'none'}}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{position:'absolute', left:'20px', top:'100px', maxWidth:'320px', pointerEvents:'auto', boxShadow:'0 10px 25px rgba(0,0,0,0.2)', padding:'16px'}}>
-            <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
-                <h3 style={{margin:0, fontSize:'15px', color:'#1A6BB5'}}>📐 Geometría de Losa</h3>
-                <button onClick={() => setActiveModal(null)} style={{background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer', padding:'4px', width:'auto', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
-            </div>
-            
+          {activeModal === 'geometry' && (
+        <DraggableModal title="📐 Geometría Global" onClose={() => setActiveModal(null)} width="400px">
+            <div className="params-grid">
             <div className="shape-selector" style={{marginBottom: '12px'}}>
               {SHAPES.map(s => (
                 <button 
@@ -2388,20 +2431,34 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 </select>
               </div>
             </div>
-            
-            <button className="btn-primary" style={{width:'100%', marginTop:'16px'}} onClick={()=>setActiveModal(null)}>Listo</button>
+            <button className="primary-btn" style={{marginTop:'20px', width:'100%'}} onClick={() => setActiveModal(null)}>Aceptar</button>
+          </div>
+        </DraggableModal>
+      )}
+
+          {/* Puerta Der Afuera */}
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'door_right_out')}
+            title="Puerta Derecha (Afuera)"
+            style={{ cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '8px', background: 'transparent' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5"><rect x="2" y="0" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><rect x="18" y="0" width="4" height="4" fill="rgba(255,255,255,0.65)" stroke="none" /><path d="M20 4 L20 20" /><path d="M20 20 A16 16 0 0 1 4 4" strokeDasharray="2 3" /></svg>
+          </div>
+
+          {/* Ventana */}
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'window')}
+            title="Ventana"
+            style={{ cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '8px', background: 'transparent' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5"><rect x="2" y="4" width="20" height="16" rx="2" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="12" y1="4" x2="12" y2="20" /></svg>
           </div>
         </div>
-      )}
-      
+
       {activeModal === 'materials' && (
-        <div className="modal-overlay" onClick={() => setActiveModal(null)} style={{zIndex: 50, background:'transparent', pointerEvents:'none'}}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{position:'absolute', left:'150px', top:'100px', maxWidth:'320px', pointerEvents:'auto', boxShadow:'0 10px 25px rgba(0,0,0,0.2)', padding:'16px'}}>
-            <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
-                <h3 style={{margin:0, fontSize:'15px', color:'#1A6BB5'}}>🧱 Materiales y Muros</h3>
-                <button onClick={() => setActiveModal(null)} style={{background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer', padding:'4px', width:'auto', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
-            </div>
-            
+        <DraggableModal title="🧱 Materiales de Construcción" onClose={() => setActiveModal(null)} width="400px">
             <div className="params-grid">
               <div className="param-item"><label>Offset / Retiro (m):</label><input type="number" step="0.05" value={offset} onChange={e => setOffset(e.target.value)} /></div>
               <div className="param-item"><label>Alto Muros (m):</label><input type="number" step="0.1" value={wallHeight} onChange={e => setWallHeight(e.target.value)} /></div>
@@ -2422,19 +2479,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               </label>
             </div>
             
-            <button className="btn-primary" style={{width:'100%', marginTop:'16px'}} onClick={()=>setActiveModal(null)}>Listo</button>
-          </div>
-        </div>
+            <button className="primary-btn" style={{marginTop:'20px', width:'100%'}} onClick={() => setActiveModal(null)}>Aceptar</button>
+        </DraggableModal>
       )}
       
       {activeModal === 'fem' && (
-        <div className="modal-overlay" onClick={() => setActiveModal(null)} style={{zIndex: 50, background:'transparent', pointerEvents:'none'}}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{position:'absolute', left:'300px', top:'100px', maxWidth:'350px', pointerEvents:'auto', boxShadow:'0 10px 25px rgba(0,0,0,0.2)', padding:'16px'}}>
-            <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
-                <h3 style={{margin:0, fontSize:'15px', color:'#1A6BB5'}}>⚙️ Parámetros de Diseño</h3>
-                <button onClick={() => setActiveModal(null)} style={{background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer', padding:'4px', width:'auto', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
-            </div>
-            
+        <DraggableModal title="⚙️ Parámetros FEM" onClose={() => setActiveModal(null)} width="400px">
             <div className="params-grid">
               <div className="param-item"><label>f'c Concreto (kgf/cm²):</label><input type="number" step="10" value={designParams.fc} onChange={e => handleDesignParamChange('fc', parseFloat(e.target.value))} /></div>
               <div className="param-item"><label>fy Acero (kgf/cm²):</label><input type="number" step="100" value={designParams.fy} onChange={e => handleDesignParamChange('fy', parseFloat(e.target.value))} /></div>
@@ -2456,19 +2506,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               </div>
             </div>
             
-            <button className="btn-primary" style={{width:'100%', marginTop:'16px'}} onClick={()=>setActiveModal(null)}>Listo</button>
-          </div>
-        </div>
+            <button className="primary-btn" onClick={() => setActiveModal(null)} style={{width: '100%', marginTop: '20px'}}>Aceptar</button>
+        </DraggableModal>
       )}
 
       {activeModal === 'walls' && (
-        <div className="modal-overlay" onClick={() => setActiveModal(null)} style={{zIndex: 50}}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth:'800px', padding:'20px'}}>
-            <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
-                <h3 style={{margin:0, fontSize:'16px', color:'#1A6BB5'}}>🧱 Muros Internos y Columnas</h3>
-                <button onClick={() => setActiveModal(null)} style={{background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer', padding:'4px', width:'auto', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
-            </div>
-            
+        <DraggableModal title="🧱 Muros Internos y Columnas" onClose={() => setActiveModal(null)} width="800px">
             <div style={{display:'flex', gap:'20px'}}>
                 <div style={{flex: 1}}>
                     <h4 style={{marginTop:0}}>Muros Internos</h4>
@@ -2529,19 +2572,13 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 </div>
             </div>
             
-            <button className="btn-primary" style={{width:'100%', marginTop:'20px'}} onClick={()=>setActiveModal(null)}>Cerrar Panel</button>
-          </div>
-        </div>
+            <button className="primary-btn" style={{marginTop:'20px', width:'100%'}} onClick={() => setActiveModal(null)}>Cerrar Panel</button>
+        </DraggableModal>
       )}
 
       {activeModal === 'openings' && (
-        <div className="modal-overlay" onClick={() => setActiveModal(null)} style={{zIndex: 50}}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth:'500px', padding:'20px'}}>
-            <div style={{display:'flex',justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
-                <h3 style={{margin:0, fontSize:'16px', color:'#1A6BB5'}}>🚪 Listado de Aberturas</h3>
-                <button onClick={() => setActiveModal(null)} style={{background:'none', border:'none', color:'#888', fontSize:'20px', cursor:'pointer', padding:'4px', width:'auto', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
-            </div>
-            
+        <DraggableModal title="🚪 Aberturas / Puertas / Ventanas" onClose={() => setActiveModal(null)} width="600px">
+            <div style={{marginBottom:'15px', color:'#555', fontSize:'14px'}}>
             {openings.length === 0 ? (
                <p style={{color:'#666', fontSize:'13px', textAlign:'center', padding:'20px'}}>No hay aberturas. Arrastra una desde la barra superior hacia los muros.</p>
             ) : (
@@ -2568,10 +2605,11 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                </div>
             )}
             
-            <button className="btn-primary" style={{width:'100%', marginTop:'16px'}} onClick={()=>setActiveModal(null)}>Cerrar Panel</button>
-          </div>
-        </div>
+            <button className="primary-btn" onClick={() => setActiveModal(null)} style={{width: '100%'}}>Aceptar</button>
+            </div>
+        </DraggableModal>
       )}
+
 {/* PANEL DERECHO: VISTA PREVIA Y RESULTADOS */}
         <div className="calc-content" style={{ flex: '1', minWidth: 0, marginLeft: '48px' }}>
           <div className="canvas-wrapper hybrid-canvas">
