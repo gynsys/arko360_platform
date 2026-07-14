@@ -2439,7 +2439,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
           {activeModal === 'geometry' && (
         <DraggableModal title="📐 Geometría Global" onClose={() => setActiveModal(null)} width="400px">
-            <div className="params-grid">
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div className="shape-selector" style={{marginBottom: '12px'}}>
               {SHAPES.map(s => (
                 <button 
@@ -2494,7 +2494,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 </select>
               </div>
             </div>
-            <button className="primary-btn" style={{marginTop:'20px', width:'100%'}} onClick={() => setActiveModal(null)}>Aceptar</button>
+            <button className="primary-btn" style={{marginTop:'20px', width:'100%', background: '#1A6BB5', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}} onClick={() => setActiveModal(null)}>Aceptar</button>
           </div>
         </DraggableModal>
       )}
