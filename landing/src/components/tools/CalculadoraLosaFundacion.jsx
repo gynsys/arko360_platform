@@ -303,7 +303,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   // Machones / Columnas
   const [columns, setColumns] = useState([]);
   const [colConfig, setColConfig] = useState({ width: 0.15, length: 0.15, height: 2.70, load_kgf: 1000 });
-  const [gridStep, setGridStep] = useState(0.5);
+  const [gridStep, setGridStep] = useState(0.1);
   
   // Estado de resultados
   const [results, setResults] = useState(null);
@@ -449,9 +449,38 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const [orthoLock, setOrthoLock] = useState(false);  // Shift → bloqueo ortogonal
   const hudInputRef = useRef(null);
   // ===== OFFSET =====
-  const [offsetSourceWall, setOffsetSourceWall] = useState(null); // muro seleccionado para offset
-  const [offsetPreview, setOffsetPreview] = useState(null);       // {x1,y1,x2,y2} línea preview
-  const [offsetDist, setOffsetDist] = useState(0.15);             // distancia del desfase en metros
+  const [offsetSourceWall, setOffsetSourceWall] = useState(null);
+  const [offsetPreview, setOffsetPreview] = useState(null);
+  const [offsetDist, setOffsetDist] = useState(0.15);
+  // ===== ROTATE =====
+  const [rotateSelectedIds, setRotateSelectedIds] = useState(new Set()); // IDs de muros a rotar
+  const [rotateAngle, setRotateAngle] = useState(0);                     // grados
+  const [rotatePivotMode, setRotatePivotMode] = useState('centroid');    // 'centroid' | 'origin'
+  // Helper: rotar un punto alrededor de un pivote
+  const rotatePoint = (x, y, cx, cy, angleDeg) => {
+    const rad = (angleDeg * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    return {
+      x: cx + (x - cx) * cos - (y - cy) * sin,
+      y: cy + (x - cx) * sin + (y - cy) * cos,
+    };
+  };
+  // Calcula las paredes rotadas para preview y commit
+  const getRotatedWalls = (ids, angleDeg) => {
+    const walls = internalWalls.filter(w => ids.has(w.id));
+    if (walls.length === 0) return [];
+    let cx = 0, cy = 0, count = 0;
+    if (rotatePivotMode === 'centroid') {
+      walls.forEach(w => { cx += w.x1 + w.x2; cy += w.y1 + w.y2; count += 2; });
+      cx /= count; cy /= count;
+    } // else origin (0,0)
+    return walls.map(w => {
+      const p1 = rotatePoint(w.x1, w.y1, cx, cy, angleDeg);
+      const p2 = rotatePoint(w.x2, w.y2, cx, cy, angleDeg);
+      return { ...w, x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y };
+    });
+  };
   
   const presupuesto = useMemo(() => generarPresupuesto(results, globalPrices, designParams), [results, globalPrices, designParams]);
   const presupuestoTotal = useMemo(() => presupuesto.reduce((acc, it) => acc + it.total, 0), [presupuesto]);
@@ -1291,15 +1320,21 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   
   // Convertir metros a pixeles SVG
   const toSvg = useCallback((m) => MARGIN + (m * scale), [scale]);
+  
   // Convertir pixeles a metros (con snap opcional) — tiene en cuenta zoom y pan del viewBox
-  const toMeters = useCallback((px, doSnap = false) => {
-    const maxDim = Math.max(params.Lx, params.Ly, 1);
-    // px es relativo al elemento SVG; ajustar por zoom y pan del viewBox
+  const toMetersX = useCallback((px, doSnap = false) => {
     let m = (px / zoom - panOffset.x - MARGIN) / scale;
-    m = Math.max(0, Math.min(m, maxDim));
+    m = Math.max(0, Math.min(m, Math.max(params.Lx, 1)));
     if (doSnap) m = snapToGrid(m);
     return m;
-  }, [scale, snapToGrid, params.Lx, params.Ly, zoom, panOffset]);
+  }, [scale, snapToGrid, params.Lx, zoom, panOffset]);
+
+  const toMetersY = useCallback((py, doSnap = false) => {
+    let m = (py / zoom - panOffset.y - MARGIN) / scale;
+    m = Math.max(0, Math.min(m, Math.max(params.Ly, 1)));
+    if (doSnap) m = snapToGrid(m);
+    return m;
+  }, [scale, snapToGrid, params.Ly, zoom, panOffset]);
 
   // Generar vértices del perímetro según la plantilla y offset
   const getPerimeterVertices = useCallback(() => {
@@ -1485,10 +1520,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     const rect = svgRef.current.getBoundingClientRect();
     const { px, py } = getSvgPx(e, rect);
     // Clamp a los límites exactos del canvas después del snap
-    const mx = Math.max(0, Math.min(toMeters(px, true), params.Lx));
-    const my = Math.max(0, Math.min(toMeters(py, true), params.Ly));
-    const rawMx = toMeters(px, false);
-    const rawMy = toMeters(py, false);
+    const mx = Math.max(0, Math.min(toMetersX(px, true), params.Lx));
+    const my = Math.max(0, Math.min(toMetersY(py, true), params.Ly));
+    const rawMx = toMetersX(px, false);
+    const rawMy = toMetersY(py, false);
     setMouseCoord({ x: mx, y: my });
 
     setSelectionBox(prev => {
@@ -1619,8 +1654,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
     const rect = svgRef.current.getBoundingClientRect();
     const { px, py } = getSvgPx(e, rect);
-    const dropX = toMeters(px);
-    const dropY = toMeters(py, false);
+    const dropX = toMetersX(px);
+    const dropY = toMetersY(py, false);
 
     // Encontrar muro más cercano
     let closestWall = null;
@@ -2943,6 +2978,13 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                       <path d="M18 9l3 3-3 3" />
                     </svg>
                   </button>
+                  {/* Herramienta Rotar */}
+                  <button onClick={() => { setDrawType('rotate'); setRotateSelectedIds(new Set()); setRotateAngle(0); }} title="Rotar Elementos" style={{padding:'6px', borderRadius:'4px', border: drawType === 'rotate' ? '2px solid #e65100' : '1px solid transparent', background: drawType === 'rotate' ? '#fff' : 'transparent', color: '#e65100', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 7a9 9 0 1 0 1 5" />
+                      <polyline points="20 2 20 7 15 7" />
+                    </svg>
+                  </button>
                 </div>
                 <div style={{display:'flex', gap:'4px', marginLeft:'12px'}}>
                   <button onClick={undo} disabled={historyPast.length === 0} title="Deshacer" style={{padding:'4px 8px', cursor: historyPast.length === 0 ? 'not-allowed' : 'pointer', background:'#fff', border:'1px solid #ccc', borderRadius:'4px'}}><Undo2 size={16} color={historyPast.length === 0 ? '#ccc' : '#333'}/></button>
@@ -2988,6 +3030,47 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 )}
               </div>
             )}
+            {drawType === 'rotate' && (
+              <div style={{display:'flex', gap:'12px', alignItems:'center', marginBottom: '10px', background: '#fff3e0', padding: '8px 12px', borderRadius: '6px', border: '1px solid #ffcc80', flexWrap:'wrap'}}>
+                <span style={{fontSize: '13px', color: '#e65100', fontWeight: 700}}>🔄 Rotar — Ángulo:</span>
+                <input type="number" step="1" value={rotateAngle}
+                  onChange={e => setRotateAngle(parseFloat(e.target.value) || 0)}
+                  style={{width: '70px', padding: '3px 6px', borderRadius: '4px', border: '1px solid #ffcc80', fontWeight: 700, color: '#e65100'}}
+                />
+                <span style={{fontSize: '12px', color: '#e65100'}}>grados (°)</span>
+                <select value={rotatePivotMode} onChange={e => setRotatePivotMode(e.target.value)}
+                  style={{padding:'3px 6px', borderRadius:'4px', border:'1px solid #ffcc80', fontSize:'12px'}}>
+                  <option value="centroid">Pivote: Centroide selección</option>
+                  <option value="origin">Pivote: Origen (0,0)</option>
+                </select>
+                <span style={{fontSize: '12px', color: '#555', fontStyle:'italic'}}>
+                  {rotateSelectedIds.size === 0 ? '👆 Clic en muros para seleccionar (Shift+clic para multi-selección)' : `✅ ${rotateSelectedIds.size} muro(s) seleccionado(s)`}
+                </span>
+                {rotateSelectedIds.size > 0 && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const rotated = getRotatedWalls(rotateSelectedIds, rotateAngle);
+                        if (rotated.length === 0) return;
+                        saveHistory();
+                        setInternalWalls(prev => prev.map(w => {
+                          const r = rotated.find(rw => rw.id === w.id);
+                          return r || w;
+                        }));
+                        setRotateSelectedIds(new Set());
+                        setRotateAngle(0);
+                      }}
+                      style={{padding: '4px 12px', background: '#e65100', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 700, fontSize: '13px'}}>
+                      Aplicar ↺
+                    </button>
+                    <button onClick={() => { setRotateSelectedIds(new Set()); setRotateAngle(0); }}
+                      style={{padding: '4px 10px', background: '#fff', border: '1px solid #ffcc80', borderRadius: '5px', cursor: 'pointer', fontSize: '12px', color: '#e65100'}}>
+                      Limpiar
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
             
             {selectedElement && selectedElement.type === 'columna' && (
               <div style={{display:'flex', gap:'12px', marginBottom: '10px', background: '#fff9c4', padding: '8px', borderRadius: '6px', border: '1px solid #fbc02d', alignItems: 'center'}}>
@@ -3024,8 +3107,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 if (!drawType) {
                   const rect = svgRef.current.getBoundingClientRect();
                   const { px, py } = getSvgPx(e, rect);
-                  const mx = toMeters(px, false);
-                  const my = toMeters(py, false);
+                  const mx = toMetersX(px, false);
+                  const my = toMetersY(py, false);
                   setSelectionBox({ startX: mx, startY: my, currentX: mx, currentY: my });
                   isDraggingRef.current = false;
                 }
@@ -3177,22 +3260,33 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 if (w.type === 'perimetral') strokeColor = '#e53935';
                 if (w.type === 'losa') strokeColor = '#ff9800';
                 if (w.type === 'parcela') strokeColor = '#9e9e9e';
-                if (isHovered) strokeColor = '#4caf50';
+                
+                if (drawType === 'rotate' && rotateSelectedIds.has(w.id)) strokeColor = '#e65100'; // seleccionado para rotar
+                else if (isHovered) strokeColor = '#4caf50';
 
                 const isLineOnly = w.type === 'losa' || w.type === 'parcela';
-                const strokeW = isLineOnly ? (isHovered ? 4 : 2) : Math.max(isHovered ? 8 : 4, (w.thickness || 0.15) * scale + (isHovered ? 4 : 0));
+                // Grosor de línea de los muros ajustado (más delgado)
+                const strokeW = isLineOnly ? (isHovered ? 4 : 2) : Math.max(isHovered ? 5 : 3, ((w.thickness || 0.15) * scale) * 0.5);
                 const strokeDash = w.type === 'parcela' ? '6,6' : 'none';
 
                 return (
                 <g key={w.id} 
                    onMouseEnter={() => setHoveredWallId(w.id)}
                    onMouseLeave={() => setHoveredWallId(null)}
-                   style={{ cursor: drawType === 'offset' ? 'copy' : 'pointer' }}
+                   style={{ cursor: drawType === 'offset' ? 'copy' : drawType === 'rotate' ? 'cell' : 'pointer' }}
                    onClick={e => {
                      if (drawType === 'offset') {
                        e.stopPropagation();
                        setOffsetSourceWall(w);
                        setOffsetPreview(null);
+                     } else if (drawType === 'rotate') {
+                       e.stopPropagation();
+                       setRotateSelectedIds(prev => {
+                         const next = new Set(prev);
+                         if (next.has(w.id)) next.delete(w.id);
+                         else next.add(w.id);
+                         return next;
+                       });
                      }
                    }}
                 >
@@ -3333,6 +3427,20 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                     </>
                   )}
                 </>
+              )}
+
+              {/* Pre-visualización Rotación */}
+              {drawType === 'rotate' && rotateSelectedIds.size > 0 && rotateAngle !== 0 && (
+                <g style={{ pointerEvents: 'none' }}>
+                  {getRotatedWalls(rotateSelectedIds, rotateAngle).map((rw, i) => (
+                    <line
+                      key={`rot-prev-${i}`}
+                      x1={toSvg(rw.x1)} y1={toSvg(rw.y1)}
+                      x2={toSvg(rw.x2)} y2={toSvg(rw.y2)}
+                      stroke="#ff9800" strokeWidth="3" strokeDasharray="5,5" strokeLinecap="round" opacity="0.8"
+                    />
+                  ))}
+                </g>
               )}
 
               {/* Punto indicador de Snap Mouse */}
