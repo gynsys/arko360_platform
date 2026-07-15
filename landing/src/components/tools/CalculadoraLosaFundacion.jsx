@@ -1341,7 +1341,9 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const getPerimeterVertices = useCallback((overrideOffset = null) => {
     const { Lx, Ly, wingX, wingY, wingX2, baseY, barY } = params;
     const o = overrideOffset !== null ? overrideOffset : (parseFloat(offset) || 0);
-    const safeO = Math.min(o, 1.0); 
+    // Límite dinámico basado en las dimensiones para evitar colapso visual severo
+    const maxSafe = Math.min(Lx, Ly) / 2.05;
+    const safeO = Math.max(0, Math.min(o, maxSafe)); 
 
     let pts = [];
     switch (shape) {
