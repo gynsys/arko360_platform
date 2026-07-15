@@ -1839,8 +1839,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         if (w.y1 > maxY) maxY = w.y1;
         if (w.y2 > maxY) maxY = w.y2;
       });
-      // Aplica offset solo al auto-wrap
-      const numericOffset = parseFloat(offset) || 0;
+      // Aplica offset (Borde de Losa) al auto-wrap
+      const numericOffset = parseFloat(slabOffset) || 0;
       minX -= numericOffset;
       maxX += numericOffset;
       minY -= numericOffset;
