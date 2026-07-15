@@ -1503,11 +1503,23 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   // Convierte posición de pantalla a coordenadas del espacio de usuario del SVG
   const getSvgPx = (e, svgElement) => {
     if (!svgElement) return { px: 0, py: 0 };
-    const pt = svgElement.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
-    const svgP = pt.matrixTransform(svgElement.getScreenCTM().inverse());
-    return { px: svgP.x, py: svgP.y };
+    const g = svgElement.querySelector('#viewport-matrix-reference');
+    if (g && g.getScreenCTM) {
+      const ctm = g.getScreenCTM();
+      if (ctm) {
+        const pt = svgElement.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgP = pt.matrixTransform(ctm.inverse());
+        return { px: svgP.x, py: svgP.y };
+      }
+    }
+    const rect = svgElement.getBoundingClientRect();
+    const cssToCanvas = CANVAS_SIZE / (rect.width || CANVAS_SIZE);
+    return { 
+      px: (e.clientX - rect.left) * cssToCanvas, 
+      py: (e.clientY - rect.top) * cssToCanvas 
+    };
   };
 
   // Lógica del Mouse (Tracker y Dibujo con Snap)
@@ -3170,6 +3182,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               onDrop={handleDrop}
               style={{ cursor: isPanningRef.current ? 'grabbing' : (isDrawing ? 'crosshair' : (drawType === 'columna' ? 'crosshair' : 'pointer')), userSelect: 'none', touchAction: 'none' }}
             >
+              <g id="viewport-matrix-reference" />
               {/* ===== CAPAS: Imágenes de fondo ===== */}
               {layers.filter(l => l.visible && l.image).map(layer => (
                 <image
