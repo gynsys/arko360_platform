@@ -56,6 +56,7 @@ jobs:
         with:
           context: ./backend
           push: true
+          provenance: false
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:latest
 
       - name: Build and push Landing Frontend
@@ -63,6 +64,7 @@ jobs:
         with:
           context: ./landing
           push: true
+          provenance: false
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/landing-frontend:latest
 
       - name: Build and push Admin Frontend
@@ -70,6 +72,7 @@ jobs:
         with:
           context: ./admin
           push: true
+          provenance: false
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/admin-frontend:latest
 
       - name: Build and push Super Admin Frontend
@@ -77,6 +80,7 @@ jobs:
         with:
           context: ./super-admin-frontend
           push: true
+          provenance: false
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/super-admin-frontend:latest
 
   deploy:
