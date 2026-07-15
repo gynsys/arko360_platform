@@ -274,6 +274,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     h: 15                 
   });
   const [offset, setOffset] = useState(0.5); 
+  const [slabOffset, setSlabOffset] = useState(0.0);
   const [material, setMaterial] = useState('bloque_arcilla_15');
   const [wallHeight, setWallHeight] = useState(2.70);
   
@@ -1365,7 +1366,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   // Generar lista de muros perimetrales a partir de los vértices
   const perimeterWalls = useMemo(() => {
     if (shape === 'libre') return []; // Sin auto-perímetro en modo libre
-    const pts = getPerimeterVertices();
+    const totalOffset = (parseFloat(offset) || 0) + (parseFloat(slabOffset) || 0);
+    const pts = getPerimeterVertices(totalOffset);
     const matProps = MATERIALS[material];
     const walls = [];
     
@@ -1384,7 +1386,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       });
     }
     return walls;
-  }, [getPerimeterVertices, material, wallHeight, designParams.is_plastered, shape]);
+  }, [getPerimeterVertices, material, wallHeight, designParams.is_plastered, shape, offset, slabOffset]);
 
   const allWalls = useMemo(() => {
     const matProps = MATERIALS[material];
@@ -2710,6 +2712,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 </>
               )}
               
+              <div className="param-item"><label>Retiro Perimetral (m):</label><input type="number" step="0.05" min="0" value={offset} onChange={e => setOffset(e.target.value)} /></div>
+              <div className="param-item"><label>Borde de Losa (m):</label><input type="number" step="0.05" min="0" value={slabOffset} onChange={e => setSlabOffset(e.target.value)} /></div>
               <div className="param-item"><label>Espesor Losa (cm):</label><input type="number" value={params.h} onChange={e => handleParamChange('h', e.target.value)} /></div>
               <div className="param-item">
                 <label>Paso Cuadrícula (Snap m):</label>
@@ -2751,7 +2755,6 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       {activeModal === 'materials' && (
         <DraggableModal title="🧱 Materiales de Construcción" onClose={() => setActiveModal(null)} width="400px">
             <div className="params-grid">
-              <div className="param-item"><label>Retiro Perimetral (m):</label><input type="number" step="0.05" value={offset} onChange={e => setOffset(e.target.value)} /></div>
               <div className="param-item"><label>Alto Muros (m):</label><input type="number" step="0.1" value={wallHeight} onChange={e => setWallHeight(e.target.value)} /></div>
             </div>
             
@@ -3244,7 +3247,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 <line key={`vy_sub${i}`} x1={MARGIN} y1={toSvg(i*0.5)} x2={toSvg(params.Lx)} y2={toSvg(i*0.5)} stroke="#cfd8dc" strokeWidth="1" strokeDasharray="4,4" />
               ))}
 
-              {/* Losa / Parcela Boundary (Visual Fijo) */}
+              {/* Parcela Boundary (Visual Fijo) */}
               {(() => {
                 const boundaryPts = getPerimeterVertices(0);
                 if (boundaryPts.length === 0) return null;
@@ -3256,6 +3259,25 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                     stroke="#ff9800" 
                     strokeWidth="2" 
                     strokeDasharray="6,4" 
+                    pointerEvents="none"
+                  />
+                );
+              })()}
+
+              {/* Losa Boundary (Visual Fijo) */}
+              {(() => {
+                const numOffset = parseFloat(offset) || 0;
+                if (numOffset <= 0) return null;
+                const losaPts = getPerimeterVertices(numOffset);
+                if (losaPts.length === 0) return null;
+                const pointsStr = losaPts.map(p => `${toSvg(p.x)},${toSvg(p.y)}`).join(' ');
+                return (
+                  <polygon 
+                    points={pointsStr} 
+                    fill="rgba(158, 158, 158, 0.1)" 
+                    stroke="#9e9e9e" 
+                    strokeWidth="2" 
+                    strokeDasharray="4,2" 
                     pointerEvents="none"
                   />
                 );
