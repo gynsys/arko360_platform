@@ -1337,13 +1337,14 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   }, [scale, snapToGrid, params.Ly]);
 
   // Generar vértices del perímetro según la plantilla y offset
-  const getPerimeterVertices = useCallback(() => {
+  const getPerimeterVertices = useCallback((overrideOffset = null) => {
     const { Lx, Ly, wingX, wingY, wingX2, baseY, barY } = params;
-    const o = parseFloat(offset) || 0;
+    const o = overrideOffset !== null ? overrideOffset : (parseFloat(offset) || 0);
     const safeO = Math.min(o, 1.0); 
 
     let pts = [];
     switch (shape) {
+      case 'libre':
       case 'rectangular':
         pts = [{ x: safeO, y: safeO }, { x: Lx - safeO, y: safeO }, { x: Lx - safeO, y: Ly - safeO }, { x: safeO, y: Ly - safeO }];
         break;
@@ -1363,10 +1364,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
   // Generar lista de muros perimetrales a partir de los vértices
   const perimeterWalls = useMemo(() => {
+    if (shape === 'libre') return []; // Sin auto-perímetro en modo libre
     const pts = getPerimeterVertices();
     const matProps = MATERIALS[material];
     const walls = [];
-    if (shape === 'libre') return []; // Sin auto-perímetro en modo libre
     
     for (let i = 0; i < pts.length; i++) {
       const p1 = pts[i];
@@ -1503,22 +1504,34 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   // Convierte posición de pantalla a coordenadas del espacio de usuario del SVG
   const getSvgPx = (e, svgElement) => {
     if (!svgElement) return { px: 0, py: 0 };
-    const g = svgElement.querySelector('#viewport-matrix-reference');
-    if (g && g.getScreenCTM) {
-      const ctm = g.getScreenCTM();
-      if (ctm) {
-        const pt = svgElement.createSVGPoint();
-        pt.x = e.clientX;
-        pt.y = e.clientY;
-        const svgP = pt.matrixTransform(ctm.inverse());
-        return { px: svgP.x, py: svgP.y };
-      }
-    }
     const rect = svgElement.getBoundingClientRect();
-    const cssToCanvas = CANVAS_SIZE / (rect.width || CANVAS_SIZE);
+    
+    // El viewBox del SVG
+    const vbWidth = CANVAS_SIZE / zoom;
+    const vbHeight = CANVAS_SIZE / zoom;
+    
+    // preserveAspectRatio="xMidYMid meet" centra el viewBox y lo escala para que encaje
+    const ratio = Math.min(rect.width / vbWidth, rect.height / vbHeight);
+    if (ratio === 0) return { px: 0, py: 0 };
+    
+    const renderWidth = vbWidth * ratio;
+    const renderHeight = vbHeight * ratio;
+    
+    const offsetX = (rect.width - renderWidth) / 2;
+    const offsetY = (rect.height - renderHeight) / 2;
+    
+    const xInRender = (e.clientX - rect.left) - offsetX;
+    const yInRender = (e.clientY - rect.top) - offsetY;
+    
+    const vbX = xInRender / ratio;
+    const vbY = yInRender / ratio;
+    
+    const minX = -panOffset.x * zoom;
+    const minY = -panOffset.y * zoom;
+    
     return { 
-      px: (e.clientX - rect.left) * cssToCanvas, 
-      py: (e.clientY - rect.top) * cssToCanvas 
+      px: vbX + minX, 
+      py: vbY + minY 
     };
   };
 
@@ -3231,32 +3244,19 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 <line key={`vy_sub${i}`} x1={MARGIN} y1={toSvg(i*0.5)} x2={toSvg(params.Lx)} y2={toSvg(i*0.5)} stroke="#cfd8dc" strokeWidth="1" strokeDasharray="4,4" />
               ))}
 
-              {/* Losa Auto-calculada (Auto-wrap) */}
+              {/* Losa / Parcela Boundary (Visual Fijo) */}
               {(() => {
-                const losaLines = allWalls.filter(w => w.type === 'losa');
-                if (losaLines.length > 0) return null; // Si hay losa dibujada explícitamente, ocultar el auto-wrap
-
-                const structuralWalls = allWalls.filter(w => w.type === 'perimetral' || w.type === 'interno');
-                if (structuralWalls.length === 0) return null;
-                
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                structuralWalls.forEach(w => {
-                  if (w.x1 < minX) minX = w.x1;
-                  if (w.x2 < minX) minX = w.x2;
-                  if (w.x1 > maxX) maxX = w.x1;
-                  if (w.x2 > maxX) maxX = w.x2;
-                  if (w.y1 < minY) minY = w.y1;
-                  if (w.y2 < minY) minY = w.y2;
-                  if (w.y1 > maxY) maxY = w.y1;
-                  if (w.y2 > maxY) maxY = w.y2;
-                });
-                const numOffset = parseFloat(offset) || 0;
-                const slabLx = (maxX - minX) + 2 * numOffset;
-                const slabLy = (maxY - minY) + 2 * numOffset;
-                const offsetX = minX - numOffset;
-                const offsetY = minY - numOffset;
+                const boundaryPts = getPerimeterVertices(0);
+                if (boundaryPts.length === 0) return null;
+                const pointsStr = boundaryPts.map(p => `${toSvg(p.x)},${toSvg(p.y)}`).join(' ');
                 return (
-                  <rect x={toSvg(offsetX)} y={toSvg(offsetY)} width={slabLx * scale} height={slabLy * scale} fill="rgba(255, 152, 0, 0.08)" stroke="#ff9800" strokeWidth="2" strokeDasharray="3,3" />
+                  <polygon 
+                    points={pointsStr} 
+                    fill="rgba(255, 152, 0, 0.08)" 
+                    stroke="#ff9800" 
+                    strokeWidth="2" 
+                    strokeDasharray="6,4" 
+                  />
                 );
               })()}
 
