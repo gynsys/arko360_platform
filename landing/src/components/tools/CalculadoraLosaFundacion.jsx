@@ -2751,7 +2751,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       {activeModal === 'materials' && (
         <DraggableModal title="🧱 Materiales de Construcción" onClose={() => setActiveModal(null)} width="400px">
             <div className="params-grid">
-              <div className="param-item"><label>Offset / Retiro (m):</label><input type="number" step="0.05" value={offset} onChange={e => setOffset(e.target.value)} /></div>
+              <div className="param-item"><label>Retiro Perimetral (m):</label><input type="number" step="0.05" value={offset} onChange={e => setOffset(e.target.value)} /></div>
               <div className="param-item"><label>Alto Muros (m):</label><input type="number" step="0.1" value={wallHeight} onChange={e => setWallHeight(e.target.value)} /></div>
             </div>
             
@@ -3256,6 +3256,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                     stroke="#ff9800" 
                     strokeWidth="2" 
                     strokeDasharray="6,4" 
+                    pointerEvents="none"
                   />
                 );
               })()}
@@ -3307,7 +3308,11 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 if (w.type === 'losa') strokeColor = '#757575';
                 if (w.type === 'parcela') strokeColor = '#9e9e9e';
                 
-                if (drawType === 'rotate' && rotateSelectedIds.has(w.id)) strokeColor = '#e65100'; // seleccionado para rotar
+                const isSel = selectedElement && selectedElement.type === 'muro' && selectedElement.id === w.id;
+                
+                if (isSel) strokeColor = '#9c27b0'; // seleccionado
+                else if (drawType === 'rotate' && rotateSelectedIds.has(w.id)) strokeColor = '#e65100'; // seleccionado para rotar
+                else if (drawType === 'offset' && offsetSourceWall && offsetSourceWall.id === w.id) strokeColor = '#ff9800'; // seleccionado para offset
                 else if (isHovered) strokeColor = '#4caf50';
 
                 const isLineOnly = w.type === 'losa' || w.type === 'parcela';
