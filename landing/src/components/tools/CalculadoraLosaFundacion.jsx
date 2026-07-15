@@ -2992,7 +2992,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                       <path d="M7 11l5-5 5 5" />
                     </svg>
                   </button>
-                  <button onClick={() => setDrawType('losa')} title="Borde Losa" style={{padding:'6px', borderRadius:'4px', border: drawType === 'losa' ? '2px solid #ff9800' : '1px solid transparent', background: drawType === 'losa' ? '#fff' : 'transparent', color: '#ff9800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                  <button onClick={() => setDrawType('losa')} title="Borde Losa" style={{padding:'6px', borderRadius:'4px', border: drawType === 'losa' ? '2px solid #757575' : '1px solid transparent', background: drawType === 'losa' ? '#fff' : 'transparent', color: '#757575', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M2 12l10 5 10-5-10-5z" fill="currentColor" fillOpacity="0.2" />
                       <path d="M2 12v4l10 5 10-5v-4" />
@@ -3304,7 +3304,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 const isHovered = hoveredWallId === w.id;
                 let strokeColor = '#1e88e5'; // interno
                 if (w.type === 'perimetral') strokeColor = '#e53935';
-                if (w.type === 'losa') strokeColor = '#ff9800';
+                if (w.type === 'losa') strokeColor = '#757575';
                 if (w.type === 'parcela') strokeColor = '#9e9e9e';
                 
                 if (drawType === 'rotate' && rotateSelectedIds.has(w.id)) strokeColor = '#e65100'; // seleccionado para rotar
