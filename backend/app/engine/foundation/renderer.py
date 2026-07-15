@@ -73,41 +73,71 @@ class PlanRenderer:
                 f'stroke="#e0e0e0" stroke-width="0.8"/>'
             )
 
-        # Base steel mesh representation (dashed border)
-        svg_parts.append(
-            f'<path d="M {margin} {margin} h {self.Lx * scale} v {self.Ly * scale} '
-            f'h {-self.Lx * scale} Z" fill="none" stroke="#2196f3" '
-            f'stroke-width="2" stroke-dasharray="8,8" opacity="0.5"/>'
+        # Armadura Base Cutout (top right)
+        cut_w = self.Lx * 0.35
+        cut_h = self.Ly * 0.35
+        x0_s, y0_s = to_svg(self.Lx - cut_w, 0)
+        x1_s, y1_s = to_svg(self.Lx, cut_h)
+        xt_s, yt_s = to_svg(self.Lx, 0)
+        
+        # Draw a wavy path for the cutout: from (x0_s, y0_s) to (x1_s, y1_s)
+        wavy_d = (
+            f"M {x0_s:.1f} {y0_s:.1f} "
+            f"C {x0_s - 40:.1f} {y0_s + 40:.1f}, {x0_s + 40:.1f} {y1_s - 40:.1f}, {x1_s:.1f} {y1_s:.1f}"
         )
-        for mx in range(1, 5):
-            x = (self.Lx / 5) * mx
-            x1, y1 = to_svg(x, 0)
-            x2, y2 = to_svg(x, self.Ly)
-            svg_parts.append(
-                f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
-                f'stroke="#2196f3" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.3"/>'
-            )
-        for my in range(1, 5):
-            y = (self.Ly / 5) * my
-            x1, y1 = to_svg(0, y)
-            x2, y2 = to_svg(self.Lx, y)
-            svg_parts.append(
-                f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
-                f'stroke="#2196f3" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.3"/>'
-            )
+        clip_d = f"{wavy_d} L {xt_s:.1f} {yt_s:.1f} Z"
+
+        svg_parts.insert(1, f'<defs><clipPath id="meshClip"><path d="{clip_d}"/></clipPath>'
+                            f'<marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">'
+                            f'<path d="M0,0 L0,6 L9,3 z" fill="#000" /></marker></defs>')
+
+        # Draw grid inside the clipPath
+        svg_parts.append('<g clip-path="url(#meshClip)">')
+        for i in range(7):
+            vx, _ = to_svg(self.Lx - cut_w + i * (cut_w/6), 0)
+            svg_parts.append(f'<line x1="{vx:.1f}" y1="{y0_s:.1f}" x2="{vx:.1f}" y2="{y1_s + 20:.1f}" stroke="#000" stroke-width="2"/>')
+        for i in range(7):
+            _, vy = to_svg(0, i * (cut_h/6))
+            svg_parts.append(f'<line x1="{x0_s - 20:.1f}" y1="{vy:.1f}" x2="{xt_s:.1f}" y2="{vy:.1f}" stroke="#000" stroke-width="2"/>')
+        svg_parts.append('</g>')
+
+        # Draw the wavy border line
+        svg_parts.append(f'<path d="{wavy_d}" fill="none" stroke="#000" stroke-width="3"/>')
+
+        # Draw the text and arrow
+        arr_st_x, arr_st_y = to_svg(self.Lx - cut_w * 0.6, cut_h * 1.3)
+        arr_en_x, arr_en_y = to_svg(self.Lx - cut_w * 0.3, cut_h * 0.8)
+        
         svg_parts.append(
-            f'<text x="{margin + self.Lx * scale / 2}" y="{margin + self.Ly * scale / 2}" '
-            f'font-family="sans-serif" font-size="14" fill="#0d47a1" opacity="0.6" '
-            f'text-anchor="middle">Armadura Base (Doble Malla)</text>'
+            f'<path d="M {arr_st_x:.1f} {arr_st_y:.1f} Q {arr_st_x:.1f} {arr_en_y:.1f} {arr_en_x:.1f} {arr_en_y:.1f}" '
+            f'fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)"/>'
+        )
+        svg_parts.append(
+            f'<text x="{arr_st_x:.1f}" y="{arr_st_y + 20:.1f}" '
+            f'font-family="sans-serif" font-size="15" fill="#000" text-anchor="middle">'
+            f'Armadura Base (Doble Malla)</text>'
         )
 
         # Reinforcement bands (polygons centred on walls)
-        for wall in self.walls:
+        for idx, wall in enumerate(self.walls):
             dxw = wall.x2 - wall.x1
             dyw = wall.y2 - wall.y1
             length = wall.length
             if length < 1e-6:
                 continue
+
+            # Check if this band actually requires additional reinforcement
+            b_data = next((b for b in getattr(self, "band_data", []) if b["id"] == idx), None)
+            needs_steel = False
+            if b_data:
+                bx = b_data.get("bar_x", {})
+                by = b_data.get("bar_y", {})
+                if bx.get("diam_mm", 0) > 0 or by.get("diam_mm", 0) > 0:
+                    needs_steel = True
+            
+            if not needs_steel:
+                continue
+
             nx_vec = -dyw / length
             ny_vec = dxw / length
             hw = wall.band_width / 2.0

@@ -2715,7 +2715,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               )}
               
               <div className="param-item"><label>Retiro Perimetral (m):</label><input type="number" step="0.05" min="0" value={offset} onChange={e => setOffset(e.target.value)} /></div>
-              <div className="param-item"><label>Borde de Losa (m):</label><input type="number" step="0.05" min="0" value={slabOffset} onChange={e => setSlabOffset(e.target.value)} /></div>
+              <div className="param-item"><label>Separación Pared Perimetral (m):</label><input type="number" step="0.05" min="0" value={slabOffset} onChange={e => setSlabOffset(e.target.value)} /></div>
               <div className="param-item"><label>Espesor Losa (cm):</label><input type="number" value={params.h} onChange={e => handleParamChange('h', e.target.value)} /></div>
               <div className="param-item">
                 <label>Paso Cuadrícula (Snap m):</label>
