@@ -1314,10 +1314,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const snapToGrid = useCallback((val) => gridStep > 0 ? Math.round(val / gridStep) * gridStep : val, [gridStep]);
 
   // Escala para el SVG
-  const CANVAS_SIZE = 500;
+  const CANVAS_WIDTH = 1400;
+  const CANVAS_HEIGHT = 600;
   const MARGIN = 40; // Margen para los ejes
-  const EFFECTIVE_SIZE = CANVAS_SIZE - MARGIN * 2;
-  const scale = useMemo(() => EFFECTIVE_SIZE / Math.max(params.Lx, params.Ly, 1), [params.Lx, params.Ly]);
+  const EFFECTIVE_WIDTH = CANVAS_WIDTH - MARGIN * 2;
+  const EFFECTIVE_HEIGHT = CANVAS_HEIGHT - MARGIN * 2;
+  const scale = useMemo(() => Math.min(EFFECTIVE_WIDTH / Math.max(params.Lx, 1), EFFECTIVE_HEIGHT / Math.max(params.Ly, 1)), [params.Lx, params.Ly]);
   
   // Convertir metros a pixeles SVG
   const toSvg = useCallback((m) => MARGIN + (m * scale), [scale]);
@@ -1489,8 +1491,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     if (!isPanningRef.current) return;
     if (!svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const scaleFactorX = CANVAS_SIZE / (rect.width || CANVAS_SIZE);
-    const scaleFactorY = CANVAS_SIZE / (rect.height || CANVAS_SIZE);
+    const scaleFactorX = CANVAS_WIDTH / (rect.width || CANVAS_WIDTH);
+    const scaleFactorY = CANVAS_HEIGHT / (rect.height || CANVAS_HEIGHT);
     const dx = ((e.clientX - panStartRef.current.x) * scaleFactorX) / zoom;
     const dy = ((e.clientY - panStartRef.current.y) * scaleFactorY) / zoom;
     setPanOffset({ x: panStartRef.current.ox + dx, y: panStartRef.current.oy + dy });
@@ -1511,8 +1513,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     const rect = svgElement.getBoundingClientRect();
     
     // El viewBox del SVG
-    const vbWidth = CANVAS_SIZE / zoom;
-    const vbHeight = CANVAS_SIZE / zoom;
+    const vbWidth = CANVAS_WIDTH / zoom;
+    const vbHeight = CANVAS_HEIGHT / zoom;
     
     // preserveAspectRatio="xMidYMid meet" centra el viewBox y lo escala para que encaje
     const ratio = Math.min(rect.width / vbWidth, rect.height / vbHeight);
@@ -2358,7 +2360,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
         background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(5px)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        zIndex: 9999
+        zIndex: 10000
       }}>
         <div style={{ width: '50px', height: '50px', border: '5px solid #ccc', borderTopColor: '#1A6BB5', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
         <h3 style={{ marginTop: '20px', color: '#1A6BB5' }}>Calculando Método de Elementos Finitos (FEM)...</h3>
@@ -2588,10 +2590,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             <FaCogs />
           </button>
 
-          {/* Botón Muros Internos */}
+          {/* Botón Paredes */}
           <button
             onClick={() => setActiveModal(activeModal === 'walls' ? null : 'walls')}
-            title="Muros Internos"
+            title="Paredes"
             style={{
               background: activeModal === 'walls' ? '#1A6BB5' : 'transparent',
               border: 'none', borderRadius: '8px',
@@ -2847,15 +2849,21 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       )}
 
       {activeModal === 'walls' && (
-        <DraggableModal title="🧱 Muros Internos" onClose={() => setActiveModal(null)} width="400px">
+        <DraggableModal title="🧱 Paredes" onClose={() => setActiveModal(null)} width="480px">
             <div>
-                <p style={{fontSize:'12px', color:'#666', marginTop:0}}>Puedes agregarlos haciendo Shift+Clic en el lienzo o usando esta tabla.</p>
-                <div className="table-container" style={{maxHeight:'300px', overflowY:'auto'}}>
-                  <table className="coords-table">
-                    <thead><tr><th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th></tr></thead>
+                <p style={{fontSize:'12px', color:'#666', marginTop:0}}>Puedes agregarlas haciendo Shift+Clic en el lienzo o usando esta tabla.</p>
+                <div className="table-container" style={{maxHeight:'300px', overflowY:'auto', overflowX:'auto'}}>
+                  <table className="coords-table" style={{minWidth: '400px'}}>
+                    <thead><tr><th>Tipo</th><th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th></tr></thead>
                     <tbody>
                       {internalWalls.map((w, i) => (
                         <tr key={w.id} className={hoveredWallId === w.id ? 'highlighted-row' : ''} onMouseEnter={() => setHoveredWallId(w.id)} onMouseLeave={() => setHoveredWallId(null)}>
+                          <td>
+                            <select value={w.type || 'interno'} onChange={e => updateInternalWall(w.id, 'type', e.target.value)} style={{fontSize: '11px', padding: '2px 4px', width: '85px', height: '24px'}}>
+                              <option value="interno">Interna</option>
+                              <option value="perimetral">Perimetral</option>
+                            </select>
+                          </td>
                           <td><input type="number" step="0.5" value={w.x1} onChange={e => updateInternalWall(w.id, 'x1', e.target.value)}/></td>
                           <td><input type="number" step="0.5" value={w.y1} onChange={e => updateInternalWall(w.id, 'y1', e.target.value)}/></td>
                           <td><input type="number" step="0.5" value={w.x2} onChange={e => updateInternalWall(w.id, 'x2', e.target.value)}/></td>
@@ -2866,7 +2874,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                     </tbody>
                   </table>
                 </div>
-                <button className="add-btn" onClick={() => addInternalWall({})}>+ Añadir Muro</button>
+                <button className="add-btn" onClick={() => addInternalWall({})}>+ Añadir Pared</button>
             </div>
             <button className="primary-btn" style={{marginTop:'20px', width:'100%'}} onClick={() => setActiveModal(null)}>Cerrar Panel</button>
         </DraggableModal>
@@ -3201,9 +3209,9 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             
             <svg 
               ref={svgRef}
-              width={CANVAS_SIZE} 
-              height={CANVAS_SIZE} 
-              viewBox={`${-panOffset.x * zoom} ${-panOffset.y * zoom} ${CANVAS_SIZE / zoom} ${CANVAS_SIZE / zoom}`}
+              width={CANVAS_WIDTH} 
+              height={CANVAS_HEIGHT} 
+              viewBox={`${-panOffset.x * zoom} ${-panOffset.y * zoom} ${CANVAS_WIDTH / zoom} ${CANVAS_HEIGHT / zoom}`}
               className={`drawing-board ${isDrawing ? 'drawing-mode' : ''}`}
               onMouseMove={handleMouseMove}
               onMouseDown={(e) => {
@@ -3247,8 +3255,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                   key={`bg-${layer.id}`}
                   href={layer.image}
                   x={toSvg(0)} y={toSvg(0)}
-                  width={params.Lx * (CANVAS_SIZE - 2 * MARGIN) / Math.max(params.Lx, params.Ly)}
-                  height={params.Ly * (CANVAS_SIZE - 2 * MARGIN) / Math.max(params.Lx, params.Ly)}
+                  width={params.Lx * scale}
+                  height={params.Ly * scale}
                   opacity={layer.opacity}
                   preserveAspectRatio="none"
                   style={{ pointerEvents: 'none' }}
@@ -3256,7 +3264,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               ))}
 
               {/* Ejes X (Ruler Top) */}
-              <rect x={0} y={0} width={CANVAS_SIZE} height={MARGIN-5} fill="#f0f0f0" />
+              <rect x={0} y={0} width={CANVAS_WIDTH} height={MARGIN-5} fill="#f0f0f0" />
               {Array.from({ length: Math.floor(params.Lx) + 1 }).map((_, i) => (
                 <g key={`rx${i}`}>
                   <line x1={toSvg(i)} y1={MARGIN-5} x2={toSvg(i)} y2={MARGIN} stroke="#333" strokeWidth="1.5" />
@@ -3265,7 +3273,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               ))}
 
               {/* Ejes Y (Ruler Left) */}
-              <rect x={0} y={0} width={MARGIN-5} height={CANVAS_SIZE} fill="#f0f0f0" />
+              <rect x={0} y={0} width={MARGIN-5} height={CANVAS_HEIGHT} fill="#f0f0f0" />
               {Array.from({ length: Math.floor(params.Ly) + 1 }).map((_, i) => (
                 <g key={`ry${i}`}>
                   <line x1={MARGIN-5} y1={toSvg(i)} x2={MARGIN} y2={toSvg(i)} stroke="#333" strokeWidth="1.5" />
