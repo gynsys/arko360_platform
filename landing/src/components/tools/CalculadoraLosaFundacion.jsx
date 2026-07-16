@@ -3724,12 +3724,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                   {designParams.custom_mesh_cm2_m > 0 ? (
                     <div style={{fontSize:'14px', color:'#c62828', fontWeight:'bold'}}>
                       {designParams.custom_mesh_cm2_m === 0.61 && 'Malla 6x6 (Ø3.43@15cm)'}
-                      {designParams.custom_mesh_cm2_m === 1.41 && 'Varillas Ø6@20cm'}
+                      {designParams.custom_mesh_cm2_m === 1.41 && 'Ø6@20cm'}
                       {designParams.custom_mesh_cm2_m === 1.88 && 'Malla Sima (Ø6@15cm)'}
-                      {designParams.custom_mesh_cm2_m === 1.92 && 'Varillas Ø7@20cm'}
-                      {designParams.custom_mesh_cm2_m === 2.51 && 'Varillas Ø8@20cm'}
-                      {designParams.custom_mesh_cm2_m === 3.93 && 'Varillas Ø10@20cm'}
-                      {designParams.custom_mesh_cm2_m === 5.24 && 'Varillas Ø10@15cm'}
+                      {designParams.custom_mesh_cm2_m === 1.92 && 'Ø7@20cm'}
+                      {designParams.custom_mesh_cm2_m === 2.51 && 'Ø8@20cm'}
+                      {designParams.custom_mesh_cm2_m === 3.93 && 'Ø10@20cm'}
+                      {designParams.custom_mesh_cm2_m === 5.24 && 'Ø10@15cm'}
                     </div>
                   ) : (
                     <div style={{fontSize:'14px', color:'#c62828', fontWeight:'bold'}}>{results.materials_computation.general_slab_steel.bar_x} en X, {results.materials_computation.general_slab_steel.bar_y} en Y</div>
@@ -3770,6 +3770,31 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                     const isMinY = b.Asy_cm2_m <= asMin + 0.01;
                     const px = isMinX ? 'Malla General' : (b.bar_x?.diam_mm > 0 ? `Ø${b.bar_x.diam_mm}@${(b.bar_x.sep_m*100).toFixed(0)}cm` : 'Mínimo');
                     const py = isMinY ? 'Malla General' : (b.bar_y?.diam_mm > 0 ? `Ø${b.bar_y.diam_mm}@${(b.bar_y.sep_m*100).toFixed(0)}cm` : 'Mínimo');
+                    
+                    if (px !== 'Malla General' && py !== 'Malla General' && px === py) {
+                      return (
+                        <tr key={i} style={{background: i % 2 === 0 ? '#fff' : '#f9f9f9'}}>
+                          <td>M{i+1}</td>
+                          <td>
+                            <span style={{
+                              padding:'2px 6px', borderRadius:'3px', fontSize:'10px', 
+                              background: b.type==='perimetral' ? '#ffebee' : (b.type==='losa' ? '#fff3e0' : (b.type==='parcela' ? '#f5f5f5' : '#e3f2fd')), 
+                              color: b.type==='perimetral' ? '#c62828' : (b.type==='losa' ? '#e65100' : (b.type==='parcela' ? '#616161' : '#1565c0'))
+                            }}>
+                              {b.type==='perimetral' ? 'Perim.' : (b.type==='losa' ? 'Losa' : (b.type==='parcela' ? 'Parcela' : 'Interno'))}
+                            </span>
+                          </td>
+                          <td>{b.band_width.toFixed(2)} m</td>
+                          <td>{(b.Mx_design_kNm_m * 101.9716).toFixed(2)}</td>
+                          <td>{(b.My_design_kNm_m * 101.9716).toFixed(2)}</td>
+                          <td style={{fontWeight:'600'}}>{b.Asx_cm2_m.toFixed(2)}</td>
+                          <td style={{fontWeight:'600'}}>{b.Asy_cm2_m.toFixed(2)}</td>
+                          <td colSpan="2" style={{color:'#2e7d32', fontWeight:'bold', textAlign: 'center'}}>{px} (ambos sentidos)</td>
+                          <td><span style={{color:'#2e7d32', fontWeight:'700'}}>✓</span></td>
+                        </tr>
+                      );
+                    }
+
                     return (
                       <tr key={i} style={{background: i % 2 === 0 ? '#fff' : '#f9f9f9'}}>
                         <td>M{i+1}</td>
