@@ -39,9 +39,9 @@ class PlanRenderer:
         -------
         str  SVG markup joined with '\\n'
         """
-        margin = 80
-        svg_w = 700
-        svg_h = 700
+        margin = 130
+        svg_w = 850
+        svg_h = 850
         plot_size = min(svg_w, svg_h) - 2 * margin
         scale = plot_size / max(self.Lx, self.Ly)
 
@@ -105,12 +105,12 @@ class PlanRenderer:
         svg_parts.append(f'<path d="{wavy_d}" fill="none" stroke="#000" stroke-width="3"/>')
 
         # Draw the text and arrow
-        arr_st_x, arr_st_y = to_svg(self.Lx - cut_w * 0.6, cut_h * 1.3)
-        arr_en_x, arr_en_y = to_svg(self.Lx - cut_w * 0.3, cut_h * 0.8)
+        arr_en_x, arr_en_y = to_svg(self.Lx - cut_w / 2, 0)
+        arr_st_x, arr_st_y = to_svg(self.Lx - cut_w / 2, -1.2)
         
         svg_parts.append(
-            f'<path d="M {arr_st_x:.1f} {arr_st_y:.1f} Q {arr_st_x:.1f} {arr_en_y:.1f} {arr_en_x:.1f} {arr_en_y:.1f}" '
-            f'fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)"/>'
+            f'<line x1="{arr_st_x:.1f}" y1="{arr_st_y:.1f}" x2="{arr_en_x:.1f}" y2="{arr_en_y - 5:.1f}" '
+            f'stroke="#000" stroke-width="2" marker-end="url(#arrow)"/>'
         )
         # Determine base mesh text
         mesh_val = getattr(self, "custom_mesh_cm2_m", 0)
@@ -131,8 +131,8 @@ class PlanRenderer:
                     mesh_text = f"Ø{bx['diam_mm']}@{int(bx['sep_m']*100)}cm (ambos sentidos)"
 
         svg_parts.append(
-            f'<text x="{arr_st_x:.1f}" y="{arr_st_y + 20:.1f}" '
-            f'font-family="sans-serif" font-size="15" fill="#000" text-anchor="middle">'
+            f'<text x="{arr_st_x:.1f}" y="{arr_st_y - 5:.1f}" '
+            f'font-family="sans-serif" font-size="15" fill="#000" text-anchor="middle" font-weight="bold">'
             f'{mesh_text}</text>'
         )
 
