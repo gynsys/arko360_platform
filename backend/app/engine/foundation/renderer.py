@@ -115,20 +115,20 @@ class PlanRenderer:
         # Determine base mesh text
         mesh_val = getattr(self, "custom_mesh_cm2_m", 0)
         mesh_text = "Armadura Base (Doble Malla)"
-        if mesh_val == 0.61: mesh_text = "Malla 6x6 (Ø3.43@15cm)"
-        elif mesh_val == 1.41: mesh_text = "Ø6@20cm"
-        elif mesh_val == 1.88: mesh_text = "Malla Sima (Ø6@15cm)"
-        elif mesh_val == 1.92: mesh_text = "Ø7@20cm"
-        elif mesh_val == 2.51: mesh_text = "Ø8@20cm"
-        elif mesh_val == 3.93: mesh_text = "Ø10@20cm"
-        elif mesh_val == 5.24: mesh_text = "Ø10@15cm"
+        if mesh_val == 0.61: mesh_text = "Malla 6x6 (Ø3.43@15cm) (ambos sentidos)"
+        elif mesh_val == 1.41: mesh_text = "Ø6@20cm (ambos sentidos)"
+        elif mesh_val == 1.88: mesh_text = "Malla Sima (Ø6@15cm) (ambos sentidos)"
+        elif mesh_val == 1.92: mesh_text = "Ø7@20cm (ambos sentidos)"
+        elif mesh_val == 2.51: mesh_text = "Ø8@20cm (ambos sentidos)"
+        elif mesh_val == 3.93: mesh_text = "Ø10@20cm (ambos sentidos)"
+        elif mesh_val == 5.24: mesh_text = "Ø10@15cm (ambos sentidos)"
         else:
             As_min_cm2_normativo = float(getattr(self, "rho_min", 0.0018) * 1.0 * getattr(self, "h", 0.15) * 1e4)
             As_min_m2 = As_min_cm2_normativo / 1e4
             if hasattr(self, "_propose_bars"):
                 bx = self._propose_bars(As_min_m2)
                 if bx["diam_mm"] > 0:
-                    mesh_text = f"Ø{bx['diam_mm']}@{int(bx['sep_m']*100)}cm"
+                    mesh_text = f"Ø{bx['diam_mm']}@{int(bx['sep_m']*100)}cm (ambos sentidos)"
 
         svg_parts.append(
             f'<text x="{arr_st_x:.1f}" y="{arr_st_y + 20:.1f}" '
@@ -202,13 +202,14 @@ class PlanRenderer:
                 if req_str:
                     mid_x = (wall.x1 + wall.x2) / 2
                     mid_y = (wall.y1 + wall.y2) / 2
-                    off_dist = 1.0
+                    off_dist = 1.3
                     
                     cx, cy = self.Lx / 2, self.Ly / 2
                     vx = cx - mid_x
                     vy = cy - mid_y
                     dot = vx * nx_vec + vy * ny_vec
-                    if dot < 0:
+                    # We want the normal to point AWAY from the center so text goes outwards
+                    if dot > 0:
                         nx_vec, ny_vec = -nx_vec, -ny_vec
                         
                     # Offset for text
