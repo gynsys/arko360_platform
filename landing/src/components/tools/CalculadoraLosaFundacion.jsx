@@ -2317,6 +2317,40 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     }
   };
 
+  const handleNewProject = () => {
+    if (window.confirm('¿Deseas iniciar un proyecto nuevo? Se perderán los cambios no guardados.')) {
+      setProjectName('Nuevo Proyecto');
+      setShape('Rectangular');
+      setParams({ Lx: 10, Ly: 10, wingX: 4, wingY: 4, wingX2: 4, baseY: 4, barY: 4, h: 15 });
+      setOffset(0.5);
+      setSlabOffset(0.0);
+      setInternalWalls([]);
+      setColumns([]);
+      setOpenings([]);
+      setResults(null);
+      setError(null);
+      setCurrentRunId(null);
+      setZoom(1);
+      setPanOffset({ x: 0, y: 0 });
+    }
+  };
+
+  const handleCloseProject = () => {
+    if (window.confirm('¿Seguro que deseas cerrar el proyecto actual? Se perderán los cambios no guardados.')) {
+      setProjectName('Nuevo Proyecto');
+      setShape('libre');
+      setParams({ Lx: 10, Ly: 10, wingX: 4, wingY: 4, wingX2: 4, baseY: 4, barY: 4, h: 15 });
+      setInternalWalls([]);
+      setColumns([]);
+      setOpenings([]);
+      setResults(null);
+      setError(null);
+      setCurrentRunId(null);
+      setZoom(1);
+      setPanOffset({ x: 0, y: 0 });
+    }
+  };
+
   return (
     <>
     {loading && (
@@ -2465,8 +2499,14 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               className="project-name-input"
               style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: '13px', width: '160px', outline: 'none' }}
             />
+            <button onClick={handleNewProject} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+              📄 Nuevo
+            </button>
             <button onClick={() => { setShowOpenModal(true); fetchRuns(); }} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
               📂 Abrir
+            </button>
+            <button onClick={handleCloseProject} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+              ❌ Cerrar
             </button>
             <button onClick={() => saveToDatabase()} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
               <FaSave /> Guardar
@@ -3241,13 +3281,18 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 <line key={`vy${i}`} x1={MARGIN} y1={toSvg(i)} x2={toSvg(params.Lx)} y2={toSvg(i)} stroke="#b0bec5" strokeWidth="1.5" opacity="0.6" />
               ))}
               
-              {/* Grid Menor (0.5m) */}
-              {Array.from({ length: Math.floor(params.Lx / 0.5) + 1 }).map((_, i) => (
-                <line key={`vx_sub${i}`} x1={toSvg(i*0.5)} y1={MARGIN} x2={toSvg(i*0.5)} y2={toSvg(params.Ly)} stroke="#cfd8dc" strokeWidth="1" strokeDasharray="4,4" />
-              ))}
-              {Array.from({ length: Math.floor(params.Ly / 0.5) + 1 }).map((_, i) => (
-                <line key={`vy_sub${i}`} x1={MARGIN} y1={toSvg(i*0.5)} x2={toSvg(params.Lx)} y2={toSvg(i*0.5)} stroke="#cfd8dc" strokeWidth="1" strokeDasharray="4,4" />
-              ))}
+              {/* Grid Menor (Depende de gridStep) */}
+              {gridStep > 0 && Array.from({ length: Math.floor(params.Lx / gridStep) + 1 }).map((_, i) => {
+                const val = i * gridStep;
+                // Evitar superponer sobre la linea mayor (1m) para mantener la jerarquía visual
+                if (Math.abs(val % 1) < 0.001) return null;
+                return <line key={`vx_sub${i}`} x1={toSvg(val)} y1={MARGIN} x2={toSvg(val)} y2={toSvg(params.Ly)} stroke="#cfd8dc" strokeWidth="1" strokeDasharray="4,4" />;
+              })}
+              {gridStep > 0 && Array.from({ length: Math.floor(params.Ly / gridStep) + 1 }).map((_, i) => {
+                const val = i * gridStep;
+                if (Math.abs(val % 1) < 0.001) return null;
+                return <line key={`vy_sub${i}`} x1={MARGIN} y1={toSvg(val)} x2={toSvg(params.Lx)} y2={toSvg(val)} stroke="#cfd8dc" strokeWidth="1" strokeDasharray="4,4" />;
+              })}
 
               {/* Parcela Boundary (Visual Fijo) */}
               {(() => {
