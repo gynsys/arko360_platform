@@ -112,10 +112,28 @@ class PlanRenderer:
             f'<path d="M {arr_st_x:.1f} {arr_st_y:.1f} Q {arr_st_x:.1f} {arr_en_y:.1f} {arr_en_x:.1f} {arr_en_y:.1f}" '
             f'fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)"/>'
         )
+        # Determine base mesh text
+        mesh_val = getattr(self, "custom_mesh_cm2_m", 0)
+        mesh_text = "Armadura Base (Doble Malla)"
+        if mesh_val == 0.61: mesh_text = "Malla 6x6 (Ø3.43@15cm)"
+        elif mesh_val == 1.41: mesh_text = "Varillas Ø6@20cm"
+        elif mesh_val == 1.88: mesh_text = "Malla Sima (Ø6@15cm)"
+        elif mesh_val == 1.92: mesh_text = "Varillas Ø7@20cm"
+        elif mesh_val == 2.51: mesh_text = "Varillas Ø8@20cm"
+        elif mesh_val == 3.93: mesh_text = "Varillas Ø10@20cm"
+        elif mesh_val == 5.24: mesh_text = "Varillas Ø10@15cm"
+        else:
+            As_min_cm2_normativo = float(getattr(self, "rho_min", 0.0018) * 1.0 * getattr(self, "h", 0.15) * 1e4)
+            As_min_m2 = As_min_cm2_normativo / 1e4
+            if hasattr(self, "_propose_bars"):
+                bx = self._propose_bars(As_min_m2)
+                if bx["diam_mm"] > 0:
+                    mesh_text = f"Varillas Ø{bx['diam_mm']}@{int(bx['sep_m']*100)}cm"
+
         svg_parts.append(
             f'<text x="{arr_st_x:.1f}" y="{arr_st_y + 20:.1f}" '
             f'font-family="sans-serif" font-size="15" fill="#000" text-anchor="middle">'
-            f'Armadura Base (Doble Malla)</text>'
+            f'{mesh_text}</text>'
         )
 
         # Reinforcement bands (polygons centred on walls)
@@ -126,13 +144,17 @@ class PlanRenderer:
             if length < 1e-6:
                 continue
 
-            # Check if this band actually requires additional reinforcement
+            # Check if this band actually requires additional reinforcement beyond the base mesh
             b_data = next((b for b in getattr(self, "band_data", []) if b["id"] == idx), None)
             needs_steel = False
             if b_data:
-                bx = b_data.get("bar_x", {})
-                by = b_data.get("bar_y", {})
-                if bx.get("diam_mm", 0) > 0 or by.get("diam_mm", 0) > 0:
+                As_min_cm2_normativo = float(getattr(self, "rho_min", 0.0018) * 1.0 * getattr(self, "h", 0.15) * 1e4)
+                mesh_val = getattr(self, "custom_mesh_cm2_m", 0)
+                As_min_cm2 = max(As_min_cm2_normativo, float(mesh_val)) if mesh_val > 0 else As_min_cm2_normativo
+                
+                req_x = b_data.get("Asx_calc_cm2_m", 0)
+                req_y = b_data.get("Asy_calc_cm2_m", 0)
+                if req_x > As_min_cm2 + 1e-4 or req_y > As_min_cm2 + 1e-4:
                     needs_steel = True
             
             if not needs_steel:

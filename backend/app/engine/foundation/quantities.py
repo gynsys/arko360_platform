@@ -66,6 +66,8 @@ class QuantitiesComputer:
         extra_Asx = np.maximum(0, self.Asx - As_min_m2)
         extra_Asy = np.maximum(0, self.Asy - As_min_m2)
         extra_steel_vol_m3 = float(np.sum(extra_Asx + extra_Asy) * self.dx * self.dy)
+        if extra_steel_vol_m3 < 1e-6:
+            extra_steel_vol_m3 = 0.0
         steel_weight_bands_kg = float(extra_steel_vol_m3 * 7850)
 
         # Estimate number of 6-metre bars (based on base diameter)
@@ -85,8 +87,8 @@ class QuantitiesComputer:
             if diam_base > 0
             else 1e-6
         )
-        general_bars_6m = int(np.ceil(general_steel_vol_m3 / bar_vol_m3))
-        bands_bars_6m = int(np.ceil(extra_steel_vol_m3 / bar_vol_m3))
+        general_bars_6m = int(np.ceil(general_steel_vol_m3 / bar_vol_m3)) if general_steel_vol_m3 > 1e-6 else 0
+        bands_bars_6m = int(np.ceil(extra_steel_vol_m3 / bar_vol_m3)) if extra_steel_vol_m3 > 1e-6 else 0
         total_bars_6m = general_bars_6m + bands_bars_6m
 
         # --- Superstructure ---
