@@ -8,7 +8,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus, FaDrawPolygon, FaCubes, FaColumns, FaDoorOpen, FaCogs, FaPlay, FaBorderAll } from 'react-icons/fa';
 import InteractiveHeatmap from './InteractiveHeatmap';
-
+import { AuthModal } from './fea3d/AuthModal';
 // ============================================
 // FOUNDATION SLAB EDITOR - HIBRIDO v2
 // Grid Intenso, Snap a la Grilla, Auditoría JSON
@@ -264,6 +264,32 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
+
+  // Auth
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('arko_user');
+    if (userStr) {
+      try { setCurrentUser(JSON.parse(userStr)); } catch(e){ console.error(e); }
+    }
+    const handleLoginEvent = () => {
+      const uStr = localStorage.getItem('arko_user');
+      if (uStr) {
+        try { setCurrentUser(JSON.parse(uStr)); } catch(e){ console.error(e); }
+      }
+    };
+    const handleLogoutEvent = () => {
+      setCurrentUser(null);
+    };
+    window.addEventListener('arko_login', handleLoginEvent);
+    window.addEventListener('arko_logout', handleLogoutEvent);
+    return () => {
+      window.removeEventListener('arko_login', handleLoginEvent);
+      window.removeEventListener('arko_logout', handleLogoutEvent);
+    };
+  }, []);
 
   // Configuración de Losa y Perímetro
   const [shape, setShape] = useState('libre');
@@ -2230,6 +2256,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const saveToDatabase = async () => {
+    if (!localStorage.getItem('arko_token')) {
+      setAuthModalOpen(true);
+      return;
+    }
     if (!results) return;
     const freshPayload = buildCurrentPayload();
     setSaving(true);
@@ -2245,7 +2275,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       
       const response = await fetch(endpoint, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('arko_token')}`
+        },
         body: JSON.stringify(runData)
       });
       if (response.ok) {
@@ -2265,6 +2298,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const saveAsToDatabase = async (customName) => {
+    if (!localStorage.getItem('arko_token')) {
+      setAuthModalOpen(true);
+      return;
+    }
     if (!results) return;
     const freshPayload = buildCurrentPayload();
     setSaving(true);
@@ -2277,7 +2314,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       };
       const response = await fetch(`${API_BASE}/calculadora-losas/runs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('arko_token')}`
+        },
         body: JSON.stringify(runData)
       });
       if (response.ok) {
@@ -2299,10 +2339,17 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
   const deleteRun = async (e, runId) => {
     e.stopPropagation();
+    if (!localStorage.getItem('arko_token')) {
+      setAuthModalOpen(true);
+      return;
+    }
     if (!window.confirm('¿Eliminar este cálculo? Esta acción no se puede deshacer.')) return;
     setDeletingRunId(runId);
     try {
-      const response = await fetch(`${API_BASE}/calculadora-losas/runs/${runId}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE}/calculadora-losas/runs/${runId}`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('arko_token')}` }
+      });
       if (response.ok) {
         toast.success('Cálculo eliminado.');
         setSavedRuns(prev => prev.filter(r => r.id !== runId));
@@ -2502,7 +2549,14 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             <button onClick={handleNewProject} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
               📄 Nuevo
             </button>
-            <button onClick={() => { setShowOpenModal(true); fetchRuns(); }} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+            <button onClick={() => { 
+              if (!localStorage.getItem('arko_token')) {
+                setAuthModalOpen(true);
+                return;
+              }
+              setShowOpenModal(true); 
+              fetchRuns(); 
+            }} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
               📂 Abrir
             </button>
             <button onClick={handleCloseProject} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
@@ -3946,6 +4000,15 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           </div>
         </div>
       </div>
+    )}
+    {authModalOpen && (
+      <AuthModal 
+        onClose={() => setAuthModalOpen(false)} 
+        onLoginSuccess={(u) => { 
+          setAuthModalOpen(false); 
+          setCurrentUser(u);
+        }} 
+      />
     )}
     </>
   );

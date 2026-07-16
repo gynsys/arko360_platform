@@ -10,11 +10,13 @@ from app.schemas.calculadora import (
 )
 from app.core.logging import logger
 from app.engine.foundation.facade import FoundationSlabDesigner
+from app.db.models.arko import ArkoUser
+from app.api.v1.endpoints.arko_app import get_current_user
 
 router = APIRouter()
 
 @router.post("/runs", response_model=LosaCalculationRunResponse)
-def create_run(run_in: LosaCalculationRunCreate, db: Session = Depends(get_arko_db)):
+def create_run(run_in: LosaCalculationRunCreate, db: Session = Depends(get_arko_db), current_user: ArkoUser = Depends(get_current_user)):
     """
     Guarda una nueva corrida de cálculo en el historial.
     """
@@ -23,7 +25,8 @@ def create_run(run_in: LosaCalculationRunCreate, db: Session = Depends(get_arko_
             nombre_proyecto=run_in.nombre_proyecto,
             tipo_losa=run_in.tipo_losa,
             inputs=run_in.inputs,
-            resultados=run_in.resultados
+            resultados=run_in.resultados,
+            user_id=current_user.id
         )
         db.add(new_run)
         db.commit()
@@ -35,24 +38,24 @@ def create_run(run_in: LosaCalculationRunCreate, db: Session = Depends(get_arko_
         raise HTTPException(status_code=500, detail="Error interno al guardar los datos.")
 
 @router.get("/runs", response_model=List[LosaCalculationRunResponse])
-def get_runs(db: Session = Depends(get_arko_db)):
+def get_runs(db: Session = Depends(get_arko_db), current_user: ArkoUser = Depends(get_current_user)):
     """
     Obtiene el historial global de corridas (ordenadas de la más reciente a la más antigua).
     """
     try:
-        runs = db.query(LosaCalculationRun).order_by(LosaCalculationRun.created_at.desc()).all()
+        runs = db.query(LosaCalculationRun).filter(LosaCalculationRun.user_id == current_user.id).order_by(LosaCalculationRun.created_at.desc()).all()
         return runs
     except Exception as e:
         logger.error(f"Error al obtener historial: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno al obtener el historial.")
 
 @router.get("/runs/{run_id}", response_model=LosaCalculationRunResponse)
-def get_run(run_id: int, db: Session = Depends(get_arko_db)):
+def get_run(run_id: int, db: Session = Depends(get_arko_db), current_user: ArkoUser = Depends(get_current_user)):
     """
     Obtiene una corrida específica por su ID.
     """
     try:
-        run = db.query(LosaCalculationRun).filter(LosaCalculationRun.id == run_id).first()
+        run = db.query(LosaCalculationRun).filter(LosaCalculationRun.id == run_id, LosaCalculationRun.user_id == current_user.id).first()
         if not run:
             raise HTTPException(status_code=404, detail="Corrida no encontrada.")
         return run
@@ -63,12 +66,12 @@ def get_run(run_id: int, db: Session = Depends(get_arko_db)):
         raise HTTPException(status_code=500, detail="Error interno al obtener los datos.")
 
 @router.put("/runs/{run_id}", response_model=LosaCalculationRunResponse)
-def update_run(run_id: int, run_in: LosaCalculationRunCreate, db: Session = Depends(get_arko_db)):
+def update_run(run_id: int, run_in: LosaCalculationRunCreate, db: Session = Depends(get_arko_db), current_user: ArkoUser = Depends(get_current_user)):
     """
     Actualiza una corrida específica por su ID.
     """
     try:
-        run = db.query(LosaCalculationRun).filter(LosaCalculationRun.id == run_id).first()
+        run = db.query(LosaCalculationRun).filter(LosaCalculationRun.id == run_id, LosaCalculationRun.user_id == current_user.id).first()
         if not run:
             raise HTTPException(status_code=404, detail="Corrida no encontrada.")
         
@@ -88,12 +91,12 @@ def update_run(run_id: int, run_in: LosaCalculationRunCreate, db: Session = Depe
         raise HTTPException(status_code=500, detail="Error interno al actualizar.")
 
 @router.delete("/runs/{run_id}")
-def delete_run(run_id: int, db: Session = Depends(get_arko_db)):
+def delete_run(run_id: int, db: Session = Depends(get_arko_db), current_user: ArkoUser = Depends(get_current_user)):
     """
     Elimina una corrida específica por su ID.
     """
     try:
-        run = db.query(LosaCalculationRun).filter(LosaCalculationRun.id == run_id).first()
+        run = db.query(LosaCalculationRun).filter(LosaCalculationRun.id == run_id, LosaCalculationRun.user_id == current_user.id).first()
         if not run:
             raise HTTPException(status_code=404, detail="Corrida no encontrada.")
         

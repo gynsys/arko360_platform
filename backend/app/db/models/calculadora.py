@@ -11,7 +11,7 @@ class LosaCalculationRun(ArkoBase):
     tipo_losa = Column(String(100), nullable=False) # maciza, colaborante, aligerada
     inputs = Column(JSONB, nullable=False)
     resultados = Column(JSONB, nullable=False)
-    # user_id / tenant_id reservado para el futuro, por ahora es global
+    user_id = Column(Integer, ForeignKey("arko_users.id"), nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class MamposteriaCalculationRun(ArkoBase):

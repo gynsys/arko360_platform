@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
-import { FaUserShield } from 'react-icons/fa';
+import { FaUserShield, FaUser, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getMegaMenu } from '../services/api.js';
@@ -18,6 +18,8 @@ export default function Navbar() {
 
   const [recentArticles, setRecentArticles] = useState([]);
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -62,6 +64,30 @@ export default function Navbar() {
       }, 100);
     }
   }, [location]);
+
+  const checkUser = () => {
+    const userStr = localStorage.getItem('arko_user');
+    if (userStr) {
+      try { setCurrentUser(JSON.parse(userStr)); } catch(e){ console.error(e); }
+    } else {
+      setCurrentUser(null);
+    }
+  };
+
+  useEffect(() => {
+    checkUser();
+    window.addEventListener('arko_login', checkUser);
+    return () => window.removeEventListener('arko_login', checkUser);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('arko_token');
+    localStorage.removeItem('arko_user');
+    setCurrentUser(null);
+    setShowUserDropdown(false);
+    // Disparar evento para que otras pestañas o componentes se enteren
+    window.dispatchEvent(new Event('arko_logout'));
+  };
 
   const handleLinkClick = (e, href) => {
     // Interceptar navegación si estamos en ARKO3D y hay cambios sin guardar
@@ -172,13 +198,50 @@ export default function Navbar() {
             </ul>
 
             <div className="navbar-actions">
-            <Link
+              <Link
                 to={ctaHref}
                 onClick={(e) => handleLinkClick(e, ctaHref)}
                 className="btn btn-primary navbar-cta"
               >
                 Cotízame
               </Link>
+
+              {currentUser ? (
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <button 
+                    onClick={() => setShowUserDropdown(!showUserDropdown)}
+                    style={{ background: 'none', border: 'none', color: scrolled || location.pathname !== '/' ? 'var(--text-main)' : '#fff', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '14px', padding: '8px' }}
+                  >
+                    <FaUser style={{ fontSize: '16px' }} />
+                    <span className="hidden sm:inline">{currentUser.name?.split(' ')[0] || 'Usuario'}</span>
+                    <FaChevronDown style={{ fontSize: '12px', opacity: 0.7 }} />
+                  </button>
+
+                  <AnimatePresence>
+                    {showUserDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        style={{ position: 'absolute', top: '100%', right: 0, background: '#fff', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', minWidth: '180px', overflow: 'hidden', zIndex: 100, border: '1px solid #eee' }}
+                      >
+                        <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', background: '#fafafa' }}>
+                          <p style={{ margin: 0, fontWeight: 600, color: '#333', fontSize: '14px' }}>{currentUser.name}</p>
+                          <p style={{ margin: 0, color: '#777', fontSize: '12px', wordBreak: 'break-all' }}>{currentUser.email}</p>
+                        </div>
+                        <button
+                          onClick={handleLogout}
+                          style={{ width: '100%', background: 'none', border: 'none', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#d32f2f', fontSize: '14px', fontWeight: 500, textAlign: 'left' }}
+                          onMouseOver={(e) => e.currentTarget.style.background = '#fef0f0'}
+                          onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                        >
+                          <FaSignOutAlt /> Cerrar Sesión
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : null}
 
               <a
                 href={siteConfig?.slug ? `https://admin.arko360.net/${siteConfig.slug}` : "https://admin.arko360.net/login"}

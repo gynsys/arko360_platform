@@ -25,6 +25,8 @@ export function AuthModal({ onClose, onLoginSuccess, source = 'arko3d' }) {
       if (isLogin) {
         const data = await apiLogin(formData.email, formData.password);
         setAuthToken(data.access_token);
+        localStorage.setItem('arko_user', JSON.stringify(data.user));
+        window.dispatchEvent(new Event('arko_login'));
         toast.success(`Bienvenido de vuelta, ${data.user.name}`);
         onLoginSuccess(data.user);
       } else {
@@ -32,6 +34,8 @@ export function AuthModal({ onClose, onLoginSuccess, source = 'arko3d' }) {
         toast.success('Cuenta creada con éxito. Iniciando sesión...');
         const data = await apiLogin(formData.email, formData.password);
         setAuthToken(data.access_token);
+        localStorage.setItem('arko_user', JSON.stringify(data.user));
+        window.dispatchEvent(new Event('arko_login'));
         onLoginSuccess(data.user);
       }
     } catch (err) {
