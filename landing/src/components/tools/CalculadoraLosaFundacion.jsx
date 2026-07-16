@@ -1314,12 +1314,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   const snapToGrid = useCallback((val) => gridStep > 0 ? Math.round(val / gridStep) * gridStep : val, [gridStep]);
 
   // Escala para el SVG
-  const CANVAS_WIDTH = 1400;
-  const CANVAS_HEIGHT = 600;
   const MARGIN = 40; // Margen para los ejes
-  const EFFECTIVE_WIDTH = CANVAS_WIDTH - MARGIN * 2;
-  const EFFECTIVE_HEIGHT = CANVAS_HEIGHT - MARGIN * 2;
-  const scale = useMemo(() => Math.min(EFFECTIVE_WIDTH / Math.max(params.Lx, 1), EFFECTIVE_HEIGHT / Math.max(params.Ly, 1)), [params.Lx, params.Ly]);
+  const scale = 50;  // Píxeles por metro constantes para evitar distorsiones y huecos vacíos
+  const CANVAS_WIDTH = Math.max(params.Lx, 1) * scale + MARGIN * 2;
+  const CANVAS_HEIGHT = Math.max(params.Ly, 1) * scale + MARGIN * 2;
   
   // Convertir metros a pixeles SVG
   const toSvg = useCallback((m) => MARGIN + (m * scale), [scale]);
@@ -3209,8 +3207,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             
             <svg 
               ref={svgRef}
-              width={CANVAS_WIDTH} 
-              height={CANVAS_HEIGHT} 
+              width="100%" 
+              height="100%" 
               viewBox={`${-panOffset.x * zoom} ${-panOffset.y * zoom} ${CANVAS_WIDTH / zoom} ${CANVAS_HEIGHT / zoom}`}
               className={`drawing-board ${isDrawing ? 'drawing-mode' : ''}`}
               onMouseMove={handleMouseMove}
