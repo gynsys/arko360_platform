@@ -2371,37 +2371,79 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const handleNewProject = () => {
-    if (window.confirm('¿Deseas iniciar un proyecto nuevo? Se perderán los cambios no guardados.')) {
-      setProjectName('Nuevo Proyecto');
-      setShape('Rectangular');
-      setParams({ Lx: 10, Ly: 10, wingX: 4, wingY: 4, wingX2: 4, baseY: 4, barY: 4, h: 15 });
-      setOffset(0.5);
-      setSlabOffset(0.0);
-      setInternalWalls([]);
-      setColumns([]);
-      setOpenings([]);
-      setResults(null);
-      setError(null);
-      setCurrentRunId(null);
-      setZoom(1);
-      setPanOffset({ x: 0, y: 0 });
-    }
+    toast((t) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <span style={{ fontWeight: '600' }}>¿Deseas iniciar un proyecto nuevo?</span>
+        <span style={{ fontSize: '13px', color: '#666' }}>Se perderán los cambios no guardados.</span>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+          <button 
+            onClick={() => {
+              toast.dismiss(t.id);
+              setProjectName('Nuevo Proyecto');
+              setShape('Rectangular');
+              setParams({ Lx: 10, Ly: 10, wingX: 4, wingY: 4, wingX2: 4, baseY: 4, barY: 4, h: 15 });
+              setOffset(0.5);
+              setSlabOffset(0.0);
+              setInternalWalls([]);
+              setColumns([]);
+              setOpenings([]);
+              setResults(null);
+              setError(null);
+              setCurrentRunId(null);
+              setZoom(1);
+              setPanOffset({ x: 0, y: 0 });
+            }}
+            style={{ padding: '6px 12px', background: '#1A6BB5', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}
+          >
+            Aceptar
+          </button>
+          <button 
+            onClick={() => toast.dismiss(t.id)}
+            style={{ padding: '6px 12px', background: '#f5f5f5', color: '#333', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity, style: { border: '1px solid #90caf9', padding: '16px' } });
   };
 
   const handleCloseProject = () => {
-    if (window.confirm('¿Seguro que deseas cerrar el proyecto actual? Se perderán los cambios no guardados.')) {
-      setProjectName('Nuevo Proyecto');
-      setShape('libre');
-      setParams({ Lx: 10, Ly: 10, wingX: 4, wingY: 4, wingX2: 4, baseY: 4, barY: 4, h: 15 });
-      setInternalWalls([]);
-      setColumns([]);
-      setOpenings([]);
-      setResults(null);
-      setError(null);
-      setCurrentRunId(null);
-      setZoom(1);
-      setPanOffset({ x: 0, y: 0 });
-    }
+    toast((t) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <span style={{ fontWeight: '600' }}>¿Seguro que deseas cerrar el proyecto actual?</span>
+        <span style={{ fontSize: '13px', color: '#666' }}>Se perderán los cambios no guardados.</span>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+          <button 
+            onClick={() => {
+              toast.dismiss(t.id);
+              setProjectName('Nuevo Proyecto');
+              setShape('Rectangular');
+              setParams({ Lx: 10, Ly: 10, wingX: 4, wingY: 4, wingX2: 4, baseY: 4, barY: 4, h: 15 });
+              setOffset(0.5);
+              setSlabOffset(0.0);
+              setInternalWalls([]);
+              setColumns([]);
+              setOpenings([]);
+              setResults(null);
+              setError(null);
+              setCurrentRunId(null);
+              setZoom(1);
+              setPanOffset({ x: 0, y: 0 });
+            }}
+            style={{ padding: '6px 12px', background: '#d32f2f', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}
+          >
+            Cerrar Proyecto
+          </button>
+          <button 
+            onClick={() => toast.dismiss(t.id)}
+            style={{ padding: '6px 12px', background: '#f5f5f5', color: '#333', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity, style: { border: '1px solid #ffcdd2', padding: '16px' } });
   };
 
   return (
@@ -4026,6 +4068,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     )}
     {authModalOpen && (
       <AuthModal 
+        source="calculadora"
         onClose={() => setAuthModalOpen(false)} 
         onLoginSuccess={(u) => { 
           setAuthModalOpen(false); 
