@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiType, FiBox, FiPlusCircle, FiSettings, FiLayers, FiMove, FiRotateCw, FiMaximize2, FiDownload, FiSave, FiCopy, FiEye, FiEdit3, FiChevronLeft, FiChevronRight, FiChevronDown, FiSquare, FiCircle, FiCornerUpRight, FiBold, FiItalic, FiFolder, FiCheck, FiX, FiAlertTriangle, FiBell, FiCalendar, FiClock, FiMail, FiPhone, FiUser, FiMapPin, FiHome, FiBriefcase, FiHeart, FiStar, FiTrendingUp, FiActivity, FiZap, FiSun, FiMoon, FiCloud, FiUmbrella, FiTarget, FiCompass, FiNavigation, FiFlag, FiBookmark, FiMessageSquare, FiShare2, FiRefreshCw, FiCpu, FiDatabase, FiWifi, FiBluetooth, FiBattery, FiVolume2, FiVolumeX, FiPlay, FiPause, FiSkipBack, FiSkipForward, FiRepeat, FiVideo, FiTrash2 } from 'react-icons/fi';
+import { FiType, FiBox, FiPlusCircle, FiSettings, FiLayers, FiMove, FiRotateCw, FiMaximize2, FiDownload, FiSave, FiCopy, FiEye, FiEdit3, FiChevronLeft, FiChevronRight, FiChevronDown, FiSquare, FiCircle, FiCornerUpRight, FiBold, FiItalic, FiFolder, FiCheck, FiX, FiAlertTriangle, FiBell, FiCalendar, FiClock, FiMail, FiPhone, FiUser, FiMapPin, FiHome, FiBriefcase, FiHeart, FiStar, FiTrendingUp, FiActivity, FiZap, FiSun, FiMoon, FiCloud, FiUmbrella, FiTarget, FiCompass, FiNavigation, FiFlag, FiBookmark, FiMessageSquare, FiShare2, FiRefreshCw, FiCpu, FiDatabase, FiWifi, FiBluetooth, FiBattery, FiVolume2, FiVolumeX, FiPlay, FiPause, FiSkipBack, FiSkipForward, FiRepeat, FiVideo, FiTrash2, FiSmile } from 'react-icons/fi';
 import { SHAPES_CONFIG, REACT_ICONS_CONFIG } from '../lib/svgIcons';
 import { AUDIO_TRACKS } from '../constants';
 
@@ -149,9 +149,9 @@ export const EnhancedSidebar = ({
                 <div>
                   <button
                     onClick={() => setShowTextElements(!showTextElements)}
-                    className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
-                    <span className="text-sm font-bold">📝 Textos</span>
+                    <span className="text-sm font-bold flex items-center gap-2"><FiType className="text-indigo-500" /> Textos</span>
                     <FiChevronDown className={`transition-transform ${showTextElements ? 'rotate-180' : ''}`} />
                   </button>
                   {showTextElements && (
@@ -182,9 +182,9 @@ export const EnhancedSidebar = ({
                 <div>
                   <button
                     onClick={() => setShowShapeElements(!showShapeElements)}
-                    className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
-                    <span className="text-sm font-bold">🔷 Formas</span>
+                    <span className="text-sm font-bold flex items-center gap-2"><FiBox className="text-indigo-500" /> Formas</span>
                     <FiChevronDown className={`transition-transform ${showShapeElements ? 'rotate-180' : ''}`} />
                   </button>
                   {showShapeElements && (
@@ -209,9 +209,9 @@ export const EnhancedSidebar = ({
                 <div>
                   <button
                     onClick={() => setShowIconElements(!showIconElements)}
-                    className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
-                    <span className="text-sm font-bold">⭐ Iconos</span>
+                    <span className="text-sm font-bold flex items-center gap-2"><FiStar className="text-indigo-500" /> Iconos</span>
                     <FiChevronDown className={`transition-transform ${showIconElements ? 'rotate-180' : ''}`} />
                   </button>
                   {showIconElements && (
@@ -236,9 +236,9 @@ export const EnhancedSidebar = ({
                 <div>
                   <button
                     onClick={() => setShowEmojiElements(!showEmojiElements)}
-                    className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
-                    <span className="text-sm font-bold">😀 Emojis</span>
+                    <span className="text-sm font-bold flex items-center gap-2"><FiSmile className="text-indigo-500" /> Emojis</span>
                     <FiChevronDown className={`transition-transform ${showEmojiElements ? 'rotate-180' : ''}`} />
                   </button>
                   {showEmojiElements && (

@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # JWT Security — Validated at startup (see validator below)
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
 
     @field_validator("SECRET_KEY", mode="before")
     @classmethod

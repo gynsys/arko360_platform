@@ -62,7 +62,7 @@ function App() {
 
   return (
     <AuthProvider>
-      <Toaster position="top-center" />
+      <Toaster position="top-center" containerStyle={{ zIndex: 999999 }} />
       <SiteConfigContext.Provider value={{ config, setConfig, fetchSiteConfig }}>
         <BrowserRouter>
           <Routes>

@@ -401,7 +401,16 @@ export const SlideCanvas = ({
                   onMouseDown={(e) => handleTransformStart(e, index, 'rotate', 'extra', elId, containerRef.current, { x: el.x, y: el.y, width: el.width, height: el.height, rotation: el.rotation })}
                   onTouchStart={(e) => handleTransformStart(e, index, 'rotate', 'extra', elId, containerRef.current, { x: el.x, y: el.y, width: el.width, height: el.height, rotation: el.rotation })}><FiRefreshCw size={12}/></div>
                 
-                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-indigo-500 rounded-full border-2 border-white cursor-ne-resize z-50 shadow-md"
+                {/* Delete Handle */}
+                <div className="absolute -top-4 -right-4 w-7 h-7 bg-red-50 rounded-full shadow-lg border-2 border-red-500 flex items-center justify-center cursor-pointer text-red-600 z-50 hover:scale-110 hover:bg-red-500 hover:text-white transition-all" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (canvas.removeExtraElement) {
+                      canvas.removeExtraElement(parseInt(index), el.id);
+                    }
+                  }}><FiTrash2 size={12}/></div>
+
+                <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-indigo-500 rounded-full border-2 border-white cursor-e-resize z-50 shadow-md"
                   onMouseDown={(e) => handleTransformStart(e, index, 'resize', 'extra', elId, containerRef.current, { x: el.x, y: el.y, width: el.width, height: el.height, rotation: el.rotation })}
                   onTouchStart={(e) => handleTransformStart(e, index, 'resize', 'extra', elId, containerRef.current, { x: el.x, y: el.y, width: el.width, height: el.height, rotation: el.rotation })}></div>
 
