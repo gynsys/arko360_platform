@@ -18,6 +18,8 @@ services:
     restart: always
     ports:
       - "8001:8001"
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql://arko_user:arko_password@db:5432/arko360
       - SECRET_KEY=changethisinproduction

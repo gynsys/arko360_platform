@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     BACKEND_URL: str = "https://api.gynsys.net"
 
     # Resend Email Configuration
-    RESEND_API_KEY: Optional[str] = "re_XGUjBcS7_MMBj24bU9393ezTnV7wMCbxX"
+    RESEND_API_KEY: Optional[str] = None
     RESEND_FROM_EMAIL: str = "Arko360 <info@arko360.net>"
 
     # Google OAuth
