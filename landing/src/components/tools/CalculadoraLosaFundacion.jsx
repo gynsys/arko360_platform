@@ -2256,7 +2256,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const saveToDatabase = async () => {
-    if (!localStorage.getItem('arko_token')) {
+    if (!localStorage.getItem('arko_token') || !localStorage.getItem('arko_user')) {
       setAuthModalOpen(true);
       return;
     }
@@ -2298,7 +2298,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const saveAsToDatabase = async (customName) => {
-    if (!localStorage.getItem('arko_token')) {
+    if (!localStorage.getItem('arko_token') || !localStorage.getItem('arko_user')) {
       setAuthModalOpen(true);
       return;
     }
@@ -2339,7 +2339,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
   const deleteRun = async (e, runId) => {
     e.stopPropagation();
-    if (!localStorage.getItem('arko_token')) {
+    if (!localStorage.getItem('arko_token') || !localStorage.getItem('arko_user')) {
       setAuthModalOpen(true);
       return;
     }
@@ -2550,7 +2550,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               📄 Nuevo
             </button>
             <button onClick={() => { 
-              if (!localStorage.getItem('arko_token')) {
+              if (!localStorage.getItem('arko_token') || !localStorage.getItem('arko_user')) {
                 setAuthModalOpen(true);
                 return;
               }
@@ -2568,6 +2568,23 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             <button onClick={() => { setSaveAsName(projectName); setShowSaveAsModal(true); }} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
               <FaSave /> Guardar como
             </button>
+            
+            <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.2)', margin: '0 8px' }}></div>
+            
+            {currentUser ? (
+              <button onClick={() => {
+                localStorage.removeItem('arko_token');
+                localStorage.removeItem('arko_user');
+                setCurrentUser(null);
+                window.dispatchEvent(new Event('arko_logout'));
+              }} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(211,47,47,0.15)', color: '#ffcdd2', border: '1px solid rgba(211,47,47,0.3)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                <LogOut size={14} /> Cerrar Sesión ({currentUser.name?.split(' ')[0]})
+              </button>
+            ) : (
+              <button onClick={() => setAuthModalOpen(true)} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: '#1A6BB5', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>
+                <LogIn size={14} /> Iniciar Sesión
+              </button>
+            )}
           </div>
         </div>
       </div>
