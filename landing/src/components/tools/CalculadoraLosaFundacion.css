@@ -25,6 +25,28 @@
   box-sizing: border-box;
 }
 
+.toolbar-btn {
+  padding: 0 12px;
+  height: 32px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+
 .calc-header h2 {
   margin: 0 0 4px 0;
   font-size: 18px;

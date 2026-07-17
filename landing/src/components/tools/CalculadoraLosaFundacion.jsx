@@ -6,7 +6,7 @@ import './CalculadoraLosaFundacion.css';
 import { DoorOpen, DoorClosed, AppWindow, Undo2, Redo2, LogIn, LogOut, ArrowLeft } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus, FaDrawPolygon, FaCubes, FaColumns, FaDoorOpen, FaCogs, FaPlay, FaBorderAll } from 'react-icons/fa';
+import { FaClipboardList, FaFilePdf, FaMap, FaChartBar, FaDownload, FaThermometerHalf, FaHardHat, FaImage, FaTable, FaBook, FaFileExcel, FaFileCode, FaSave, FaFolderPlus, FaDrawPolygon, FaCubes, FaColumns, FaDoorOpen, FaCogs, FaPlay, FaBorderAll, FaFile, FaFolderOpen, FaTimes } from 'react-icons/fa';
 import InteractiveHeatmap from './InteractiveHeatmap';
 import { AuthModal } from './fea3d/AuthModal';
 // ============================================
@@ -2594,8 +2594,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               className="project-name-input"
               style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: '13px', width: '160px', outline: 'none' }}
             />
-            <button onClick={handleNewProject} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-              📄 Nuevo
+            <button onClick={handleNewProject} className="toolbar-btn">
+              <FaFile style={{ fontSize: '12px' }} /> Nuevo
             </button>
             <button onClick={() => { 
               if (!localStorage.getItem('arko_token') || !localStorage.getItem('arko_user')) {
@@ -2604,17 +2604,17 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               }
               setShowOpenModal(true); 
               fetchRuns(); 
-            }} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-              📂 Abrir
+            }} className="toolbar-btn">
+              <FaFolderOpen style={{ fontSize: '12px' }} /> Abrir
             </button>
-            <button onClick={handleCloseProject} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-              ❌ Cerrar
+            <button onClick={handleCloseProject} className="toolbar-btn">
+              <FaTimes style={{ fontSize: '12px' }} /> Cerrar
             </button>
-            <button onClick={() => saveToDatabase()} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-              <FaSave /> Guardar
+            <button onClick={() => saveToDatabase()} className="toolbar-btn">
+              <FaSave style={{ fontSize: '12px' }} /> Guardar
             </button>
-            <button onClick={() => { setSaveAsName(projectName); setShowSaveAsModal(true); }} style={{ padding: '0 12px', height: '32px', fontSize: '13px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-              <FaSave /> Guardar como
+            <button onClick={() => { setSaveAsName(projectName); setShowSaveAsModal(true); }} className="toolbar-btn">
+              <FaSave style={{ fontSize: '12px' }} /> Guardar como
             </button>
             
             <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.2)', margin: '0 8px' }}></div>
