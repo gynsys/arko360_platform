@@ -1957,9 +1957,15 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   };
 
   const fetchRuns = async () => {
+    if (!localStorage.getItem('arko_token') || !localStorage.getItem('arko_user')) {
+      setAuthModalOpen(true);
+      return;
+    }
     setLoadingRuns(true);
     try {
-      const response = await fetch(`${API_BASE}/calculadora-losas/runs`);
+      const response = await fetch(`${API_BASE}/calculadora-losas/runs`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('arko_token')}` }
+      });
       if (response.ok) {
         const data = await response.json();
         const filtered = data.filter(d => d.tipo_losa === 'losa_fundacion_hibrida');
