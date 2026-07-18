@@ -460,6 +460,50 @@ export default function SocialGenerator() {
     setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
   };
 
+  // Auto-guarda al borrar un elemento para que no vuelva a aparecer al reabrir el archivo
+  const handleRemoveElement = async (slideIndex, elementId) => {
+    // 1. Calcular el nuevo estado ANTES del borrado (React state aún no actualizó)
+    const currentElements = designer.canvas.extraElements;
+    const updatedElements = {};
+    Object.keys(currentElements).forEach(key => {
+      updatedElements[key] = currentElements[key];
+    });
+    const slideElements = (updatedElements[slideIndex] || []).filter(el => el.id !== elementId);
+    updatedElements[slideIndex] = slideElements;
+
+    // 2. Borrar del estado en memoria inmediatamente
+    designer.canvas.removeExtraElement(slideIndex, elementId);
+
+    // 3. Si hay un proyecto guardado activo, persistir el cambio en el servidor en segundo plano
+    if (activeProjectId && activeProjectName) {
+      try {
+        const videoSettings = { videoStyles, selectedAudio, slideDuration, customAudioUrl };
+        const contentToSave = { ...generatedContent, videoSettings, transformerState: transformer.state };
+        const projectData = {
+          name: activeProjectName,
+          id: activeProjectId,
+          content: contentToSave,
+          design: {
+            bgColor: designer.design.bgColor, bgColor2: designer.design.bgColor2, bgColor3: designer.design.bgColor3,
+            useBgGradient: designer.design.useBgGradient, fontSize: designer.design.fontSize,
+            titleFontSize: designer.design.titleFontSize, headerFontSize: designer.design.headerFontSize,
+            titleColor: designer.design.titleColor, contentColor: designer.design.contentColor,
+            headerColor: designer.design.headerColor, imageBorderRadius: designer.design.imageBorderRadius
+          },
+          global_settings: {
+            logoPos: designer.design.logoPos, doctorNamePos: designer.design.doctorNamePos,
+            dividerPos: designer.design.dividerPos, dividerColor: designer.design.dividerColor,
+            dividerHeight: designer.design.dividerHeight, dividerWidth: designer.design.dividerWidth
+          },
+          elements: updatedElements
+        };
+        await blogService.updateCarouselProject(activeProjectId, projectData);
+      } catch (err) {
+        console.error('[Arko360] Auto-save after delete failed:', err);
+      }
+    }
+  };
+
   const handleAddImage = (index, e) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
@@ -831,7 +875,7 @@ export default function SocialGenerator() {
         selectedId={designer.canvas.selectedExtraId || designer.canvas.selectedImageId}
         canvas={designer.canvas}
         updateElement={designer.canvas.updateExtraElement}
-        removeElement={designer.canvas.removeExtraElement}
+        removeElement={handleRemoveElement}
         deselectElement={designer.canvas.selectElement}
         isImage={!!designer.canvas.selectedImageId}
         imagePositions={transformer.state.imagePositions}
