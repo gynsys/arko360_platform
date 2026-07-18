@@ -76,17 +76,28 @@ export const ContextualBar = ({
               >
                 <FiItalic size={14} />
               </button>
-              {/* Font size inline */}
               <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-900 rounded-xl px-2 py-1 flex-shrink-0">
                 <button
                   style={{ touchAction: 'manipulation' }}
-                  onClick={() => updateElement(parseInt(slideIdx), elId, { fontSize: Math.max(8, (el.fontSize || 24) - 1) })}
+                  onClick={() => {
+                    const currentSize = Math.round((el.height || 40) * 0.8);
+                    const newSize = Math.max(8, currentSize - 1);
+                    const newHeight = newSize / 0.8;
+                    const ratio = newHeight / el.height;
+                    updateElement(parseInt(slideIdx), elId, { height: newHeight, width: el.width * ratio });
+                  }}
                   className="w-5 h-5 flex items-center justify-center text-gray-500 font-black text-sm"
                 >−</button>
-                <span className="text-xs font-black text-indigo-600 w-6 text-center">{el.fontSize || 24}</span>
+                <span className="text-xs font-black text-indigo-600 w-6 text-center">{Math.round((el.height || 40) * 0.8)}</span>
                 <button
                   style={{ touchAction: 'manipulation' }}
-                  onClick={() => updateElement(parseInt(slideIdx), elId, { fontSize: Math.min(72, (el.fontSize || 24) + 1) })}
+                  onClick={() => {
+                    const currentSize = Math.round((el.height || 40) * 0.8);
+                    const newSize = Math.min(120, currentSize + 1);
+                    const newHeight = newSize / 0.8;
+                    const ratio = newHeight / el.height;
+                    updateElement(parseInt(slideIdx), elId, { height: newHeight, width: el.width * ratio });
+                  }}
                   className="w-5 h-5 flex items-center justify-center text-gray-500 font-black text-sm"
                 >+</button>
               </div>
@@ -191,8 +202,13 @@ export const ContextualBar = ({
               <span className="text-[10px] font-black text-gray-400">Size</span>
               <input 
                 type="number" 
-                value={el.fontSize || 24}
-                onChange={(e) => updateElement(parseInt(slideIdx), elId, { fontSize: parseInt(e.target.value) })}
+                value={Math.round((el.height || 40) * 0.8)}
+                onChange={(e) => {
+                  const newSize = parseInt(e.target.value) || 24;
+                  const newHeight = newSize / 0.8;
+                  const ratio = newHeight / (el.height || 40);
+                  updateElement(parseInt(slideIdx), elId, { height: newHeight, width: (el.width || 200) * ratio });
+                }}
                 className="w-12 bg-transparent text-sm font-black text-indigo-600 outline-none"
               />
             </div>

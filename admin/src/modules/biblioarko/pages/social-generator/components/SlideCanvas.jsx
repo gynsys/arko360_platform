@@ -84,7 +84,8 @@ export const SlideCanvas = ({
   onClearMainContent,
   onAddImage,
   onRemoveImage,
-  isVideoMode = false
+  isVideoMode = false,
+  showGrid = false
 }) => {
   const containerRef = useRef(null);
   const isSelected = !isPreview && !isExport && (canvas.currentSlidePage === index || isVideoMode);
@@ -128,6 +129,31 @@ export const SlideCanvas = ({
     >
       {/* Inner container for slide content */}
       <div className="absolute inset-0 overflow-hidden">
+        {/* Cuadrícula / Grid Overlay */}
+        {showGrid && (
+          <div 
+            className="absolute inset-0 pointer-events-none z-[100]"
+            style={{
+              backgroundImage: `
+                linear-gradient(to right, rgba(255,255,255,0.15) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.15) 1px, transparent 1px)
+              `,
+              backgroundSize: '10% 10%',
+              mixBlendMode: 'difference'
+            }}
+          >
+            {/* Líneas centrales */}
+            <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-white/40 -translate-x-1/2"></div>
+            <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-white/40 -translate-y-1/2"></div>
+            
+            {/* Regla de los tercios */}
+            <div className="absolute top-0 bottom-0 left-1/3 w-[1px] border-l-[1.5px] border-dashed border-white/30 -translate-x-1/2"></div>
+            <div className="absolute top-0 bottom-0 left-2/3 w-[1px] border-l-[1.5px] border-dashed border-white/30 -translate-x-1/2"></div>
+            <div className="absolute left-0 right-0 top-1/3 h-[1px] border-t-[1.5px] border-dashed border-white/30 -translate-y-1/2"></div>
+            <div className="absolute left-0 right-0 top-2/3 h-[1px] border-t-[1.5px] border-dashed border-white/30 -translate-y-1/2"></div>
+          </div>
+        )}
+
         {/* Logo Section */}
         {doctorLogo && !isVideoMode && (
         <div 

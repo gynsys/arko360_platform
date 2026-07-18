@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FiCpu, FiInstagram, FiLoader, FiFolder, FiZap, FiVideo, FiImage, FiSave, FiX, FiPlay, FiPause, FiChevronLeft, FiChevronRight, FiAlignLeft, FiAlignCenter, FiAlignRight, FiBold, FiItalic, FiList, FiFilePlus } from 'react-icons/fi';
+import { FiCpu, FiInstagram, FiLoader, FiFolder, FiZap, FiVideo, FiImage, FiSave, FiX, FiPlay, FiPause, FiChevronLeft, FiChevronRight, FiAlignLeft, FiAlignCenter, FiAlignRight, FiBold, FiItalic, FiList, FiFilePlus, FiGrid } from 'react-icons/fi';
 
 // Config & Services
 import { blogService } from '../../services/blogService';
@@ -52,6 +52,7 @@ export default function SocialGenerator() {
   const [isMobile, setIsMobile] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(null);
+  const [showGrid, setShowGrid] = useState(false);
   const [isSaveAsModalOpen, setIsSaveAsModalOpen] = useState(false);
   const [saveAsProjectName, setSaveAsProjectName] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
@@ -740,6 +741,7 @@ export default function SocialGenerator() {
                             onClearMainContent={handleClearMainContent}
                             onAddImage={(e) => activeTab === 'video' ? handleAddImageToVideoSlide(designer.canvas.currentSlidePage, e) : handleAddImage(designer.canvas.currentSlidePage, e)}
                             isVideoMode={activeTab === 'video'}
+                            showGrid={showGrid}
                           />
                         </div>
                       </div>
@@ -763,6 +765,16 @@ export default function SocialGenerator() {
                             className={`p-1.5 rounded-full transition-all ${designer.canvas.currentSlidePage >= (activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)) - 1 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20 active:scale-95'}`}
                           >
                             <FiChevronRight size={16} />
+                          </button>
+                          
+                          <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                          
+                          <button 
+                            onClick={() => setShowGrid(!showGrid)}
+                            className={`p-1.5 rounded-full transition-all ${showGrid ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20'} active:scale-95`}
+                            title="Mostrar Cuadrícula Guía"
+                          >
+                            <FiGrid size={16} />
                           </button>
 
                           {activeTab === 'video' && (

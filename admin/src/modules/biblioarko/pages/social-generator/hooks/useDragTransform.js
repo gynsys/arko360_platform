@@ -19,7 +19,11 @@ export const useDragTransform = (onUpdateElement, scale = 1, globalSetters = {})
 
   const handleDragStart = (e, index, type, id, container, initialPos) => {
     const isEditable = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable;
-    if (!e.touches && !isEditable) e.preventDefault();
+    
+    // Si estamos editando texto, NO iniciar el drag
+    if (isEditable) return;
+
+    if (!e.touches) e.preventDefault();
     e.stopPropagation();
     
     // Handle both mouse and touch events
