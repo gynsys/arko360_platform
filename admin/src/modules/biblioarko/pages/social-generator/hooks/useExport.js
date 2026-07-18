@@ -47,6 +47,18 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         const slideNode = document.getElementById('main-slide-canvas');
         if (!slideNode) continue;
 
+        // Fix text shift: measure real rendered size of text elements and pin inline
+        // so translate(-50%,-50%) uses the correct width during html2canvas capture
+        const textNodes = slideNode.querySelectorAll('[data-text-el]');
+        const originalStyles = [];
+        textNodes.forEach((node) => {
+          originalStyles.push({ node, width: node.style.width, height: node.style.height });
+          const w = node.offsetWidth;
+          const h = node.offsetHeight;
+          node.style.width = w + 'px';
+          node.style.height = h + 'px';
+        });
+
         const canvas = await html2canvas(slideNode, {
           useCORS: true,
           scale: 3,
@@ -56,6 +68,12 @@ export const useExport = (selectedPost, designer, generatedContent) => {
           imageTimeout: 15000,
           removeContainer: false,
           foreignObjectRendering: false
+        });
+
+        // Restore original styles
+        originalStyles.forEach(({ node, width, height }) => {
+          node.style.width = width;
+          node.style.height = height;
         });
         
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.90));

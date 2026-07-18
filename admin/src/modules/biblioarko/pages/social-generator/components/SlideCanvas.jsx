@@ -313,6 +313,7 @@ export const SlideCanvas = ({
           <div
             key={elId}
             data-element="extra"
+            data-text-el={el.type === 'text' ? el.id : undefined}
             data-slide-element="true"
             className={`absolute transition-all ${isElSelected ? 'border-[2px] border-indigo-500 ring-4 ring-indigo-500/20 bg-white/5' : ''}`}
             style={{
@@ -321,8 +322,8 @@ export const SlideCanvas = ({
               top: el.y + '%',
               transform: el.fullWidth ? `translateY(-50%) rotate(${el.rotation}deg)` : `translate(-50%, -50%) rotate(${el.rotation}deg)`,
               cursor: isSelected ? 'grab' : 'default',
-              width: (el.type === 'text' && !canvas.isExportMode) ? 'max-content' : (el.fullWidth ? '410px' : (el.width + 'px')),
-              height: (el.type === 'text' && !canvas.isExportMode) ? 'max-content' : (el.height + 'px'),
+              width: el.type === 'text' ? 'max-content' : (el.fullWidth ? '410px' : (el.width + 'px')),
+              height: el.type === 'text' ? 'max-content' : (el.height + 'px'),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
