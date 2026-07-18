@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FiCpu, FiInstagram, FiLoader, FiFolder, FiZap, FiVideo, FiImage, FiSave, FiX, FiPlay, FiPause, FiChevronLeft, FiChevronRight, FiAlignLeft, FiAlignCenter, FiAlignRight, FiBold, FiItalic, FiList } from 'react-icons/fi';
+import { FiCpu, FiInstagram, FiLoader, FiFolder, FiZap, FiVideo, FiImage, FiSave, FiX, FiPlay, FiPause, FiChevronLeft, FiChevronRight, FiAlignLeft, FiAlignCenter, FiAlignRight, FiBold, FiItalic, FiList, FiFilePlus } from 'react-icons/fi';
 
 // Config & Services
 import { blogService } from '../../services/blogService';
@@ -345,6 +345,33 @@ export default function SocialGenerator() {
     setTimeout(() => { setSavingType(null); setSaveProgress(0); }, 600);
   };
 
+  const handleNewProject = () => {
+    if (window.confirm('¿Estás seguro de que quieres iniciar un nuevo proyecto? Los cambios no guardados se perderán.')) {
+      setGeneratedContent(null);
+      setActiveProjectName(null);
+      setActiveProjectId(null);
+      setSelectedPost(null);
+      setHistory([]);
+      setVideoStyles(DEFAULT_VIDEO_STYLES);
+      setSlideDuration(3);
+      setTransitionType('fade');
+      setTransitionDuration(0.5);
+      designer.canvas.setExtraElements({});
+      designer.canvas.setCurrentSlidePage(0);
+      designer.design.setTitleColor('#ffffff');
+      designer.design.setContentColor('#ffffff');
+      designer.design.setHeaderColor('#4f46e5');
+      setAiForm({
+        topic: '',
+        pdf_file: null,
+        tone: 'Profesional',
+        format: 'reel'
+      });
+      setLastGeneratedBlogContent(null);
+      showToast('Nuevo proyecto iniciado', 'success');
+    }
+  };
+
   const handleSaveProject = async () => {
     if (!activeProjectId || !activeProjectName) {
       return handleSaveProjectAs();
@@ -594,6 +621,14 @@ export default function SocialGenerator() {
 
               {/* Right: Save buttons */}
               <div className="flex gap-3">
+                <button 
+                  onClick={handleNewProject} 
+                  className="px-5 py-3 text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-100 transition-all active:scale-95 flex items-center gap-2"
+                  title="Nuevo Proyecto"
+                >
+                  <FiFilePlus size={16} />
+                  <span className="hidden sm:inline">Nuevo</span>
+                </button>
                 <button 
                   onClick={handleSaveProject} 
                   disabled={savingType !== null}
