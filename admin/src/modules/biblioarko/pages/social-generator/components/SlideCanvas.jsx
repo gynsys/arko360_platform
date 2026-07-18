@@ -321,8 +321,8 @@ export const SlideCanvas = ({
               top: el.y + '%',
               transform: el.fullWidth ? `translateY(-50%) rotate(${el.rotation}deg)` : `translate(-50%, -50%) rotate(${el.rotation}deg)`,
               cursor: isSelected ? 'grab' : 'default',
-              width: el.type === 'text' ? 'max-content' : (el.fullWidth ? '410px' : (el.width + 'px')),
-              height: el.type === 'text' ? 'max-content' : (el.height + 'px'),
+              width: (el.type === 'text' && !canvas.isExportMode) ? 'max-content' : (el.fullWidth ? '410px' : (el.width + 'px')),
+              height: (el.type === 'text' && !canvas.isExportMode) ? 'max-content' : (el.height + 'px'),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
