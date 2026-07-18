@@ -90,6 +90,11 @@ export const useExport = (selectedPost, designer, generatedContent) => {
           }
         });
 
+        // CRITICAL: Remove scale transform from parent canvas before export.
+        // html2canvas calculates absolute positioned children incorrectly if the parent is scaled.
+        const originalSlideTransform = slideNode.style.transform;
+        slideNode.style.transform = 'none';
+
         const canvas = await html2canvas(slideNode, {
           useCORS: true,
           scale: 3,
@@ -100,6 +105,9 @@ export const useExport = (selectedPost, designer, generatedContent) => {
           removeContainer: false,
           foreignObjectRendering: false
         });
+
+        // Restore scale transform
+        slideNode.style.transform = originalSlideTransform;
 
         // Restore original styles
         originalStyles.forEach(({ node, width, height, left, top, transform, margin }) => {
