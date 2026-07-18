@@ -47,16 +47,35 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         const slideNode = document.getElementById('main-slide-canvas');
         if (!slideNode) continue;
 
-        // Fix text shift: measure real rendered size of text elements and pin inline
-        // so translate(-50%,-50%) uses the correct width during html2canvas capture
+        // Fix text shift: html2canvas is extremely buggy with translate(-50%, -50%) on dynamic flex elements.
+        // We measure the real rendered size and replace the translate with negative margins, which is 100% stable.
         const textNodes = slideNode.querySelectorAll('[data-text-el]');
         const originalStyles = [];
         textNodes.forEach((node) => {
-          originalStyles.push({ node, width: node.style.width, height: node.style.height });
+          originalStyles.push({ 
+            node, 
+            width: node.style.width, 
+            height: node.style.height,
+            transform: node.style.transform,
+            marginLeft: node.style.marginLeft,
+            marginTop: node.style.marginTop
+          });
+          
           const w = node.offsetWidth;
           const h = node.offsetHeight;
+          
           node.style.width = w + 'px';
           node.style.height = h + 'px';
+          
+          const currentTransform = node.style.transform;
+          if (currentTransform.includes('translate(-50%, -50%)')) {
+            node.style.transform = currentTransform.replace('translate(-50%, -50%)', 'translate(0px, 0px)');
+            node.style.marginLeft = `-${w / 2}px`;
+            node.style.marginTop = `-${h / 2}px`;
+          } else if (currentTransform.includes('translateY(-50%)')) {
+            node.style.transform = currentTransform.replace('translateY(-50%)', 'translateY(0px)');
+            node.style.marginTop = `-${h / 2}px`;
+          }
         });
 
         const canvas = await html2canvas(slideNode, {
@@ -71,9 +90,12 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         });
 
         // Restore original styles
-        originalStyles.forEach(({ node, width, height }) => {
+        originalStyles.forEach(({ node, width, height, transform, marginLeft, marginTop }) => {
           node.style.width = width;
           node.style.height = height;
+          node.style.transform = transform;
+          node.style.marginLeft = marginLeft;
+          node.style.marginTop = marginTop;
         });
         
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.90));
