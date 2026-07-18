@@ -3,7 +3,7 @@ import {
   FiTrash2, FiX, FiBold, FiItalic, FiType, 
   FiLayers, FiMove, FiMaximize, FiMinimize, 
   FiCornerUpLeft, FiSquare, FiCircle, FiImage,
-  FiEye
+  FiEye, FiCopy
 } from 'react-icons/fi';
 
 export const ContextualBar = ({ 
@@ -109,6 +109,17 @@ export const ContextualBar = ({
           )}
 
           <div className="ml-auto flex items-center gap-2">
+            {!isImage && (
+              <button
+                onClick={() => {
+                  if (canvas.duplicateExtraElement) canvas.duplicateExtraElement(parseInt(slideIdx), elId);
+                }}
+                className="p-2 text-blue-500 bg-blue-50 rounded-xl"
+                title="Duplicar"
+              >
+                <FiCopy size={14} />
+              </button>
+            )}
             <button
               onClick={() => {
                 if (isImage) updateImage(selectedId, { zIndex: currentZIndex + 5 });
@@ -231,6 +242,17 @@ export const ContextualBar = ({
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          {!isImage && (
+            <button
+              onClick={() => {
+                if (canvas.duplicateExtraElement) canvas.duplicateExtraElement(parseInt(slideIdx), elId);
+              }}
+              className="p-3 bg-blue-50 text-blue-500 rounded-2xl hover:bg-blue-500 hover:text-white transition-all"
+              title="Duplicar"
+            >
+              <FiCopy size={18} />
+            </button>
+          )}
           <button
             onClick={() => {
               if (isImage) {
