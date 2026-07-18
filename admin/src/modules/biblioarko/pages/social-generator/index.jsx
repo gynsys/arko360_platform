@@ -437,6 +437,20 @@ export default function SocialGenerator() {
     if (arr.length <= 1) return;
     const newSlides = arr.filter((_, i) => i !== index);
     setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+    
+    // Shift extraElements
+    const currentExtra = designer.canvas.extraElements;
+    const newExtra = {};
+    Object.keys(currentExtra).forEach(key => {
+      const i = parseInt(key);
+      if (i < index) {
+        newExtra[i] = currentExtra[i];
+      } else if (i > index) {
+        newExtra[i - 1] = currentExtra[i];
+      }
+    });
+    designer.canvas.setExtraElements(newExtra);
+    
     designer.canvas.setCurrentSlidePage(Math.max(0, designer.canvas.currentSlidePage - 1));
   };
 
@@ -447,6 +461,28 @@ export default function SocialGenerator() {
     const slideToCopy = JSON.parse(JSON.stringify(arr[index])); // deep copy
     newSlides.splice(index + 1, 0, slideToCopy);
     setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+    
+    // Shift and copy extraElements
+    const currentExtra = designer.canvas.extraElements;
+    const newExtra = {};
+    Object.keys(currentExtra).forEach(key => {
+      const i = parseInt(key);
+      if (i <= index) {
+        newExtra[i] = currentExtra[i];
+      } else if (i > index) {
+        newExtra[i + 1] = currentExtra[i];
+      }
+    });
+    
+    // Copy the elements for the duplicated slide with new IDs
+    if (currentExtra[index]) {
+      newExtra[index + 1] = currentExtra[index].map(el => ({
+        ...el,
+        id: Math.random().toString(36).substr(2, 9)
+      }));
+    }
+    designer.canvas.setExtraElements(newExtra);
+    
     designer.canvas.setCurrentSlidePage(index + 1);
   };
 
