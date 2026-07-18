@@ -123,7 +123,12 @@ export const ContextualBar = ({
             {!isImage && (
               <button
                 onClick={() => {
-                  if (canvas.duplicateExtraElement) canvas.duplicateExtraElement(parseInt(slideIdx), elId);
+                  if (document.activeElement && document.activeElement.hasAttribute('contenteditable')) {
+                     document.activeElement.blur();
+                  }
+                  setTimeout(() => {
+                    if (canvas.duplicateExtraElement) canvas.duplicateExtraElement(parseInt(slideIdx), elId);
+                  }, 50);
                 }}
                 className="p-2 text-blue-500 bg-blue-50 rounded-xl"
                 title="Duplicar"
@@ -261,7 +266,12 @@ export const ContextualBar = ({
           {!isImage && (
             <button
               onClick={() => {
-                if (canvas.duplicateExtraElement) canvas.duplicateExtraElement(parseInt(slideIdx), elId);
+                if (document.activeElement && document.activeElement.hasAttribute('contenteditable')) {
+                   document.activeElement.blur();
+                }
+                setTimeout(() => {
+                  if (canvas.duplicateExtraElement) canvas.duplicateExtraElement(parseInt(slideIdx), elId);
+                }, 50);
               }}
               className="p-3 bg-blue-50 text-blue-500 rounded-2xl hover:bg-blue-500 hover:text-white transition-all"
               title="Duplicar"
