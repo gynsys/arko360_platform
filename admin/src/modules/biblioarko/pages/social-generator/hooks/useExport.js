@@ -48,10 +48,15 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         if (!slideNode) continue;
 
         // Fix text shift: html2canvas is extremely buggy with translate(-50%, -50%) on dynamic flex elements.
-        // We measure the real rendered size and replace the translate with absolute left/top pixel coordinates.
-        const textNodes = slideNode.querySelectorAll('[data-text-el]');
+        // We use getBoundingClientRect() which returns the true visual rendering coordinates, not CSS layout coordinates.
+        const extraNodes = slideNode.querySelectorAll('[data-element="extra"]');
         const originalStyles = [];
-        textNodes.forEach((node) => {
+        
+        // Calculate the current scale of the slideNode
+        const slideRect = slideNode.getBoundingClientRect();
+        const currentScale = slideRect.width / slideNode.offsetWidth;
+        
+        extraNodes.forEach((node) => {
           originalStyles.push({ 
             node, 
             width: node.style.width, 
@@ -62,32 +67,28 @@ export const useExport = (selectedPost, designer, generatedContent) => {
             margin: node.style.margin
           });
           
-          const w = node.offsetWidth;
-          const h = node.offsetHeight;
-          const leftCenter = node.offsetLeft;
-          const topCenter = node.offsetTop;
+          // OBTENER POSICIÓN VISUAL REAL (considera scale, translate, etc.)
+          const rect = node.getBoundingClientRect();
           
-          node.style.width = w + 'px';
-          node.style.height = h + 'px';
+          // Calcular posición relativa al padre escalada al 100%
+          const absoluteLeft = (rect.left - slideRect.left) / currentScale;
+          const absoluteTop = (rect.top - slideRect.top) / currentScale;
+          const absoluteWidth = rect.width / currentScale;
+          const absoluteHeight = rect.height / currentScale;
           
+          // Aplicar estilos de píxeles absolutos
+          node.style.left = absoluteLeft + 'px';
+          node.style.top = absoluteTop + 'px';
+          node.style.width = absoluteWidth + 'px';
+          node.style.height = absoluteHeight + 'px';
+          node.style.margin = '0px';
+          
+          // Extract rotation from transform and keep only rotation
           const currentTransform = node.style.transform;
-          const transformNoSpace = currentTransform.replace(/\s+/g, '');
-          
           let rotation = '0deg';
           const match = currentTransform.match(/rotate\(([^)]+)\)/);
           if (match) rotation = match[1];
-          
-          if (transformNoSpace.includes('translate(-50%,-50%)')) {
-            node.style.left = (leftCenter - w/2) + 'px';
-            node.style.top = (topCenter - h/2) + 'px';
-            node.style.transform = `rotate(${rotation})`;
-            node.style.margin = '0px';
-          } else if (transformNoSpace.includes('translateY(-50%)')) {
-            node.style.left = leftCenter + 'px';
-            node.style.top = (topCenter - h/2) + 'px';
-            node.style.transform = `rotate(${rotation})`;
-            node.style.margin = '0px';
-          }
+          node.style.transform = `rotate(${rotation})`;
         });
 
         // CRITICAL: Remove scale transform from parent canvas before export.
