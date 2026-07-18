@@ -270,6 +270,25 @@ export const useSlideDesigner = () => {
     setSelectedExtraId(null);
   };
 
+  const duplicateExtraElement = (slideIndex, elementId) => {
+    setExtraElements(prev => {
+      const slideElements = prev[slideIndex] || [];
+      const elementToDuplicate = slideElements.find(el => el.id === elementId);
+      if (!elementToDuplicate) return prev;
+      
+      const newId = Date.now().toString();
+      const newElement = {
+        ...elementToDuplicate,
+        id: newId,
+        x: Math.min(elementToDuplicate.x + 5, 90),
+        y: Math.min(elementToDuplicate.y + 5, 90),
+        zIndex: (slideElements.length || 0) + 30
+      };
+      
+      return { ...prev, [slideIndex]: [...slideElements, newElement] };
+    });
+  };
+
   const selectElement = (type, id) => {
     setSelectedLogo(type === 'logo');
     setSelectedDoctorName(type === 'doctorName');
@@ -327,6 +346,7 @@ export const useSlideDesigner = () => {
       addExtraElement,
       updateExtraElement,
       removeExtraElement,
+      duplicateExtraElement,
       selectElement,
       applyTemplateToAll,
       isExportMode,
