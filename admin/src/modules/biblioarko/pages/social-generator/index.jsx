@@ -451,6 +451,38 @@ export default function SocialGenerator() {
     });
     designer.canvas.setExtraElements(newExtra);
     
+    // Shift transformer state (images and content positions)
+    const tState = transformer.state;
+    const newTState = {
+      imagePositions: {}, imageSizes: {}, imageRotations: {},
+      contentPositions: {}, contentRotations: {}
+    };
+    
+    ['imagePositions', 'imageSizes', 'imageRotations'].forEach(prop => {
+      Object.keys(tState[prop]).forEach(key => {
+        const [sIdxStr, imgIdx] = key.split('-');
+        const sIdx = parseInt(sIdxStr);
+        if (sIdx < index) {
+          newTState[prop][key] = tState[prop][key];
+        } else if (sIdx > index) {
+          newTState[prop][`${sIdx - 1}-${imgIdx}`] = tState[prop][key];
+        }
+      });
+    });
+    
+    ['contentPositions', 'contentRotations'].forEach(prop => {
+      Object.keys(tState[prop]).forEach(key => {
+        const sIdx = parseInt(key);
+        if (sIdx < index) {
+          newTState[prop][sIdx] = tState[prop][sIdx];
+        } else if (sIdx > index) {
+          newTState[prop][sIdx - 1] = tState[prop][sIdx];
+        }
+      });
+    });
+    
+    transformer.loadState(newTState);
+    
     designer.canvas.setCurrentSlidePage(Math.max(0, designer.canvas.currentSlidePage - 1));
   };
 
@@ -482,6 +514,46 @@ export default function SocialGenerator() {
       }));
     }
     designer.canvas.setExtraElements(newExtra);
+    
+    // Shift and copy transformer state (images and content positions)
+    const tState = transformer.state;
+    const newTState = {
+      imagePositions: {}, imageSizes: {}, imageRotations: {},
+      contentPositions: {}, contentRotations: {}
+    };
+    
+    ['imagePositions', 'imageSizes', 'imageRotations'].forEach(prop => {
+      Object.keys(tState[prop]).forEach(key => {
+        const [sIdxStr, imgIdx] = key.split('-');
+        const sIdx = parseInt(sIdxStr);
+        if (sIdx <= index) {
+          newTState[prop][key] = tState[prop][key];
+          if (sIdx === index) {
+            // copy to the duplicated slide
+            newTState[prop][`${index + 1}-${imgIdx}`] = tState[prop][key];
+          }
+        } else if (sIdx > index) {
+          newTState[prop][`${sIdx + 1}-${imgIdx}`] = tState[prop][key];
+        }
+      });
+    });
+    
+    ['contentPositions', 'contentRotations'].forEach(prop => {
+      Object.keys(tState[prop]).forEach(key => {
+        const sIdx = parseInt(key);
+        if (sIdx <= index) {
+          newTState[prop][sIdx] = tState[prop][sIdx];
+          if (sIdx === index) {
+            // copy to the duplicated slide
+            newTState[prop][index + 1] = tState[prop][sIdx];
+          }
+        } else if (sIdx > index) {
+          newTState[prop][sIdx + 1] = tState[prop][sIdx];
+        }
+      });
+    });
+    
+    transformer.loadState(newTState);
     
     designer.canvas.setCurrentSlidePage(index + 1);
   };
