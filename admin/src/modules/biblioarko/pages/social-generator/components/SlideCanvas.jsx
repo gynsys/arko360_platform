@@ -336,10 +336,10 @@ export const SlideCanvas = ({
               }
             }}
             onClick={(e) => { e.stopPropagation(); isSelected && selectElement('extra', elId); }}
-
           >
             {el.type === 'text' ? (
               <div 
+                data-text-inner="true"
                 contentEditable={isElSelected}
                 suppressContentEditableWarning={true}
                 className="font-bold whitespace-nowrap outline-none px-2"
