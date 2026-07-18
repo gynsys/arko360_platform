@@ -158,8 +158,9 @@ export const SlideCanvas = ({
       )}
 
       {/* Content Section */}
-      <div 
-        className={`absolute z-10 transition-shadow pointer-events-auto w-[calc(100%-4rem)] px-4 ${isSelected && selectedContentIndex === index ? 'border-[1.5px] border-dashed border-indigo-500 rounded-2xl p-4 bg-white/10 backdrop-blur-sm' : ''}`}
+      {(slide?.title || slide?.content || slide?.text || slide?.overlayText) ? (
+        <div 
+          className={`absolute z-10 transition-shadow pointer-events-auto w-[calc(100%-4rem)] px-4 ${isSelected && selectedContentIndex === index ? 'border-[1.5px] border-dashed border-indigo-500 rounded-2xl p-4 bg-white/10 backdrop-blur-sm' : ''}`}
         style={{
           left: (contentPositions[index]?.x ?? 50) + '%',
           top: (contentPositions[index]?.y ?? (isVideoMode ? 50 : 60)) + '%',
@@ -208,6 +209,7 @@ export const SlideCanvas = ({
           )}
         </div>
       </div>
+      ) : null}
       
       {/* Images Layer */}
       {slide?.customImages?.map((img, imgIdx) => {
