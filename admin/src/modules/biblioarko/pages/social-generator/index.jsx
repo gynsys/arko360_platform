@@ -422,6 +422,16 @@ export default function SocialGenerator() {
     designer.canvas.setCurrentSlidePage(index + 1);
   };
 
+  const handleClearMainContent = (index) => {
+    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+    const arr = generatedContent[slidesProp];
+    const newSlides = [...arr];
+    newSlides[index].title = '';
+    newSlides[index].content = '';
+    newSlides[index].text = '';
+    setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+  };
+
   const handleAddImage = (index, e) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
@@ -692,6 +702,7 @@ export default function SocialGenerator() {
                             transform={transformer.state} handlers={transformer.handlers}
                             watermark={watermarkImage} onEdit={setEditingIndex}
                             onPreview={setPreviewIndex} onRemove={handleRemoveSlide} onCopy={handleCopySlide}
+                            onClearMainContent={handleClearMainContent}
                             onAddImage={(e) => activeTab === 'video' ? handleAddImageToVideoSlide(designer.canvas.currentSlidePage, e) : handleAddImage(designer.canvas.currentSlidePage, e)}
                             isVideoMode={activeTab === 'video'}
                           />

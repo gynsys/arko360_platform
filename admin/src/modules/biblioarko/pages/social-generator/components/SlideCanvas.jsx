@@ -174,6 +174,25 @@ export const SlideCanvas = ({
           }}
         onClick={(e) => { e.stopPropagation(); isSelected && selectElement('content', index); }}
       >
+        {/* Main Content Handles */}
+        {isSelected && selectedContentIndex === index && (
+          <>
+            <div className="absolute -top-4 -left-4 w-7 h-7 bg-white rounded-full shadow-lg border-2 border-indigo-500 flex items-center justify-center cursor-alias text-indigo-600 z-50 hover:scale-110 transition-transform" 
+              onMouseDown={(e) => handleTransformStart(e, index, 'rotate', 'content', index, containerRef.current, { x: 50, y: 60, rotation: contentRotations[index] || 0 })}
+              onTouchStart={(e) => handleTransformStart(e, index, 'rotate', 'content', index, containerRef.current, { x: 50, y: 60, rotation: contentRotations[index] || 0 })}><FiRefreshCw size={12}/></div>
+            
+            <div className="absolute -top-4 -right-4 w-7 h-7 bg-red-50 rounded-full shadow-lg border-2 border-red-500 flex items-center justify-center cursor-pointer text-red-600 z-[999] hover:scale-110 hover:bg-red-500 hover:text-white transition-all" 
+              onMouseDown={(e) => e.stopPropagation()} 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (typeof onClearMainContent === 'function') {
+                  onClearMainContent(index);
+                }
+              }}
+              title="Eliminar Texto Principal"><FiTrash2 size={12}/></div>
+          </>
+        )}
+
         <div className="relative w-full" style={{ fontFamily: design.fontFamily || 'Manrope', textAlign: slide?.textAlign || 'center' }}>
           <h4 className="font-black mb-3 uppercase leading-tight" style={{ fontSize: titleFontSize + 'px', color: titleColor }}>
             {parseHighlightedText(slide?.title || '', design.headerColor, design.headerFontSize)}
