@@ -48,7 +48,7 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         if (!slideNode) continue;
 
         // Fix text shift: html2canvas is extremely buggy with translate(-50%, -50%) on dynamic flex elements.
-        // We measure the real rendered size and replace the translate with negative margins, which is 100% stable.
+        // We measure the real rendered size and replace the translate with absolute left/top pixel coordinates.
         const textNodes = slideNode.querySelectorAll('[data-text-el]');
         const originalStyles = [];
         textNodes.forEach((node) => {
@@ -56,25 +56,37 @@ export const useExport = (selectedPost, designer, generatedContent) => {
             node, 
             width: node.style.width, 
             height: node.style.height,
+            left: node.style.left,
+            top: node.style.top,
             transform: node.style.transform,
-            marginLeft: node.style.marginLeft,
-            marginTop: node.style.marginTop
+            margin: node.style.margin
           });
           
           const w = node.offsetWidth;
           const h = node.offsetHeight;
+          const leftCenter = node.offsetLeft;
+          const topCenter = node.offsetTop;
           
           node.style.width = w + 'px';
           node.style.height = h + 'px';
           
           const currentTransform = node.style.transform;
-          if (currentTransform.includes('translate(-50%, -50%)')) {
-            node.style.transform = currentTransform.replace('translate(-50%, -50%)', 'translate(0px, 0px)');
-            node.style.marginLeft = `-${w / 2}px`;
-            node.style.marginTop = `-${h / 2}px`;
-          } else if (currentTransform.includes('translateY(-50%)')) {
-            node.style.transform = currentTransform.replace('translateY(-50%)', 'translateY(0px)');
-            node.style.marginTop = `-${h / 2}px`;
+          const transformNoSpace = currentTransform.replace(/\s+/g, '');
+          
+          let rotation = '0deg';
+          const match = currentTransform.match(/rotate\(([^)]+)\)/);
+          if (match) rotation = match[1];
+          
+          if (transformNoSpace.includes('translate(-50%,-50%)')) {
+            node.style.left = (leftCenter - w/2) + 'px';
+            node.style.top = (topCenter - h/2) + 'px';
+            node.style.transform = `rotate(${rotation})`;
+            node.style.margin = '0px';
+          } else if (transformNoSpace.includes('translateY(-50%)')) {
+            node.style.left = leftCenter + 'px';
+            node.style.top = (topCenter - h/2) + 'px';
+            node.style.transform = `rotate(${rotation})`;
+            node.style.margin = '0px';
           }
         });
 
@@ -90,12 +102,13 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         });
 
         // Restore original styles
-        originalStyles.forEach(({ node, width, height, transform, marginLeft, marginTop }) => {
+        originalStyles.forEach(({ node, width, height, left, top, transform, margin }) => {
           node.style.width = width;
           node.style.height = height;
+          node.style.left = left;
+          node.style.top = top;
           node.style.transform = transform;
-          node.style.marginLeft = marginLeft;
-          node.style.marginTop = marginTop;
+          node.style.margin = margin;
         });
         
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.90));
