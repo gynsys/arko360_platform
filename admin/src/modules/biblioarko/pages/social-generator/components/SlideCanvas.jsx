@@ -81,6 +81,7 @@ export const SlideCanvas = ({
   onPreview,
   onCopy,
   onRemove,
+  onClearMainContent,
   onAddImage,
   onRemoveImage,
   isVideoMode = false
