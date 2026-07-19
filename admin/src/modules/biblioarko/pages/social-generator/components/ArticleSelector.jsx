@@ -207,7 +207,7 @@ export const ArticleSelector = ({
         </div>
 
         {/* Step 2: Saved Projects Access */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 h-fit">
           <h2 className="text-xs font-black uppercase tracking-widest text-indigo-600 mb-4">Continuar Proyecto Guardado</h2>
           <div className="relative">
             <button 
