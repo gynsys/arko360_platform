@@ -224,12 +224,10 @@ export const useVideoExport = (
         }
         vids.forEach(v => {
           ctx.save();
-          const dx = v.pos.x * scaleX;
-          const dy = v.pos.y * scaleY;
           const dSizeX = v.size * scaleX;
           const dSizeY = v.size * scaleY;
-          const cx = dx + dSizeX / 2;
-          const cy = dy + dSizeY / 2;
+          const cx = (v.pos.x / 100) * outputCanvas.width;
+          const cy = (v.pos.y / 100) * outputCanvas.height;
           
           ctx.translate(cx, cy);
           ctx.rotate(v.rot * Math.PI / 180);
