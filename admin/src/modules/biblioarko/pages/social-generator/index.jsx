@@ -936,8 +936,6 @@ export default function SocialGenerator() {
                           />
                         </div>
                       </div>
-                      </div>
-                      
                     </div>
                     
                     <div className="flex flex-col items-center gap-2 animate-fadeIn mt-4">
