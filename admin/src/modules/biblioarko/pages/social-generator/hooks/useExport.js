@@ -47,109 +47,7 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         const slideNode = document.getElementById('main-slide-canvas');
         if (!slideNode) continue;
 
-        // =============================================
-        // STEP 1: Disable ALL CSS transitions in the slide tree
-        // This prevents html2canvas from capturing mid-animation states
-        // =============================================
-        const allSlideElements = slideNode.querySelectorAll('*');
-        const savedTransitions = [];
-        allSlideElements.forEach(el => {
-          savedTransitions.push({ el, transition: el.style.transition });
-          el.style.transition = 'none';
-        });
-        slideNode.style.transition = 'none';
-        const savedSlideTransition = slideNode.style.transition;
-        
-        // Force browser to apply transition:none immediately
-        void slideNode.offsetHeight;
-
-        // =============================================
-        // STEP 2: Fix ALL elements that use translate(-50%, -50%)
-        // This includes: extra elements, content section, logo, images
-        // Previously we only fixed [data-element="extra"] - that was the bug!
-        // =============================================
-        const allPositioned = slideNode.querySelectorAll('[data-slide-element], [data-element="extra"], .absolute');
-        const savedStyles = [];
-        
-        const PARENT_W = 410;
-        const PARENT_H = 410;
-        
-        allPositioned.forEach((node) => {
-          const currentTransform = node.style.transform || '';
-          const transformNoSpace = currentTransform.replace(/\s+/g, '');
-          
-          // Only process elements that actually use translate centering
-          const hasTranslateXY = transformNoSpace.includes('translate(-50%,-50%)');
-          const hasTranslateY = transformNoSpace.includes('translateY(-50%)');
-          const hasTranslateX = transformNoSpace.includes('translate(-50%)') && !hasTranslateXY;
-          
-          if (!hasTranslateXY && !hasTranslateY && !hasTranslateX) return;
-          
-          // Save original inline styles
-          savedStyles.push({
-            node,
-            cssText: node.style.cssText
-          });
-          
-          // Read position and size
-          const leftStr = node.style.left || '0';
-          const topStr = node.style.top || '0';
-          const leftPct = parseFloat(leftStr);
-          const topPct = parseFloat(topStr);
-          const w = node.offsetWidth;
-          const h = node.offsetHeight;
-          
-          // Extract rotation
-          let rotation = '0deg';
-          const rotMatch = currentTransform.match(/rotate\(([^)]+)\)/);
-          if (rotMatch) rotation = rotMatch[1];
-          
-          // Calculate pixel positions based on percentage
-          const isPercent = leftStr.includes('%');
-          const isPercentTop = topStr.includes('%');
-          
-          if (hasTranslateXY) {
-            // translate(-50%, -50%): center point is at left%, top%
-            const cx = isPercent ? (leftPct / 100) * PARENT_W : leftPct;
-            const cy = isPercentTop ? (topPct / 100) * PARENT_H : topPct;
-            node.style.left = (cx - w / 2) + 'px';
-            node.style.top = (cy - h / 2) + 'px';
-          } else if (hasTranslateY) {
-            // translateY(-50%): only vertical center
-            const cy = isPercentTop ? (topPct / 100) * PARENT_H : topPct;
-            if (isPercent) {
-              node.style.left = ((leftPct / 100) * PARENT_W) + 'px';
-            }
-            node.style.top = (cy - h / 2) + 'px';
-          } else if (hasTranslateX) {
-            // translateX(-50%): only horizontal center
-            const cx = isPercent ? (leftPct / 100) * PARENT_W : leftPct;
-            node.style.left = (cx - w / 2) + 'px';
-          }
-          
-          // Remove all translates, keep only rotation
-          node.style.transform = `rotate(${rotation})`;
-          node.style.transition = 'none';
-        });
-        
-        // =============================================
-        // STEP 4: Remove scale from parent container
-        // =============================================
-        const savedParentTransform = slideNode.style.transform;
-        slideNode.style.transform = 'none';
-        
-        // =============================================
-        // STEP 5: Force a GUARANTEED browser reflow
-        // Double requestAnimationFrame ensures the browser has fully
-        // processed ALL style changes before html2canvas reads them
-        // =============================================
-        void slideNode.offsetHeight; // Synchronous reflow
-        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-        
-        // =============================================
-        // STEP 6: Capture with html2canvas (NO onclone tricks needed)
-        // The DOM is already in its final pixel-perfect state
-        // =============================================
+        // Clean up selections before capture
         const canvas = await html2canvas(slideNode, {
           useCORS: true,
           scale: 3,
@@ -160,22 +58,6 @@ export const useExport = (selectedPost, designer, generatedContent) => {
           removeContainer: false,
           foreignObjectRendering: false
         });
-        
-        // =============================================
-        // STEP 7: Restore EVERYTHING to original state
-        // =============================================
-        slideNode.style.transform = savedParentTransform;
-        
-        // Restore all extra element styles
-        savedStyles.forEach(({ node, cssText }) => {
-          node.style.cssText = cssText;
-        });
-        
-        // Restore all transitions
-        savedTransitions.forEach(({ el, transition }) => {
-          el.style.transition = transition;
-        });
-        slideNode.style.transition = savedSlideTransition;
         
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.90));
         imageFiles.push(new File([blob], `Diapositiva_${i + 1}.jpg`, { type: 'image/jpeg' }));

@@ -157,51 +157,65 @@ export const SlideCanvas = ({
         {/* Logo Section */}
         {doctorLogo && !isVideoMode && (
         <div 
-          className={`absolute z-30 transition-shadow ${isSelected && selectedLogo ? 'border-[1.5px] border-dashed border-indigo-500 rounded-xl p-2 bg-white/5' : ''}`}
+          className="absolute z-30"
           style={{
             left: logoPos.x + '%',
             top: logoPos.y + '%',
-            transform: 'translate(-50%, -50%)',
-            cursor: isSelected ? 'grab' : 'default',
+            width: 0, height: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible'
           }}
-          onMouseDown={(e) => isSelected && handleDragStart(e, index, 'logo', 'global-logo', containerRef.current, logoPos)}
-          onTouchStart={(e) => { 
-            if (isSelected) {
-              selectElement('logo', 'global-logo');
-              handleDragStart(e, index, 'logo', 'global-logo', containerRef.current, logoPos);
-            }
-          }}
-          onClick={(e) => { e.stopPropagation(); isSelected && selectElement('logo', 'global-logo'); }}
         >
           <div 
-          className="w-[2.5rem] h-[2.5rem] bg-contain bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url(${doctorLogo})`,
-            backgroundSize: 'contain'
-          }}
-        />
+            className={`transition-shadow ${isSelected && selectedLogo ? 'border-[1.5px] border-dashed border-indigo-500 rounded-xl p-2 bg-white/5' : ''}`}
+            style={{
+              cursor: isSelected ? 'grab' : 'default',
+            }}
+            onMouseDown={(e) => isSelected && handleDragStart(e, index, 'logo', 'global-logo', containerRef.current, logoPos)}
+            onTouchStart={(e) => { 
+              if (isSelected) {
+                selectElement('logo', 'global-logo');
+                handleDragStart(e, index, 'logo', 'global-logo', containerRef.current, logoPos);
+              }
+            }}
+            onClick={(e) => { e.stopPropagation(); isSelected && selectElement('logo', 'global-logo'); }}
+          >
+            <div 
+              className="w-[2.5rem] h-[2.5rem] bg-contain bg-center bg-no-repeat"
+              style={{
+                backgroundImage: `url(${doctorLogo})`,
+                backgroundSize: 'contain'
+              }}
+            />
+          </div>
         </div>
       )}
 
       {/* Content Section */}
       {(slide?.title || slide?.content || slide?.text || slide?.overlayText) ? (
         <div 
-          className={`absolute z-10 transition-shadow pointer-events-auto w-[calc(100%-4rem)] px-4 ${isSelected && selectedContentIndex === index ? 'border-[1.5px] border-dashed border-indigo-500 rounded-2xl p-4 bg-white/10 backdrop-blur-sm' : ''}`}
-        style={{
-          left: (contentPositions[index]?.x ?? 50) + '%',
-          top: (contentPositions[index]?.y ?? (isVideoMode ? 50 : 60)) + '%',
-          transform: `translate(-50%, -50%) rotate(${contentRotations[index] || 0}deg)`,
-          cursor: isSelected ? 'grab' : 'default',
-        }}
-        onMouseDown={(e) => isSelected && handleDragStart(e, index, 'content', index, containerRef.current, contentPositions[index] || { x: 50, y: 60 })}
-          onTouchStart={(e) => {
-            if (isSelected) {
-              selectElement('content', index);
-              handleDragStart(e, index, 'content', index, containerRef.current, contentPositions[index] || { x: 50, y: 60 });
-            }
+          className="absolute z-10 pointer-events-auto"
+          style={{
+            left: (contentPositions[index]?.x ?? 50) + '%',
+            top: (contentPositions[index]?.y ?? (isVideoMode ? 50 : 60)) + '%',
+            width: 0, height: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible'
           }}
-        onClick={(e) => { e.stopPropagation(); isSelected && selectElement('content', index); }}
-      >
+        >
+          <div 
+            className={`transition-shadow w-[346px] px-4 ${isSelected && selectedContentIndex === index ? 'border-[1.5px] border-dashed border-indigo-500 rounded-2xl p-4 bg-white/10 backdrop-blur-sm' : ''}`}
+            style={{
+              transform: `rotate(${contentRotations[index] || 0}deg)`,
+              cursor: isSelected ? 'grab' : 'default',
+            }}
+            onMouseDown={(e) => isSelected && handleDragStart(e, index, 'content', index, containerRef.current, contentPositions[index] || { x: 50, y: 60 })}
+            onTouchStart={(e) => {
+              if (isSelected) {
+                selectElement('content', index);
+                handleDragStart(e, index, 'content', index, containerRef.current, contentPositions[index] || { x: 50, y: 60 });
+              }
+            }}
+            onClick={(e) => { e.stopPropagation(); isSelected && selectElement('content', index); }}
+          >
         {/* Main Content Handles */}
         {isSelected && selectedContentIndex === index && (
           <>
@@ -312,31 +326,39 @@ export const SlideCanvas = ({
         return (
           <div
             key={elId}
-            data-element="extra"
-            data-text-el={el.type === 'text' ? el.id : undefined}
-            data-slide-element="true"
-            className={`absolute transition-all ${isElSelected ? 'border-[2px] border-indigo-500 ring-4 ring-indigo-500/20 bg-white/5' : ''}`}
+            className="absolute"
             style={{
               zIndex: el.zIndex || 30,
               left: el.fullWidth ? '0px' : (el.x + '%'),
               top: el.y + '%',
-              transform: el.fullWidth ? `translateY(-50%) rotate(${el.rotation}deg)` : `translate(-50%, -50%) rotate(${el.rotation}deg)`,
-              cursor: isSelected ? 'grab' : 'default',
-              width: el.type === 'text' ? 'max-content' : (el.fullWidth ? '410px' : (el.width + 'px')),
-              height: el.type === 'text' ? 'max-content' : (el.height + 'px'),
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
+              width: el.fullWidth ? '410px' : 0,
+              height: 0,
+              display: 'flex', alignItems: 'center', justifyContent: el.fullWidth ? 'flex-start' : 'center', overflow: 'visible'
             }}
-            onMouseDown={(e) => isSelected && handleDragStart(e, index, 'extra', elId, containerRef.current, { x: el.x, y: el.y })}
-            onTouchStart={(e) => {
-              if (isSelected) {
-                selectElement('extra', elId);
-                handleDragStart(e, index, 'extra', elId, containerRef.current, { x: el.x, y: el.y });
-              }
-            }}
-            onClick={(e) => { e.stopPropagation(); isSelected && selectElement('extra', elId); }}
           >
+            <div
+              data-element="extra"
+              data-text-el={el.type === 'text' ? el.id : undefined}
+              data-slide-element="true"
+              className={`transition-all ${isElSelected ? 'border-[2px] border-indigo-500 ring-4 ring-indigo-500/20 bg-white/5' : ''}`}
+              style={{
+                transform: `rotate(${el.rotation}deg)`,
+                cursor: isSelected ? 'grab' : 'default',
+                width: el.type === 'text' ? 'max-content' : (el.fullWidth ? '410px' : (el.width + 'px')),
+                height: el.type === 'text' ? 'max-content' : (el.height + 'px'),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseDown={(e) => isSelected && handleDragStart(e, index, 'extra', elId, containerRef.current, { x: el.x, y: el.y })}
+              onTouchStart={(e) => {
+                if (isSelected) {
+                  selectElement('extra', elId);
+                  handleDragStart(e, index, 'extra', elId, containerRef.current, { x: el.x, y: el.y });
+                }
+              }}
+              onClick={(e) => { e.stopPropagation(); isSelected && selectElement('extra', elId); }}
+            >
             {el.type === 'text' ? (
               <div 
                 data-text-inner="true"
@@ -475,6 +497,7 @@ export const SlideCanvas = ({
               </>
             )}
           </div>
+        </div>
         );
       })}
 
