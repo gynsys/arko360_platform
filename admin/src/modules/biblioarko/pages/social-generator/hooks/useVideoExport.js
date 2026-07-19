@@ -59,7 +59,7 @@ export const useVideoExport = (
         }
 
         const videoDOMs = slideNode.querySelectorAll('video');
-        videoDOMs.forEach(v => { v.style.opacity = '0'; });
+        videoDOMs.forEach(v => { v.style.display = 'none'; });
 
         const capturedCanvas = await html2canvas(slideNode, {
           useCORS: true,
@@ -72,7 +72,7 @@ export const useVideoExport = (
           foreignObjectRendering: false,
         });
 
-        videoDOMs.forEach(v => { v.style.opacity = '1'; });
+        videoDOMs.forEach(v => { v.style.display = ''; });
 
         capturedFrames.push(capturedCanvas);
 
