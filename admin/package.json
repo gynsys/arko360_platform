@@ -10,6 +10,9 @@
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@headlessui/react": "^2.2.10",
     "@sanity/client": "^7.22.1",
     "axios": "^1.18.1",

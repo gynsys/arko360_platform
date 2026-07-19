@@ -31,6 +31,7 @@ import { MobileLayout } from './components/MobileLayout';
 import { ArticleSelector } from './components/ArticleSelector';
 import { ProjectGrid } from './components/ProjectGrid';
 import { ContextualBar } from './components/ContextualBar';
+import VideoEditorModal from './components/VideoEditorModal';
 
 export default function SocialGenerator() {
   // --- States ---
@@ -58,6 +59,9 @@ export default function SocialGenerator() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [watermarkImage, setWatermarkImage] = useState(null);
   const [doctorLogoBase64, setDoctorLogoBase64] = useState(null);
+  
+  const [pendingVideoFile, setPendingVideoFile] = useState(null);
+  const [pendingVideoTarget, setPendingVideoTarget] = useState(null);
   const [history, setHistory] = useState([]);
   const [scale, setScale] = useState(1);
   const [videoStyles, setVideoStyles] = useState(DEFAULT_VIDEO_STYLES);
@@ -653,6 +657,13 @@ export default function SocialGenerator() {
   const handleAddImage = (index, e) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
+      if (file.type.startsWith('video/')) {
+        setPendingVideoFile(file);
+        setPendingVideoTarget({ index, isVideoSlide: false });
+        // Clear input value so same file can be selected again
+        if (e.target) e.target.value = null;
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         pushToHistory(generatedContent);
@@ -677,6 +688,13 @@ export default function SocialGenerator() {
   const handleAddImageToVideoSlide = (index, e) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
+      if (file.type.startsWith('video/')) {
+        setPendingVideoFile(file);
+        setPendingVideoTarget({ index, isVideoSlide: true });
+        // Clear input value so same file can be selected again
+        if (e.target) e.target.value = null;
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         const newSlides = [...generatedContent.video_slides];
@@ -1215,6 +1233,31 @@ export default function SocialGenerator() {
       {/* Hidden audio elements for playback */}
       <audio ref={audioRef} style={{ display: 'none' }} crossOrigin="anonymous" />
       <audio ref={previewAudioRef} style={{ display: 'none' }} crossOrigin="anonymous" />
+
+      {/* Video Editor Modal */}
+      {pendingVideoFile && (
+        <VideoEditorModal
+          file={pendingVideoFile}
+          onClose={() => {
+            setPendingVideoFile(null);
+            setPendingVideoTarget(null);
+          }}
+          onApply={(processedBlob) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const { index, isVideoSlide } = pendingVideoTarget;
+              const slidesProp = isVideoSlide ? 'video_slides' : 'slides';
+              const newSlides = [...generatedContent[slidesProp]];
+              if (!newSlides[index].customImages) newSlides[index].customImages = [];
+              newSlides[index].customImages.push(reader.result);
+              setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+              setPendingVideoFile(null);
+              setPendingVideoTarget(null);
+            };
+            reader.readAsDataURL(processedBlob);
+          }}
+        />
+      )}
     </div>
   );
 }
