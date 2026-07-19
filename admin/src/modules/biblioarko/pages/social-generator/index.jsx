@@ -406,7 +406,8 @@ export default function SocialGenerator() {
     
     setGeneratedContent({
       type: 'carousel',
-      slides: [{ title: 'Nueva Diapositiva', content: 'Doble clic para editar' }]
+      slides: [{ title: 'Nueva Diapositiva', content: 'Doble clic para editar' }],
+      video_slides: [{ title: 'Nueva Diapositiva', content: 'Doble clic para editar' }]
     });
   };
 
@@ -935,80 +936,82 @@ export default function SocialGenerator() {
                           />
                         </div>
                       </div>
+                      </div>
                       
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2 animate-fadeIn">
-                        {/* Primary Pagination & Playback Pill */}
-                        <div className="flex items-center gap-4 bg-white/95 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5">
-                          <button 
-                            onClick={() => designer.canvas.setCurrentSlidePage(Math.max(0, designer.canvas.currentSlidePage - 1))}
-                            disabled={designer.canvas.currentSlidePage === 0}
-                            className={`p-1.5 rounded-full transition-all ${designer.canvas.currentSlidePage === 0 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20 active:scale-95'}`}
-                          >
-                            <FiChevronLeft size={16} />
-                          </button>
-                          <span className="text-xs font-black text-gray-700 dark:text-gray-300 min-w-[32px] text-center select-none uppercase tracking-wider">
-                            {designer.canvas.currentSlidePage + 1} / {activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)}
-                          </span>
-                          <button 
-                            onClick={() => designer.canvas.setCurrentSlidePage(Math.min((activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)) - 1, designer.canvas.currentSlidePage + 1))}
-                            disabled={designer.canvas.currentSlidePage >= (activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)) - 1}
-                            className={`p-1.5 rounded-full transition-all ${designer.canvas.currentSlidePage >= (activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)) - 1 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20 active:scale-95'}`}
-                          >
-                            <FiChevronRight size={16} />
-                          </button>
-                          
-                          <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
-                          
-                          <button 
-                            onClick={() => setShowGrid(!showGrid)}
-                            className={`p-1.5 rounded-full transition-all ${showGrid ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20'} active:scale-95`}
-                            title="Mostrar Cuadrícula Guía"
-                          >
-                            <FiGrid size={16} />
-                          </button>
+                    </div>
+                    
+                    <div className="flex flex-col items-center gap-2 animate-fadeIn mt-4">
+                      {/* Primary Pagination & Playback Pill */}
+                      <div className="flex items-center gap-4 bg-white/95 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5">
+                        <button 
+                          onClick={() => designer.canvas.setCurrentSlidePage(Math.max(0, designer.canvas.currentSlidePage - 1))}
+                          disabled={designer.canvas.currentSlidePage === 0}
+                          className={`p-1.5 rounded-full transition-all ${designer.canvas.currentSlidePage === 0 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20 active:scale-95'}`}
+                        >
+                          <FiChevronLeft size={16} />
+                        </button>
+                        <span className="text-xs font-black text-gray-700 dark:text-gray-300 min-w-[32px] text-center select-none uppercase tracking-wider">
+                          {designer.canvas.currentSlidePage + 1} / {activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)}
+                        </span>
+                        <button 
+                          onClick={() => designer.canvas.setCurrentSlidePage(Math.min((activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)) - 1, designer.canvas.currentSlidePage + 1))}
+                          disabled={designer.canvas.currentSlidePage >= (activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)) - 1}
+                          className={`p-1.5 rounded-full transition-all ${designer.canvas.currentSlidePage >= (activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)) - 1 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20 active:scale-95'}`}
+                        >
+                          <FiChevronRight size={16} />
+                        </button>
+                        
+                        <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                        
+                        <button 
+                          onClick={() => setShowGrid(!showGrid)}
+                          className={`p-1.5 rounded-full transition-all ${showGrid ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20'} active:scale-95`}
+                          title="Mostrar Cuadrícula Guía"
+                        >
+                          <FiGrid size={16} />
+                        </button>
 
-                          {activeTab === 'video' && (
-                            <>
-                              <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
-                              <button
-                                onClick={() => {
-                                  setIsPlaying(false);
-                                  designer.canvas.setCurrentSlidePage(0);
-                                  setCurrentVideoSlide(0);
-                                }}
-                                className="p-1.5 rounded-full transition-all text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20 active:scale-95"
-                                title="Detener y volver al inicio"
-                              >
-                                <div className="w-3 h-3 bg-current rounded-sm"></div>
-                              </button>
-                              <button
-                                onClick={() => setIsPlaying(!isPlaying)}
-                                className={`p-2 rounded-full transition-all ${isPlaying ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'} shadow-md transform hover:scale-105 active:scale-95`}
-                                title={isPlaying ? "Pausar" : "Reproducir"}
-                              >
-                                {isPlaying ? <FiPause size={16} /> : <FiPlay size={16} />}
-                              </button>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Volume Control Pill (Separate to avoid width overlap) */}
                         {activeTab === 'video' && (
-                          <div className="flex items-center gap-3 bg-white/95 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-4 py-1.5">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase">Volumen:</span>
-                            <input 
-                              type="range" 
-                              min="0" 
-                              max="1" 
-                              step="0.05"
-                              value={volume}
-                              onChange={(e) => setVolume(parseFloat(e.target.value))}
-                              className="w-24 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                              title={`Volumen: ${Math.round(volume * 100)}%`}
-                            />
-                          </div>
+                          <>
+                            <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                            <button
+                              onClick={() => {
+                                setIsPlaying(false);
+                                designer.canvas.setCurrentSlidePage(0);
+                                setCurrentVideoSlide(0);
+                              }}
+                              className="p-1.5 rounded-full transition-all text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20 active:scale-95"
+                              title="Detener y volver al inicio"
+                            >
+                              <div className="w-3 h-3 bg-current rounded-sm"></div>
+                            </button>
+                            <button
+                              onClick={() => setIsPlaying(!isPlaying)}
+                              className={`p-2 rounded-full transition-all ${isPlaying ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'} shadow-md transform hover:scale-105 active:scale-95`}
+                              title={isPlaying ? "Pausar" : "Reproducir"}
+                            >
+                              {isPlaying ? <FiPause size={16} /> : <FiPlay size={16} />}
+                            </button>
+                          </>
                         )}
                       </div>
+
+                      {/* Volume Control Pill (Separate to avoid width overlap) */}
+                      {activeTab === 'video' && (
+                        <div className="flex items-center gap-3 bg-white/95 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-4 py-1.5">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase">Volumen:</span>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="1" 
+                            step="0.05"
+                            value={volume}
+                            onChange={(e) => setVolume(parseFloat(e.target.value))}
+                            className="w-24 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                            title={`Volumen: ${Math.round(volume * 100)}%`}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
