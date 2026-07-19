@@ -48,6 +48,13 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         if (!slideNode) continue;
 
         // Clean up selections before capture
+        const savedParentTransform = slideNode.style.transform;
+        slideNode.style.transform = 'none';
+        
+        // Force a GUARANTEED browser reflow before capture
+        void slideNode.offsetHeight;
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
         const canvas = await html2canvas(slideNode, {
           useCORS: true,
           scale: 3,
@@ -58,6 +65,9 @@ export const useExport = (selectedPost, designer, generatedContent) => {
           removeContainer: false,
           foreignObjectRendering: false
         });
+        
+        // Restore scale
+        slideNode.style.transform = savedParentTransform;
         
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.90));
         imageFiles.push(new File([blob], `Diapositiva_${i + 1}.jpg`, { type: 'image/jpeg' }));

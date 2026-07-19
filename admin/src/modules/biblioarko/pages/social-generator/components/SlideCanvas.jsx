@@ -166,9 +166,10 @@ export const SlideCanvas = ({
           }}
         >
           <div 
-            className={`transition-shadow ${isSelected && selectedLogo ? 'border-[1.5px] border-dashed border-indigo-500 rounded-xl p-2 bg-white/5' : ''}`}
+            className={`transition-shadow shrink-0 ${isSelected && selectedLogo ? 'border-[1.5px] border-dashed border-indigo-500 rounded-xl p-2 bg-white/5' : ''}`}
             style={{
               cursor: isSelected ? 'grab' : 'default',
+              flexShrink: 0
             }}
             onMouseDown={(e) => isSelected && handleDragStart(e, index, 'logo', 'global-logo', containerRef.current, logoPos)}
             onTouchStart={(e) => { 
@@ -202,10 +203,11 @@ export const SlideCanvas = ({
           }}
         >
           <div 
-            className={`transition-shadow w-[346px] px-4 ${isSelected && selectedContentIndex === index ? 'border-[1.5px] border-dashed border-indigo-500 rounded-2xl p-4 bg-white/10 backdrop-blur-sm' : ''}`}
+            className={`transition-shadow shrink-0 w-[346px] px-4 ${isSelected && selectedContentIndex === index ? 'border-[1.5px] border-dashed border-indigo-500 rounded-2xl p-4 bg-white/10 backdrop-blur-sm' : ''}`}
             style={{
               transform: `rotate(${contentRotations[index] || 0}deg)`,
               cursor: isSelected ? 'grab' : 'default',
+              flexShrink: 0
             }}
             onMouseDown={(e) => isSelected && handleDragStart(e, index, 'content', index, containerRef.current, contentPositions[index] || { x: 50, y: 60 })}
             onTouchStart={(e) => {
@@ -349,7 +351,8 @@ export const SlideCanvas = ({
                 height: el.type === 'text' ? 'max-content' : (el.height + 'px'),
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                flexShrink: 0
               }}
               onMouseDown={(e) => isSelected && handleDragStart(e, index, 'extra', elId, containerRef.current, { x: el.x, y: el.y })}
               onTouchStart={(e) => {
