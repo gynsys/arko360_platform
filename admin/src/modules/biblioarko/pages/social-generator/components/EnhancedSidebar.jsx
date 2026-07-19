@@ -328,17 +328,15 @@ export const EnhancedSidebar = ({
                 <div>
                   <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3">Colores de Texto</h3>
                   <div className="space-y-3">
-                    {!isVideoMode && (
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs text-gray-600 dark:text-gray-400">Título</label>
-                        <input
-                          type="color"
-                          value={design.titleColor}
-                          onChange={(e) => design.setTitleColor(e.target.value)}
-                          className="w-12 h-8 rounded cursor-pointer"
-                        />
-                      </div>
-                    )}
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-gray-600 dark:text-gray-400">Título</label>
+                      <input
+                        type="color"
+                        value={design.titleColor}
+                        onChange={(e) => design.setTitleColor(e.target.value)}
+                        className="w-12 h-8 rounded cursor-pointer"
+                      />
+                    </div>
                     <div className="flex items-center justify-between">
                       <label className="text-xs text-gray-600 dark:text-gray-400">Contenido</label>
                       <input
@@ -378,22 +376,20 @@ export const EnhancedSidebar = ({
                         <option value="Playfair Display">Playfair Display</option>
                       </select>
                     </div>
-                    {!isVideoMode && (
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs text-gray-600 dark:text-gray-400">Título</label>
-                          <span className="text-[9px] font-mono text-gray-500">{design.titleFontSize}px</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="16"
-                          max="48"
-                          value={design.titleFontSize}
-                          onChange={(e) => design.setTitleFontSize(Number(e.target.value))}
-                          className="w-full"
-                        />
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs text-gray-600 dark:text-gray-400">Título</label>
+                        <span className="text-[9px] font-mono text-gray-500">{design.titleFontSize}px</span>
                       </div>
-                    )}
+                      <input
+                        type="range"
+                        min="16"
+                        max="48"
+                        value={design.titleFontSize}
+                        onChange={(e) => design.setTitleFontSize(Number(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-xs text-gray-600 dark:text-gray-400">Contenido</label>
