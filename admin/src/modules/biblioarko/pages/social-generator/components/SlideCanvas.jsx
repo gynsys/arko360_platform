@@ -290,16 +290,28 @@ export const SlideCanvas = ({
             }}
             onClick={(e) => { e.stopPropagation(); isSelected && selectElement('image', imgId); }}
           >
-            <div 
-              className="w-full h-full" 
-              style={{ 
-                backgroundImage: `url(${img})`, 
-                backgroundSize: 'contain', 
-                backgroundPosition: 'center', 
-                backgroundRepeat: 'no-repeat', 
-                borderRadius: imageBorderRadius 
-              }} 
-            />
+            {img && img.startsWith('data:video') ? (
+              <video
+                src={img}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-contain pointer-events-none"
+                style={{ borderRadius: imageBorderRadius }}
+              />
+            ) : (
+              <div 
+                className="w-full h-full pointer-events-none" 
+                style={{ 
+                  backgroundImage: `url(${img})`, 
+                  backgroundSize: 'contain', 
+                  backgroundPosition: 'center', 
+                  backgroundRepeat: 'no-repeat', 
+                  borderRadius: imageBorderRadius 
+                }} 
+              />
+            )}
             
             {isSelected && selectedImageId === imgId && (
               <>
@@ -525,9 +537,9 @@ export const SlideCanvas = ({
         <div className="absolute top-1/2 right-4 -translate-y-1/2 slide-actions z-[60] flex flex-col gap-1 pointer-events-auto">
           <button onClick={(e) => { e.stopPropagation(); onPreview(index); }} className="p-2 bg-white text-indigo-600 rounded-xl hover:bg-indigo-50 shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Vista Previa"><FiMaximize2 size={14}/></button>
           <button onClick={(e) => { e.stopPropagation(); onEdit(index); }} className="p-2 bg-white text-amber-500 rounded-xl hover:bg-amber-50 shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Editar Contenido"><FiEdit3 size={14}/></button>
-          <label className="p-2 bg-white text-indigo-400 rounded-xl hover:bg-indigo-50 shadow-xl border border-gray-100 cursor-pointer transition-all transform hover:scale-110" title="Insertar Imagen">
+          <label className="p-2 bg-white text-indigo-400 rounded-xl hover:bg-indigo-50 shadow-xl border border-gray-100 cursor-pointer transition-all transform hover:scale-110" title="Insertar Multimedia">
             <FiPlusCircle size={14} />
-            <input type="file" className="hidden" accept="image/*" onChange={onAddImage} />
+            <input type="file" className="hidden" accept="image/*,video/*" onChange={onAddImage} />
           </label>
           <button onClick={(e) => { e.stopPropagation(); onCopy(index); }} className="p-2 bg-white text-gray-400 rounded-xl hover:bg-gray-50 shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Duplicar Diapositiva"><FiCopy size={14} /></button>
           <button onClick={(e) => { e.stopPropagation(); onRemove(index); }} className="p-2 bg-white text-red-400 hover:bg-red-500 hover:text-white rounded-xl shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Eliminar"><FiTrash2 size={14} /></button>

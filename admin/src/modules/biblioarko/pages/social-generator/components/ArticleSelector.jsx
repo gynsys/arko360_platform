@@ -24,7 +24,8 @@ export const ArticleSelector = ({
   setAiForm = () => {},
   handleAiGenerateSocial = () => {},
   primaryColor = '#4F46E5',
-  generatedContent
+  generatedContent,
+  handleStartFromScratch
 }) => {
   return (
     <div className="space-y-6">
@@ -52,28 +53,17 @@ export const ArticleSelector = ({
               Desde PDF o Tema <span className="text-[9px] bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-black">IA</span>
             </button>
             <button 
-              onClick={() => {
-                setActiveMode('scratch');
-                setSelectedPost(null);
-                setGeneratedContent({
-                  type: 'carousel',
-                  slides: [{ title: 'Nueva Diapositiva', content: 'Doble clic para editar' }]
-                });
-              }}
-              className={`pb-1.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeMode === 'scratch' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
+              onClick={handleStartFromScratch}
+              className={`pb-1.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-1.5 ${activeMode === 'scratch' ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
             >
-              Desde Cero
+              Nuevo <span className="text-[9px] bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-black">PROYECTO</span>
             </button>
           </div>
 
           {activeMode === 'scratch' ? (
             <div className="space-y-4 py-8 text-center animate-fadeIn">
-              <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiImage className="text-indigo-600 dark:text-indigo-400" size={32} />
-              </div>
-              <h3 className="text-lg font-black text-gray-900 dark:text-white">Lienzo en Blanco</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                El editor ya está abierto abajo. Puedes añadir diapositivas, arrastrar imágenes y escribir tu propio contenido libremente.
+                El editor ya está abierto abajo. Puedes comenzar a diseñar tu nuevo contenido.
               </p>
             </div>
           ) : activeMode === 'article' ? (

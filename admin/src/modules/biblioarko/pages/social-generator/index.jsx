@@ -369,8 +369,45 @@ export default function SocialGenerator() {
         format: 'reel'
       });
       setLastGeneratedBlogContent(null);
+      setSelectedAudio(null);
+      setCustomAudioUrl(null);
+      setPrelisteningTrack(null);
+      transformer.loadState({});
       showToast('Nuevo proyecto iniciado', 'success');
     }
+  };
+
+  const handleStartFromScratch = () => {
+    setActiveMode('scratch');
+    setSelectedPost(null);
+    setActiveProjectName(null);
+    setActiveProjectId(null);
+    setHistory([]);
+    setVideoStyles(DEFAULT_VIDEO_STYLES);
+    setSlideDuration(3);
+    setTransitionType('fade');
+    setTransitionDuration(0.5);
+    designer.canvas.setExtraElements({});
+    designer.canvas.setCurrentSlidePage(0);
+    designer.design.setTitleColor('#ffffff');
+    designer.design.setContentColor('#ffffff');
+    designer.design.setHeaderColor('#4f46e5');
+    setAiForm({
+      topic: '',
+      pdf_file: null,
+      tone: 'Profesional',
+      format: 'reel'
+    });
+    setLastGeneratedBlogContent(null);
+    setSelectedAudio(null);
+    setCustomAudioUrl(null);
+    setPrelisteningTrack(null);
+    transformer.loadState({});
+    
+    setGeneratedContent({
+      type: 'carousel',
+      slides: [{ title: 'Nueva Diapositiva', content: 'Doble clic para editar' }]
+    });
   };
 
   const handleSaveProject = async () => {
@@ -709,9 +746,8 @@ export default function SocialGenerator() {
             posts={posts} selectedPost={selectedPost} setSelectedPost={setSelectedPost}
             setGeneratedContent={setGeneratedContent} showProjects={showProjects}
             setShowProjects={setShowProjects} handleGenerate={handleGenerate}
-            handleTestDesign={() => { setActiveTab('carousel'); setGeneratedContent({ type: 'carousel', slides: [{ title: 'Prueba', content: 'Contenido' }] }); }}
+            handleTestDesign={designer.handleTestDesign}
             generating={generating}
-            generatedContent={generatedContent}
             projects={designer.canvas.projects}
             loadingProjects={designer.canvas.loadingProjects}
             onLoadProject={(p) => { handleLoadProject(p); setShowProjects(false); }}
@@ -723,6 +759,8 @@ export default function SocialGenerator() {
             setAiForm={setAiForm}
             handleAiGenerateSocial={handleAiGenerateSocial}
             primaryColor={doctor?.theme_primary_color || '#4F46E5'}
+            generatedContent={generatedContent}
+            handleStartFromScratch={handleStartFromScratch}
           />
 
           {/* RESTAURACIÓN DEL LAYOUT ORIGINAL DE TABS */}
