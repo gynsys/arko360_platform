@@ -50,6 +50,20 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         // Fix text shift by temporarily removing scale transform from parent canvas before export.
         // html2canvas calculates absolute positioned children incorrectly if the parent is scaled.
 
+        const extraNodes = slideNode.querySelectorAll('[data-element="extra"]');
+        const nodeMetrics = new Map();
+        
+        extraNodes.forEach((node, index) => {
+          node.dataset.tempExportIdx = index;
+          nodeMetrics.set(index, {
+            width: node.offsetWidth,
+            height: node.offsetHeight,
+            left: parseFloat(node.style.left) || 0,
+            top: parseFloat(node.style.top) || 0,
+            isFullWidth: node.style.left === '0px'
+          });
+        });
+
         const canvas = await html2canvas(slideNode, {
           useCORS: true,
           scale: 3,
@@ -58,15 +72,67 @@ export const useExport = (selectedPost, designer, generatedContent) => {
           allowTaint: true,
           imageTimeout: 15000,
           removeContainer: false,
-          foreignObjectRendering: true,
+          foreignObjectRendering: false,
           onclone: (clonedDoc, clonedElement) => {
-            const clonedSlide = clonedElement;
-            
-            // SIMPLIFICATION: We ONLY need to remove the scale from the parent container.
-            // All the absolute positioning issues with html2canvas originate from the parent's scale transform.
-            // Once the scale is removed, native CSS layout works perfectly, including translate(-50%, -50%).
-            clonedSlide.style.transform = 'none';
+            clonedElement.style.transform = 'none';
+
+            const clonedExtras = clonedElement.querySelectorAll('[data-element="extra"]');
+            clonedExtras.forEach((clonedNode) => {
+              const exportIdx = clonedNode.dataset.tempExportIdx;
+              if (exportIdx === undefined) return;
+              const metrics = nodeMetrics.get(parseInt(exportIdx));
+              if (!metrics) return;
+
+              let rotation = '0deg';
+              const match = clonedNode.style.transform.match(/rotate\(([^)]+)\)/);
+              if (match) rotation = match[1];
+
+              const parentWidth = 410;
+              const parentHeight = 410;
+
+              if (metrics.isFullWidth) {
+                const centerY = (metrics.top / 100) * parentHeight;
+                const topEdge = centerY - (metrics.height / 2);
+                
+                clonedNode.style.position = 'absolute';
+                clonedNode.style.left = '0px';
+                clonedNode.style.top = topEdge + 'px';
+                clonedNode.style.transform = `rotate(${rotation})`;
+                clonedNode.style.width = '410px';
+                clonedNode.style.height = metrics.height + 'px';
+                clonedNode.style.margin = '0px';
+              } else {
+                const centerX = (metrics.left / 100) * parentWidth;
+                const centerY = (metrics.top / 100) * parentHeight;
+                
+                const leftEdge = centerX - (metrics.width / 2);
+                const topEdge = centerY - (metrics.height / 2);
+
+                clonedNode.style.position = 'absolute';
+                clonedNode.style.left = leftEdge + 'px';
+                clonedNode.style.top = topEdge + 'px';
+                clonedNode.style.transform = `rotate(${rotation})`;
+                clonedNode.style.width = metrics.width + 'px';
+                clonedNode.style.height = metrics.height + 'px';
+                clonedNode.style.margin = '0px';
+              }
+
+              if (clonedNode.dataset.textEl) {
+                clonedNode.style.display = 'block';
+                const innerText = clonedNode.querySelector('[data-text-inner="true"]');
+                if (innerText) {
+                  innerText.style.textAlign = 'center';
+                  innerText.style.width = '100%';
+                  innerText.style.display = 'block';
+                }
+              }
+            });
           }
+        });
+        
+        // Clean up temporary dataset properties
+        extraNodes.forEach(node => {
+          delete node.dataset.tempExportIdx;
         });
         
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.90));
