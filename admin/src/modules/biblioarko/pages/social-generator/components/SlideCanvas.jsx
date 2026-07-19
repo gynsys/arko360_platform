@@ -249,6 +249,7 @@ export const SlideCanvas = ({
           )}
         </div>
       </div>
+      </div>
       ) : null}
       
       {/* Images Layer */}
