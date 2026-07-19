@@ -60,13 +60,7 @@ export const ArticleSelector = ({
             </button>
           </div>
 
-          {activeMode === 'scratch' ? (
-            <div className="space-y-4 py-8 text-center animate-fadeIn">
-              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                El editor ya está abierto abajo. Puedes comenzar a diseñar tu nuevo contenido.
-              </p>
-            </div>
-          ) : activeMode === 'article' ? (
+          {activeMode === 'scratch' ? null : activeMode === 'article' ? (
             <div className="space-y-4">
               <div>
                 <h2 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Seleccionar Artículo</h2>
