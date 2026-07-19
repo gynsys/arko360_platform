@@ -47,23 +47,97 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         const slideNode = document.getElementById('main-slide-canvas');
         if (!slideNode) continue;
 
-        // Fix text shift by temporarily removing scale transform from parent canvas before export.
-        // html2canvas calculates absolute positioned children incorrectly if the parent is scaled.
-
-        const extraNodes = slideNode.querySelectorAll('[data-element="extra"]');
-        const nodeMetrics = new Map();
-        
-        extraNodes.forEach((node, index) => {
-          node.dataset.tempExportIdx = index;
-          nodeMetrics.set(index, {
-            width: node.offsetWidth,
-            height: node.offsetHeight,
-            left: parseFloat(node.style.left) || 0,
-            top: parseFloat(node.style.top) || 0,
-            isFullWidth: node.style.left === '0px'
-          });
+        // =============================================
+        // STEP 1: Disable ALL CSS transitions in the slide tree
+        // This prevents html2canvas from capturing mid-animation states
+        // =============================================
+        const allSlideElements = slideNode.querySelectorAll('*');
+        const savedTransitions = [];
+        allSlideElements.forEach(el => {
+          savedTransitions.push({ el, transition: el.style.transition });
+          el.style.transition = 'none';
         });
+        slideNode.style.transition = 'none';
+        const savedSlideTransition = slideNode.style.transition;
+        
+        // Force browser to apply transition:none immediately
+        void slideNode.offsetHeight;
 
+        // =============================================
+        // STEP 2: Read metrics from the REAL DOM (now with transitions disabled)
+        // =============================================
+        const extraNodes = slideNode.querySelectorAll('[data-element="extra"]');
+        const savedStyles = [];
+        
+        const PARENT_W = 410;
+        const PARENT_H = 410;
+        
+        extraNodes.forEach((node) => {
+          // Save ALL original inline styles
+          savedStyles.push({
+            node,
+            cssText: node.style.cssText
+          });
+          
+          // Read the percentage-based position from the inline style
+          const leftStr = node.style.left || '0';
+          const topStr = node.style.top || '0';
+          const leftPct = parseFloat(leftStr); // "25%" -> 25, "0px" -> 0
+          const topPct = parseFloat(topStr);
+          const isFullWidth = leftStr === '0px';
+          
+          // Read the real rendered size (offsetWidth is NOT affected by parent scale)
+          const w = node.offsetWidth;
+          const h = node.offsetHeight;
+          
+          // Extract rotation
+          let rotation = '0deg';
+          const rotMatch = node.style.transform.match(/rotate\(([^)]+)\)/);
+          if (rotMatch) rotation = rotMatch[1];
+          
+          // =============================================
+          // STEP 3: Replace translate(-50%,-50%) with pure pixel coordinates
+          // Math: centerX = (leftPct/100)*410, leftEdge = centerX - width/2
+          // =============================================
+          if (isFullWidth) {
+            const centerY = (topPct / 100) * PARENT_H;
+            node.style.left = '0px';
+            node.style.top = (centerY - h / 2) + 'px';
+            node.style.width = PARENT_W + 'px';
+            node.style.height = h + 'px';
+          } else {
+            const centerX = (leftPct / 100) * PARENT_W;
+            const centerY = (topPct / 100) * PARENT_H;
+            node.style.left = (centerX - w / 2) + 'px';
+            node.style.top = (centerY - h / 2) + 'px';
+            node.style.width = w + 'px';
+            node.style.height = h + 'px';
+          }
+          
+          // Remove translate completely, keep only rotation
+          node.style.transform = `rotate(${rotation})`;
+          node.style.margin = '0px';
+          node.style.transition = 'none';
+        });
+        
+        // =============================================
+        // STEP 4: Remove scale from parent container
+        // =============================================
+        const savedParentTransform = slideNode.style.transform;
+        slideNode.style.transform = 'none';
+        
+        // =============================================
+        // STEP 5: Force a GUARANTEED browser reflow
+        // Double requestAnimationFrame ensures the browser has fully
+        // processed ALL style changes before html2canvas reads them
+        // =============================================
+        void slideNode.offsetHeight; // Synchronous reflow
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        
+        // =============================================
+        // STEP 6: Capture with html2canvas (NO onclone tricks needed)
+        // The DOM is already in its final pixel-perfect state
+        // =============================================
         const canvas = await html2canvas(slideNode, {
           useCORS: true,
           scale: 3,
@@ -72,68 +146,24 @@ export const useExport = (selectedPost, designer, generatedContent) => {
           allowTaint: true,
           imageTimeout: 15000,
           removeContainer: false,
-          foreignObjectRendering: false,
-          onclone: (clonedDoc, clonedElement) => {
-            clonedElement.style.transform = 'none';
-
-            const clonedExtras = clonedElement.querySelectorAll('[data-element="extra"]');
-            clonedExtras.forEach((clonedNode) => {
-              const exportIdx = clonedNode.dataset.tempExportIdx;
-              if (exportIdx === undefined) return;
-              const metrics = nodeMetrics.get(parseInt(exportIdx));
-              if (!metrics) return;
-
-              let rotation = '0deg';
-              const match = clonedNode.style.transform.match(/rotate\(([^)]+)\)/);
-              if (match) rotation = match[1];
-
-              const parentWidth = 410;
-              const parentHeight = 410;
-
-              if (metrics.isFullWidth) {
-                const centerY = (metrics.top / 100) * parentHeight;
-                const topEdge = centerY - (metrics.height / 2);
-                
-                clonedNode.style.position = 'absolute';
-                clonedNode.style.left = '0px';
-                clonedNode.style.top = topEdge + 'px';
-                clonedNode.style.transform = `rotate(${rotation})`;
-                clonedNode.style.width = '410px';
-                clonedNode.style.height = metrics.height + 'px';
-                clonedNode.style.margin = '0px';
-              } else {
-                const centerX = (metrics.left / 100) * parentWidth;
-                const centerY = (metrics.top / 100) * parentHeight;
-                
-                const leftEdge = centerX - (metrics.width / 2);
-                const topEdge = centerY - (metrics.height / 2);
-
-                clonedNode.style.position = 'absolute';
-                clonedNode.style.left = leftEdge + 'px';
-                clonedNode.style.top = topEdge + 'px';
-                clonedNode.style.transform = `rotate(${rotation})`;
-                clonedNode.style.width = metrics.width + 'px';
-                clonedNode.style.height = metrics.height + 'px';
-                clonedNode.style.margin = '0px';
-              }
-
-              if (clonedNode.dataset.textEl) {
-                clonedNode.style.display = 'block';
-                const innerText = clonedNode.querySelector('[data-text-inner="true"]');
-                if (innerText) {
-                  innerText.style.textAlign = 'center';
-                  innerText.style.width = '100%';
-                  innerText.style.display = 'block';
-                }
-              }
-            });
-          }
+          foreignObjectRendering: false
         });
         
-        // Clean up temporary dataset properties
-        extraNodes.forEach(node => {
-          delete node.dataset.tempExportIdx;
+        // =============================================
+        // STEP 7: Restore EVERYTHING to original state
+        // =============================================
+        slideNode.style.transform = savedParentTransform;
+        
+        // Restore all extra element styles
+        savedStyles.forEach(({ node, cssText }) => {
+          node.style.cssText = cssText;
         });
+        
+        // Restore all transitions
+        savedTransitions.forEach(({ el, transition }) => {
+          el.style.transition = transition;
+        });
+        slideNode.style.transition = savedSlideTransition;
         
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.90));
         imageFiles.push(new File([blob], `Diapositiva_${i + 1}.jpg`, { type: 'image/jpeg' }));
