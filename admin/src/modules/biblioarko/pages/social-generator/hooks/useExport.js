@@ -47,17 +47,8 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         const slideNode = document.getElementById('main-slide-canvas');
         if (!slideNode) continue;
 
-        // 1. Obtener métricas del DOM REAL antes de cualquier cambio
-        const realRects = new Map();
-        const extraNodes = slideNode.querySelectorAll('[data-element="extra"]');
-        
-        extraNodes.forEach((node, index) => {
-          // Set a temporary index to map cloned nodes back to real rects reliably
-          node.dataset.tempExportIdx = index;
-          realRects.set(index, node.getBoundingClientRect());
-        });
-        
-        const slideRect = slideNode.getBoundingClientRect();
+        // Fix text shift by temporarily removing scale transform from parent canvas before export.
+        // html2canvas calculates absolute positioned children incorrectly if the parent is scaled.
 
         const canvas = await html2canvas(slideNode, {
           useCORS: true,
@@ -71,69 +62,11 @@ export const useExport = (selectedPost, designer, generatedContent) => {
           onclone: (clonedDoc, clonedElement) => {
             const clonedSlide = clonedElement;
             
-            // FORZAR REFLOW: Leer una propiedad que fuerza recálculo
-            void clonedSlide.offsetHeight;
-            
-            // 3. Remover transform del contenedor padre en el CLON
+            // SIMPLIFICATION: We ONLY need to remove the scale from the parent container.
+            // All the absolute positioning issues with html2canvas originate from the parent's scale transform.
+            // Once the scale is removed, native CSS layout works perfectly, including translate(-50%, -50%).
             clonedSlide.style.transform = 'none';
-            
-            // FORZAR REFLOW nuevamente después de quitar el scale
-            void clonedSlide.offsetHeight;
-            
-            // 4. Procesar elementos extra en el CLON
-            const clonedExtras = clonedSlide.querySelectorAll('[data-element="extra"]');
-            
-            clonedExtras.forEach((clonedNode) => {
-              const exportIdx = clonedNode.dataset.tempExportIdx;
-              if (exportIdx === undefined) return;
-              
-              const realRect = realRects.get(parseInt(exportIdx));
-              if (!realRect) return;
-              
-              // Calcular posición relativa al slide original
-              const relativeLeft = realRect.left - slideRect.left;
-              const relativeTop = realRect.top - slideRect.top;
-              
-              // Aplicar posicionamiento absoluto de píxeles en el CLON
-              clonedNode.style.position = 'absolute';
-              clonedNode.style.left = relativeLeft + 'px';
-              clonedNode.style.top = relativeTop + 'px';
-              clonedNode.style.width = realRect.width + 'px';
-              clonedNode.style.height = realRect.height + 'px';
-              clonedNode.style.margin = '0px';
-              
-              // Extraer rotación del transform original
-              const originalTransform = clonedNode.style.transform;
-              let rotation = '0deg';
-              const rotateMatch = originalTransform.match(/rotate\(([^)]+)\)/);
-              if (rotateMatch) rotation = rotateMatch[1];
-              
-              clonedNode.style.transform = `rotate(${rotation})`;
-              
-              // 5. CRÍTICO: Simplificar el contenido de texto
-              if (clonedNode.dataset.textEl) {
-                // Eliminar flex y max-content que html2canvas maneja mal
-                clonedNode.style.display = 'block';
-                clonedNode.style.width = realRect.width + 'px';
-                
-                // Centrar el texto interno con text-align
-                const innerText = clonedNode.querySelector('[data-text-inner="true"]');
-                if (innerText) {
-                  innerText.style.textAlign = 'center';
-                  innerText.style.width = '100%';
-                  innerText.style.display = 'block';
-                }
-              }
-            });
-            
-            // FORZAR REFLOW final antes de que html2canvas renderice
-            void clonedSlide.offsetHeight;
           }
-        });
-        
-        // Clean up temporary dataset properties
-        extraNodes.forEach(node => {
-          delete node.dataset.tempExportIdx;
         });
         
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.90));
