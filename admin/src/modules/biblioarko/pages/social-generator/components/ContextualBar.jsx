@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FiTrash2, FiX, FiBold, FiItalic, FiType, 
   FiLayers, FiMove, FiMaximize, FiMinimize, 
   FiCornerUpLeft, FiSquare, FiCircle, FiImage,
-  FiEye, FiCopy
+  FiEye, FiCopy, FiPlay, FiPause
 } from 'react-icons/fi';
 
 export const ContextualBar = ({ 
@@ -14,11 +14,36 @@ export const ContextualBar = ({
   deselectElement,
   isMobile = false,
   isImage = false,
+  isVideo = false,
   imagePositions = {},
   updateImage,
   onRemoveImage
 }) => {
   if (!selectedId) return null;
+
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  useEffect(() => {
+    if (isVideo && selectedId) {
+      const vid = document.getElementById(`video-${selectedId}`);
+      if (vid) {
+        setIsPlaying(!vid.paused);
+      }
+    }
+  }, [selectedId, isVideo]);
+
+  const togglePlay = () => {
+    const vid = document.getElementById(`video-${selectedId}`);
+    if (vid) {
+      if (vid.paused) {
+        vid.play();
+        setIsPlaying(true);
+      } else {
+        vid.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
 
   const [slideIdx, elId] = selectedId.split('-');
   let el = null;
@@ -117,6 +142,16 @@ export const ContextualBar = ({
                 className="w-16 cursor-pointer"
               />
             </div>
+          )}
+
+          {isVideo && (
+            <button
+              onClick={togglePlay}
+              className="p-2 rounded-xl transition-all flex-shrink-0 bg-gray-50 dark:bg-gray-900 text-indigo-600 hover:bg-indigo-100"
+              title={isPlaying ? "Pausar video" : "Reproducir video"}
+            >
+              {isPlaying ? <FiPause size={14} /> : <FiPlay size={14} />}
+            </button>
           )}
 
           <div className="ml-auto flex items-center gap-2">
@@ -233,6 +268,16 @@ export const ContextualBar = ({
               className="w-20 cursor-pointer"
             />
           </div>
+        )}
+
+        {isVideo && (
+          <button
+            onClick={togglePlay}
+            className="p-2 rounded-xl transition-all flex-shrink-0 bg-gray-50 dark:bg-gray-900 text-indigo-600 hover:bg-indigo-100"
+            title={isPlaying ? "Pausar video" : "Reproducir video"}
+          >
+            {isPlaying ? <FiPause size={18} /> : <FiPlay size={18} />}
+          </button>
         )}
 
         {/* Layers / Z-Index */}

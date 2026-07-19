@@ -292,6 +292,7 @@ export const SlideCanvas = ({
           >
             {img && img.startsWith('data:video') ? (
               <video
+                id={`video-${imgId}`}
                 src={img}
                 autoPlay
                 loop
