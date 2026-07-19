@@ -1,6 +1,5 @@
 import { isCapacitor, downloadFile } from '../../../../../utils/platform';
-
-import html2canvas from 'html2canvas';
+import * as htmlToImage from 'html-to-image';
 import JSZip from 'jszip';
 import toast from 'react-hot-toast';
 import { blogService } from '../../../services/blogService';
@@ -48,32 +47,18 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         if (!slideNode) continue;
 
         // Clean up selections before capture
-        const savedParentTransform = slideNode.style.transform;
-        slideNode.style.transform = 'none';
-        
-        // Force a GUARANTEED browser reflow before capture
-        void slideNode.offsetHeight;
-        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-        const canvas = await html2canvas(slideNode, {
-          useCORS: true,
-          scale: 3,
+        const blob = await htmlToImage.toBlob(slideNode, {
+          pixelRatio: 3,
           backgroundColor: designer.design.bgColor || '#ffffff',
-          logging: false,
-          allowTaint: true,
-          imageTimeout: 15000,
-          removeContainer: false,
-          foreignObjectRendering: false
+          cacheBust: true, // Prevent CORS issues with cached images
+          style: {
+            transform: 'none' // html-to-image handles scale internally, we just ensure no weird transform interference
+          }
         });
         
-        // Restore scale
-        slideNode.style.transform = savedParentTransform;
-        
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.90));
         imageFiles.push(new File([blob], `Diapositiva_${i + 1}.jpg`, { type: 'image/jpeg' }));
         
-        const imgData = canvas.toDataURL('image/jpeg', 0.90).split(',')[1];
-        zip.file(`Diapositiva_${i + 1}.jpg`, imgData, { base64: true });
+        zip.file(`Diapositiva_${i + 1}.jpg`, blob);
       }
 
       // Restaurar todo a como estaba
