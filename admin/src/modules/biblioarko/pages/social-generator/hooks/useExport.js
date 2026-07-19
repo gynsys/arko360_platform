@@ -64,59 +64,71 @@ export const useExport = (selectedPost, designer, generatedContent) => {
         void slideNode.offsetHeight;
 
         // =============================================
-        // STEP 2: Read metrics from the REAL DOM (now with transitions disabled)
+        // STEP 2: Fix ALL elements that use translate(-50%, -50%)
+        // This includes: extra elements, content section, logo, images
+        // Previously we only fixed [data-element="extra"] - that was the bug!
         // =============================================
-        const extraNodes = slideNode.querySelectorAll('[data-element="extra"]');
+        const allPositioned = slideNode.querySelectorAll('[data-slide-element], [data-element="extra"], .absolute');
         const savedStyles = [];
         
         const PARENT_W = 410;
         const PARENT_H = 410;
         
-        extraNodes.forEach((node) => {
-          // Save ALL original inline styles
+        allPositioned.forEach((node) => {
+          const currentTransform = node.style.transform || '';
+          const transformNoSpace = currentTransform.replace(/\s+/g, '');
+          
+          // Only process elements that actually use translate centering
+          const hasTranslateXY = transformNoSpace.includes('translate(-50%,-50%)');
+          const hasTranslateY = transformNoSpace.includes('translateY(-50%)');
+          const hasTranslateX = transformNoSpace.includes('translate(-50%)') && !hasTranslateXY;
+          
+          if (!hasTranslateXY && !hasTranslateY && !hasTranslateX) return;
+          
+          // Save original inline styles
           savedStyles.push({
             node,
             cssText: node.style.cssText
           });
           
-          // Read the percentage-based position from the inline style
+          // Read position and size
           const leftStr = node.style.left || '0';
           const topStr = node.style.top || '0';
-          const leftPct = parseFloat(leftStr); // "25%" -> 25, "0px" -> 0
+          const leftPct = parseFloat(leftStr);
           const topPct = parseFloat(topStr);
-          const isFullWidth = leftStr === '0px';
-          
-          // Read the real rendered size (offsetWidth is NOT affected by parent scale)
           const w = node.offsetWidth;
           const h = node.offsetHeight;
           
           // Extract rotation
           let rotation = '0deg';
-          const rotMatch = node.style.transform.match(/rotate\(([^)]+)\)/);
+          const rotMatch = currentTransform.match(/rotate\(([^)]+)\)/);
           if (rotMatch) rotation = rotMatch[1];
           
-          // =============================================
-          // STEP 3: Replace translate(-50%,-50%) with pure pixel coordinates
-          // Math: centerX = (leftPct/100)*410, leftEdge = centerX - width/2
-          // =============================================
-          if (isFullWidth) {
-            const centerY = (topPct / 100) * PARENT_H;
-            node.style.left = '0px';
-            node.style.top = (centerY - h / 2) + 'px';
-            node.style.width = PARENT_W + 'px';
-            node.style.height = h + 'px';
-          } else {
-            const centerX = (leftPct / 100) * PARENT_W;
-            const centerY = (topPct / 100) * PARENT_H;
-            node.style.left = (centerX - w / 2) + 'px';
-            node.style.top = (centerY - h / 2) + 'px';
-            node.style.width = w + 'px';
-            node.style.height = h + 'px';
+          // Calculate pixel positions based on percentage
+          const isPercent = leftStr.includes('%');
+          const isPercentTop = topStr.includes('%');
+          
+          if (hasTranslateXY) {
+            // translate(-50%, -50%): center point is at left%, top%
+            const cx = isPercent ? (leftPct / 100) * PARENT_W : leftPct;
+            const cy = isPercentTop ? (topPct / 100) * PARENT_H : topPct;
+            node.style.left = (cx - w / 2) + 'px';
+            node.style.top = (cy - h / 2) + 'px';
+          } else if (hasTranslateY) {
+            // translateY(-50%): only vertical center
+            const cy = isPercentTop ? (topPct / 100) * PARENT_H : topPct;
+            if (isPercent) {
+              node.style.left = ((leftPct / 100) * PARENT_W) + 'px';
+            }
+            node.style.top = (cy - h / 2) + 'px';
+          } else if (hasTranslateX) {
+            // translateX(-50%): only horizontal center
+            const cx = isPercent ? (leftPct / 100) * PARENT_W : leftPct;
+            node.style.left = (cx - w / 2) + 'px';
           }
           
-          // Remove translate completely, keep only rotation
+          // Remove all translates, keep only rotation
           node.style.transform = `rotate(${rotation})`;
-          node.style.margin = '0px';
           node.style.transition = 'none';
         });
         
