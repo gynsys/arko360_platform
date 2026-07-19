@@ -348,7 +348,7 @@ export const SlideCanvas = ({
                 transform: `rotate(${el.rotation}deg)`,
                 cursor: isSelected ? 'grab' : 'default',
                 width: el.type === 'text' ? 'max-content' : (el.fullWidth ? '410px' : (el.width + 'px')),
-                height: el.type === 'text' ? 'max-content' : (el.height + 'px'),
+                height: el.height + 'px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -368,9 +368,10 @@ export const SlideCanvas = ({
                 data-text-inner="true"
                 contentEditable={isElSelected}
                 suppressContentEditableWarning={true}
-                className="font-bold whitespace-nowrap outline-none px-2"
+                className="font-bold whitespace-nowrap outline-none px-2 leading-none"
                 style={{ 
-                  fontSize: (el.height * 0.8) + 'px', 
+                  fontSize: (el.height * 0.8) + 'px',
+                  lineHeight: 1,
                   color: el.color,
                   background: el.useGradient ? `linear-gradient(${el.gradientDir}, ${el.color}, ${el.color2}, ${el.color3})` : 'transparent',
                   WebkitBackgroundClip: el.useGradient ? 'text' : 'initial',
