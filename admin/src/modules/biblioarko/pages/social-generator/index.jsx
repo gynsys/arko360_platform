@@ -133,7 +133,7 @@ export default function SocialGenerator() {
 
   const { isExporting, exportProgress, handleExportVideo, exportStatus } = useVideoExport(
     generatedContent, videoStyles, slideDuration, transitionType, transitionDuration, selectedPost, audioRef, getActiveAudioSrc, showToast,
-    designer
+    designer, transformer.state
   );
 
   const exporter = useExport(selectedPost, designer, generatedContent);

@@ -6,7 +6,7 @@ import { isCapacitor, downloadFile, openExternalFile } from '../../../../../util
 export const useVideoExport = (
   generatedContent, videoStyles, slideDuration, transitionType, transitionDuration,
   selectedPost, audioRef, getActiveAudioSrc, showToast,
-  designer
+  designer, transformState
 ) => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
@@ -37,6 +37,12 @@ export const useVideoExport = (
       designer.canvas.setSelectedContentIndex(null);
       designer.canvas.setIsExportMode(true);
 
+      const slideVideos = [];
+      const slideDurations = [];
+      const isVideoMode = generatedContent?.video_slides ? true : false;
+      const scaleX = 720 / 410;
+      const scaleY = 1280 / (isVideoMode ? 728 : 410);
+
       for (let i = 0; i < scenes.length; i++) {
         designer.canvas.setCurrentSlidePage(i);
         // Esperar que React renderice (imágenes, gradientes SVG)
@@ -64,6 +70,37 @@ export const useVideoExport = (
         });
 
         capturedFrames.push(capturedCanvas);
+
+        // Preload videos for this slide and calculate max duration
+        const customImages = scenes[i].customImages || [];
+        const currentSlideVids = [];
+        let maxVidDur = slideDuration;
+
+        for (let imgIndex = 0; imgIndex < customImages.length; imgIndex++) {
+           const img = customImages[imgIndex];
+           if (img && img.startsWith('data:video')) {
+              const vid = document.createElement('video');
+              vid.src = img;
+              vid.muted = true;
+              vid.loop = true; 
+              vid.playsInline = true;
+              await new Promise(r => { vid.onloadedmetadata = r; vid.onerror = r; });
+              
+              if (vid.duration && vid.duration > maxVidDur) {
+                 maxVidDur = vid.duration;
+              }
+
+              const imgId = `${i}-${imgIndex}`;
+              const pos = transformState?.imagePositions?.[imgId] || { x: 0, y: 0 };
+              const size = transformState?.imageSizes?.[imgId] || 150;
+              const rot = transformState?.imageRotations?.[imgId] || 0;
+
+              currentSlideVids.push({ vid, pos, size, rot });
+           }
+        }
+        slideVideos.push(currentSlideVids);
+        slideDurations.push(maxVidDur);
+
         setExportProgress(Math.round(((i + 1) / scenes.length) * 40)); // Primero 40%
       }
 
@@ -174,12 +211,57 @@ export const useVideoExport = (
       recorder.start();
 
       const fps = 30;
-      const framesPerSlide = fps * slideDuration;
       const transitionFrames = Math.round(fps * transitionDuration);
+
+      const drawSlide = (frameImg, vids) => {
+        if (frameImg) {
+          ctx.drawImage(frameImg, 0, 0, outputCanvas.width, outputCanvas.height);
+        }
+        vids.forEach(v => {
+          ctx.save();
+          const dx = v.pos.x * scaleX;
+          const dy = v.pos.y * scaleY;
+          const dSizeX = v.size * scaleX;
+          const dSizeY = v.size * scaleY;
+          const cx = dx + dSizeX / 2;
+          const cy = dy + dSizeY / 2;
+          
+          ctx.translate(cx, cy);
+          ctx.rotate(v.rot * Math.PI / 180);
+          ctx.translate(-dSizeX / 2, -dSizeY / 2);
+          
+          if (v.vid.videoWidth && v.vid.videoHeight) {
+            const vidRatio = v.vid.videoWidth / v.vid.videoHeight;
+            let drawW = dSizeX;
+            let drawH = dSizeY;
+            let offsetX = 0;
+            let offsetY = 0;
+            if (vidRatio > 1) { // wider
+               drawH = dSizeX / vidRatio;
+               offsetY = (dSizeY - drawH) / 2;
+            } else if (vidRatio < 1) { // taller
+               drawW = dSizeY * vidRatio;
+               offsetX = (dSizeX - drawW) / 2;
+            }
+            ctx.drawImage(v.vid, offsetX, offsetY, drawW, drawH);
+          }
+          ctx.restore();
+        });
+      };
 
       for (let i = 0; i < capturedFrames.length; i++) {
         const currentFrame = capturedFrames[i];
         const prevFrame = i > 0 ? capturedFrames[i - 1] : null;
+
+        const currentVids = slideVideos[i] || [];
+        const prevVids = i > 0 ? slideVideos[i - 1] || [] : [];
+        
+        currentVids.forEach(v => {
+           v.vid.currentTime = 0;
+           v.vid.play().catch(e => console.log('video play error', e));
+        });
+
+        const framesPerSlide = fps * slideDurations[i];
 
         for (let f = 0; f < framesPerSlide; f++) {
           ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
@@ -202,9 +284,7 @@ export const useVideoExport = (
               ctx.translate(-outputCanvas.width / 2, -outputCanvas.height / 2);
               ctx.globalAlpha = exitProgress;
             }
-            if (prevFrame) {
-              ctx.drawImage(prevFrame, 0, 0, outputCanvas.width, outputCanvas.height);
-            }
+            drawSlide(prevFrame, prevVids);
             ctx.restore();
 
             // Dibujar frame actual (entrando)
@@ -219,19 +299,19 @@ export const useVideoExport = (
               ctx.translate(-outputCanvas.width / 2, -outputCanvas.height / 2);
               ctx.globalAlpha = progress;
             }
-            if (currentFrame) {
-              ctx.drawImage(currentFrame, 0, 0, outputCanvas.width, outputCanvas.height);
-            }
+            drawSlide(currentFrame, currentVids);
             ctx.restore();
           } else {
             // Frame estático
-            if (currentFrame) {
-              ctx.drawImage(currentFrame, 0, 0, outputCanvas.width, outputCanvas.height);
-            }
+            drawSlide(currentFrame, currentVids);
           }
 
           await new Promise(r => setTimeout(r, 1000 / fps));
         }
+
+        currentVids.forEach(v => {
+           v.vid.pause();
+        });
 
         setExportProgress(40 + Math.round(((i + 1) / scenes.length) * 60)); // 40-100%
       }
