@@ -58,7 +58,7 @@ export const useExport = (selectedPost, designer, generatedContent) => {
           allowTaint: true,
           imageTimeout: 15000,
           removeContainer: false,
-          foreignObjectRendering: false,
+          foreignObjectRendering: true,
           onclone: (clonedDoc, clonedElement) => {
             const clonedSlide = clonedElement;
             
