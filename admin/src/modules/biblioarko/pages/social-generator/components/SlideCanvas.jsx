@@ -368,7 +368,7 @@ export const SlideCanvas = ({
                       transform.setImagePositions(prev => ({
                         ...prev,
                         [imgId]: {
-                          ...(prev[imgId] || {}),
+                          ...(prev[imgId] || { x: 50, y: 70 }),
                           endTime: (pos.startTime || 0) + dur,
                           trimEnd: dur
                         }
