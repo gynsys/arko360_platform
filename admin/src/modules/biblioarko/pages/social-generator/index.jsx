@@ -160,6 +160,12 @@ export default function SocialGenerator() {
       const id = trackId.replace('extra-', '');
       // Update extra element using the hook
       designer.canvas.updateExtraElement(designer.canvas.currentSlidePage, id, { startTime: start, endTime: end });
+    } else if (trackId.startsWith('img-')) {
+      const id = trackId.replace('img-', '');
+      // id has the format `sIdx-imgIdx`, e.g., '0-0'
+      transformer.handlers.updateImage(id, { startTime: start, endTime: end });
+      // Skip setGeneratedContent since we're updating transformer state
+      return;
     }
     setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
   };
