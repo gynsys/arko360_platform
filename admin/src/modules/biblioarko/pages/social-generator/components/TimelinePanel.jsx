@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiClock, FiAlignLeft, FiType } from 'react-icons/fi';
+import { FiClock, FiAlignLeft, FiType, FiImage } from 'react-icons/fi';
 
 const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange }) => {
   const trackRef = useRef(null);
