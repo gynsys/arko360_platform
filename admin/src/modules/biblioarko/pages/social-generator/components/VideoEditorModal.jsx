@@ -1,15 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { FiX, FiCheck, FiRefreshCw, FiScissors, FiClock } from 'react-icons/fi';
+import { FiX, FiCheck, FiScissors, FiClock } from 'react-icons/fi';
 
 const VideoEditorModal = ({ file, onClose, onApply }) => {
-  const [ffmpeg, setFFmpeg] = useState(null);
-  const [ready, setReady] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState(null);
-
   const videoRef = useRef(null);
   const [duration, setDuration] = useState(0);
   const [startTime, setStartTime] = useState(0);
@@ -17,38 +9,7 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
   const [speed, setSpeed] = useState(1);
   const [videoUrl, setVideoUrl] = useState(null);
 
-  // Load FFmpeg
   useEffect(() => {
-    const loadFFmpeg = async () => {
-      try {
-        setLoading(true);
-        const ffmpegInstance = new FFmpeg();
-        ffmpegInstance.on('progress', ({ progress }) => {
-          setProgress(progress * 100);
-        });
-        const baseURL = `${window.location.origin}/ffmpeg`;
-
-        const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
-        const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-        const workerURL = await toBlobURL(`${baseURL}/worker.js`, 'text/javascript');
-
-        await ffmpegInstance.load({
-          coreURL,
-          wasmURL,
-          classWorkerURL: workerURL,
-        });
-        
-        setFFmpeg(ffmpegInstance);
-        setReady(true);
-      } catch (err) {
-        console.error('Error loading FFmpeg:', err);
-        setError(`Error al inicializar FFmpeg: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadFFmpeg();
-
     const url = URL.createObjectURL(file);
     setVideoUrl(url);
 
@@ -57,6 +18,12 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
     };
   }, [file]);
 
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed;
+    }
+  }, [speed]);
+
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
@@ -64,47 +31,12 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
     }
   };
 
-  const handleApply = async () => {
-    if (!ready || !ffmpeg) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-      setProgress(0);
-
-      const inputName = 'input.mp4';
-      const outputName = 'output.mp4';
-
-      await ffmpeg.writeFile(inputName, await fetchFile(file));
-
-      const args = ['-i', inputName];
-
-      // Trim
-      if (startTime > 0 || endTime < duration) {
-        args.push('-ss', startTime.toString());
-        args.push('-to', endTime.toString());
-      }
-
-      // Speed
-      if (speed !== 1) {
-        // change video speed
-        args.push('-filter_complex', `[0:v]setpts=${1 / speed}*PTS[v];[0:a]atempo=${speed}[a]`);
-        args.push('-map', '[v]', '-map', '[a]');
-      }
-
-      args.push(outputName);
-
-      await ffmpeg.exec(args);
-
-      const data = await ffmpeg.readFile(outputName);
-      const blob = new Blob([data.buffer], { type: 'video/mp4' });
-      
-      onApply(blob);
-    } catch (err) {
-      console.error('Error processing video:', err);
-      setError('Ocurrió un error al procesar el video. Intenta con un archivo más pequeño.');
-      setLoading(false);
-    }
+  const handleApply = () => {
+    onApply({
+      trimStart: startTime,
+      trimEnd: endTime,
+      speed: speed
+    });
   };
 
   return (
@@ -119,8 +51,7 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
           </h3>
           <button 
             onClick={onClose}
-            disabled={loading}
-            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors disabled:opacity-50"
+            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors"
           >
             <FiX size={20} />
           </button>
@@ -129,12 +60,6 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
         {/* Content */}
         <div className="p-6 flex-1 overflow-y-auto space-y-6">
           
-          {error && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium border border-red-200">
-              {error}
-            </div>
-          )}
-
           {/* Video Preview */}
           <div className="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center shadow-inner">
             {videoUrl && (
@@ -163,7 +88,11 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
                     max={endTime} 
                     step="0.1"
                     value={startTime}
-                    onChange={(e) => setStartTime(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setStartTime(val);
+                      if (videoRef.current) videoRef.current.currentTime = val;
+                    }}
                     className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -210,45 +139,20 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
         {/* Footer */}
         <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 flex flex-col gap-3">
           
-          {loading && (
-            <div className="w-full space-y-1">
-              <div className="flex justify-between text-xs text-indigo-600 dark:text-indigo-400 font-bold">
-                <span>{ready ? 'Procesando Video...' : 'Descargando Editor (Una sola vez)...'}</span>
-                {ready && <span>{Math.round(progress)}%</span>}
-              </div>
-              <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-indigo-500 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
-
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              disabled={loading}
-              className="px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
             >
               Cancelar
             </button>
             <button
               onClick={handleApply}
-              className={`px-6 py-2 text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2 ${loading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg'}`}
+              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2 hover:shadow-lg"
             >
-              {loading ? (
-                <>
-                  <FiRefreshCw className="animate-spin" /> Procesando
-                </>
-              ) : (
-                <>
-                  <FiCheck /> Aplicar y Usar (R:{ready?'1':'0'} L:{loading?'1':'0'} E:{error?'1':'0'} F:{ffmpeg?'1':'0'})
-                </>
-              )}
+              <FiCheck /> Aplicar Ajustes
             </button>
           </div>
-
         </div>
       </div>
     </div>

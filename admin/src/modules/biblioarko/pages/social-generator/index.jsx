@@ -145,12 +145,25 @@ export default function SocialGenerator() {
         setVideoTime(prev => {
           const nextTime = prev + 0.1;
 
+          let maxVidDur = slideDuration;
+          const slide = generatedContent?.video_slides?.[currentVideoSlide];
+          
+          if (slide?.customImages) {
+            slide.customImages.forEach((img, imgIdx) => {
+              if (img && img.startsWith('data:video')) {
+                const imgId = `${currentVideoSlide}-${imgIdx}`;
+                const pos = transformer.state?.imagePositions?.[imgId] || {};
+                const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
+                if (endT > maxVidDur) maxVidDur = endT;
+              }
+            });
+          }
+
           // Sync Audio with Timeline
           if (audioRef?.current) {
-            const slide = generatedContent?.video_slides?.[currentVideoSlide];
             if (slide && slide.audio) {
               const aStart = slide.audioStartTime !== undefined ? slide.audioStartTime : 0;
-              const aEnd = slide.audioEndTime !== undefined ? slide.audioEndTime : slideDuration;
+              const aEnd = slide.audioEndTime !== undefined ? slide.audioEndTime : maxVidDur;
               
               if (nextTime >= aStart && nextTime <= aEnd) {
                 if (audioRef.current.paused) {
@@ -164,7 +177,7 @@ export default function SocialGenerator() {
             }
           }
 
-          return nextTime >= slideDuration ? 0 : nextTime;
+          return nextTime >= maxVidDur ? 0 : nextTime;
         });
       }, 100);
     } else {
@@ -1134,20 +1147,35 @@ export default function SocialGenerator() {
                       )}
                     </div>
 
-                    {activeTab === 'video' && (
-                      <div className="w-full mt-4">
-                        <TimelinePanel 
-                          slide={generatedContent.video_slides?.[designer.canvas.currentSlidePage]}
-                          slideIndex={designer.canvas.currentSlidePage}
-                          slideDuration={slideDuration}
-                          currentTime={videoTime}
-                          onUpdateTiming={handleUpdateTiming}
-                          onScrub={setVideoTime}
-                          extraElements={designer.canvas.extraElements[designer.canvas.currentSlidePage] || []}
-                          imagePositions={transformer.state.imagePositions || {}}
-                        />
-                      </div>
-                    )}
+                    {activeTab === 'video' && (() => {
+                      let maxVidDur = slideDuration;
+                      const slide = generatedContent.video_slides?.[designer.canvas.currentSlidePage];
+                      if (slide?.customImages) {
+                        slide.customImages.forEach((img, imgIdx) => {
+                          if (img && img.startsWith('data:video')) {
+                            const imgId = `${designer.canvas.currentSlidePage}-${imgIdx}`;
+                            const pos = transformer.state?.imagePositions?.[imgId] || {};
+                            const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
+                            if (endT > maxVidDur) maxVidDur = endT;
+                          }
+                        });
+                      }
+                      
+                      return (
+                        <div className="w-full mt-4">
+                          <TimelinePanel 
+                            slide={slide}
+                            slideIndex={designer.canvas.currentSlidePage}
+                            slideDuration={maxVidDur}
+                            currentTime={videoTime}
+                            onUpdateTiming={handleUpdateTiming}
+                            onScrub={setVideoTime}
+                            extraElements={designer.canvas.extraElements[designer.canvas.currentSlidePage] || []}
+                            imagePositions={transformer.state.imagePositions || {}}
+                          />
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1361,25 +1389,30 @@ export default function SocialGenerator() {
             setPendingVideoFile(null);
             setPendingVideoTarget(null);
           }}
-          onApply={(processedBlob) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const { index, isVideoSlide, imgIndex } = pendingVideoTarget;
-              const slidesProp = isVideoSlide ? 'video_slides' : 'slides';
-              const newSlides = [...generatedContent[slidesProp]];
-              if (!newSlides[index].customImages) newSlides[index].customImages = [];
+          onApply={(params) => {
+            const { index, isVideoSlide, imgIndex } = pendingVideoTarget;
+            const imgId = `${index}-${imgIndex}`;
+            
+            // Update imagePositions with the new params
+            transformer.state.setImagePositions(prev => {
+              const pos = prev[imgId] || {};
+              const startTime = pos.startTime !== undefined ? pos.startTime : 0;
+              const computedDuration = (params.trimEnd - params.trimStart) / params.speed;
               
-              if (imgIndex !== undefined) {
-                newSlides[index].customImages[imgIndex] = reader.result;
-              } else {
-                newSlides[index].customImages.push(reader.result);
-              }
-              
-              setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
-              setPendingVideoFile(null);
-              setPendingVideoTarget(null);
-            };
-            reader.readAsDataURL(processedBlob);
+              return {
+                ...prev,
+                [imgId]: {
+                  ...pos,
+                  trimStart: params.trimStart,
+                  trimEnd: params.trimEnd,
+                  speed: params.speed,
+                  endTime: startTime + computedDuration
+                }
+              };
+            });
+            
+            setPendingVideoFile(null);
+            setPendingVideoTarget(null);
           }}
         />
       )}

@@ -155,7 +155,7 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
             {Array.from({ length: Math.ceil(slideDuration) + 1 }).map((_, i) => (
               <div 
                 key={i} 
-                className="absolute top-0 bottom-0 border-l border-gray-300 dark:border-gray-600 text-[9px] text-gray-400 pl-1"
+                className="absolute top-0 bottom-0 border-l border-gray-300 dark:border-gray-600 text-[10px] font-bold text-gray-600 dark:text-gray-400 pl-1"
                 style={{ left: `${(i / slideDuration) * 100}%` }}
               >
                 {i}s

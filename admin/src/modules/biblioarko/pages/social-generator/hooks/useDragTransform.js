@@ -11,7 +11,8 @@ export const useDragTransform = (onUpdateElement, scale = 1, globalSetters = {})
   const state = {
     imagePositions, imageSizes, imageRotations,
     contentPositions, contentRotations,
-    extraElements
+    extraElements,
+    setImagePositions
   };
 
   const draggingRef = useRef(null);

@@ -119,19 +119,29 @@ export const SlideCanvas = ({
           const vStart = pos.startTime !== undefined ? pos.startTime : 0;
           const vEnd = pos.endTime !== undefined ? pos.endTime : 9999;
           
+          const speed = pos.speed || 1.0;
+          const trimStart = pos.trimStart || 0;
+          const trimEnd = pos.trimEnd !== undefined ? pos.trimEnd : 9999;
+          
           const vidNode = document.getElementById(`video-${imgId}`);
           if (vidNode) {
+            vidNode.playbackRate = speed;
+            
             if (currentTime >= vStart && currentTime <= vEnd) {
-              if (vidNode.paused) {
-                vidNode.currentTime = currentTime - vStart;
-                vidNode.play().catch(e => console.log('video play error', e));
-              } else if (Math.abs(vidNode.currentTime - (currentTime - vStart)) > 0.5) {
-                vidNode.currentTime = currentTime - vStart;
+              const targetTime = trimStart + (currentTime - vStart) * speed;
+              
+              if (targetTime <= trimEnd) {
+                if (vidNode.paused) {
+                  vidNode.currentTime = targetTime;
+                  vidNode.play().catch(e => console.log('video play error', e));
+                } else if (Math.abs(vidNode.currentTime - targetTime) > 0.5) {
+                  vidNode.currentTime = targetTime;
+                }
+              } else {
+                if (!vidNode.paused) vidNode.pause();
               }
             } else {
-              if (!vidNode.paused) {
-                vidNode.pause();
-              }
+              if (!vidNode.paused) vidNode.pause();
             }
           }
         }
