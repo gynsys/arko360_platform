@@ -338,12 +338,25 @@ export const SlideCanvas = ({
                   onMouseDown={(e) => handleTransformStart(e, index, 'rotate', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}
                   onTouchStart={(e) => handleTransformStart(e, index, 'rotate', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}><FiRefreshCw size={12}/></div>
                 
-                {/* Resize Handle (Invisible Icon) */}
+                {/* Resize Handle */}
                 <div className="absolute -bottom-3 -right-3 w-8 h-8 flex items-center justify-center cursor-se-resize z-50 group" 
                   onMouseDown={(e) => handleTransformStart(e, index, 'resize', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}
                   onTouchStart={(e) => handleTransformStart(e, index, 'resize', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}>
                   <div className="w-4 h-4 bg-indigo-600 rounded-full border-2 border-white shadow-lg transition-transform group-hover:scale-125"></div>
                 </div>
+
+                {/* Edit Video Handle */}
+                {img && img.startsWith('data:video') && (
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-indigo-600/90 rounded-full shadow-xl border-2 border-white flex items-center justify-center cursor-pointer text-white z-50 hover:scale-110 hover:bg-indigo-500 transition-all"
+                    onMouseDown={(e) => { e.stopPropagation(); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onEditVideo) onEditVideo(index, imgIdx, img);
+                    }}
+                    title="Editar Video (Recortar/Velocidad)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                  </div>
+                )}
               </>
             )}
           </div>

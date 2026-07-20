@@ -722,13 +722,6 @@ export default function SocialGenerator() {
   const handleAddImage = (index, e) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
-      if (file.type.startsWith('video/')) {
-        setPendingVideoFile(file);
-        setPendingVideoTarget({ index, isVideoSlide: false });
-        // Clear input value so same file can be selected again
-        if (e.target) e.target.value = null;
-        return;
-      }
       const reader = new FileReader();
       reader.onloadend = () => {
         pushToHistory(generatedContent);
@@ -738,6 +731,7 @@ export default function SocialGenerator() {
         setGeneratedContent({ ...generatedContent, slides: newSlides });
       };
       reader.readAsDataURL(file);
+      if (e.target) e.target.value = null;
     }
   };
 
@@ -753,13 +747,6 @@ export default function SocialGenerator() {
   const handleAddImageToVideoSlide = (index, e) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
-      if (file.type.startsWith('video/')) {
-        setPendingVideoFile(file);
-        setPendingVideoTarget({ index, isVideoSlide: true });
-        // Clear input value so same file can be selected again
-        if (e.target) e.target.value = null;
-        return;
-      }
       const reader = new FileReader();
       reader.onloadend = () => {
         const newSlides = [...generatedContent.video_slides];
@@ -768,7 +755,22 @@ export default function SocialGenerator() {
         setGeneratedContent({ ...generatedContent, video_slides: newSlides });
       };
       reader.readAsDataURL(file);
+      if (e.target) e.target.value = null;
     }
+  };
+
+  const handleEditVideo = (slideIndex, imgIndex, dataUrl) => {
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    const file = new File([u8arr], 'video.mp4', { type: mime });
+    setPendingVideoTarget({ index: slideIndex, isVideoSlide: activeTab === 'video', imgIndex: imgIndex });
+    setPendingVideoFile(file);
   };
 
 
@@ -1017,6 +1019,7 @@ export default function SocialGenerator() {
                             isVideoMode={activeTab === 'video'}
                             showGrid={showGrid}
                             currentTime={videoTime}
+                            onEditVideo={handleEditVideo}
                           />
                         </div>
                       </div>
@@ -1325,11 +1328,17 @@ export default function SocialGenerator() {
           onApply={(processedBlob) => {
             const reader = new FileReader();
             reader.onloadend = () => {
-              const { index, isVideoSlide } = pendingVideoTarget;
+              const { index, isVideoSlide, imgIndex } = pendingVideoTarget;
               const slidesProp = isVideoSlide ? 'video_slides' : 'slides';
               const newSlides = [...generatedContent[slidesProp]];
               if (!newSlides[index].customImages) newSlides[index].customImages = [];
-              newSlides[index].customImages.push(reader.result);
+              
+              if (imgIndex !== undefined) {
+                newSlides[index].customImages[imgIndex] = reader.result;
+              } else {
+                newSlides[index].customImages.push(reader.result);
+              }
+              
               setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
               setPendingVideoFile(null);
               setPendingVideoTarget(null);
