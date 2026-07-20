@@ -87,6 +87,7 @@ export const SlideCanvas = ({
   isVideoMode = false,
   showGrid = false,
   currentTime = 0,
+  isPlaying = false,
   onEditVideo
 }) => {
   const { 
@@ -102,7 +103,7 @@ export const SlideCanvas = ({
 
   const {
     extraElements, selectElement, selectedExtraId, selectedImageId, selectedContentIndex,
-    selectedLogo, selectedDoctorName, isPreview, isExport
+    selectedLogo, selectedDoctorName
   } = canvas;
 
   const containerRef = useRef(null);
