@@ -22,20 +22,38 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
     const loadFFmpeg = async () => {
       try {
         setLoading(true);
+        if (typeof SharedArrayBuffer === 'undefined' || !window.crossOriginIsolated) {
+            throw new Error("El navegador no está aislado (SharedArrayBuffer no disponible). Revisa los headers COOP/COEP.");
+        }
+        
         const ffmpegInstance = new FFmpeg();
         ffmpegInstance.on('progress', ({ progress }) => {
           setProgress(progress * 100);
         });
+        
         const baseURL = `${window.location.origin}/ffmpeg`;
+        
+        // Función personalizada para crear Blob y verificar 404
+        const createBlob = async (url, type) => {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`HTTP Error ${res.status} fetching ${url}`);
+          const buf = await res.arrayBuffer();
+          return URL.createObjectURL(new Blob([buf], { type }));
+        };
+
+        const coreBlob = await createBlob(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+        const wasmBlob = await createBlob(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+
         await ffmpegInstance.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+          coreURL: coreBlob,
+          wasmURL: wasmBlob,
         });
+        
         setFFmpeg(ffmpegInstance);
         setReady(true);
       } catch (err) {
         console.error('Error loading FFmpeg:', err);
-        setError('Error al cargar el motor de video (FFmpeg). Asegúrate de tener buena conexión.');
+        setError(`Error al inicializar FFmpeg: ${err.message}`);
       } finally {
         setLoading(false);
       }
