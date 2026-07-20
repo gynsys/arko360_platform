@@ -116,13 +116,26 @@ export default function SocialGenerator() {
     if (isPlaying && activeTab === 'video') {
       interval = setInterval(() => {
         const vid = document.querySelector('video');
-        if (vid) setVideoTime(vid.currentTime);
+        if (vid && vid.src && !vid.src.includes('blob:')) {
+           // We might have a video, but let's check if we actually want to sync to a specific one, or just general time.
+           // Actually, to be safe, if we have a real playing video, use it, otherwise increment
+           if (!vid.paused && !vid.ended) {
+              setVideoTime(vid.currentTime);
+              return;
+           }
+        }
+        
+        // Manual increment for static slides or paused videos during preview
+        setVideoTime(prev => {
+          const nextTime = prev + 0.1;
+          return nextTime >= slideDuration ? 0 : nextTime;
+        });
       }, 100);
     } else {
       setVideoTime(0);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, activeTab]);
+  }, [isPlaying, activeTab, slideDuration]);
 
   const handleUpdateTiming = (trackId, start, end) => {
     if (!generatedContent) return;

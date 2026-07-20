@@ -146,24 +146,28 @@ export const TimelinePanel = ({ slide, slideDuration, currentTime, onUpdateTimin
 
           {/* Tracks */}
           <div className="relative z-10 space-y-1 pb-2 max-h-40 overflow-y-auto pr-2">
-            <Track 
-              id="title" 
-              label="Título" 
-              icon={<FiType />} 
-              startTime={tStart} 
-              endTime={tEnd} 
-              maxDuration={slideDuration}
-              onChange={onUpdateTiming}
-            />
-            <Track 
-              id="content" 
-              label="Contenido" 
-              icon={<FiAlignLeft />} 
-              startTime={cStart} 
-              endTime={cEnd} 
-              maxDuration={slideDuration}
-              onChange={onUpdateTiming}
-            />
+            {slide.title && String(slide.title).trim() !== '' && (
+              <Track 
+                id="title" 
+                label="Título" 
+                icon={<FiType />} 
+                startTime={tStart} 
+                endTime={tEnd} 
+                maxDuration={slideDuration}
+                onChange={onUpdateTiming}
+              />
+            )}
+            {(slide.content || slide.text) && String(slide.content || slide.text).trim() !== '' && (
+              <Track 
+                id="content" 
+                label="Contenido" 
+                icon={<FiAlignLeft />} 
+                startTime={cStart} 
+                endTime={cEnd} 
+                maxDuration={slideDuration}
+                onChange={onUpdateTiming}
+              />
+            )}
             {extraElements.map((el) => (
               <Track 
                 key={el.id}
