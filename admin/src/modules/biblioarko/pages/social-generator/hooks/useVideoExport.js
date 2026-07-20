@@ -216,37 +216,17 @@ export const useVideoExport = (
       const videoStream = outputCanvas.captureStream(30);
       let combinedStream = videoStream;
 
-      const audioSrc = getActiveAudioSrc();
-      if (audioRef.current && audioSrc) {
+      if (audioRef.current) {
         try {
-          audioRef.current.src = audioSrc;
-          audioRef.current.load();
-          await Promise.race([
-            new Promise(resolve => {
-              if (audioRef.current) audioRef.current.oncanplaythrough = resolve;
-              else resolve();
-            }),
-            new Promise(resolve => setTimeout(resolve, 5000)),
+          const audioStream = audioRef.current.captureStream
+            ? audioRef.current.captureStream()
+            : audioRef.current.mozCaptureStream();
+          combinedStream = new MediaStream([
+            ...videoStream.getVideoTracks(),
+            ...audioStream.getAudioTracks(),
           ]);
-          if (audioRef.current) {
-            audioRef.current.currentTime = 0;
-            const playPromise = audioRef.current.play();
-            if (playPromise !== undefined) {
-              await playPromise.catch(e => console.log('[Arko360] Audio play prevented:', e));
-            }
-            // Pequeña pausa para asegurar que el buffer de audio haya iniciado
-            await new Promise(r => setTimeout(r, 150));
-            const audioStream = audioRef.current.captureStream
-              ? audioRef.current.captureStream()
-              : audioRef.current.mozCaptureStream();
-            combinedStream = new MediaStream([
-              ...videoStream.getVideoTracks(),
-              ...audioStream.getAudioTracks(),
-            ]);
-          }
         } catch (audioErr) {
-          console.error('[Arko360] Error setting up audio:', audioErr);
-          combinedStream = videoStream;
+          console.error('[Arko360] Error setting up audio stream:', audioErr);
         }
       }
 
@@ -361,6 +341,18 @@ export const useVideoExport = (
         });
 
         const framesPerSlide = fps * slideDurations[i];
+
+        const slide = scenes[i];
+        const audioSrc = getActiveAudioSrc(slide.audio, slide.customAudioUrl);
+        if (audioRef.current) {
+          if (audioSrc) {
+            audioRef.current.src = audioSrc;
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(e => console.log('Audio play error', e));
+          } else {
+            audioRef.current.pause();
+          }
+        }
 
         for (let f = 0; f < framesPerSlide; f++) {
           ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);

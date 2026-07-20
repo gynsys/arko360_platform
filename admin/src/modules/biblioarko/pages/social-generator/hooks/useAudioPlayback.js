@@ -3,9 +3,10 @@ import { AUDIO_TRACKS } from '../constants';
 import { blogService } from '../../../services/blogService';
 import { getImageUrl } from '../../../../../lib/imageUtils';
 
-export const useAudioPlayback = (activeTab, isPlaying, setIsPlaying, showToast) => {
-  const [selectedAudio, setSelectedAudio] = useState(null);
-  const [customAudioUrl, setCustomAudioUrl] = useState(null);
+export const useAudioPlayback = (
+  activeTab, isPlaying, setIsPlaying, showToast,
+  selectedAudio, setSelectedAudio, customAudioUrl, setCustomAudioUrl, currentVideoSlide
+) => {
   const [prelisteningTrack, setPrelisteningTrack] = useState(null);
   const [userAudios, setUserAudios] = useState([]);
   const [loadingAudios, setLoadingAudios] = useState(false);
@@ -80,15 +81,15 @@ export const useAudioPlayback = (activeTab, isPlaying, setIsPlaying, showToast) 
     }
   };
 
-  const getActiveAudioSrc = () => {
-    if (!selectedAudio) return '';
-    if (selectedAudio === 'Custom' && customAudioUrl) return customAudioUrl;
-    if (selectedAudio && selectedAudio.startsWith('User-')) {
-      const audioId = parseInt(selectedAudio.split('-')[1]);
+  const getActiveAudioSrc = (overrideAudio = selectedAudio, overrideCustomUrl = customAudioUrl) => {
+    if (!overrideAudio) return '';
+    if (overrideAudio === 'Custom' && overrideCustomUrl) return overrideCustomUrl;
+    if (overrideAudio && overrideAudio.startsWith('User-')) {
+      const audioId = parseInt(overrideAudio.split('-')[1]);
       const audio = userAudios.find(a => a.id === audioId);
       if (audio) return getImageUrl(audio.url);
     }
-    return getImageUrl(AUDIO_TRACKS[selectedAudio] || AUDIO_TRACKS['Medical']);
+    return getImageUrl(AUDIO_TRACKS[overrideAudio] || AUDIO_TRACKS['Medical']);
   };
 
   // Main Audio Effect
@@ -96,21 +97,16 @@ export const useAudioPlayback = (activeTab, isPlaying, setIsPlaying, showToast) 
     if (audioRef.current) {
       if (activeTab === 'video' && isPlaying && selectedAudio) {
         const src = getActiveAudioSrc();
-        if (src) {
+        if (src && audioRef.current.src !== src) {
           audioRef.current.src = src;
           audioRef.current.load();
-          const playPromise = audioRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(error => {
-              console.log("[Arko360] Autoplay prevented");
-            });
-          }
+          // We let index.jsx's preview interval handle the .play() and .pause() to support audioStartTime and audioEndTime
         }
-      } else {
+      } else if (!isPlaying) {
         audioRef.current.pause();
       }
     }
-  }, [activeTab, isPlaying, selectedAudio, customAudioUrl, userAudios]);
+  }, [activeTab, isPlaying, selectedAudio, customAudioUrl, userAudios, currentVideoSlide]);
 
   // Prelistening Effect
   useEffect(() => {

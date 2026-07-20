@@ -116,26 +116,44 @@ export default function SocialGenerator() {
     if (isPlaying && activeTab === 'video') {
       interval = setInterval(() => {
         const vid = document.querySelector('video');
+        let currentT = 0;
         if (vid && vid.src && !vid.src.includes('blob:')) {
-           // We might have a video, but let's check if we actually want to sync to a specific one, or just general time.
-           // Actually, to be safe, if we have a real playing video, use it, otherwise increment
            if (!vid.paused && !vid.ended) {
-              setVideoTime(vid.currentTime);
-              return;
+              currentT = vid.currentTime;
            }
         }
         
-        // Manual increment for static slides or paused videos during preview
         setVideoTime(prev => {
-          const nextTime = prev + 0.1;
+          const nextTime = currentT > 0 ? currentT : prev + 0.1;
+
+          // Sync Audio with Timeline
+          if (audioRef?.current) {
+            const slide = generatedContent?.video_slides?.[currentVideoSlide];
+            if (slide && slide.audio) {
+              const aStart = slide.audioStartTime !== undefined ? slide.audioStartTime : 0;
+              const aEnd = slide.audioEndTime !== undefined ? slide.audioEndTime : slideDuration;
+              
+              if (nextTime >= aStart && nextTime <= aEnd) {
+                if (audioRef.current.paused) {
+                  audioRef.current.play().catch(e => console.log('Audio sync play error', e));
+                }
+              } else {
+                if (!audioRef.current.paused) {
+                  audioRef.current.pause();
+                }
+              }
+            }
+          }
+
           return nextTime >= slideDuration ? 0 : nextTime;
         });
       }, 100);
     } else {
       setVideoTime(0);
+      if (audioRef?.current && !audioRef.current.paused) audioRef.current.pause();
     }
     return () => clearInterval(interval);
-  }, [isPlaying, activeTab, slideDuration]);
+  }, [isPlaying, activeTab, slideDuration, currentVideoSlide, generatedContent, audioRef]);
 
   const handleUpdateTiming = (trackId, start, end) => {
     if (!generatedContent) return;
@@ -149,6 +167,9 @@ export default function SocialGenerator() {
     } else if (trackId === 'content') {
       slide.contentStartTime = start;
       slide.contentEndTime = end;
+    } else if (trackId === 'audio') {
+      slide.audioStartTime = start;
+      slide.audioEndTime = end;
     } else if (trackId.startsWith('custom-')) {
       const id = trackId.replace('custom-', '');
       const txt = slide.customTexts?.find(t => t.id === id);
@@ -181,12 +202,32 @@ export default function SocialGenerator() {
     designer.canvas.setCurrentSlidePage(0);
   }, [activeTab]);
 
+  const currentVideoSlideData = activeTab === 'video' ? (generatedContent?.video_slides?.[currentVideoSlide] || {}) : {};
+  const selectedAudio = currentVideoSlideData.audio || null;
+  const customAudioUrl = currentVideoSlideData.customAudioUrl || null;
+
+  const setSelectedAudio = (val) => {
+    if (activeTab !== 'video' || !generatedContent?.video_slides) return;
+    const newSlides = [...generatedContent.video_slides];
+    newSlides[currentVideoSlide] = { ...newSlides[currentVideoSlide], audio: val };
+    setGeneratedContent({ ...generatedContent, video_slides: newSlides });
+  };
+  
+  const setCustomAudioUrl = (val) => {
+    if (activeTab !== 'video' || !generatedContent?.video_slides) return;
+    const newSlides = [...generatedContent.video_slides];
+    newSlides[currentVideoSlide] = { ...newSlides[currentVideoSlide], customAudioUrl: val };
+    setGeneratedContent({ ...generatedContent, video_slides: newSlides });
+  };
+
   const { 
-    audioRef, previewAudioRef, selectedAudio, setSelectedAudio, 
-    customAudioUrl, setCustomAudioUrl, prelisteningTrack, setPrelisteningTrack, 
+    audioRef, previewAudioRef, prelisteningTrack, setPrelisteningTrack, 
     getActiveAudioSrc, userAudios, loadingAudios, handleUploadAudio, handleDeleteAudio,
     volume, setVolume
-  } = useAudioPlayback(activeTab, isPlaying, setIsPlaying, showToast);
+  } = useAudioPlayback(
+    activeTab, isPlaying, setIsPlaying, showToast,
+    selectedAudio, setSelectedAudio, customAudioUrl, setCustomAudioUrl, currentVideoSlide
+  );
 
 
 
@@ -365,8 +406,6 @@ export default function SocialGenerator() {
       setGeneratedContent(prev => ({ ...prev, video_slides: result.video_slides, music_suggestion: result.music_suggestion, type: 'video' }));
       setActiveTab('video');
       setCurrentVideoSlide(0);
-      setSelectedAudio(null);
-      setCustomAudioUrl(null);
       showToast('¡Carrusel convertido a video!', 'success');
     } catch (error) {
       showToast('Error al convertir a video', 'error');
@@ -378,6 +417,14 @@ export default function SocialGenerator() {
   const handleLoadProject = (project) => {
     const content = designer.canvas.loadProject(project);
     if (content) {
+      if (content.videoSettings?.selectedAudio && content.video_slides) {
+        content.video_slides = content.video_slides.map(slide => ({
+          ...slide,
+          audio: slide.audio || content.videoSettings.selectedAudio,
+          customAudioUrl: slide.customAudioUrl || content.videoSettings.customAudioUrl
+        }));
+      }
+
       setGeneratedContent(content);
       if (content.transformerState) {
         transformer.loadState(content.transformerState);
@@ -386,9 +433,7 @@ export default function SocialGenerator() {
       }
       if (content.videoSettings) {
         if (content.videoSettings.videoStyles) setVideoStyles(content.videoSettings.videoStyles);
-        if (content.videoSettings.selectedAudio) setSelectedAudio(content.videoSettings.selectedAudio);
         if (content.videoSettings.slideDuration) setSlideDuration(content.videoSettings.slideDuration);
-        if (content.videoSettings.customAudioUrl) setCustomAudioUrl(content.videoSettings.customAudioUrl);
         setActiveTab(content.type === 'video' || content.video_slides ? 'video' : 'carousel');
       } else {
         setActiveTab('carousel');
@@ -438,8 +483,6 @@ export default function SocialGenerator() {
         format: 'reel'
       });
       setLastGeneratedBlogContent(null);
-      setSelectedAudio(null);
-      setCustomAudioUrl(null);
       setPrelisteningTrack(null);
       transformer.loadState({});
       showToast('Nuevo proyecto iniciado', 'success');
@@ -488,7 +531,7 @@ export default function SocialGenerator() {
     setSavingType('save');
     startSaveProgress();
     try {
-      const videoSettings = { videoStyles, selectedAudio, slideDuration, customAudioUrl };
+      const videoSettings = { videoStyles, slideDuration };
       const contentToSave = { ...generatedContent, videoSettings, transformerState: transformer.state };
       const ok = await designer.canvas.saveProject(activeProjectName, contentToSave, activeProjectId);
       
@@ -519,7 +562,7 @@ export default function SocialGenerator() {
     setSavingType('saveAs');
     startSaveProgress();
     try {
-      const videoSettings = { videoStyles, selectedAudio, slideDuration, customAudioUrl };
+      const videoSettings = { videoStyles, slideDuration };
       const contentToSave = { ...generatedContent, videoSettings, transformerState: transformer.state };
       const ok = await designer.canvas.saveProject(name, contentToSave, null);
       
@@ -692,7 +735,7 @@ export default function SocialGenerator() {
     // 3. Si hay un proyecto guardado activo, persistir el cambio en el servidor en segundo plano
     if (activeProjectId && activeProjectName) {
       try {
-        const videoSettings = { videoStyles, selectedAudio, slideDuration, customAudioUrl };
+        const videoSettings = { videoStyles, slideDuration };
         const contentToSave = { ...generatedContent, videoSettings, transformerState: transformer.state };
         const projectData = {
           name: activeProjectName,

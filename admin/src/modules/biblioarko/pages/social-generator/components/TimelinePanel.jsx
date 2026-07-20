@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiClock, FiAlignLeft, FiType, FiImage } from 'react-icons/fi';
+import { FiClock, FiAlignLeft, FiType, FiImage, FiMusic } from 'react-icons/fi';
 
 const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange }) => {
   const trackRef = useRef(null);
@@ -146,6 +146,17 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
 
           {/* Tracks */}
           <div className="relative z-10 space-y-1 pb-2 max-h-40 overflow-y-auto pr-2">
+            {slide.audio && (
+              <Track 
+                id="audio" 
+                label={slide.audio.startsWith('User-') ? 'Audio Subido' : (slide.audio === 'Custom' ? 'Audio Personalizado' : `Audio: ${slide.audio}`)} 
+                icon={<FiMusic className="text-pink-500" />} 
+                startTime={slide.audioStartTime !== undefined ? slide.audioStartTime : 0} 
+                endTime={slide.audioEndTime !== undefined ? slide.audioEndTime : slideDuration} 
+                maxDuration={slideDuration}
+                onChange={onUpdateTiming}
+              />
+            )}
             {slide.title && String(slide.title).trim() !== '' && (
               <Track 
                 id="title" 
