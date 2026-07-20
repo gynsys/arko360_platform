@@ -85,7 +85,8 @@ export const SlideCanvas = ({
   onAddImage,
   onRemoveImage,
   isVideoMode = false,
-  showGrid = false
+  showGrid = false,
+  currentTime = 0
 }) => {
   const containerRef = useRef(null);
   const isSelected = !isPreview && !isExport && (canvas.currentSlidePage === index || isVideoMode);
