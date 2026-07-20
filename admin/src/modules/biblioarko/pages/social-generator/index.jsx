@@ -111,6 +111,33 @@ export default function SocialGenerator() {
     if (activeTab === 'carousel' && isPlaying) setIsPlaying(false);
   }, [activeTab]);
 
+  const currentVideoSlideData = activeTab === 'video' ? (generatedContent?.video_slides?.[currentVideoSlide] || {}) : {};
+  const selectedAudio = currentVideoSlideData.audio || null;
+  const customAudioUrl = currentVideoSlideData.customAudioUrl || null;
+
+  const setSelectedAudio = (val) => {
+    if (activeTab !== 'video' || !generatedContent?.video_slides) return;
+    const newSlides = [...generatedContent.video_slides];
+    newSlides[currentVideoSlide] = { ...newSlides[currentVideoSlide], audio: val };
+    setGeneratedContent({ ...generatedContent, video_slides: newSlides });
+  };
+  
+  const setCustomAudioUrl = (val) => {
+    if (activeTab !== 'video' || !generatedContent?.video_slides) return;
+    const newSlides = [...generatedContent.video_slides];
+    newSlides[currentVideoSlide] = { ...newSlides[currentVideoSlide], customAudioUrl: val };
+    setGeneratedContent({ ...generatedContent, video_slides: newSlides });
+  };
+
+  const { 
+    audioRef, previewAudioRef, prelisteningTrack, setPrelisteningTrack, 
+    getActiveAudioSrc, userAudios, loadingAudios, handleUploadAudio, handleDeleteAudio,
+    volume, setVolume
+  } = useAudioPlayback(
+    activeTab, isPlaying, setIsPlaying, showToast,
+    selectedAudio, setSelectedAudio, customAudioUrl, setCustomAudioUrl, currentVideoSlide
+  );
+
   useEffect(() => {
     let interval;
     if (isPlaying && activeTab === 'video') {
@@ -201,33 +228,6 @@ export default function SocialGenerator() {
     setEditingIndex(null);
     designer.canvas.setCurrentSlidePage(0);
   }, [activeTab]);
-
-  const currentVideoSlideData = activeTab === 'video' ? (generatedContent?.video_slides?.[currentVideoSlide] || {}) : {};
-  const selectedAudio = currentVideoSlideData.audio || null;
-  const customAudioUrl = currentVideoSlideData.customAudioUrl || null;
-
-  const setSelectedAudio = (val) => {
-    if (activeTab !== 'video' || !generatedContent?.video_slides) return;
-    const newSlides = [...generatedContent.video_slides];
-    newSlides[currentVideoSlide] = { ...newSlides[currentVideoSlide], audio: val };
-    setGeneratedContent({ ...generatedContent, video_slides: newSlides });
-  };
-  
-  const setCustomAudioUrl = (val) => {
-    if (activeTab !== 'video' || !generatedContent?.video_slides) return;
-    const newSlides = [...generatedContent.video_slides];
-    newSlides[currentVideoSlide] = { ...newSlides[currentVideoSlide], customAudioUrl: val };
-    setGeneratedContent({ ...generatedContent, video_slides: newSlides });
-  };
-
-  const { 
-    audioRef, previewAudioRef, prelisteningTrack, setPrelisteningTrack, 
-    getActiveAudioSrc, userAudios, loadingAudios, handleUploadAudio, handleDeleteAudio,
-    volume, setVolume
-  } = useAudioPlayback(
-    activeTab, isPlaying, setIsPlaying, showToast,
-    selectedAudio, setSelectedAudio, customAudioUrl, setCustomAudioUrl, currentVideoSlide
-  );
 
 
 
