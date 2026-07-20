@@ -9,6 +9,34 @@ Este documento registra la arquitectura, decisiones técnicas y el historial de 
 - **Aislamiento de Autenticación:** GynSys utiliza su propia tabla de `doctors` y `users`. Arko 360 utiliza un JWT propio (`arko_token`) emitido y validado exclusivamente contra la tabla `arko_admins`.
 - **Aislamiento de Frontend:** Las rutas están separadas bajo `/arko-admin/` y los servicios API apuntan a `/api/v1/arko/`.
 
+### 1.1 Arquitectura de Despliegue y Red (El Proxy Global) 🌍
+**¡ATENCIÓN!** Es crucial entender cómo se enrutan las peticiones en el VPS de producción para evitar confusiones al configurar headers (CORS, COOP/COEP) o certificados SSL.
+
+El VPS (Digital Ocean) NO utiliza el `nginx` del sistema operativo (host) para escuchar en los puertos 80 y 443. En su lugar, utiliza un contenedor Docker llamado **`appgynsys-nginx-1`** que actúa como **Proxy Global Reverso** para todos los proyectos (GynSys, Arko360, etc.).
+
+```
+Internet (Puertos 80 / 443)
+       │
+       ▼
+[appgynsys-nginx-1] (Contenedor Docker Global - Proxy Inverso)
+       │  - Maneja los certificados SSL (Let's Encrypt).
+       │  - Aquí se deben agregar configuraciones globales de headers HTTP 
+       │    como `Cross-Origin-Opener-Policy` para WebAssembly/SharedArrayBuffer.
+       │  - Archivo de config real: `/etc/nginx/conf.d/arko360.conf` (dentro del contenedor)
+       │
+       ├─────────────────────────────────┐
+       ▼                                 ▼
+[arko360_platform-nginx-1]        [appgynsys-backend-1]
+(Contenedor Nginx de Arko)        (Contenedor de GynSys)
+- Solo sirve los estáticos.       - Otras aplicaciones.
+- Sus headers se pierden al
+  pasar por el proxy global.
+```
+
+**Consecuencias de esta arquitectura:**
+1. Editar archivos en `/etc/nginx/sites-available` del host Linux **no tiene ningún efecto**, ya que el host no escucha en los puertos web.
+2. Si un feature requiere modificar headers HTTP (como FFmpeg WASM), los headers **deben** inyectarse copiando, editando y regresando el archivo de configuración dentro del contenedor `appgynsys-nginx-1`, seguido de un `docker exec appgynsys-nginx-1 nginx -s reload`.
+
 ---
 
 ## 2. Historial de Iteraciones y Desafíos Resueltos ⚙️
