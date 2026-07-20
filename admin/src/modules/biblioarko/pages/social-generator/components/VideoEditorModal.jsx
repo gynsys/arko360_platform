@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { FiX, FiCheck, FiRefreshCw, FiScissors, FiClock } from 'react-icons/fi';
 
 const VideoEditorModal = ({ file, onClose, onApply }) => {
@@ -28,8 +28,8 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
         });
         const baseURL = `${window.location.origin}/ffmpeg`;
         await ffmpegInstance.load({
-          coreURL: `${baseURL}/ffmpeg-core.js`,
-          wasmURL: `${baseURL}/ffmpeg-core.wasm`,
+          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
         });
         setFFmpeg(ffmpegInstance);
         setReady(true);
