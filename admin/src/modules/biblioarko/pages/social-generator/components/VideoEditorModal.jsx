@@ -39,11 +39,12 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
 
         const coreBlob = await createBlob(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
         const wasmBlob = await createBlob(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+        const workerBlob = await createBlob(`${baseURL}/worker.js`, 'text/javascript');
 
         await ffmpegInstance.load({
           coreURL: coreBlob,
           wasmURL: wasmBlob,
-          classWorkerURL: `${baseURL}/worker.js`,
+          classWorkerURL: workerBlob,
         });
         
         setFFmpeg(ffmpegInstance);

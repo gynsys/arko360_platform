@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { FiMaximize2, FiEdit3, FiPlusCircle, FiCopy, FiCheck, FiTrash2, FiRefreshCw, FiLayers, FiImage } from 'react-icons/fi';
 import { SVGIcons } from '../lib/svgIcons';
 
@@ -109,6 +109,35 @@ export const SlideCanvas = ({
   } = canvas;
 
   const { handleDragStart, handleTransformStart } = handlers;
+
+  useEffect(() => {
+    if (isVideoMode && currentTime !== undefined) {
+      slide?.customImages?.forEach((img, imgIdx) => {
+        if (img && img.startsWith('data:video')) {
+          const imgId = `${index}-${imgIdx}`;
+          const pos = imagePositions[imgId] || {};
+          const vStart = pos.startTime !== undefined ? pos.startTime : 0;
+          const vEnd = pos.endTime !== undefined ? pos.endTime : 9999;
+          
+          const vidNode = document.getElementById(`video-${imgId}`);
+          if (vidNode) {
+            if (currentTime >= vStart && currentTime <= vEnd) {
+              if (vidNode.paused) {
+                vidNode.currentTime = currentTime - vStart;
+                vidNode.play().catch(e => console.log('video play error', e));
+              } else if (Math.abs(vidNode.currentTime - (currentTime - vStart)) > 0.5) {
+                vidNode.currentTime = currentTime - vStart;
+              }
+            } else {
+              if (!vidNode.paused) {
+                vidNode.pause();
+              }
+            }
+          }
+        }
+      });
+    }
+  }, [currentTime, isVideoMode, slide, imagePositions, index]);
 
   return (
     <div 
