@@ -114,7 +114,7 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange }) =
   );
 };
 
-export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, onUpdateTiming, extraElements = [], imagePositions = {} }) => {
+export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, onUpdateTiming, onScrub, extraElements = [], imagePositions = {} }) => {
   if (!slide) return null;
 
   const tStart = slide.titleStartTime !== undefined ? slide.titleStartTime : 0;
@@ -132,7 +132,26 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
         
         <div className="relative">
           {/* Timeline Ruler */}
-          <div className="flex ml-[6.5rem] mb-2 border-b border-gray-200 dark:border-gray-700 relative h-4">
+          <div 
+            className="flex ml-[6.5rem] mb-2 border-b border-gray-200 dark:border-gray-700 relative h-6 cursor-text"
+            onPointerDown={(e) => {
+              if (onScrub) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const time = Math.max(0, Math.min(slideDuration, (x / rect.width) * slideDuration));
+                onScrub(time);
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }
+            }}
+            onPointerMove={(e) => {
+              if (e.buttons === 1 && onScrub) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const time = Math.max(0, Math.min(slideDuration, (x / rect.width) * slideDuration));
+                onScrub(time);
+              }
+            }}
+          >
             {Array.from({ length: Math.ceil(slideDuration) + 1 }).map((_, i) => (
               <div 
                 key={i} 

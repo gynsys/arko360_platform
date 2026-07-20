@@ -142,16 +142,8 @@ export default function SocialGenerator() {
     let interval;
     if (isPlaying && activeTab === 'video') {
       interval = setInterval(() => {
-        const vid = document.querySelector('video');
-        let currentT = 0;
-        if (vid && vid.src && !vid.src.includes('blob:')) {
-           if (!vid.paused && !vid.ended) {
-              currentT = vid.currentTime;
-           }
-        }
-        
         setVideoTime(prev => {
-          const nextTime = currentT > 0 ? currentT : prev + 0.1;
+          const nextTime = prev + 0.1;
 
           // Sync Audio with Timeline
           if (audioRef?.current) {
@@ -1150,6 +1142,7 @@ export default function SocialGenerator() {
                           slideDuration={slideDuration}
                           currentTime={videoTime}
                           onUpdateTiming={handleUpdateTiming}
+                          onScrub={setVideoTime}
                           extraElements={designer.canvas.extraElements[designer.canvas.currentSlidePage] || []}
                           imagePositions={transformer.state.imagePositions || {}}
                         />
