@@ -237,7 +237,7 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
                 </>
               ) : (
                 <>
-                  <FiCheck /> Aplicar y Usar
+                  <FiCheck /> Aplicar y Usar (R:{ready?'1':'0'} L:{loading?'1':'0'} E:{error?'1':'0'} F:{ffmpeg?'1':'0'})
                 </>
               )}
             </button>
