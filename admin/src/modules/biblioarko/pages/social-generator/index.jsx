@@ -1094,10 +1094,12 @@ export default function SocialGenerator() {
                       <div className="w-full mt-4">
                         <TimelinePanel 
                           slide={generatedContent.video_slides?.[designer.canvas.currentSlidePage]}
+                          slideIndex={designer.canvas.currentSlidePage}
                           slideDuration={slideDuration}
                           currentTime={videoTime}
                           onUpdateTiming={handleUpdateTiming}
                           extraElements={designer.canvas.extraElements[designer.canvas.currentSlidePage] || []}
+                          imagePositions={transformer.state.imagePositions || {}}
                         />
                       </div>
                     )}

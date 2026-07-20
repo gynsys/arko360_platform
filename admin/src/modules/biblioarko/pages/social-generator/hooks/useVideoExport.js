@@ -105,6 +105,13 @@ export const useVideoExport = (
           if (el.startTime !== undefined) timeEvents.push(el.startTime);
           if (el.endTime !== undefined) timeEvents.push(el.endTime);
         });
+        
+        slide.customImages?.forEach((img, imgIdx) => {
+          const imgId = `${i}-${imgIdx}`;
+          const pos = transformState?.imagePositions?.[imgId] || {};
+          if (pos.startTime !== undefined) timeEvents.push(pos.startTime);
+          if (pos.endTime !== undefined) timeEvents.push(pos.endTime);
+        });
 
         // Filtrar, ordenar y remover duplicados
         timeEvents = [...new Set(timeEvents.filter(t => t >= 0 && t <= maxVidDur))].sort((a, b) => a - b);
@@ -116,6 +123,12 @@ export const useVideoExport = (
         extraEls.forEach(el => {
           const node = slideNode.querySelector(`[data-export-id="extra-${el.id}"]`);
           if (node) extraNodes[el.id] = node;
+        });
+        const imgNodes = {};
+        slide.customImages?.forEach((img, imgIdx) => {
+          const imgId = `${i}-${imgIdx}`;
+          const node = slideNode.querySelector(`[data-export-id="img-${imgId}"]`);
+          if (node) imgNodes[imgId] = node;
         });
 
         for (let t = 0; t < timeEvents.length - 1; t++) {
@@ -143,6 +156,15 @@ export const useVideoExport = (
                 extraNodes[el.id].style.opacity = (mid >= eStart && mid <= eEnd) ? '1' : '0';
              }
           });
+          slide.customImages?.forEach((img, imgIdx) => {
+             const imgId = `${i}-${imgIdx}`;
+             if (imgNodes[imgId]) {
+                const pos = transformState?.imagePositions?.[imgId] || {};
+                const iStart = pos.startTime !== undefined ? pos.startTime : 0;
+                const iEnd = pos.endTime !== undefined ? pos.endTime : maxVidDur;
+                imgNodes[imgId].style.opacity = (mid >= iStart && mid <= iEnd) ? (pos.opacity !== undefined ? pos.opacity : '1') : '0';
+             }
+          });
 
           // Pequeña pausa para que el DOM aplique estilos
           await new Promise(resolve => setTimeout(resolve, 50));
@@ -167,6 +189,13 @@ export const useVideoExport = (
         if (titleNode) titleNode.style.opacity = '1';
         if (contentNode) contentNode.style.opacity = '1';
         extraEls.forEach(el => { if (extraNodes[el.id]) extraNodes[el.id].style.opacity = '1'; });
+        slide.customImages?.forEach((img, imgIdx) => {
+          const imgId = `${i}-${imgIdx}`;
+          if (imgNodes[imgId]) {
+            const pos = transformState?.imagePositions?.[imgId] || {};
+            imgNodes[imgId].style.opacity = pos.opacity !== undefined ? pos.opacity : '1';
+          }
+        });
 
         capturedFrames.push(snapshots.length > 0 ? snapshots : [{ start: 0, end: maxVidDur, canvas: null }]);
 

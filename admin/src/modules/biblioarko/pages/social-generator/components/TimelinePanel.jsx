@@ -114,7 +114,7 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange }) =
   );
 };
 
-export const TimelinePanel = ({ slide, slideDuration, currentTime, onUpdateTiming, extraElements = [] }) => {
+export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, onUpdateTiming, extraElements = [], imagePositions = {} }) => {
   if (!slide) return null;
 
   const tStart = slide.titleStartTime !== undefined ? slide.titleStartTime : 0;
@@ -180,6 +180,22 @@ export const TimelinePanel = ({ slide, slideDuration, currentTime, onUpdateTimin
                 onChange={onUpdateTiming}
               />
             ))}
+            {slide.customImages?.map((img, imgIdx) => {
+              const imgId = `${slideIndex}-${imgIdx}`;
+              const pos = imagePositions[imgId] || {};
+              return (
+                <Track
+                  key={imgId}
+                  id={`img-${imgId}`}
+                  label={`Imagen ${imgIdx + 1}`}
+                  icon={<FiType className="text-indigo-500" />} 
+                  startTime={pos.startTime !== undefined ? pos.startTime : 0}
+                  endTime={pos.endTime !== undefined ? pos.endTime : slideDuration}
+                  maxDuration={slideDuration}
+                  onChange={onUpdateTiming}
+                />
+              );
+            })}
           </div>
 
           {/* Playhead */}
