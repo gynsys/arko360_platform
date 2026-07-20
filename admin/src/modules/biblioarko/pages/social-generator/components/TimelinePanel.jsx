@@ -133,7 +133,7 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
         <div className="relative">
           {/* Timeline Ruler */}
           <div 
-            className="flex ml-[6.5rem] mb-2 border-b border-gray-200 dark:border-gray-700 relative h-6 cursor-text"
+            className="flex ml-[6.5rem] mb-2 border-b border-gray-200 dark:border-gray-700 relative h-6 cursor-text select-none"
             onPointerDown={(e) => {
               if (onScrub) {
                 const rect = e.currentTarget.getBoundingClientRect();

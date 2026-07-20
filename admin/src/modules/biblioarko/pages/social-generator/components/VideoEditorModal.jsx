@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiX, FiCheck, FiScissors, FiClock } from 'react-icons/fi';
 
-const VideoEditorModal = ({ file, onClose, onApply }) => {
+const VideoEditorModal = ({ file, initialState, onClose, onApply }) => {
   const videoRef = useRef(null);
   const [duration, setDuration] = useState(0);
-  const [startTime, setStartTime] = useState(0);
-  const [endTime, setEndTime] = useState(0);
-  const [speed, setSpeed] = useState(1);
+  const [startTime, setStartTime] = useState(initialState?.trimStart || 0);
+  const [endTime, setEndTime] = useState(initialState?.trimEnd || 0);
+  const [speed, setSpeed] = useState(initialState?.speed || 1);
   const [videoUrl, setVideoUrl] = useState(null);
 
   useEffect(() => {
@@ -26,8 +26,11 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-      setEndTime(videoRef.current.duration);
+      const dur = videoRef.current.duration;
+      setDuration(dur);
+      if (!initialState?.trimEnd) {
+        setEndTime(dur);
+      }
     }
   };
 

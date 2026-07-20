@@ -89,9 +89,6 @@ export const SlideCanvas = ({
   currentTime = 0,
   onEditVideo
 }) => {
-  const containerRef = useRef(null);
-  const isSelected = !isPreview && !isExport && (canvas.currentSlidePage === index || isVideoMode);
-  
   const { 
     imagePositions, imageSizes, imageRotations, 
     contentPositions, contentRotations 
@@ -105,8 +102,11 @@ export const SlideCanvas = ({
 
   const {
     extraElements, selectElement, selectedExtraId, selectedImageId, selectedContentIndex,
-    selectedLogo, selectedDoctorName
+    selectedLogo, selectedDoctorName, isPreview, isExport
   } = canvas;
+
+  const containerRef = useRef(null);
+  const isSelected = !isPreview && !isExport && (canvas.currentSlidePage === index || isVideoMode);
 
   const { handleDragStart, handleTransformStart } = handlers;
 
@@ -131,10 +131,15 @@ export const SlideCanvas = ({
               const targetTime = trimStart + (currentTime - vStart) * speed;
               
               if (targetTime <= trimEnd) {
-                if (vidNode.paused) {
-                  vidNode.currentTime = targetTime;
-                  vidNode.play().catch(e => console.log('video play error', e));
-                } else if (Math.abs(vidNode.currentTime - targetTime) > 0.5) {
+                if (isPlaying) {
+                  if (vidNode.paused) {
+                    vidNode.currentTime = targetTime;
+                    vidNode.play().catch(e => console.log('video play error', e));
+                  } else if (Math.abs(vidNode.currentTime - targetTime) > 0.5) {
+                    vidNode.currentTime = targetTime;
+                  }
+                } else {
+                  if (!vidNode.paused) vidNode.pause();
                   vidNode.currentTime = targetTime;
                 }
               } else {
@@ -147,7 +152,7 @@ export const SlideCanvas = ({
         }
       });
     }
-  }, [currentTime, isVideoMode, slide, imagePositions, index]);
+  }, [currentTime, isPlaying, isVideoMode, slide, imagePositions, index]);
 
   return (
     <div 
@@ -351,12 +356,25 @@ export const SlideCanvas = ({
               <video
                 id={`video-${imgId}`}
                 src={img}
-                autoPlay
-                loop
                 muted
                 playsInline
                 className="w-full h-full object-contain pointer-events-none"
                 style={{ borderRadius: imageBorderRadius }}
+                onLoadedMetadata={(e) => {
+                  if (pos.endTime === undefined && transform.setImagePositions) {
+                    const dur = e.target.duration;
+                    if (dur && !isNaN(dur) && dur > 0) {
+                      transform.setImagePositions(prev => ({
+                        ...prev,
+                        [imgId]: {
+                          ...(prev[imgId] || {}),
+                          endTime: (pos.startTime || 0) + dur,
+                          trimEnd: dur
+                        }
+                      }));
+                    }
+                  }
+                }}
               />
             ) : (
               <div 

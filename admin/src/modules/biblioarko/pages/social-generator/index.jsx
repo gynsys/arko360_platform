@@ -817,7 +817,19 @@ export default function SocialGenerator() {
       u8arr[n] = bstr.charCodeAt(n);
     }
     const file = new File([u8arr], 'video.mp4', { type: mime });
-    setPendingVideoTarget({ index: slideIndex, isVideoSlide: activeTab === 'video', imgIndex: imgIndex });
+    const imgId = `${slideIndex}-${imgIndex}`;
+    const pos = transformer?.state?.imagePositions?.[imgId] || {};
+    
+    setPendingVideoTarget({ 
+      index: slideIndex, 
+      isVideoSlide: activeTab === 'video', 
+      imgIndex: imgIndex,
+      initialState: {
+        trimStart: pos.trimStart || 0,
+        trimEnd: pos.trimEnd,
+        speed: pos.speed || 1
+      }
+    });
     setPendingVideoFile(file);
   };
 
@@ -1067,6 +1079,7 @@ export default function SocialGenerator() {
                             isVideoMode={activeTab === 'video'}
                             showGrid={showGrid}
                             currentTime={videoTime}
+                            isPlaying={isPlaying}
                             onEditVideo={handleEditVideo}
                           />
                         </div>
@@ -1410,9 +1423,9 @@ export default function SocialGenerator() {
                 }
               };
             });
-            
             setPendingVideoFile(null);
             setPendingVideoTarget(null);
+            showToast('Ajustes de video aplicados', 'success');
           }}
         />
       )}
