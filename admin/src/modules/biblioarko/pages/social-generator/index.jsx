@@ -1087,8 +1087,8 @@ export default function SocialGenerator() {
                     </div>
                     
                     <div className="flex flex-col items-center gap-2 animate-fadeIn mt-4">
-                      {/* Primary Pagination & Playback Pill */}
-                      <div className="flex items-center gap-4 bg-white/95 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5">
+                      {/* Combined Pagination, Playback & Volume Pill */}
+                      <div className="flex flex-wrap items-center justify-center gap-4 bg-white/95 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-4 py-1.5">
                         <button 
                           onClick={() => designer.canvas.setCurrentSlidePage(Math.max(0, designer.canvas.currentSlidePage - 1))}
                           disabled={designer.canvas.currentSlidePage === 0}
@@ -1100,18 +1100,18 @@ export default function SocialGenerator() {
                           {designer.canvas.currentSlidePage + 1} / {activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)}
                         </span>
                         <button 
-                          onClick={() => designer.canvas.setCurrentSlidePage(Math.min((activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)) - 1, designer.canvas.currentSlidePage + 1))}
-                          disabled={designer.canvas.currentSlidePage >= (activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)) - 1}
-                          className={`p-1.5 rounded-full transition-all ${designer.canvas.currentSlidePage >= (activeTab === 'video' ? (generatedContent.video_slides?.length || 0) : (generatedContent.slides?.length || 0)) - 1 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20 active:scale-95'}`}
+                          onClick={() => designer.canvas.setCurrentSlidePage(Math.min((activeTab === 'video' ? generatedContent.video_slides?.length : generatedContent.slides?.length) - 1, designer.canvas.currentSlidePage + 1))}
+                          disabled={designer.canvas.currentSlidePage === (activeTab === 'video' ? generatedContent.video_slides?.length : generatedContent.slides?.length) - 1}
+                          className={`p-1.5 rounded-full transition-all ${designer.canvas.currentSlidePage === (activeTab === 'video' ? generatedContent.video_slides?.length : generatedContent.slides?.length) - 1 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20 active:scale-95'}`}
                         >
                           <FiChevronRight size={16} />
                         </button>
-                        
+
                         <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
-                        
+
                         <button 
                           onClick={() => setShowGrid(!showGrid)}
-                          className={`p-1.5 rounded-full transition-all ${showGrid ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20'} active:scale-95`}
+                          className={`p-1.5 rounded-full transition-all ${showGrid ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20'}`}
                           title="Mostrar Cuadrícula Guía"
                         >
                           <FiGrid size={16} />
@@ -1138,34 +1138,35 @@ export default function SocialGenerator() {
                             >
                               {isPlaying ? <FiPause size={16} /> : <FiPlay size={16} />}
                             </button>
+                            <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-gray-500 uppercase">Volumen:</span>
+                              <input 
+                                type="range" 
+                                min="0" 
+                                max="1" 
+                                step="0.05"
+                                value={volume}
+                                onChange={(e) => setVolume(parseFloat(e.target.value))}
+                                className="w-20 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                title={`Volumen: ${Math.round(volume * 100)}%`}
+                              />
+                            </div>
                           </>
                         )}
                       </div>
-
-                      {/* Volume Control Pill (Separate to avoid width overlap) */}
-                      {activeTab === 'video' && (
-                        <div className="flex items-center gap-3 bg-white/95 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-4 py-1.5">
-                          <span className="text-[10px] font-bold text-gray-500 uppercase">Volumen:</span>
-                          <input 
-                            type="range" 
-                            min="0" 
-                            max="1" 
-                            step="0.05"
-                            value={volume}
-                            onChange={(e) => setVolume(parseFloat(e.target.value))}
-                            className="w-24 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                            title={`Volumen: ${Math.round(volume * 100)}%`}
-                          />
-                        </div>
-                      )}
                     </div>
 
                     {activeTab === 'video' && (() => {
-                      let maxVidDur = slideDuration;
                       const slide = generatedContent.video_slides?.[designer.canvas.currentSlidePage];
+                      
+                      let maxVidDur = 0;
+                      let hasVideo = false;
+                      
                       if (slide?.customImages) {
                         slide.customImages.forEach((img, imgIdx) => {
                           if (img && img.startsWith('data:video')) {
+                            hasVideo = true;
                             const imgId = `${designer.canvas.currentSlidePage}-${imgIdx}`;
                             const pos = transformer.state?.imagePositions?.[imgId] || {};
                             const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
@@ -1173,6 +1174,11 @@ export default function SocialGenerator() {
                           }
                         });
                       }
+                      
+                      if (!hasVideo) maxVidDur = slideDuration;
+                      
+                      // Asegurar un mínimo de 1 segundo
+                      if (maxVidDur < 1) maxVidDur = 1;
                       
                       return (
                         <div className="w-full mt-4">

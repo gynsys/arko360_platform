@@ -51,11 +51,13 @@ export const useVideoExport = (
         // Preload videos for this slide and calculate max duration
         const customImages = scenes[i].customImages || [];
         const currentSlideVids = [];
-        let maxVidDur = slideDuration;
+        let maxVidDur = 0;
+        let hasVideo = false;
 
         for (let imgIndex = 0; imgIndex < customImages.length; imgIndex++) {
            const img = customImages[imgIndex];
            if (img && img.startsWith('data:video')) {
+              hasVideo = true;
               const vid = document.createElement('video');
               vid.src = img;
               vid.muted = true;
@@ -63,18 +65,20 @@ export const useVideoExport = (
               vid.playsInline = true;
               await new Promise(r => { vid.onloadedmetadata = r; vid.onerror = r; });
               
-              if (vid.duration && vid.duration > maxVidDur) {
-                 maxVidDur = vid.duration;
-              }
-
               const imgId = `${i}-${imgIndex}`;
-              const pos = transformState?.imagePositions?.[imgId] || { x: 0, y: 0 };
-              const size = transformState?.imageSizes?.[imgId] || 150;
+              const pos = transformState?.imagePositions?.[imgId] || { x: 50, y: 70 };
+              const size = transformState?.imageSizes?.[imgId] || 100;
               const rot = transformState?.imageRotations?.[imgId] || 0;
+              
+              const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
+              if (endT > maxVidDur) maxVidDur = endT;
 
               currentSlideVids.push({ vid, pos, size, rot });
            }
         }
+        
+        if (!hasVideo) maxVidDur = slideDuration;
+        if (maxVidDur < 1) maxVidDur = 1;
         slideVideos.push(currentSlideVids);
         slideDurations.push(maxVidDur);
 

@@ -112,8 +112,11 @@ const VideoEditorModal = ({ file, initialState, onClose, onApply }) => {
                   />
                 </div>
               </div>
-              <div className="text-xs text-gray-400">
-                Duración original: {duration.toFixed(1)}s
+              <div className="flex justify-between items-center bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-lg border border-indigo-100 dark:border-indigo-800/50">
+                <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">Tiempo total en escena:</span>
+                <span className="text-base font-black text-indigo-600 dark:text-indigo-400 font-mono">
+                  {((endTime - startTime) / speed).toFixed(1)}s
+                </span>
               </div>
             </div>
 
