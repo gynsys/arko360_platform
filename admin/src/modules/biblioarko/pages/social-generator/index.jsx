@@ -563,6 +563,13 @@ export default function SocialGenerator() {
     const name = saveAsProjectName.trim();
     if (!name) return;
     
+    // Validate uniqueness
+    const nameExists = designer.canvas.projects?.some(p => p.name?.toLowerCase() === name.toLowerCase());
+    if (nameExists) {
+      showToast(`Ya existe un proyecto llamado "${name}". Elige otro nombre.`, 'error');
+      return;
+    }
+    
     setIsSaveAsModalOpen(false);
     setSavingType('saveAs');
     startSaveProgress();
