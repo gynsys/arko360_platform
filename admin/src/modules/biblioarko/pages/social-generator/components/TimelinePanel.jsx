@@ -12,7 +12,8 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange }) =
   const getPos = (clientX) => {
     if (!trackRef.current) return 0;
     const rect = trackRef.current.getBoundingClientRect();
-    const px = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    // Allow dragging outside the right bound to expand the timeline
+    const px = Math.max(0, clientX - rect.left);
     return (px / rect.width) * maxDuration;
   };
 
@@ -35,24 +36,16 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange }) =
       const pos = getPos(clientX);
 
       if (isDragging === 'start') {
-        const newStart = Math.min(Math.max(0, pos), endTime - 0.1);
+        const newStart = Math.max(0, Math.min(pos, endTime - 0.1));
         onChange(id, newStart, endTime);
       } else if (isDragging === 'end') {
-        const newEnd = Math.max(Math.min(maxDuration, pos), startTime + 0.1);
+        const newEnd = Math.max(pos, startTime + 0.1);
         onChange(id, startTime, newEnd);
       } else if (isDragging === 'move') {
         const dur = endTime - startTime;
-        let newStart = pos - dragOffset;
+        let newStart = Math.max(0, pos - dragOffset);
         let newEnd = newStart + dur;
 
-        if (newStart < 0) {
-          newStart = 0;
-          newEnd = dur;
-        }
-        if (newEnd > maxDuration) {
-          newEnd = maxDuration;
-          newStart = maxDuration - dur;
-        }
         onChange(id, newStart, newEnd);
       }
     };

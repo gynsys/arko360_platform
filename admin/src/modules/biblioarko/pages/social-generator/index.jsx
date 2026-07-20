@@ -1168,21 +1168,30 @@ export default function SocialGenerator() {
                       const slide = generatedContent.video_slides?.[designer.canvas.currentSlidePage];
                       
                       let maxVidDur = 0;
-                      let hasVideo = false;
                       
+                      // 1. Title and Content
+                      const tEnd = slide?.titleEndTime !== undefined ? slide.titleEndTime : slideDuration;
+                      if (tEnd > maxVidDur) maxVidDur = tEnd;
+                      
+                      const cEnd = slide?.contentEndTime !== undefined ? slide.contentEndTime : slideDuration;
+                      if (cEnd > maxVidDur) maxVidDur = cEnd;
+
+                      // 2. Extra Elements
+                      const extraEls = designer.canvas.extraElements[designer.canvas.currentSlidePage] || [];
+                      extraEls.forEach(el => {
+                        const eEnd = el.endTime !== undefined ? el.endTime : slideDuration;
+                        if (eEnd > maxVidDur) maxVidDur = eEnd;
+                      });
+                      
+                      // 3. Videos and Images
                       if (slide?.customImages) {
                         slide.customImages.forEach((img, imgIdx) => {
-                          if (img && img.startsWith('data:video')) {
-                            hasVideo = true;
-                            const imgId = `${designer.canvas.currentSlidePage}-${imgIdx}`;
-                            const pos = transformer.state?.imagePositions?.[imgId] || {};
-                            const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
-                            if (endT > maxVidDur) maxVidDur = endT;
-                          }
+                          const imgId = `${designer.canvas.currentSlidePage}-${imgIdx}`;
+                          const pos = transformer.state?.imagePositions?.[imgId] || {};
+                          const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
+                          if (endT > maxVidDur) maxVidDur = endT;
                         });
                       }
-                      
-                      if (!hasVideo) maxVidDur = slideDuration;
                       
                       // Asegurar un mínimo de 1 segundo
                       if (maxVidDur < 1) maxVidDur = 1;

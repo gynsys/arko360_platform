@@ -52,12 +52,24 @@ export const useVideoExport = (
         const customImages = scenes[i].customImages || [];
         const currentSlideVids = [];
         let maxVidDur = 0;
-        let hasVideo = false;
+        // 1. Title and Content
+        const tEnd = scenes[i]?.titleEndTime !== undefined ? scenes[i].titleEndTime : slideDuration;
+        if (tEnd > maxVidDur) maxVidDur = tEnd;
+        
+        const cEnd = scenes[i]?.contentEndTime !== undefined ? scenes[i].contentEndTime : slideDuration;
+        if (cEnd > maxVidDur) maxVidDur = cEnd;
 
+        // 2. Extra Elements
+        const extraEls = transformState?.extraElements?.[i] || [];
+        extraEls.forEach(el => {
+          const eEnd = el.endTime !== undefined ? el.endTime : slideDuration;
+          if (eEnd > maxVidDur) maxVidDur = eEnd;
+        });
+
+        // 3. Videos and Images
         for (let imgIndex = 0; imgIndex < customImages.length; imgIndex++) {
            const img = customImages[imgIndex];
            if (img && img.startsWith('data:video')) {
-              hasVideo = true;
               const vid = document.createElement('video');
               vid.src = img;
               vid.muted = true;
@@ -74,10 +86,13 @@ export const useVideoExport = (
               if (endT > maxVidDur) maxVidDur = endT;
 
               currentSlideVids.push({ vid, pos, size, rot });
+           } else if (img) {
+              const imgId = `${i}-${imgIndex}`;
+              const pos = transformState?.imagePositions?.[imgId] || { x: 50, y: 70 };
+              const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
+              if (endT > maxVidDur) maxVidDur = endT;
            }
         }
-        
-        if (!hasVideo) maxVidDur = slideDuration;
         if (maxVidDur < 1) maxVidDur = 1;
         slideVideos.push(currentSlideVids);
         slideDurations.push(maxVidDur);
