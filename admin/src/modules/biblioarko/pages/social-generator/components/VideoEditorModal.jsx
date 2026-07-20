@@ -22,10 +22,6 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
     const loadFFmpeg = async () => {
       try {
         setLoading(true);
-        if (typeof SharedArrayBuffer === 'undefined' || !window.crossOriginIsolated) {
-            throw new Error("El navegador no está aislado (SharedArrayBuffer no disponible). Revisa los headers COOP/COEP.");
-        }
-        
         const ffmpegInstance = new FFmpeg();
         ffmpegInstance.on('progress', ({ progress }) => {
           setProgress(progress * 100);
