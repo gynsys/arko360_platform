@@ -43,6 +43,7 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
         await ffmpegInstance.load({
           coreURL: coreBlob,
           wasmURL: wasmBlob,
+          classWorkerURL: `${baseURL}/worker.js`,
         });
         
         setFFmpeg(ffmpegInstance);

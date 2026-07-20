@@ -187,8 +187,8 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
                 <Track
                   key={imgId}
                   id={`img-${imgId}`}
-                  label={`Imagen ${imgIdx + 1}`}
-                  icon={<FiType className="text-indigo-500" />} 
+                  label={img?.startsWith('data:video') ? `Video ${imgIdx + 1}` : `Imagen ${imgIdx + 1}`}
+                  icon={img?.startsWith('data:video') ? <FiClock className="text-purple-500" /> : <FiImage className="text-indigo-500" />} 
                   startTime={pos.startTime !== undefined ? pos.startTime : 0}
                   endTime={pos.endTime !== undefined ? pos.endTime : slideDuration}
                   maxDuration={slideDuration}
