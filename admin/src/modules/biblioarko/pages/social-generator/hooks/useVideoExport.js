@@ -48,34 +48,6 @@ export const useVideoExport = (
         // Esperar que React renderice (imágenes, gradientes SVG)
         await new Promise(resolve => setTimeout(resolve, 1200));
 
-        const container = document.getElementById('main-slide-canvas');
-        // El div #main-slide-canvas tiene transform:scale() aplicado.
-        // Capturamos su hijo directo (el SlideCanvas real, sin escala CSS) para fidelidad pixel-perfect.
-        const slideNode = container?.firstElementChild || container;
-        if (!slideNode) {
-          console.warn('[Arko360] No se encontró el SlideCanvas para el slide', i);
-          capturedFrames.push(null);
-          continue;
-        }
-
-        const videoDOMs = slideNode.querySelectorAll('video');
-        videoDOMs.forEach(v => { v.style.display = 'none'; });
-
-        const capturedCanvas = await html2canvas(slideNode, {
-          useCORS: true,
-          scale: 2,
-          backgroundColor: designer.design.bgColor || '#ffffff',
-          logging: false,
-          allowTaint: true,
-          imageTimeout: 15000,
-          removeContainer: false,
-          foreignObjectRendering: false,
-        });
-
-        videoDOMs.forEach(v => { v.style.display = ''; });
-
-        capturedFrames.push(capturedCanvas);
-
         // Preload videos for this slide and calculate max duration
         const customImages = scenes[i].customImages || [];
         const currentSlideVids = [];
@@ -105,6 +77,98 @@ export const useVideoExport = (
         }
         slideVideos.push(currentSlideVids);
         slideDurations.push(maxVidDur);
+
+        const container = document.getElementById('main-slide-canvas');
+        // El div #main-slide-canvas tiene transform:scale() aplicado.
+        // Capturamos su hijo directo (el SlideCanvas real, sin escala CSS) para fidelidad pixel-perfect.
+        const slideNode = container?.firstElementChild || container;
+        if (!slideNode) {
+          console.warn('[Arko360] No se encontró el SlideCanvas para el slide', i);
+          capturedFrames.push([{ start: 0, end: maxVidDur, canvas: null }]);
+          continue;
+        }
+
+        const videoDOMs = slideNode.querySelectorAll('video');
+        videoDOMs.forEach(v => { v.style.display = 'none'; });
+
+        // Identificar intervalos de tiempo basados en textos
+        const slide = scenes[i];
+        let timeEvents = [0, maxVidDur];
+        
+        if (slide.titleStartTime !== undefined) timeEvents.push(slide.titleStartTime);
+        if (slide.titleEndTime !== undefined) timeEvents.push(slide.titleEndTime);
+        if (slide.contentStartTime !== undefined) timeEvents.push(slide.contentStartTime);
+        if (slide.contentEndTime !== undefined) timeEvents.push(slide.contentEndTime);
+        
+        const extraEls = designer.canvas.extraElements[i] || [];
+        extraEls.forEach(el => {
+          if (el.startTime !== undefined) timeEvents.push(el.startTime);
+          if (el.endTime !== undefined) timeEvents.push(el.endTime);
+        });
+
+        // Filtrar, ordenar y remover duplicados
+        timeEvents = [...new Set(timeEvents.filter(t => t >= 0 && t <= maxVidDur))].sort((a, b) => a - b);
+        
+        const snapshots = [];
+        const titleNode = slideNode.querySelector('[data-export-id="title"]');
+        const contentNode = slideNode.querySelector('[data-export-id="content"]');
+        const extraNodes = {};
+        extraEls.forEach(el => {
+          const node = slideNode.querySelector(`[data-export-id="extra-${el.id}"]`);
+          if (node) extraNodes[el.id] = node;
+        });
+
+        for (let t = 0; t < timeEvents.length - 1; t++) {
+          const start = timeEvents[t];
+          const end = timeEvents[t+1];
+          if (end - start < 0.01) continue; // Ignorar intervalos muy pequeños
+          
+          const mid = start + 0.01; // Un punto en el tiempo dentro del intervalo
+          
+          // Aplicar opacidades
+          if (titleNode) {
+             const tStart = slide.titleStartTime !== undefined ? slide.titleStartTime : 0;
+             const tEnd = slide.titleEndTime !== undefined ? slide.titleEndTime : maxVidDur;
+             titleNode.style.opacity = (mid >= tStart && mid <= tEnd) ? '1' : '0';
+          }
+          if (contentNode) {
+             const cStart = slide.contentStartTime !== undefined ? slide.contentStartTime : 0;
+             const cEnd = slide.contentEndTime !== undefined ? slide.contentEndTime : maxVidDur;
+             contentNode.style.opacity = (mid >= cStart && mid <= cEnd) ? '1' : '0';
+          }
+          extraEls.forEach(el => {
+             if (extraNodes[el.id]) {
+                const eStart = el.startTime !== undefined ? el.startTime : 0;
+                const eEnd = el.endTime !== undefined ? el.endTime : maxVidDur;
+                extraNodes[el.id].style.opacity = (mid >= eStart && mid <= eEnd) ? '1' : '0';
+             }
+          });
+
+          // Pequeña pausa para que el DOM aplique estilos
+          await new Promise(resolve => setTimeout(resolve, 50));
+
+          const capturedCanvas = await html2canvas(slideNode, {
+            useCORS: true,
+            scale: 2,
+            backgroundColor: designer.design.bgColor || '#ffffff',
+            logging: false,
+            allowTaint: true,
+            imageTimeout: 15000,
+            removeContainer: false,
+            foreignObjectRendering: false,
+          });
+          
+          snapshots.push({ start, end, canvas: capturedCanvas });
+        }
+
+        videoDOMs.forEach(v => { v.style.display = ''; });
+        
+        // Restaurar opacidades
+        if (titleNode) titleNode.style.opacity = '1';
+        if (contentNode) contentNode.style.opacity = '1';
+        extraEls.forEach(el => { if (extraNodes[el.id]) extraNodes[el.id].style.opacity = '1'; });
+
+        capturedFrames.push(snapshots.length > 0 ? snapshots : [{ start: 0, end: maxVidDur, canvas: null }]);
 
         setExportProgress(Math.round(((i + 1) / scenes.length) * 40)); // Primero 40%
       }
@@ -253,8 +317,11 @@ export const useVideoExport = (
       };
 
       for (let i = 0; i < capturedFrames.length; i++) {
-        const currentFrame = capturedFrames[i];
-        const prevFrame = i > 0 ? capturedFrames[i - 1] : null;
+        const currentSlideSnapshots = capturedFrames[i] || [];
+        const prevSlideSnapshots = i > 0 ? (capturedFrames[i - 1] || []) : null;
+        
+        // El último frame del slide anterior
+        const prevFrameCanvas = prevSlideSnapshots ? prevSlideSnapshots[prevSlideSnapshots.length - 1].canvas : null;
 
         const currentVids = slideVideos[i] || [];
         const prevVids = i > 0 ? slideVideos[i - 1] || [] : [];
@@ -268,8 +335,12 @@ export const useVideoExport = (
 
         for (let f = 0; f < framesPerSlide; f++) {
           ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+          
+          const currentSlideTime = f / fps;
+          const currentSnap = currentSlideSnapshots.find(s => currentSlideTime >= s.start && currentSlideTime <= s.end) || currentSlideSnapshots[0];
+          const currentFrameCanvas = currentSnap ? currentSnap.canvas : null;
 
-          const inTransition = f < transitionFrames && prevFrame !== null;
+          const inTransition = f < transitionFrames && prevFrameCanvas !== null;
 
           if (inTransition) {
             const progress = f / transitionFrames; // 0 → 1
@@ -279,34 +350,38 @@ export const useVideoExport = (
             ctx.save();
             if (transitionType === 'fade') {
               ctx.globalAlpha = exitProgress;
+              drawSlide(prevFrameCanvas, prevVids);
             } else if (transitionType === 'slide') {
-              ctx.translate(-progress * outputCanvas.width, 0);
+              ctx.translate(-outputCanvas.width * progress, 0);
+              drawSlide(prevFrameCanvas, prevVids);
             } else if (transitionType === 'zoom') {
               ctx.translate(outputCanvas.width / 2, outputCanvas.height / 2);
-              ctx.scale(1 + progress * 0.2, 1 + progress * 0.2);
-              ctx.translate(-outputCanvas.width / 2, -outputCanvas.height / 2);
+              ctx.scale(1 + progress, 1 + progress);
               ctx.globalAlpha = exitProgress;
+              ctx.translate(-outputCanvas.width / 2, -outputCanvas.height / 2);
+              drawSlide(prevFrameCanvas, prevVids);
             }
-            drawSlide(prevFrame, prevVids);
             ctx.restore();
 
             // Dibujar frame actual (entrando)
             ctx.save();
             if (transitionType === 'fade') {
               ctx.globalAlpha = progress;
+              drawSlide(currentFrameCanvas, currentVids);
             } else if (transitionType === 'slide') {
-              ctx.translate(outputCanvas.width - progress * outputCanvas.width, 0);
+              ctx.translate(outputCanvas.width * exitProgress, 0);
+              drawSlide(currentFrameCanvas, currentVids);
             } else if (transitionType === 'zoom') {
               ctx.translate(outputCanvas.width / 2, outputCanvas.height / 2);
-              ctx.scale(progress, progress);
-              ctx.translate(-outputCanvas.width / 2, -outputCanvas.height / 2);
+              ctx.scale(1 + (1 - progress) * 0.2, 1 + (1 - progress) * 0.2); // slight zoom out
               ctx.globalAlpha = progress;
+              ctx.translate(-outputCanvas.width / 2, -outputCanvas.height / 2);
+              drawSlide(currentFrameCanvas, currentVids);
             }
-            drawSlide(currentFrame, currentVids);
             ctx.restore();
           } else {
-            // Frame estático
-            drawSlide(currentFrame, currentVids);
+            // Animación Normal (sin transición)
+            drawSlide(currentFrameCanvas, currentVids);
           }
 
           await new Promise(r => setTimeout(r, 1000 / fps));

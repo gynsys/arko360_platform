@@ -238,14 +238,29 @@ export const SlideCanvas = ({
         )}
 
         <div className="relative w-full" style={{ fontFamily: design.fontFamily || 'Manrope', textAlign: slide?.textAlign || 'center' }}>
-          <h4 className="font-black mb-3 uppercase leading-tight" style={{ fontSize: titleFontSize + 'px', color: titleColor }}>
+          <h4 data-export-id="title" className="font-black mb-3 uppercase leading-tight transition-opacity duration-300" 
+              style={{ 
+                fontSize: titleFontSize + 'px', 
+                color: titleColor,
+                opacity: (isVideoMode && currentTime !== undefined && ((slide?.titleStartTime !== undefined && currentTime < slide.titleStartTime) || (slide?.titleEndTime !== undefined && currentTime > slide.titleEndTime))) ? 0 : 1
+              }}>
             {parseHighlightedText(slide?.title || '', design.headerColor, design.headerFontSize)}
           </h4>
-          <p className="font-bold leading-relaxed whitespace-pre-wrap" style={{ fontSize: fontSize + 'px', color: contentColor }}>
+          <p data-export-id="content" className="font-bold leading-relaxed whitespace-pre-wrap transition-opacity duration-300" 
+             style={{ 
+               fontSize: fontSize + 'px', 
+               color: contentColor,
+               opacity: (isVideoMode && currentTime !== undefined && ((slide?.contentStartTime !== undefined && currentTime < slide.contentStartTime) || (slide?.contentEndTime !== undefined && currentTime > slide.contentEndTime))) ? 0 : 1
+             }}>
             {parseHighlightedText(slide?.content || slide?.text || '', design.headerColor, design.headerFontSize)}
           </p>
           {slide?.overlayText && (
-            <p className="mt-4 font-bold tracking-tight opacity-80 whitespace-pre-wrap" style={{ fontSize: Math.max(14, fontSize * 0.4) + 'px', color: contentColor }}>
+            <p className="mt-4 font-bold tracking-tight whitespace-pre-wrap transition-opacity duration-300" 
+               style={{ 
+                 fontSize: Math.max(14, fontSize * 0.4) + 'px', 
+                 color: contentColor,
+                 opacity: (isVideoMode && currentTime !== undefined && ((slide?.contentStartTime !== undefined && currentTime < slide.contentStartTime) || (slide?.contentEndTime !== undefined && currentTime > slide.contentEndTime))) ? 0 : 0.8
+               }}>
               {slide.overlayText}
             </p>
           )}
@@ -342,9 +357,11 @@ export const SlideCanvas = ({
         return (
           <div
             key={elId}
-            className="absolute"
+            data-export-id={`extra-${el.id}`}
+            className="absolute transition-opacity duration-300"
             style={{
               zIndex: el.zIndex || 30,
+              opacity: (isVideoMode && currentTime !== undefined && ((el.startTime !== undefined && currentTime < el.startTime) || (el.endTime !== undefined && currentTime > el.endTime))) ? 0 : 1,
               left: el.fullWidth ? '0px' : (el.x + '%'),
               top: el.y + '%',
               width: el.fullWidth ? '410px' : 0,

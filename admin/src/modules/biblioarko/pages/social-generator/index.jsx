@@ -32,6 +32,7 @@ import { ArticleSelector } from './components/ArticleSelector';
 import { ProjectGrid } from './components/ProjectGrid';
 import { ContextualBar } from './components/ContextualBar';
 import VideoEditorModal from './components/VideoEditorModal';
+import { TimelinePanel } from './components/TimelinePanel';
 
 export default function SocialGenerator() {
   // --- States ---
@@ -59,6 +60,7 @@ export default function SocialGenerator() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [watermarkImage, setWatermarkImage] = useState(null);
   const [doctorLogoBase64, setDoctorLogoBase64] = useState(null);
+  const [videoTime, setVideoTime] = useState(0);
   
   const [pendingVideoFile, setPendingVideoFile] = useState(null);
   const [pendingVideoTarget, setPendingVideoTarget] = useState(null);
@@ -105,6 +107,50 @@ export default function SocialGenerator() {
   );
 
   // Sync video playback slide with canvas
+  useEffect(() => {
+    if (activeTab === 'carousel' && isPlaying) setIsPlaying(false);
+  }, [activeTab]);
+
+  useEffect(() => {
+    let interval;
+    if (isPlaying && activeTab === 'video') {
+      interval = setInterval(() => {
+        const vid = document.querySelector('video');
+        if (vid) setVideoTime(vid.currentTime);
+      }, 100);
+    } else {
+      setVideoTime(0);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, activeTab]);
+
+  const handleUpdateTiming = (trackId, start, end) => {
+    if (!generatedContent) return;
+    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+    const newSlides = [...generatedContent[slidesProp]];
+    const slide = newSlides[designer.canvas.currentSlidePage];
+    
+    if (trackId === 'title') {
+      slide.titleStartTime = start;
+      slide.titleEndTime = end;
+    } else if (trackId === 'content') {
+      slide.contentStartTime = start;
+      slide.contentEndTime = end;
+    } else if (trackId.startsWith('custom-')) {
+      const id = trackId.replace('custom-', '');
+      const txt = slide.customTexts?.find(t => t.id === id);
+      if (txt) {
+        txt.startTime = start;
+        txt.endTime = end;
+      }
+    } else if (trackId.startsWith('extra-')) {
+      const id = trackId.replace('extra-', '');
+      // Update extra element using the hook
+      designer.canvas.updateExtraElement(designer.canvas.currentSlidePage, id, { startTime: start, endTime: end });
+    }
+    setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+  };
+
   useEffect(() => {
     if (activeTab === 'video') {
       designer.canvas.setCurrentSlidePage(currentVideoSlide);
@@ -951,6 +997,7 @@ export default function SocialGenerator() {
                             onAddImage={(e) => activeTab === 'video' ? handleAddImageToVideoSlide(designer.canvas.currentSlidePage, e) : handleAddImage(designer.canvas.currentSlidePage, e)}
                             isVideoMode={activeTab === 'video'}
                             showGrid={showGrid}
+                            currentTime={videoTime}
                           />
                         </div>
                       </div>
@@ -1029,6 +1076,18 @@ export default function SocialGenerator() {
                         </div>
                       )}
                     </div>
+
+                    {activeTab === 'video' && (
+                      <div className="w-full mt-4">
+                        <TimelinePanel 
+                          slide={generatedContent.video_slides?.[designer.canvas.currentSlidePage]}
+                          slideDuration={slideDuration}
+                          currentTime={videoTime}
+                          onUpdateTiming={handleUpdateTiming}
+                          extraElements={designer.canvas.extraElements[designer.canvas.currentSlidePage] || []}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

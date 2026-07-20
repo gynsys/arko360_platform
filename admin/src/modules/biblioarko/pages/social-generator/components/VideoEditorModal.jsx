@@ -26,9 +26,10 @@ const VideoEditorModal = ({ file, onClose, onApply }) => {
         ffmpegInstance.on('progress', ({ progress }) => {
           setProgress(progress * 100);
         });
+        const baseURL = `${window.location.origin}/ffmpeg`;
         await ffmpegInstance.load({
-          coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
-          wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm',
+          coreURL: `${baseURL}/ffmpeg-core.js`,
+          wasmURL: `${baseURL}/ffmpeg-core.wasm`,
         });
         setFFmpeg(ffmpegInstance);
         setReady(true);

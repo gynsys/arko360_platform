@@ -1,0 +1,195 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { FiClock, FiAlignLeft, FiType } from 'react-icons/fi';
+
+const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange }) => {
+  const trackRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(null); // 'start', 'end', 'move'
+  const [dragOffset, setDragOffset] = useState(0);
+
+  const startPercent = (startTime / maxDuration) * 100;
+  const widthPercent = ((endTime - startTime) / maxDuration) * 100;
+
+  const getPos = (clientX) => {
+    if (!trackRef.current) return 0;
+    const rect = trackRef.current.getBoundingClientRect();
+    const px = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    return (px / rect.width) * maxDuration;
+  };
+
+  const handlePointerDown = (e, type) => {
+    e.stopPropagation();
+    setIsDragging(type);
+    if (type === 'move') {
+      const pos = getPos(e.clientX || e.touches[0].clientX);
+      setDragOffset(pos - startTime);
+    }
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handlePointerMove = (e) => {
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      if (!clientX) return;
+      
+      const pos = getPos(clientX);
+
+      if (isDragging === 'start') {
+        const newStart = Math.min(Math.max(0, pos), endTime - 0.1);
+        onChange(id, newStart, endTime);
+      } else if (isDragging === 'end') {
+        const newEnd = Math.max(Math.min(maxDuration, pos), startTime + 0.1);
+        onChange(id, startTime, newEnd);
+      } else if (isDragging === 'move') {
+        const dur = endTime - startTime;
+        let newStart = pos - dragOffset;
+        let newEnd = newStart + dur;
+
+        if (newStart < 0) {
+          newStart = 0;
+          newEnd = dur;
+        }
+        if (newEnd > maxDuration) {
+          newEnd = maxDuration;
+          newStart = maxDuration - dur;
+        }
+        onChange(id, newStart, newEnd);
+      }
+    };
+
+    const handlePointerUp = () => setIsDragging(null);
+
+    window.addEventListener('mousemove', handlePointerMove);
+    window.addEventListener('mouseup', handlePointerUp);
+    window.addEventListener('touchmove', handlePointerMove);
+    window.addEventListener('touchend', handlePointerUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handlePointerMove);
+      window.removeEventListener('mouseup', handlePointerUp);
+      window.removeEventListener('touchmove', handlePointerMove);
+      window.removeEventListener('touchend', handlePointerUp);
+    };
+  }, [isDragging, startTime, endTime, maxDuration, dragOffset, id, onChange]);
+
+  return (
+    <div className="flex items-center gap-4 mb-2 group">
+      <div className="w-24 shrink-0 flex items-center gap-2 text-xs font-bold text-gray-600 dark:text-gray-300 truncate">
+        {icon}
+        <span className="truncate">{label}</span>
+      </div>
+      
+      <div className="flex-1 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg relative cursor-crosshair overflow-hidden border border-gray-200 dark:border-gray-700" ref={trackRef}>
+        {/* Track Bar */}
+        <div 
+          className="absolute top-0 bottom-0 bg-indigo-500/80 hover:bg-indigo-500 rounded-md border border-indigo-600 cursor-grab active:cursor-grabbing flex items-center justify-between"
+          style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
+          onMouseDown={(e) => handlePointerDown(e, 'move')}
+          onTouchStart={(e) => handlePointerDown(e, 'move')}
+        >
+          {/* Start Handle */}
+          <div 
+            className="w-3 h-full cursor-ew-resize hover:bg-white/30 flex items-center justify-center shrink-0"
+            onMouseDown={(e) => handlePointerDown(e, 'start')}
+            onTouchStart={(e) => handlePointerDown(e, 'start')}
+          >
+            <div className="w-0.5 h-3 bg-white/70 rounded-full pointer-events-none"></div>
+          </div>
+          
+          <span className="text-[10px] text-white font-mono pointer-events-none px-1 truncate">
+            {startTime.toFixed(1)}s - {endTime.toFixed(1)}s
+          </span>
+
+          {/* End Handle */}
+          <div 
+            className="w-3 h-full cursor-ew-resize hover:bg-white/30 flex items-center justify-center shrink-0"
+            onMouseDown={(e) => handlePointerDown(e, 'end')}
+            onTouchStart={(e) => handlePointerDown(e, 'end')}
+          >
+            <div className="w-0.5 h-3 bg-white/70 rounded-full pointer-events-none"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const TimelinePanel = ({ slide, slideDuration, currentTime, onUpdateTiming, extraElements = [] }) => {
+  if (!slide) return null;
+
+  const tStart = slide.titleStartTime !== undefined ? slide.titleStartTime : 0;
+  const tEnd = slide.titleEndTime !== undefined ? slide.titleEndTime : slideDuration;
+
+  const cStart = slide.contentStartTime !== undefined ? slide.contentStartTime : 0;
+  const cEnd = slide.contentEndTime !== undefined ? slide.contentEndTime : slideDuration;
+
+  return (
+    <div className="w-full bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0 z-40">
+      <div className="max-w-4xl mx-auto">
+        <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <FiClock /> Línea de Tiempo (Track History)
+        </h4>
+        
+        <div className="relative">
+          {/* Timeline Ruler */}
+          <div className="flex ml-[6.5rem] mb-2 border-b border-gray-200 dark:border-gray-700 relative h-4">
+            {Array.from({ length: Math.ceil(slideDuration) + 1 }).map((_, i) => (
+              <div 
+                key={i} 
+                className="absolute top-0 bottom-0 border-l border-gray-300 dark:border-gray-600 text-[9px] text-gray-400 pl-1"
+                style={{ left: `${(i / slideDuration) * 100}%` }}
+              >
+                {i}s
+              </div>
+            ))}
+          </div>
+
+          {/* Tracks */}
+          <div className="relative z-10 space-y-1 pb-2 max-h-40 overflow-y-auto pr-2">
+            <Track 
+              id="title" 
+              label="Título" 
+              icon={<FiType />} 
+              startTime={tStart} 
+              endTime={tEnd} 
+              maxDuration={slideDuration}
+              onChange={onUpdateTiming}
+            />
+            <Track 
+              id="content" 
+              label="Contenido" 
+              icon={<FiAlignLeft />} 
+              startTime={cStart} 
+              endTime={cEnd} 
+              maxDuration={slideDuration}
+              onChange={onUpdateTiming}
+            />
+            {extraElements.map((el) => (
+              <Track 
+                key={el.id}
+                id={`extra-${el.id}`} 
+                label={el.type === 'text' ? (el.content || 'Texto Libre') : (el.type === 'shape' ? 'Forma' : 'Ícono')} 
+                icon={<FiType className="text-amber-500" />} 
+                startTime={el.startTime !== undefined ? el.startTime : 0} 
+                endTime={el.endTime !== undefined ? el.endTime : slideDuration} 
+                maxDuration={slideDuration}
+                onChange={onUpdateTiming}
+              />
+            ))}
+          </div>
+
+          {/* Playhead */}
+          <div 
+            className="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none"
+            style={{ 
+              left: `calc(6.5rem + ${Math.min(100, Math.max(0, (currentTime / slideDuration) * 100))}%)`,
+              display: currentTime !== undefined && currentTime >= 0 ? 'block' : 'none'
+            }}
+          >
+            <div className="absolute -top-1 -left-1.5 w-3 h-3 bg-red-500 rotate-45"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
