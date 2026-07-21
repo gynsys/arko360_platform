@@ -1470,7 +1470,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
   const addInternalWall = (w) => {
     saveHistory();
-    setInternalWalls(prev => [...prev, { id: Date.now(), type: drawType, layer_id: activeLayer, x1: w.x1 || 0, y1: w.y1 || 0, x2: w.x2 || 1, y2: w.y2 || 1 }]);
+    setInternalWalls(prev => [...prev, { id: Date.now(), type: drawType, layer_id: activeLayer, x1: w.x1 ?? 0, y1: w.y1 ?? 0, x2: w.x2 ?? 1, y2: w.y2 ?? 1 }]);
   };
 
   const updateInternalWall = (id, field, value) => {
