@@ -71,10 +71,18 @@ export const useVideoExport = (
            const img = customImages[imgIndex];
            if (img && img.startsWith('data:video')) {
               const vid = document.createElement('video');
-              vid.src = img;
+              try {
+                const res = await fetch(img);
+                const blob = await res.blob();
+                vid.src = URL.createObjectURL(blob);
+              } catch (e) {
+                console.error('Error creating blob from video data URL', e);
+                vid.src = img;
+              }
               vid.muted = true;
               vid.loop = true; 
               vid.playsInline = true;
+              vid.crossOrigin = 'anonymous';
               await new Promise(r => { vid.onloadedmetadata = r; vid.onerror = r; });
               
               const imgId = `${i}-${imgIndex}`;
