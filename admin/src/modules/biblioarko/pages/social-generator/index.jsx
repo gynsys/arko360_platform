@@ -148,15 +148,26 @@ export default function SocialGenerator() {
           let maxVidDur = slideDuration;
           const slide = generatedContent?.video_slides?.[currentVideoSlide];
           
-          if (slide?.customImages) {
-            slide.customImages.forEach((img, imgIdx) => {
-              if (img && img.startsWith('data:video')) {
+          if (slide) {
+            const tEnd = slide.titleEndTime !== undefined ? slide.titleEndTime : slideDuration;
+            const cEnd = slide.contentEndTime !== undefined ? slide.contentEndTime : slideDuration;
+            if (tEnd > maxVidDur) maxVidDur = tEnd;
+            if (cEnd > maxVidDur) maxVidDur = cEnd;
+            if (slide.audioEndTime !== undefined && slide.audioEndTime > maxVidDur) maxVidDur = slide.audioEndTime;
+            
+            const extraElements = designer.canvas.extraElements[currentVideoSlide] || [];
+            extraElements.forEach(el => {
+              if (el.endTime !== undefined && el.endTime > maxVidDur) maxVidDur = el.endTime;
+            });
+            
+            if (slide.customImages) {
+              slide.customImages.forEach((img, imgIdx) => {
                 const imgId = `${currentVideoSlide}-${imgIdx}`;
                 const pos = transformer.state?.imagePositions?.[imgId] || {};
                 const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
                 if (endT > maxVidDur) maxVidDur = endT;
-              }
-            });
+              });
+            }
           }
 
           // Sync Audio with Timeline

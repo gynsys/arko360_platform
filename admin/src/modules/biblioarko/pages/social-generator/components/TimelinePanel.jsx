@@ -5,21 +5,33 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange }) =
   const trackRef = useRef(null);
   const [isDragging, setIsDragging] = useState(null); // 'start', 'end', 'move'
   const [dragOffset, setDragOffset] = useState(0);
+  const dragContext = useRef({ maxDuration: maxDuration, rectWidth: 1 });
 
   const startPercent = (startTime / maxDuration) * 100;
   const widthPercent = ((endTime - startTime) / maxDuration) * 100;
 
   const getPos = (clientX) => {
     if (!trackRef.current) return 0;
+    // Use cached values if dragging, else get current
+    const width = isDragging ? dragContext.current.rectWidth : trackRef.current.getBoundingClientRect().width;
+    const duration = isDragging ? dragContext.current.maxDuration : maxDuration;
+    
+    // We get the current rect to know the left offset since it might scroll, 
+    // but the ratio of pixels to seconds should remain constant during the drag.
     const rect = trackRef.current.getBoundingClientRect();
-    // Allow dragging outside the right bound to expand the timeline
     const px = Math.max(0, clientX - rect.left);
-    return (px / rect.width) * maxDuration;
+    return (px / width) * duration;
   };
 
   const handlePointerDown = (e, type) => {
     e.stopPropagation();
     setIsDragging(type);
+    if (trackRef.current) {
+      dragContext.current = {
+        maxDuration: maxDuration,
+        rectWidth: trackRef.current.getBoundingClientRect().width
+      };
+    }
     if (type === 'move') {
       const pos = getPos(e.clientX || e.touches[0].clientX);
       setDragOffset(pos - startTime);
@@ -116,6 +128,26 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
   const cStart = slide.contentStartTime !== undefined ? slide.contentStartTime : 0;
   const cEnd = slide.contentEndTime !== undefined ? slide.contentEndTime : slideDuration;
 
+  // Calculate the actual timeline duration dynamically based on the max end time of all elements
+  let maxElementTime = slideDuration;
+  if (tEnd > maxElementTime) maxElementTime = tEnd;
+  if (cEnd > maxElementTime) maxElementTime = cEnd;
+  if (slide.audioEndTime !== undefined && slide.audioEndTime > maxElementTime) maxElementTime = slide.audioEndTime;
+  
+  extraElements.forEach(el => {
+    if (el.endTime !== undefined && el.endTime > maxElementTime) maxElementTime = el.endTime;
+  });
+  
+  if (slide.customImages) {
+    slide.customImages.forEach((img, imgIdx) => {
+      const pos = imagePositions[`${slideIndex}-${imgIdx}`] || {};
+      if (pos.endTime !== undefined && pos.endTime > maxElementTime) maxElementTime = pos.endTime;
+    });
+  }
+  
+  // Use the maximum of base slideDuration and the farthest element
+  const actualDuration = Math.ceil(maxElementTime);
+
   return (
     <div className="w-full bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0 z-40">
       <div className="max-w-4xl mx-auto">
@@ -131,7 +163,7 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
               if (onScrub) {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const x = e.clientX - rect.left;
-                const time = Math.max(0, Math.min(slideDuration, (x / rect.width) * slideDuration));
+                const time = Math.max(0, Math.min(actualDuration, (x / rect.width) * actualDuration));
                 onScrub(time);
                 e.currentTarget.setPointerCapture(e.pointerId);
               }
@@ -140,16 +172,16 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
               if (e.buttons === 1 && onScrub) {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const x = e.clientX - rect.left;
-                const time = Math.max(0, Math.min(slideDuration, (x / rect.width) * slideDuration));
+                const time = Math.max(0, Math.min(actualDuration, (x / rect.width) * actualDuration));
                 onScrub(time);
               }
             }}
           >
-            {Array.from({ length: Math.ceil(slideDuration) + 1 }).map((_, i) => (
+            {Array.from({ length: actualDuration + 1 }).map((_, i) => (
               <div 
                 key={i} 
                 className="absolute top-0 bottom-0 border-l border-gray-300 dark:border-gray-600 text-[10px] font-bold text-gray-600 dark:text-gray-400 pl-1"
-                style={{ left: `${(i / slideDuration) * 100}%` }}
+                style={{ left: `${(i / actualDuration) * 100}%` }}
               >
                 {i}s
               </div>
@@ -165,7 +197,7 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
                 icon={<FiMusic className="text-pink-500" />} 
                 startTime={slide.audioStartTime !== undefined ? slide.audioStartTime : 0} 
                 endTime={slide.audioEndTime !== undefined ? slide.audioEndTime : slideDuration} 
-                maxDuration={slideDuration}
+                maxDuration={actualDuration}
                 onChange={onUpdateTiming}
               />
             )}
@@ -176,7 +208,7 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
                 icon={<FiType />} 
                 startTime={tStart} 
                 endTime={tEnd} 
-                maxDuration={slideDuration}
+                maxDuration={actualDuration}
                 onChange={onUpdateTiming}
               />
             )}
@@ -187,7 +219,7 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
                 icon={<FiAlignLeft />} 
                 startTime={cStart} 
                 endTime={cEnd} 
-                maxDuration={slideDuration}
+                maxDuration={actualDuration}
                 onChange={onUpdateTiming}
               />
             )}
@@ -198,8 +230,8 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
                 label={el.type === 'text' ? (el.content || 'Texto Libre') : (el.type === 'shape' ? 'Forma' : 'Ícono')} 
                 icon={<FiType className="text-amber-500" />} 
                 startTime={el.startTime !== undefined ? el.startTime : 0} 
-                endTime={el.endTime !== undefined ? el.endTime : slideDuration} 
-                maxDuration={slideDuration}
+                endTime={el.endTime !== undefined ? el.endTime : actualDuration} 
+                maxDuration={actualDuration}
                 onChange={onUpdateTiming}
               />
             ))}
@@ -213,8 +245,8 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
                   label={img?.startsWith('data:video') ? `Video ${imgIdx + 1}` : `Imagen ${imgIdx + 1}`}
                   icon={img?.startsWith('data:video') ? <FiClock className="text-purple-500" /> : <FiImage className="text-indigo-500" />} 
                   startTime={pos.startTime !== undefined ? pos.startTime : 0}
-                  endTime={pos.endTime !== undefined ? pos.endTime : slideDuration}
-                  maxDuration={slideDuration}
+                  endTime={pos.endTime !== undefined ? pos.endTime : actualDuration}
+                  maxDuration={actualDuration}
                   onChange={onUpdateTiming}
                 />
               );
@@ -225,7 +257,7 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
           <div 
             className="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none"
             style={{ 
-              left: `calc(6.5rem + ${Math.min(100, Math.max(0, (currentTime / slideDuration) * 100))}%)`,
+              left: `calc(6.5rem + ${Math.min(100, Math.max(0, (currentTime / actualDuration) * 100))}%)`,
               display: currentTime !== undefined && currentTime >= 0 ? 'block' : 'none'
             }}
           >

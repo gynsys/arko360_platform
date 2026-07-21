@@ -60,7 +60,7 @@ export const useVideoExport = (
         if (cEnd > maxVidDur) maxVidDur = cEnd;
 
         // 2. Extra Elements
-        const extraEls = transformState?.extraElements?.[i] || [];
+        const extraEls = designer.canvas.extraElements[i] || [];
         extraEls.forEach(el => {
           const eEnd = el.endTime !== undefined ? el.endTime : slideDuration;
           if (eEnd > maxVidDur) maxVidDur = eEnd;
@@ -119,7 +119,6 @@ export const useVideoExport = (
         if (slide.contentStartTime !== undefined) timeEvents.push(slide.contentStartTime);
         if (slide.contentEndTime !== undefined) timeEvents.push(slide.contentEndTime);
         
-        const extraEls = designer.canvas.extraElements[i] || [];
         extraEls.forEach(el => {
           if (el.startTime !== undefined) timeEvents.push(el.startTime);
           if (el.endTime !== undefined) timeEvents.push(el.endTime);
