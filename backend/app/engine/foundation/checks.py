@@ -249,11 +249,11 @@ class StructuralChecks:
         
         self.sliding_data = {
             "active": True,
-            "total_H_kN": total_H_N / 1000,
-            "total_V_kN": total_V_N / 1000,
-            "mu": mu,
-            "fs": fs_sliding,
-            "ok": ok
+            "total_H_kN": float(total_H_N / 1000),
+            "total_V_kN": float(total_V_N / 1000),
+            "mu": float(mu),
+            "fs": float(fs_sliding),
+            "ok": bool(ok)
         }
         return self.sliding_data
     def design_retaining_wall_stem(self, rw) -> dict:
