@@ -35,3 +35,14 @@ Para combatir el efecto "caja negra", el usuario solicitó máxima exposición d
 - **Diagramas de Flujo y Teoría**: Se insertaron gráficas ASCII demostrativas que resumen las 5 etapas del motor de cálculo interno (desde las condiciones de borde hasta el post-proceso normativo ACI-318).
 - **Trazabilidad de Cargas**: Se desglosó mediante tablas cómo cada muro trazado es evaluado individualmente para estimar su peso propio (Espesor $\times$ Altura $\times$ Densidad), su longitud, y su resultante Lineal ($kN/m$).
 - **Transparencia en el Acero**: Se expuso la iteración del diseño en bandas. Por cada banda, la memoria documenta el Momento Máximo evaluado y su respuesta en cuantía. Adicionalmente, se insertó una nota explicativa aclarando *por qué* en muros de poco impacto la cuantía de flexión exigida es $0.00 cm²/m$, explicando que el control del diseño lo rige la malla general por contracción y temperatura.
+
+## 6. Muros de Contención y Vigas de Apoyo (Integración Híbrida)
+- **Requerimiento**: Modelar losas de fundación que colindan con terrenos desnivelados o terraplenes (requiriendo muros de contención monolíticos en los bordes) y vigas de apoyo (nervios de rigidez) para evitar socavación.
+- **Implementación Matemática (Backend)**:
+  - *Muros de Contención*: Se programó la inyección de la carga vertical excéntrica y, fundamentalmente, el momento de volcamiento proveniente del Empuje Activo del Terreno (Presión Lateral) directamente en el vector de fuerzas nodales ($F$) del emparrillado de diferencias finitas.
+  - *Vigas de Apoyo*: Se modeló incrementando dinámicamente el espesor efectivo y la rigidez local de los elementos de placa cercanos a la coordenada trazada, emulando la inercia adicional del nervio sin cambiar el modelo bidimensional base.
+  - *Chequeo de Deslizamiento*: Se introdujo un chequeo de Estabilidad Global, computando el Factor de Seguridad contra Deslizamiento (comparando la fuerza estabilizadora por fricción basal dependiente del peso muerto vs. el cortante basal activo de los muros).
+- **Desarrollo Frontend (Canvas)**:
+  - Se añadieron herramientas de dibujo dedicadas con trazado codificado por color (Marrón para Muro de Contención, Verde para Viga de Apoyo).
+  - Integración paramétrica en tiempo real: Se extendió el modal de "Paredes" para permitir la entrada en caliente de variables geotécnicas específicas por elemento, tales como "Altura de Tierra" y "Profundidad de Viga".
+  - Se conectó el Factor de Seguridad al Deslizamiento al panel visual de resultados ACI 318 de la losa, notificando inmediatamente al diseñador si el diseño es inestable.

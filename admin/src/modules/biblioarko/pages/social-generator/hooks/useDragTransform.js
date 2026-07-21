@@ -5,12 +5,13 @@ export const useDragTransform = (onUpdateElement, scale = 1, globalSetters = {})
   const [imageSizes, setImageSizes] = useState({});
   const [imageRotations, setImageRotations] = useState({});
   const [contentPositions, setContentPositions] = useState({});
+  const [contentSizes, setContentSizes] = useState({});
   const [contentRotations, setContentRotations] = useState({});
   const [extraElements, setExtraElements] = useState({});
 
   const state = {
     imagePositions, imageSizes, imageRotations,
-    contentPositions, contentRotations,
+    contentPositions, contentSizes, contentRotations,
     extraElements,
     setImagePositions
   };
@@ -147,10 +148,11 @@ export const useDragTransform = (onUpdateElement, scale = 1, globalSetters = {})
             onUpdateElement(parseInt(sIdx), elId, { rotation: newRotation });
           }
         } else if (action === 'resize' || action === 'resize-w' || action === 'resize-h') {
-          const newWidth = Math.min(410, Math.max(10, transformData.width + dx * 2));
-          const newHeight = Math.min(410, Math.max(10, transformData.height + dy * 2));
+          const newWidth = Math.min(600, Math.max(100, transformData.width + dx * 2));
+          const newHeight = Math.min(600, Math.max(10, transformData.height + dy * 2));
 
           if (type === 'image') setImageSizes(prev => ({ ...prev, [id]: newWidth }));
+          else if (type === 'content') setContentSizes(prev => ({ ...prev, [index]: newWidth }));
           else if (type === 'extra') {
             const [sIdx, elId] = id.split('-');
             const updates = { fullWidth: false };

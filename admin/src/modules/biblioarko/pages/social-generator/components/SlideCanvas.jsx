@@ -92,7 +92,7 @@ export const SlideCanvas = ({
 }) => {
   const { 
     imagePositions, imageSizes, imageRotations, 
-    contentPositions, contentRotations 
+    contentPositions, contentSizes, contentRotations 
   } = transform;
 
   const { 
@@ -250,9 +250,10 @@ export const SlideCanvas = ({
           }}
         >
           <div 
-            className={`transition-shadow shrink-0 w-[346px] px-4 ${isSelected && selectedContentIndex === index ? 'border-[1.5px] border-dashed border-indigo-500 rounded-2xl p-4 bg-white/10 backdrop-blur-sm' : ''}`}
+            className={`transition-shadow shrink-0 px-4 ${isSelected && selectedContentIndex === index ? 'border-[1.5px] border-dashed border-indigo-500 rounded-2xl p-4 bg-white/10 backdrop-blur-sm' : ''}`}
             style={{
               transform: `rotate(${contentRotations[index] || 0}deg)`,
+              width: contentSizes && contentSizes[index] ? `${contentSizes[index]}px` : '346px',
               cursor: isSelected ? 'grab' : 'default',
               flexShrink: 0
             }}
@@ -281,6 +282,21 @@ export const SlideCanvas = ({
                 }
               }}
               title="Eliminar Texto Principal"><FiTrash2 size={12}/></div>
+              
+            <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-indigo-500 rounded-full border-2 border-white cursor-e-resize z-[999] shadow-md hover:scale-125 transition-transform"
+              title="Ensanchar cajón"
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                handleTransformStart(e, index, 'resize-w', 'content', index, containerRef.current, { 
+                  width: contentSizes && contentSizes[index] ? contentSizes[index] : 346 
+                });
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+                handleTransformStart(e, index, 'resize-w', 'content', index, containerRef.current, { 
+                  width: contentSizes && contentSizes[index] ? contentSizes[index] : 346 
+                });
+              }}></div>
           </>
         )}
 
