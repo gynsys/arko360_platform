@@ -69,7 +69,12 @@ export const useVideoExport = (
         // 3. Videos and Images
         for (let imgIndex = 0; imgIndex < customImages.length; imgIndex++) {
            const img = customImages[imgIndex];
-           if (img && img.startsWith('data:video')) {
+           const isVideo = img && (
+              img.startsWith('data:video') || 
+              img.match(/\.(mp4|webm|mov|ogg)(\?.*)?$/i)
+           );
+           
+           if (isVideo) {
               const vid = document.createElement('video');
               try {
                 const res = await fetch(img);
@@ -198,9 +203,9 @@ export const useVideoExport = (
           const capturedCanvas = await html2canvas(slideNode, {
             useCORS: true,
             scale: 2,
-            backgroundColor: designer.design.bgColor || '#ffffff',
+            backgroundColor: designer.design?.bgColor || '#ffffff',
             logging: false,
-            allowTaint: true,
+            allowTaint: false, // Must be false to prevent canvas tainting which breaks captureStream
             imageTimeout: 15000,
             removeContainer: false,
             foreignObjectRendering: false,
