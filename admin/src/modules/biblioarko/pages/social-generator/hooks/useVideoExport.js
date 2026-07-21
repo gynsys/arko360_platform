@@ -23,6 +23,30 @@ export const useVideoExport = (
     setExportProgress(0);
     setExportStatus('exporting');
 
+    // === Inicializar WebAudio AQUI ===
+    // Debe crearse inmediatamente tras el clic del usuario (sin ningún await previo)
+    // para que inicie en estado "running" y no "suspended".
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+    const audioDest = audioCtx.createMediaStreamDestination();
+    let hasAudio = false;
+
+    // Audio de fondo dedicado para exportación
+    const exportBgAudio = new Audio();
+    exportBgAudio.crossOrigin = 'anonymous';
+    try {
+      const bgSource = audioCtx.createMediaElementSource(exportBgAudio);
+      bgSource.connect(audioDest);
+      hasAudio = true;
+    } catch (audioErr) {
+      console.error('[Arko360] Error al conectar audio de fondo:', audioErr);
+    }
+    
+    // Silenciar la preview del editor para que no suene doble
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
     try {
       // === PASO 1: Capturar cada slide como imagen usando html2canvas ===
       const capturedFrames = [];
@@ -246,37 +270,11 @@ export const useVideoExport = (
 
       const videoStream = outputCanvas.captureStream(30);
 
-      // WebAudio para mezclar múltiples fuentes de audio (música + videos insertados)
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const audioCtx = new AudioContext();
-      const audioDest = audioCtx.createMediaStreamDestination();
-      let hasAudio = false;
-
-      // 1. Audio de fondo dedicado para exportación (evita problemas de estado con audioRef)
-      const exportBgAudio = new Audio();
-      exportBgAudio.crossOrigin = 'anonymous';
-      try {
-        // Al crear esto, el audio se dirige al WebAudio y no suena por los parlantes,
-        // garantizando que captureStream() siempre tenga la pista lista.
-        const bgSource = audioCtx.createMediaElementSource(exportBgAudio);
-        bgSource.connect(audioDest);
-        hasAudio = true;
-      } catch (audioErr) {
-        console.error('[Arko360] Error al conectar audio de fondo:', audioErr);
-      }
-      
-      // Silenciar la preview del editor para que no suene doble
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-
-      // 2. Audio de los videos insertados
+      // 2. Conectar audio de los videos insertados al WebAudio
       slideVideos.forEach(vids => {
         vids.forEach(v => {
           try {
             // Desmutear el video para extraer el audio real.
-            // Al usar createMediaElementSource, el navegador redirige el sonido al WebAudio
-            // y no a los parlantes, evitando que suene duplicado.
             v.vid.muted = false; 
             const vidSource = audioCtx.createMediaElementSource(v.vid);
             vidSource.connect(audioDest);
@@ -309,7 +307,7 @@ export const useVideoExport = (
 
       const recorder = new MediaRecorder(combinedStream, { 
         mimeType,
-        videoBitsPerSecond: 1000000 // 1.0 Mbps para forzar una compresión fuerte
+        videoBitsPerSecond: 1500000 // 1.5 Mbps: Un balance mucho mejor entre compresión y calidad
       });
       const chunks = [];
       // timeslice: collect data every 1s to avoid empty blob on failure
