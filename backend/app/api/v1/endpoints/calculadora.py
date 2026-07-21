@@ -137,6 +137,10 @@ def analyze_slab(data: SlabModelInput):
             gr.add_beam(b.x1, b.y1, b.x2, b.y2, b.width, b.height, b.load_factor, b.type)
         for c in data.columns:
             gr.add_column(c.x, c.y, c.width, c.length, c.height, c.load_kgf, c.id)
+        for rw in data.retaining_walls:
+            gr.add_retaining_wall(rw.x1, rw.y1, rw.x2, rw.y2, rw.thickness, rw.soil_height, rw.soil_density, rw.phi, rw.perimeter_wall_height)
+        for sb in data.support_beams:
+            gr.add_support_beam(sb.x1, sb.y1, sb.x2, sb.y2, sb.width, sb.depth)
 
         results = gr.run_full_analysis(extra_uniform_load=data.extra_load)
         return results

@@ -15,7 +15,7 @@ import numpy as np
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
 
-from .models import Beam, Column, Wall
+from .models import Beam, Column, Wall, RetainingWall, SupportBeam
 from app.engine.fem_shell import get_quad_plate_local_stiffness
 
 
@@ -108,6 +108,8 @@ class GrillageSolver:
         self.walls: List[Wall] = []
         self.beams: List[Beam] = []
         self.columns: List[Column] = []
+        self.retaining_walls: List[RetainingWall] = []
+        self.support_beams: List[SupportBeam] = []
         self.band_data: list = []
         self.settlement_data: list = []
         self.punching_data: list = []
@@ -250,21 +252,86 @@ class GrillageSolver:
         load_kgf: float,
         id: str = "",
     ) -> None:
-        """Add a column / machón and compute its factored axial load P_u (N)."""
-        W_self_kgf = width * length * height * 2400
-        total_load_kgf = load_kgf + W_self_kgf
-        P_u_N = total_load_kgf * 9.81 * 1.5  # Factored load
-
+        """Add a column with a point load."""
+        P_u = load_kgf * 9.81 * 1.5  # 1.5 load factor
         self.columns.append(
             Column(
-                x=x, y=y, width=width, length=length,
-                height=height, load_kgf=load_kgf, P_u=P_u_N, id=id,
+                x=x, y=y, width=width, length=length, height=height,
+                load_kgf=load_kgf, P_u=P_u, id=id
             )
         )
-        print(
-            f"  Machón {id}: ({x:.2f},{y:.2f}) | "
-            f"{width*100:.0f}x{length*100:.0f} cm | Pu={P_u_N/1000:.2f} kN"
+        print(f"  Columna {id}: ({x:.2f},{y:.2f}) | {width*100:.0f}x{length*100:.0f} cm | Pu={P_u/1000:.2f} kN")
+
+    def add_retaining_wall(
+        self,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        thickness: float,
+        soil_height: float,
+        soil_density: float,
+        phi: float,
+        perimeter_wall_height: float,
+    ) -> None:
+        """Add a retaining wall on top of the slab."""
+        length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        if length < 1e-6:
+            return
+            
+        # Active earth pressure coefficient
+        K_a = np.tan(np.radians(45 - phi / 2)) ** 2
+        
+        # Overturning moment per linear meter (kN.m/m -> N.m/m)
+        # M = 1/6 * gamma * H^3 * K_a
+        m_overturning = (1/6) * soil_density * (soil_height ** 3) * K_a
+        
+        # Base shear per linear meter (kN/m -> N/m)
+        v_base = (1/2) * soil_density * (soil_height ** 2) * K_a
+        
+        # Vertical load from concrete retaining wall and perimeter wall
+        # Retaining wall: concrete 24000 N/m3
+        weight_concrete = thickness * soil_height * 24000.0
+        # Perimeter wall: block ~1500 N/m2 -> 1500 * height
+        weight_perimeter = perimeter_wall_height * 1500.0
+        q_vertical = (weight_concrete + weight_perimeter) * 1.2 # 1.2 dead load factor
+
+        self.retaining_walls.append(
+            RetainingWall(
+                x1=x1, y1=y1, x2=x2, y2=y2,
+                thickness=thickness, soil_height=soil_height,
+                soil_density=soil_density, phi=phi,
+                perimeter_wall_height=perimeter_wall_height,
+                length=length, q_vertical=q_vertical,
+                m_overturning=m_overturning, v_base=v_base
+            )
         )
+        print(f"  Muro Contención: ({x1:.2f},{y1:.2f})->({x2:.2f},{y2:.2f}) | H={soil_height:.2f}m | M={m_overturning/1000:.2f} kNm/m")
+
+    def add_support_beam(
+        self,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        width: float,
+        depth: float
+    ) -> None:
+        """Add a support beam (viga de apoyo) to stiffen the edge."""
+        length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        if length < 1e-6:
+            return
+            
+        I_beam = (width * (depth ** 3)) / 12.0
+        
+        self.support_beams.append(
+            SupportBeam(
+                x1=x1, y1=y1, x2=x2, y2=y2,
+                width=width, depth=depth,
+                length=length, I_beam=I_beam
+            )
+        )
+        print(f"  Viga de Apoyo: ({x1:.2f},{y1:.2f})->({x2:.2f},{y2:.2f}) | {width*100:.0f}x{depth*100:.0f} cm")
 
     # ------------------------------------------------------------------
     # Index helpers
@@ -399,6 +466,37 @@ class GrillageSolver:
                 node = self._node_idx(ni, nj)
                 F[self._dof(node, 0)] += q_eff * dl
 
+        # 2.4 Muros de contención
+        for rw in self.retaining_walls:
+            n_seg = int(np.ceil(rw.length / (self.dx / 2.0)))
+            if n_seg == 0:
+                continue
+            dl = rw.length / n_seg
+            dx_dir = rw.x2 - rw.x1
+            dy_dir = rw.y2 - rw.y1
+            cos_a = dx_dir / rw.length
+            sin_a = dy_dir / rw.length
+            
+            for seg_k in range(n_seg):
+                t = (seg_k + 0.5) / n_seg
+                x_p = rw.x1 + t * dx_dir
+                y_p = rw.y1 + t * dy_dir
+
+                ni = int(np.clip(int(round(x_p / self.dx)), 0, self.nx))
+                nj = int(np.clip(int(round(y_p / self.dy)), 0, self.ny))
+                node = self._node_idx(ni, nj)
+                
+                # Vertical load
+                F[self._dof(node, 0)] += rw.q_vertical * dl
+                
+                # Overturning moment
+                # Moment is perpendicular to the wall direction.
+                # If wall is along X (cos=1, sin=0), earth pressure pushes along Y.
+                # Overturning moment makes it rotate around X axis (DOF 1).
+                # Actually, moment vector M_x = m_overturning * cos_a, M_y = m_overturning * sin_a
+                F[self._dof(node, 1)] += rw.m_overturning * dl * cos_a
+                F[self._dof(node, 2)] += rw.m_overturning * dl * sin_a
+
         # 2.5 Cargas puntuales (machones / columnas)
         for col in self.columns:
             ni = int(round(col.x / self.dx))
@@ -440,7 +538,16 @@ class GrillageSolver:
                     [self.x[i], self.y[j+1]]
                 ]
                 
-                k_elem = get_quad_plate_local_stiffness(nodes_local, self.E, nu_concrete, self.h)
+                # Check for support beams
+                h_eff = self.h
+                cx = self.x[i] + self.dx / 2.0
+                cy = self.y[j] + self.dy / 2.0
+                for sb in self.support_beams:
+                    dist = self._point_segment_distance(cx, cy, sb.x1, sb.y1, sb.x2, sb.y2)
+                    if dist <= max(self.dx, self.dy) * 0.75:
+                        h_eff = max(h_eff, sb.depth)
+                
+                k_elem = get_quad_plate_local_stiffness(nodes_local, self.E, nu_concrete, h_eff)
                 
                 dofs = (
                     [self._dof(n1, d) for d in range(3)] +

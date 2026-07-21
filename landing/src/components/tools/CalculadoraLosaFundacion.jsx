@@ -1423,7 +1423,7 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       return {
         ...w,
         type,
-        thickness: type === 'interno' ? 0.12 : matProps.thickness,
+        thickness: w.thickness || (type === 'interno' ? 0.12 : type === 'support_beam' ? 0.3 : matProps.thickness),
         height: parseFloat(wallHeight) || 2.7,
         density: matProps.density,
         is_plastered: designParams.is_plastered
@@ -1905,6 +1905,18 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         openings: openings.filter(op => op.wall_id === w.id).map(op => ({
           type: op.type, start_m: op.start_m, width_m: op.width_m, height_m: op.height_m
         }))
+      })),
+      retaining_walls: allWalls.filter(w => w.type === 'retaining_wall').map(w => ({
+        x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
+        thickness: w.thickness || 0.3, 
+        soil_height: w.soil_height || 1.4,
+        soil_density: w.soil_density || 18000.0, 
+        phi: w.phi || 30.0,
+        perimeter_wall_height: w.perimeter_wall_height || 2.5
+      })),
+      support_beams: allWalls.filter(w => w.type === 'support_beam').map(w => ({
+        x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
+        width: w.thickness || 0.3, depth: w.depth || 0.5
       })),
       beams: perimeterWalls.filter(w => w.type === 'perimetral' || w.type === 'interno').map(w => ({
         x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
@@ -2974,11 +2986,14 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                     <thead><tr><th>Tipo</th><th>X1</th><th>Y1</th><th>X2</th><th>Y2</th><th></th></tr></thead>
                     <tbody>
                       {internalWalls.map((w, i) => (
-                        <tr key={w.id} className={hoveredWallId === w.id ? 'highlighted-row' : ''} onMouseEnter={() => setHoveredWallId(w.id)} onMouseLeave={() => setHoveredWallId(null)}>
+                        <React.Fragment key={w.id}>
+                        <tr className={hoveredWallId === w.id ? 'highlighted-row' : ''} onMouseEnter={() => setHoveredWallId(w.id)} onMouseLeave={() => setHoveredWallId(null)}>
                           <td>
                             <select value={w.type || 'interno'} onChange={e => updateInternalWall(w.id, 'type', e.target.value)} style={{fontSize: '11px', padding: '2px 4px', width: '85px', height: '24px'}}>
                               <option value="interno">Interna</option>
                               <option value="perimetral">Perimetral</option>
+                              <option value="retaining_wall">M. Contención</option>
+                              <option value="support_beam">Viga Apoyo</option>
                             </select>
                           </td>
                           <td><input type="number" step="0.5" value={w.x1} onChange={e => updateInternalWall(w.id, 'x1', e.target.value)}/></td>
@@ -2987,6 +3002,20 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                           <td><input type="number" step="0.5" value={w.y2} onChange={e => updateInternalWall(w.id, 'y2', e.target.value)}/></td>
                           <td><button className="del-btn" onClick={() => removeInternalWall(w.id)}>X</button></td>
                         </tr>
+                        {w.type === 'retaining_wall' && (
+                          <tr style={{background:'#f9f9f9'}}><td colSpan="6" style={{padding:'4px 8px', fontSize:'11px', textAlign:'left'}}>
+                            <span style={{marginRight:'8px'}}>Espesor (m): <input type="number" step="0.05" value={w.thickness || 0.3} onChange={e => updateInternalWall(w.id, 'thickness', parseFloat(e.target.value))} style={{width:'50px'}} /></span>
+                            <span style={{marginRight:'8px'}}>H Tierra (m): <input type="number" step="0.1" value={w.soil_height || 1.4} onChange={e => updateInternalWall(w.id, 'soil_height', parseFloat(e.target.value))} style={{width:'50px'}} /></span>
+                            <span style={{marginRight:'8px'}}>H Muro (m): <input type="number" step="0.1" value={w.perimeter_wall_height || 2.5} onChange={e => updateInternalWall(w.id, 'perimeter_wall_height', parseFloat(e.target.value))} style={{width:'50px'}} /></span>
+                          </td></tr>
+                        )}
+                        {w.type === 'support_beam' && (
+                          <tr style={{background:'#f9f9f9'}}><td colSpan="6" style={{padding:'4px 8px', fontSize:'11px', textAlign:'left'}}>
+                            <span style={{marginRight:'8px'}}>Ancho (m): <input type="number" step="0.05" value={w.thickness || 0.3} onChange={e => updateInternalWall(w.id, 'thickness', parseFloat(e.target.value))} style={{width:'50px'}} /></span>
+                            <span style={{marginRight:'8px'}}>Profundidad (m): <input type="number" step="0.1" value={w.depth || 0.5} onChange={e => updateInternalWall(w.id, 'depth', parseFloat(e.target.value))} style={{width:'50px'}} /></span>
+                          </td></tr>
+                        )}
+                        </React.Fragment>
                       ))}
                     </tbody>
                   </table>
@@ -3197,6 +3226,18 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                       <path d="M14 12V2" />
                       <path d="M8 5h8" />
                       <path d="M8 9h8" />
+                    </svg>
+                  </button>
+                  <button onClick={() => setDrawType('retaining_wall')} title="Muro de Contención" style={{padding:'6px', borderRadius:'4px', border: drawType === 'retaining_wall' ? '2px solid #8d6e63' : '1px solid transparent', background: drawType === 'retaining_wall' ? '#fff' : 'transparent', color: '#8d6e63', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 22V2h4v20H4z" fill="currentColor" fillOpacity="0.3"/>
+                      <path d="M8 22h8L12 12" />
+                    </svg>
+                  </button>
+                  <button onClick={() => setDrawType('support_beam')} title="Viga de Apoyo" style={{padding:'6px', borderRadius:'4px', border: drawType === 'support_beam' ? '2px solid #4caf50' : '1px solid transparent', background: drawType === 'support_beam' ? '#fff' : 'transparent', color: '#4caf50', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="10" width="20" height="4" rx="1" fill="currentColor" fillOpacity="0.3"/>
+                      <path d="M2 14v4h20v-4" />
                     </svg>
                   </button>
                   {/* Herramienta Offset */}
@@ -3501,6 +3542,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 if (w.type === 'perimetral') strokeColor = '#e53935';
                 if (w.type === 'losa') strokeColor = '#757575';
                 if (w.type === 'parcela') strokeColor = '#9e9e9e';
+                if (w.type === 'retaining_wall') strokeColor = '#8d6e63';
+                if (w.type === 'support_beam') strokeColor = '#4caf50';
                 
                 const isSel = selectedElement && selectedElement.type === 'muro' && selectedElement.id === w.id;
                 
@@ -3796,6 +3839,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               label:'Presión Suelo', val: results.soil_pressure ? `${(results.soil_pressure.max_pressure_kN_m2*101.9716).toFixed(0)} kgf/m²` : '-', ok: results.soil_pressure?.ok
             },{
               label:'q_adm', val: results.soil_pressure ? `${(results.soil_pressure.q_adm_kN_m2*101.9716).toFixed(0)} kgf/m²` : '-', ok: true
+            },{
+              label:'FS Deslizamiento', val: results.sliding?.active ? `${results.sliding.fs > 100 ? '>100' : results.sliding.fs.toFixed(2)}` : 'N/A', ok: results.sliding?.active ? results.sliding.ok : true
             },{
               label:'Acero Mínimo', val: `${(results.As_min_cm2_m||0).toFixed(2)} cm²/m`, ok: true
             }].map((c, i) => (

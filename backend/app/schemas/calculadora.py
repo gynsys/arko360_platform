@@ -98,6 +98,25 @@ class MaterialsInput(BaseModel):
     band_width_m: float = 0.0
     custom_mesh_cm2_m: float = 0.0
 
+class RetainingWallInput(BaseModel):
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+    thickness: float
+    soil_height: float
+    soil_density: float = 18000.0 # N/m3
+    phi: float = 30.0 # degrees
+    perimeter_wall_height: float = 0.0
+
+class SupportBeamInput(BaseModel):
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+    width: float
+    depth: float
+
 class SlabModelInput(BaseModel):
     project: str = "Losa de Cimentación"
     geometry: GeometryInput
@@ -106,6 +125,8 @@ class SlabModelInput(BaseModel):
     beams: List[BeamInput] = []
     columns: List[ColumnInput] = []
     doors: List[DoorInput] = []
+    retaining_walls: List[RetainingWallInput] = []
+    support_beams: List[SupportBeamInput] = []
     mesh_nx: int = 40
     mesh_ny: int = 40
     band_width_factor: float = 1.0

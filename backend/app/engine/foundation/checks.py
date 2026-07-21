@@ -206,6 +206,58 @@ class StructuralChecks:
         )
         return results
 
+    def check_sliding(self) -> dict:
+        """
+        Calculates sliding factor of safety.
+        FS_sliding = (Sum_V * friction_coefficient) / Sum_H
+        """
+        if not hasattr(self, 'retaining_walls') or not self.retaining_walls:
+            return {"active": False}
+            
+        print("\n=== VERIFICACIÓN DE DESLIZAMIENTO ===")
+        # 1. Total horizontal force from earth pressure
+        total_H_N = sum(rw.v_base * rw.length for rw in self.retaining_walls)
+        
+        # 2. Total vertical force (Service load approx)
+        # Slab weight
+        slab_weight_N = self.Lx * self.Ly * self.h * self.gamma_horm * 9.81
+        
+        # Standard walls weight (q_lineal has load factors, assume avg 1.2)
+        walls_weight_N = sum((w.q_lineal / w.load_factor) * w.length for w in self.walls)
+        
+        # Retaining walls weight
+        rw_weight_N = sum((rw.q_vertical / 1.2) * rw.length for rw in self.retaining_walls)
+        
+        # Columns load (load_kgf * 9.81)
+        columns_weight_N = sum(c.load_kgf * 9.81 for c in self.columns)
+        
+        total_V_N = slab_weight_N + walls_weight_N + rw_weight_N + columns_weight_N
+        
+        # Friction coefficient mu = tan(phi). Assuming average phi = 30 deg -> tan(30) = 0.577
+        # We can use the phi from the first retaining wall
+        phi_avg = self.retaining_walls[0].phi if self.retaining_walls else 30.0
+        mu = float(np.tan(np.radians(phi_avg)))
+        
+        fs_sliding = (total_V_N * mu) / total_H_N if total_H_N > 0 else 999.0
+        
+        ok = fs_sliding >= 1.5
+        
+        print(f"  Fuerza Horizontal (Empuje): {total_H_N/1000:.2f} kN")
+        print(f"  Fuerza Vertical (Peso): {total_V_N/1000:.2f} kN")
+        print(f"  Coeficiente de Fricción: {mu:.3f}")
+        print(f"  Factor de Seguridad (FS): {fs_sliding:.2f} (Req >= 1.5) -> {'CUMPLE' if ok else 'NO CUMPLE'}")
+        
+        self.sliding_data = {
+            "active": True,
+            "total_H_kN": total_H_N / 1000,
+            "total_V_kN": total_V_N / 1000,
+            "mu": mu,
+            "fs": fs_sliding,
+            "ok": ok
+        }
+        return self.sliding_data
+
+
     def generate_design_report(self) -> None:
         """Print a concise design summary to the console."""
         print("\n" + "=" * 80)

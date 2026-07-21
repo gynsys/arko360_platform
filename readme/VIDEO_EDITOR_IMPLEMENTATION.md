@@ -47,5 +47,14 @@ En lugar de generar un archivo `.mp4` nuevo en cada edición, simplemente guarda
   - **Fallo de Arrastre Solucionado:** Se eliminaron las propiedades `autoPlay` y `loop` de la etiqueta `<video>` del slide. Antes, el `autoPlay` forzaba una desincronización en el renderizado que causaba la pérdida de foco al intentar hacer drag & drop. Ahora el video respeta estrictamente los eventos de mouse de la capa superior.
 
 ## 4. Consideraciones Futuras para el Mantenimiento
-- **Exportación:** Como el video ya no se exporta recortado a través del modal, el generador final (backend o librería de captura) debe ser capaz de leer los parámetros `trimStart`, `trimEnd` y `speed` guardados en el JSON (`imagePositions`) para aplicar esos cortes mediante FFmpeg (Python/Backend) o para sincronizar la grabación de pantalla del Canvas.
+- **Exportación Resuelta (`useVideoExport.js`):** Anteriormente se consideraba que el backend o FFmpeg debía leer los parámetros. Esto ya fue resuelto a nivel de Frontend. El script `useVideoExport.js` ahora lee directamente `v.pos.trimStart` y `v.pos.speed` de cada elemento de video incrustado y aplica `v.vid.currentTime` y `v.vid.playbackRate` justo antes de grabar cada frame, asegurando que el video `.mp4` resultante sea pixel-perfect y con las velocidades de reproducción correctas.
 - **Sincronización:** Si se añaden más elementos animados, se debe seguir utilizando `currentTime` y `isPlaying` pasados desde `index.jsx` como única "fuente de la verdad" del tiempo global, tal como se implementó en `SlideCanvas.jsx`.
+
+## 5. Actualizaciones Recientes y Fixes UX
+- **Línea de Tiempo Expansible (`TimelinePanel.jsx` & `index.jsx`):**
+  - **Problema:** El usuario no podía arrastrar elementos (textos, logos, audios) más allá de la duración base (`slideDuration`), limitando la capacidad de poner elementos en "cascada" en el tiempo.
+  - **Solución:** Se implementó el cálculo dinámico de `actualDuration` basado en el `endTime` máximo entre todos los elementos de la diapositiva. Adicionalmente, para evitar un ciclo infinito de re-escala visual (feedback loop) durante el "Drag & Drop", se implementó un `dragContext` (usando `useRef`) que congela la relación píxeles-por-segundo justo en el `onPointerDown`, permitiendo arrastrar elementos fuera de los límites para estirar la regla de tiempo de manera fluida.
+  
+- **Corrección de la Barra de Desplazamiento (`useMobileFullscreen.js`):**
+  - **Problema:** Un bug generalizado causaba que la barra de desplazamiento lateral del navegador (scrollbar) desapareciera al redimensionar de móvil a escritorio.
+  - **Solución:** Se corrigió el hook para que restaure los valores de estilos del body a su estado por defecto estricto (`''`) en lugar de usar `'auto'` (lo cual sobreescribía clases globales de Tailwind). Además, se añadió la limpieza obligatoria (`cleanup`) en el `useEffect` tanto en el evento `unmount` como al detectar `!isMobile`.

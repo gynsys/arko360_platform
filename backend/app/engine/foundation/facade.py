@@ -26,6 +26,7 @@ class FoundationSlabDesigner(
         self.define_reinforcement_bands()
         self.check_differential_settlements()
         self.check_punching()
+        self.check_sliding()
         return self._build_results_dict()
     
     def _build_results_dict(self) -> dict:
@@ -66,6 +67,7 @@ class FoundationSlabDesigner(
             "bands": self.band_data,
             "punching": self.punching_data,
             "settlements": self.settlement_data,
+            "sliding": getattr(self, 'sliding_data', {"active": False}),
             "svg_plan": self.get_svg_plan(),
             "materials_computation": self._compute_quantities()
         }

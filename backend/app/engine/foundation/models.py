@@ -56,3 +56,30 @@ class Column:
     load_kgf: float
     P_u: float = 0.0   # Carga última en N
     id: str = ""
+
+@dataclass
+class RetainingWall:
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+    thickness: float
+    soil_height: float
+    soil_density: float
+    phi: float
+    perimeter_wall_height: float
+    length: float = 0.0
+    q_vertical: float = 0.0
+    m_overturning: float = 0.0
+    v_base: float = 0.0
+
+@dataclass
+class SupportBeam:
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+    width: float
+    depth: float
+    length: float = 0.0
+    I_beam: float = 0.0
