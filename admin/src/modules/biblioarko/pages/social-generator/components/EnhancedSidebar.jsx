@@ -355,6 +355,15 @@ export const EnhancedSidebar = ({
                         className="w-12 h-8 rounded cursor-pointer"
                       />
                     </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-gray-600 dark:text-gray-400">Viñetas</label>
+                      <input
+                        type="color"
+                        value={design.bulletColor}
+                        onChange={(e) => design.setBulletColor(e.target.value)}
+                        className="w-12 h-8 rounded cursor-pointer"
+                      />
+                    </div>
                   </div>
                 </div>
 

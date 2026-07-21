@@ -12,6 +12,32 @@ from typing import List
 
 import numpy as np
 
+def get_equivalent_rebars_spacing(as_req_cm2_m, min_spacing=10, max_spacing=30):
+    diameters = {10: 0.785, 12: 1.13, 16: 1.99, 19: 2.84}
+    options = []
+    for d, area in diameters.items():
+        s_m = area / as_req_cm2_m
+        s_cm = int(s_m * 100)
+        if s_cm > max_spacing:
+            s_cm = max_spacing
+        if s_cm >= min_spacing:
+            options.append(f"Ø{d}@{s_cm}cm")
+    if not options:
+        options.append(f"Ø19@10cm")
+    return options
+
+def get_equivalent_rebars_count(as_req_cm2, min_bars=2, max_bars=6):
+    diameters = {10: 0.785, 12: 1.13, 16: 1.99, 19: 2.84}
+    options = []
+    for d, area in diameters.items():
+        n = int(np.ceil(as_req_cm2 / area))
+        if n < min_bars:
+            n = min_bars
+        if n <= max_bars:
+            options.append(f"{n}Ø{d}")
+    if not options:
+        options.append(f"{min_bars}Ø19")
+    return options
 
 class StructuralChecks:
     """
@@ -313,42 +339,24 @@ class StructuralChecks:
         As_min_m2 = 0.0018 * b * rw.thickness
         As_req_cm2_m = max(As_m2, As_min_m2) * 10000
         
-        # Propose rebar for tension face (Interior)
-        bar_area = 1.99 # phi 16 (5/8")
-        spacing_m = bar_area / As_req_cm2_m
-        spacing_cm = int(spacing_m * 100)
+        # Propose rebar options for tension face (Interior)
+        trac_options = get_equivalent_rebars_spacing(As_req_cm2_m)
         
-        if spacing_cm > 30: spacing_cm = 30
-        if spacing_cm < 10: 
-            bar_area = 2.84 # phi 19 (3/4")
-            spacing_m = bar_area / As_req_cm2_m
-            spacing_cm = int(spacing_m * 100)
-            if spacing_cm < 10: spacing_cm = 10
-            bar_str = f"Trac: Ø19@{spacing_cm}cm"
-        else:
-            bar_str = f"Trac: Ø16@{spacing_cm}cm"
-            
         # Compression face (Exterior) min steel
         As_comp_min_m2 = 0.0012 * b * rw.thickness
         As_comp_cm2_m = As_comp_min_m2 * 10000
-        comp_bar_area = 0.785 # phi 10 (3/8")
-        comp_spacing_m = comp_bar_area / As_comp_cm2_m
-        comp_spacing_cm = int(comp_spacing_m * 100)
-        if comp_spacing_cm > 30: comp_spacing_cm = 30
-        if comp_spacing_cm < 10: comp_spacing_cm = 10
+        comp_options = get_equivalent_rebars_spacing(As_comp_cm2_m)
         
-        bar_str += f" / Comp: Ø10@{comp_spacing_cm}cm"
+        # Combine options pairwise
+        proposed_rebar_options = []
+        for i in range(len(trac_options)):
+            comp = comp_options[i] if i < len(comp_options) else comp_options[-1]
+            proposed_rebar_options.append(f"Trac: {trac_options[i]} / Comp: {comp}")
             
         # Horizontal steel (temperature and shrinkage)
         As_horiz_min_m2 = 0.0020 * b * rw.thickness
         As_horiz_cm2_m = As_horiz_min_m2 * 10000
-        
-        horiz_bar_area = 1.13 # phi 12 (1/2")
-        horiz_spacing_m = horiz_bar_area / As_horiz_cm2_m
-        horiz_spacing_cm = int(horiz_spacing_m * 100)
-        if horiz_spacing_cm > 30: horiz_spacing_cm = 30
-        if horiz_spacing_cm < 10: horiz_spacing_cm = 10
-        horiz_bar_str = f"Ø12@{horiz_spacing_cm}cm"
+        horiz_options = get_equivalent_rebars_spacing(As_horiz_cm2_m)
             
         return {
             "id": rw.id if hasattr(rw, 'id') and rw.id else "Muro",
@@ -359,9 +367,11 @@ class StructuralChecks:
             "phiVc_kgf_m": float(phi_Vc_N_m / 9.80665),
             "shear_ok": shear_ok,
             "As_req_cm2_m": float(As_req_cm2_m),
-            "proposed_rebar": bar_str,
+            "proposed_rebar": proposed_rebar_options[0] if proposed_rebar_options else "",
+            "proposed_rebar_options": proposed_rebar_options,
             "As_horiz_cm2_m": float(As_horiz_cm2_m),
-            "proposed_rebar_horiz": horiz_bar_str
+            "proposed_rebar_horiz": horiz_options[0] if horiz_options else "",
+            "proposed_rebar_horiz_options": horiz_options
         }
 
     def design_support_beam(self, sb) -> dict:
@@ -482,8 +492,10 @@ class StructuralChecks:
             "Mu_kgfm": float(Mu_beam / 9.80665),
             "Vu_kgf": float(Vu_beam / 9.80665),
             "As_req_cm2": float(As_req_cm2),
-            "proposed_rebar": f"{n_bars_bot}Ø16 Inf + {n_bars_top}Ø10 Sup",
-            "proposed_stirrups": f"Ø10@{s_cm}cm"
+            "proposed_rebar": proposed_rebar_options[0] if 'proposed_rebar_options' in locals() else f"{n_bars_bot}Ø16 Inf + {n_bars_top}Ø10 Sup",
+            "proposed_rebar_options": proposed_rebar_options if 'proposed_rebar_options' in locals() else [f"{n_bars_bot}Ø16 Inf + {n_bars_top}Ø10 Sup"],
+            "proposed_stirrups": f"Ø10@{s_cm}cm",
+            "proposed_stirrups_options": [f"Ø10@{s_cm}cm", f"Ø10@{max(10, s_cm-5)}cm"]
         }
 
     def generate_design_report(self) -> None:

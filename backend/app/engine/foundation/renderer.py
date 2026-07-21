@@ -523,7 +523,121 @@ class PlanRenderer:
         )
 
         svg_parts.append("</svg>")
-        return "\\n".join(svg_parts)
+        return "\n".join(svg_parts)
+
+    def get_svg_details(self) -> str:
+        """
+        Build and return an SVG string showing the cross-section details.
+        Draws a generic Retaining Wall section and a Support Beam section.
+        """
+        svg_w = 800
+        svg_h = 400
+        
+        svg_parts = []
+        svg_parts.append(
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_w} {svg_h}" '
+            f'style="width:100%;max-height:400px;border:1px solid #ccc;'
+            f'border-radius:8px;background:#fafafa;margin-top:20px;">'
+            f'<defs><marker id="arrow_det" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#333" /></marker></defs>'
+        )
+        
+        # --- DETAIL 1: Retaining Wall (Left Half) ---
+        rw_thickness = 0.20
+        rw_L = 1.50
+        rw_h = 2.0
+        if hasattr(self, 'retaining_walls') and self.retaining_walls:
+            rw = self.retaining_walls[0]
+            rw_thickness = rw.thickness
+            rw_h = getattr(rw, 'soil_height', 1.5) + getattr(rw, 'perimeter_wall_height', 0.5)
+            
+        h_str = f"{rw_h:.2f} m"
+        t_str = f"{rw_thickness * 100:.0f} cm"
+        L_str = f"{rw_L:.2f} m"
+        
+        svg_parts.append('<g transform="translate(0, 0)">')
+        svg_parts.append('<text x="200" y="30" text-anchor="middle" font-size="16" font-weight="bold" font-family="sans-serif" fill="#1e293b">Detalle Muro de Contención</text>')
+        
+        # Concrete outline
+        svg_parts.append(
+            '<polygon points="120,60 120,320 320,320 320,290 150,290 150,60" '
+            'fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>'
+        )
+        
+        # Vertical traction (inside face - right side of stem)
+        svg_parts.append('<line x1="140" y1="70" x2="140" y2="310" stroke="#dc2626" stroke-width="3" stroke-dasharray="5,5"/>')
+        # Vertical compression (outside face - left side of stem)
+        svg_parts.append('<line x1="130" y1="70" x2="130" y2="310" stroke="#2563eb" stroke-width="3" stroke-dasharray="5,5"/>')
+        
+        for y in range(80, 300, 40):
+            svg_parts.append(f'<circle cx="140" cy="{y}" r="3" fill="#dc2626"/>')
+            svg_parts.append(f'<circle cx="130" cy="{y}" r="3" fill="#2563eb"/>')
+            
+        # Labels
+        svg_parts.append(f'<text x="110" y="180" text-anchor="end" font-size="12" font-family="sans-serif" fill="#1e293b">Acero Compresión</text>')
+        svg_parts.append(f'<line x1="110" y1="175" x2="125" y2="175" stroke="#333" stroke-width="1" marker-end="url(#arrow_det)"/>')
+        
+        svg_parts.append(f'<text x="200" y="140" font-size="12" font-family="sans-serif" fill="#1e293b">Acero Tracción</text>')
+        svg_parts.append(f'<line x1="195" y1="145" x2="145" y2="145" stroke="#333" stroke-width="1" marker-end="url(#arrow_det)"/>')
+        
+        # Dimensions
+        svg_parts.append(f'<text x="100" y="190" text-anchor="end" font-size="12" font-family="sans-serif" fill="#1e293b">h={h_str}</text>')
+        svg_parts.append(f'<text x="220" y="340" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#1e293b">L={L_str}</text>')
+        svg_parts.append(f'<text x="135" y="50" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#1e293b">{t_str}</text>')
+        svg_parts.append('</g>')
+        
+        # --- DETAIL 2: Support Beam (Right Half) ---
+        sb_b = 30
+        sb_h = 50
+        if hasattr(self, 'beams') and self.beams:
+            b = self.beams[0]
+            sb_b = int(b.width * 100)
+            sb_h = int(b.depth * 100)
+            
+        svg_parts.append('<g transform="translate(400, 0)">')
+        svg_parts.append('<text x="200" y="30" text-anchor="middle" font-size="16" font-weight="bold" font-family="sans-serif" fill="#1e293b">Detalle Viga de Apoyo</text>')
+        
+        w_px = max(60, min(200, sb_b * 3))
+        h_px = max(100, min(250, sb_h * 3))
+        cx, cy = 200, 190
+        bx1 = cx - w_px/2
+        by1 = cy - h_px/2
+        
+        svg_parts.append(
+            f'<rect x="{bx1}" y="{by1}" width="{w_px}" height="{h_px}" '
+            'fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>'
+        )
+        
+        cover = 20
+        sx1 = bx1 + cover
+        sy1 = by1 + cover
+        sw = w_px - 2*cover
+        sh = h_px - 2*cover
+        svg_parts.append(
+            f'<rect x="{sx1}" y="{sy1}" width="{sw}" height="{sh}" '
+            'fill="none" stroke="#16a34a" stroke-width="3" rx="5" ry="5"/>'
+        )
+        
+        # Bottom bars
+        svg_parts.append(f'<circle cx="{sx1 + 10}" cy="{sy1 + sh - 10}" r="6" fill="#1e3a8a"/>')
+        svg_parts.append(f'<circle cx="{sx1 + sw - 10}" cy="{sy1 + sh - 10}" r="6" fill="#1e3a8a"/>')
+        svg_parts.append(f'<circle cx="{sx1 + sw/2}" cy="{sy1 + sh - 10}" r="6" fill="#1e3a8a"/>')
+        
+        # Top bars
+        svg_parts.append(f'<circle cx="{sx1 + 10}" cy="{sy1 + 10}" r="5" fill="#dc2626"/>')
+        svg_parts.append(f'<circle cx="{sx1 + sw - 10}" cy="{sy1 + 10}" r="5" fill="#dc2626"/>')
+        
+        # Labels
+        svg_parts.append(f'<text x="{cx}" y="{by1 + h_px + 20}" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#1e293b">b = {sb_b} cm</text>')
+        svg_parts.append(f'<text x="{bx1 - 10}" y="{cy}" text-anchor="end" font-size="12" font-family="sans-serif" fill="#1e293b">h = {sb_h} cm</text>')
+        
+        svg_parts.append(f'<text x="{bx1 + w_px + 10}" y="{sy1 + 15}" font-size="12" font-family="sans-serif" fill="#1e293b">Acero Superior</text>')
+        svg_parts.append(f'<text x="{bx1 + w_px + 10}" y="{sy1 + sh - 5}" font-size="12" font-family="sans-serif" fill="#1e293b">Acero Inferior</text>')
+        svg_parts.append(f'<text x="{bx1 + w_px + 10}" y="{cy}" font-size="12" font-family="sans-serif" fill="#1e293b">Estribo</text>')
+        
+        svg_parts.append('</g>')
+        
+        svg_parts.append("</svg>")
+        return "\n".join(svg_parts)
 
     # ------------------------------------------------------------------
     # HTML plan sketch export

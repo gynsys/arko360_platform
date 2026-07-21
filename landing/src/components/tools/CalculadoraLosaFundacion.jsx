@@ -2259,6 +2259,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   <div class="svg-container">
     ${results.svg_plan}
   </div>
+  ${results.svg_details ? `
+  <h3>Detalles Constructivos Transversales</h3>
+  <div class="svg-container">
+    ${results.svg_details}
+  </div>
+  ` : ''}
   <h3>Tabla de Armado de Bandas</h3>
   <table>
     <thead>
@@ -3875,6 +3881,13 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               <h4 style={{margin:'0 0 12px 0', color:'#333'}}>Plano Estructural</h4>
               <div style={{background:'#fafafa', border:'1px solid #eee', borderRadius:'8px', padding:'12px', overflow:'auto'}} dangerouslySetInnerHTML={{__html: results.svg_plan}} />
               
+              {results.svg_details && (
+                <div style={{marginTop: '20px'}}>
+                  <h4 style={{margin:'0 0 12px 0', color:'#333'}}>Detalles Constructivos Transversales</h4>
+                  <div style={{background:'#fafafa', border:'1px solid #eee', borderRadius:'8px', padding:'12px', overflow:'auto'}} dangerouslySetInnerHTML={{__html: results.svg_details}} />
+                </div>
+              )}
+              
               {/* Tabla de Armadura Adicional (Muros) */}
               {results.bands && (
                 <div style={{marginTop: '20px'}}>
@@ -3956,9 +3969,21 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                           {wd.shear_ok ? 'OK' : 'FALLA (Espesor insuficiente)'}
                         </td>
                         <td style={{padding: '8px'}}>{wd.As_req_cm2_m.toFixed(2)} cm²/m</td>
-                        <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>{wd.proposed_rebar}</td>
+                        <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>
+                          {wd.proposed_rebar_options && wd.proposed_rebar_options.length > 1 ? (
+                            <select style={{background:'transparent', border:'1px solid #ddd', borderRadius:'4px', color:'inherit', fontWeight:'inherit', outline:'none', cursor:'pointer', padding:'2px'}} defaultValue={wd.proposed_rebar}>
+                              {wd.proposed_rebar_options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                            </select>
+                          ) : wd.proposed_rebar}
+                        </td>
                         <td style={{padding: '8px'}}>{wd.As_horiz_cm2_m ? wd.As_horiz_cm2_m.toFixed(2) + ' cm²/m' : '-'}</td>
-                        <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>{wd.proposed_rebar_horiz || '-'}</td>
+                        <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>
+                          {wd.proposed_rebar_horiz_options && wd.proposed_rebar_horiz_options.length > 1 ? (
+                            <select style={{background:'transparent', border:'1px solid #ddd', borderRadius:'4px', color:'inherit', fontWeight:'inherit', outline:'none', cursor:'pointer', padding:'2px'}} defaultValue={wd.proposed_rebar_horiz}>
+                              {wd.proposed_rebar_horiz_options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                            </select>
+                          ) : (wd.proposed_rebar_horiz || '-')}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -3992,8 +4017,20 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                         <td style={{padding: '8px'}}>{sb.Mu_kgfm.toFixed(0)}</td>
                         <td style={{padding: '8px'}}>{sb.Vu_kgf.toFixed(0)}</td>
                         <td style={{padding: '8px'}}>{sb.As_req_cm2.toFixed(2)} cm²</td>
-                        <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>{sb.proposed_rebar}</td>
-                        <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>{sb.proposed_stirrups}</td>
+                        <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>
+                          {sb.proposed_rebar_options && sb.proposed_rebar_options.length > 1 ? (
+                            <select style={{background:'transparent', border:'1px solid #ddd', borderRadius:'4px', color:'inherit', fontWeight:'inherit', outline:'none', cursor:'pointer', padding:'2px'}} defaultValue={sb.proposed_rebar}>
+                              {sb.proposed_rebar_options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                            </select>
+                          ) : sb.proposed_rebar}
+                        </td>
+                        <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>
+                          {sb.proposed_stirrups_options && sb.proposed_stirrups_options.length > 1 ? (
+                            <select style={{background:'transparent', border:'1px solid #ddd', borderRadius:'4px', color:'inherit', fontWeight:'inherit', outline:'none', cursor:'pointer', padding:'2px'}} defaultValue={sb.proposed_stirrups}>
+                              {sb.proposed_stirrups_options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                            </select>
+                          ) : sb.proposed_stirrups}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -82,6 +82,7 @@ class FoundationSlabDesigner(
             "retaining_wall_designs": getattr(self, 'retaining_wall_designs', []),
             "support_beam_designs": getattr(self, 'support_beam_designs', []),
             "svg_plan": self.get_svg_plan(),
+            "svg_details": self.get_svg_details(),
             "materials_computation": self._compute_quantities()
         }
         
