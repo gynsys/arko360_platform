@@ -354,7 +354,9 @@ export const useVideoExport = (
         const prevVids = i > 0 ? slideVideos[i - 1] || [] : [];
         
         currentVids.forEach(v => {
-           v.vid.currentTime = 0;
+           // Si el usuario aplicó recortes y velocidad en el modal de edición de video, aplícalos aquí:
+           v.vid.currentTime = v.pos.trimStart !== undefined ? v.pos.trimStart : 0;
+           v.vid.playbackRate = v.pos.speed !== undefined ? v.pos.speed : 1;
            v.vid.play().catch(e => console.log('video play error', e));
         });
 

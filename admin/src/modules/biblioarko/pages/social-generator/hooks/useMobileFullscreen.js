@@ -14,17 +14,27 @@ export const useMobileFullscreen = (isMobile, generatedContent) => {
 
   const exitMobileFullscreen = () => {
     setIsMobileFullscreen(false);
-    document.body.style.overflow = 'auto';
-    document.body.style.position = 'static';
-    document.body.style.width = 'auto';
-    document.body.style.height = 'auto';
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.height = '';
   };
 
   // Auto-enter logic
   useEffect(() => {
     if (isMobile && generatedContent && generatedContent.slides && generatedContent.slides.length > 0) {
       enterMobileFullscreen();
+    } else if (!isMobile) {
+      exitMobileFullscreen();
     }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    };
   }, [isMobile, generatedContent]);
 
   // Touch Prevention
