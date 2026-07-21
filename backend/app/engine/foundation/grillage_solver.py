@@ -273,6 +273,7 @@ class GrillageSolver:
         soil_density: float,
         phi: float,
         perimeter_wall_height: float,
+        rw_id: str = ""
     ) -> None:
         """Add a retaining wall on top of the slab."""
         length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
@@ -303,7 +304,8 @@ class GrillageSolver:
                 soil_density=soil_density, phi=phi,
                 perimeter_wall_height=perimeter_wall_height,
                 length=length, q_vertical=q_vertical,
-                m_overturning=m_overturning, v_base=v_base
+                m_overturning=m_overturning, v_base=v_base,
+                id=rw_id
             )
         )
         print(f"  Muro Contención: ({x1:.2f},{y1:.2f})->({x2:.2f},{y2:.2f}) | H={soil_height:.2f}m | M={m_overturning/1000:.2f} kNm/m")
@@ -315,7 +317,8 @@ class GrillageSolver:
         x2: float,
         y2: float,
         width: float,
-        depth: float
+        depth: float,
+        sb_id: str = ""
     ) -> None:
         """Add a support beam (viga de apoyo) to stiffen the edge."""
         length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
@@ -328,7 +331,8 @@ class GrillageSolver:
             SupportBeam(
                 x1=x1, y1=y1, x2=x2, y2=y2,
                 width=width, depth=depth,
-                length=length, I_beam=I_beam
+                length=length, I_beam=I_beam,
+                id=sb_id
             )
         )
         print(f"  Viga de Apoyo: ({x1:.2f},{y1:.2f})->({x2:.2f},{y2:.2f}) | {width*100:.0f}x{depth*100:.0f} cm")

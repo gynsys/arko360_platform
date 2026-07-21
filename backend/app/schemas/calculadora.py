@@ -108,6 +108,7 @@ class RetainingWallInput(BaseModel):
     soil_density: float = 18000.0 # N/m3
     phi: float = 30.0 # degrees
     perimeter_wall_height: float = 0.0
+    id: str = ""
 
 class SupportBeamInput(BaseModel):
     x1: float
@@ -116,6 +117,7 @@ class SupportBeamInput(BaseModel):
     y2: float
     width: float
     depth: float
+    id: str = ""
 
 class SlabModelInput(BaseModel):
     project: str = "Losa de Cimentación"

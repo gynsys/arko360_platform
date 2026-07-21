@@ -72,6 +72,7 @@ class RetainingWall:
     q_vertical: float = 0.0
     m_overturning: float = 0.0
     v_base: float = 0.0
+    id: str = ""
 
 @dataclass
 class SupportBeam:
@@ -83,3 +84,4 @@ class SupportBeam:
     depth: float
     length: float = 0.0
     I_beam: float = 0.0
+    id: str = ""

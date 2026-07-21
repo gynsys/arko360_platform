@@ -1922,11 +1922,13 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         soil_height: w.soil_height || 1.4,
         soil_density: w.soil_density || 18000.0, 
         phi: w.phi || 30.0,
-        perimeter_wall_height: w.perimeter_wall_height || 2.5
+        perimeter_wall_height: w.perimeter_wall_height || 2.5,
+        id: w.id
       })),
       support_beams: allWalls.filter(w => w.type === 'support_beam').map(w => ({
         x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
-        width: w.thickness || 0.3, depth: w.depth || 0.5
+        width: w.thickness || 0.3, depth: w.depth || 0.5,
+        id: w.id
       })),
       beams: perimeterWalls.filter(w => w.type === 'perimetral' || w.type === 'interno').map(w => ({
         x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
@@ -3936,7 +3938,9 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                       <th style={{padding: '8px'}}>φVc (kN/m)</th>
                       <th style={{padding: '8px'}}>Corte</th>
                       <th style={{padding: '8px'}}>Acero Vertical</th>
-                      <th style={{padding: '8px'}}>Propuesta</th>
+                      <th style={{padding: '8px'}}>Prop. Vert</th>
+                      <th style={{padding: '8px'}}>Acero Horiz</th>
+                      <th style={{padding: '8px'}}>Prop. Horiz</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3953,6 +3957,43 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                         </td>
                         <td style={{padding: '8px'}}>{wd.As_req_cm2_m.toFixed(2)} cm²/m</td>
                         <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>{wd.proposed_rebar}</td>
+                        <td style={{padding: '8px'}}>{wd.As_horiz_cm2_m ? wd.As_horiz_cm2_m.toFixed(2) + ' cm²/m' : '-'}</td>
+                        <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>{wd.proposed_rebar_horiz || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Tabla de Diseño de Vigas de Apoyo */}
+          {results.support_beam_designs && results.support_beam_designs.length > 0 && (
+            <div style={{padding:'20px 24px', borderBottom:'1px solid #eee', background:'#e8eaf6'}}>
+              <h4 style={{margin:'0 0 12px 0', color:'#3f51b5'}}>📏 Diseño de Vigas de Apoyo</h4>
+              <div style={{overflowX: 'auto'}}>
+                <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left', background: '#fff'}}>
+                  <thead>
+                    <tr style={{background: '#c5cae9', borderBottom: '2px solid #9fa8da'}}>
+                      <th style={{padding: '8px'}}>ID Viga</th>
+                      <th style={{padding: '8px'}}>Dimensiones (cm)</th>
+                      <th style={{padding: '8px'}}>Mu (kN·m)</th>
+                      <th style={{padding: '8px'}}>Vu (kN)</th>
+                      <th style={{padding: '8px'}}>Acero Requerido</th>
+                      <th style={{padding: '8px'}}>Armadura Principal</th>
+                      <th style={{padding: '8px'}}>Estribos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.support_beam_designs.map((sb, idx) => (
+                      <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
+                        <td style={{padding: '8px', fontWeight: 'bold'}}>{sb.id.substring(0, 10)}</td>
+                        <td style={{padding: '8px'}}>{Math.round(sb.b_m * 100)} x {Math.round(sb.h_m * 100)}</td>
+                        <td style={{padding: '8px'}}>{sb.Mu_kNm.toFixed(1)}</td>
+                        <td style={{padding: '8px'}}>{sb.Vu_kN.toFixed(1)}</td>
+                        <td style={{padding: '8px'}}>{sb.As_req_cm2.toFixed(2)} cm²</td>
+                        <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>{sb.proposed_rebar}</td>
+                        <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>{sb.proposed_stirrups}</td>
                       </tr>
                     ))}
                   </tbody>

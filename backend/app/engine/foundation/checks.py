@@ -328,6 +328,17 @@ class StructuralChecks:
         else:
             bar_str = f"Ø16@{spacing_cm}cm"
             
+        # Horizontal steel (temperature and shrinkage)
+        As_horiz_min_m2 = 0.0020 * b * rw.thickness
+        As_horiz_cm2_m = As_horiz_min_m2 * 10000
+        
+        horiz_bar_area = 1.13 # phi 12 (1/2")
+        horiz_spacing_m = horiz_bar_area / As_horiz_cm2_m
+        horiz_spacing_cm = int(horiz_spacing_m * 100)
+        if horiz_spacing_cm > 30: horiz_spacing_cm = 30
+        if horiz_spacing_cm < 10: horiz_spacing_cm = 10
+        horiz_bar_str = f"Ø12@{horiz_spacing_cm}cm"
+            
         return {
             "id": rw.id if hasattr(rw, 'id') else "Desconocido",
             "H_m": float(H),
@@ -338,9 +349,92 @@ class StructuralChecks:
             "phiVc_kN_m": float(phi_Vc_N_m / 1000),
             "shear_ok": shear_ok,
             "As_req_cm2_m": float(As_req_cm2_m),
-            "proposed_rebar": bar_str
+            "proposed_rebar": bar_str,
+            "As_horiz_cm2_m": float(As_horiz_cm2_m),
+            "proposed_rebar_horiz": horiz_bar_str
         }
 
+    def design_support_beam(self, sb) -> dict:
+        """
+        Design the reinforcement for a support beam embedded in the slab.
+        """
+        n_points = max(10, int(sb.length / min(self.dx, self.dy)))
+        max_M = 0.0
+        max_V = 0.0
+        
+        is_x_dir = abs(sb.x2 - sb.x1) > abs(sb.y2 - sb.y1)
+        
+        for t in np.linspace(0, 1, n_points):
+            xp = sb.x1 + t * (sb.x2 - sb.x1)
+            yp = sb.y1 + t * (sb.y2 - sb.y1)
+            
+            ni = int(np.clip(int(round(xp / self.dx)), 0, self.nx))
+            nj = int(np.clip(int(round(yp / self.dy)), 0, self.ny))
+            
+            if is_x_dir:
+                M = abs(self.Mx_raw[nj, ni]) if hasattr(self, 'Mx_raw') else abs(self.Mx[nj, ni])
+            else:
+                M = abs(self.My_raw[nj, ni]) if hasattr(self, 'My_raw') else abs(self.My[nj, ni])
+                
+            V = abs(self.Vu[nj, ni]) if hasattr(self, 'Vu') else 0.0
+            
+            max_M = max(max_M, float(M))
+            max_V = max(max_V, float(V))
+            
+        Mu_beam = max_M * sb.width
+        Vu_beam = max_V * sb.width
+        
+        b = sb.width
+        h = sb.depth
+        cover = 0.05
+        d = h - cover
+        if d <= 0: d = 0.01
+        
+        fc_Pa = self.f_c * 1e6
+        fy_Pa = self.f_y * 1e6
+        
+        phi_flex = 0.90
+        Mn_req = Mu_beam / phi_flex
+        
+        As_m2 = 0.0
+        a = 0.0
+        if Mn_req > 0:
+            for _ in range(10):
+                As_m2 = Mn_req / (fy_Pa * (d - a/2))
+                a = (As_m2 * fy_Pa) / (0.85 * fc_Pa * b)
+                
+        As_min_m2 = max(0.0033 * b * d, 1.4 / self.f_y * b * d)
+        As_req_cm2 = max(As_m2, As_min_m2) * 10000
+        
+        n_bars = int(np.ceil(As_req_cm2 / 1.99))
+        if n_bars < 2: n_bars = 2
+        
+        phi_shear = 0.75
+        vc_MPa = 0.17 * np.sqrt(self.f_c)
+        Vc = vc_MPa * 1e6 * b * d
+        
+        Vs_req = max(0.0, (Vu_beam / phi_shear) - Vc)
+        
+        stirrup_area = 0.71 * 2
+        if Vs_req > 0:
+            s_req = (stirrup_area / 10000.0) * fy_Pa * d / Vs_req
+        else:
+            s_req = d / 2
+            
+        s_cm = min(int(s_req * 100), int(d/2 * 100), 30)
+        if s_cm < 10: s_cm = 10
+        
+        return {
+            "id": sb.id if hasattr(sb, 'id') and sb.id else "Viga Apoyo",
+            "b_m": float(b),
+            "h_m": float(h),
+            "length_m": float(sb.length),
+            "Mu_kNm": float(Mu_beam / 1000),
+            "Vu_kN": float(Vu_beam / 1000),
+            "As_req_cm2": float(As_req_cm2),
+            "proposed_rebar": f"{n_bars}Ø16",
+            "proposed_stirrups": f"Ø10@{s_cm}cm"
+        }
 
     def generate_design_report(self) -> None:
         """Print a concise design summary to the console."""

@@ -33,6 +33,11 @@ class FoundationSlabDesigner(
         else:
             self.retaining_wall_designs = []
             
+        if hasattr(self, 'support_beams') and self.support_beams:
+            self.support_beam_designs = [self.design_support_beam(sb) for sb in self.support_beams]
+        else:
+            self.support_beam_designs = []
+            
         return self._build_results_dict()
     
     def _build_results_dict(self) -> dict:
@@ -75,6 +80,7 @@ class FoundationSlabDesigner(
             "settlements": self.settlement_data,
             "sliding": getattr(self, 'sliding_data', {"active": False}),
             "retaining_wall_designs": getattr(self, 'retaining_wall_designs', []),
+            "support_beam_designs": getattr(self, 'support_beam_designs', []),
             "svg_plan": self.get_svg_plan(),
             "materials_computation": self._compute_quantities()
         }
