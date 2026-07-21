@@ -628,7 +628,7 @@ export default function SocialGenerator() {
     const tState = transformer.state;
     const newTState = {
       imagePositions: {}, imageSizes: {}, imageRotations: {},
-      contentPositions: {}, contentRotations: {}
+      contentPositions: {}, contentSizes: {}, contentRotations: {}
     };
     
     ['imagePositions', 'imageSizes', 'imageRotations'].forEach(prop => {
@@ -643,8 +643,8 @@ export default function SocialGenerator() {
       });
     });
     
-    ['contentPositions', 'contentRotations'].forEach(prop => {
-      Object.keys(tState[prop]).forEach(key => {
+    ['contentPositions', 'contentSizes', 'contentRotations'].forEach(prop => {
+      Object.keys(tState[prop] || {}).forEach(key => {
         const sIdx = parseInt(key);
         if (sIdx < index) {
           newTState[prop][sIdx] = tState[prop][sIdx];
@@ -692,7 +692,7 @@ export default function SocialGenerator() {
     const tState = transformer.state;
     const newTState = {
       imagePositions: {}, imageSizes: {}, imageRotations: {},
-      contentPositions: {}, contentRotations: {}
+      contentPositions: {}, contentSizes: {}, contentRotations: {}
     };
     
     ['imagePositions', 'imageSizes', 'imageRotations'].forEach(prop => {
@@ -711,8 +711,8 @@ export default function SocialGenerator() {
       });
     });
     
-    ['contentPositions', 'contentRotations'].forEach(prop => {
-      Object.keys(tState[prop]).forEach(key => {
+    ['contentPositions', 'contentSizes', 'contentRotations'].forEach(prop => {
+      Object.keys(tState[prop] || {}).forEach(key => {
         const sIdx = parseInt(key);
         if (sIdx <= index) {
           newTState[prop][sIdx] = tState[prop][sIdx];

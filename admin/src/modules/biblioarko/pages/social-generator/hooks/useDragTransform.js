@@ -190,6 +190,7 @@ export const useDragTransform = (onUpdateElement, scale = 1, globalSetters = {})
       setImageSizes(newState.imageSizes || {});
       setImageRotations(newState.imageRotations || {});
       setContentPositions(newState.contentPositions || {});
+      setContentSizes(newState.contentSizes || {});
       setContentRotations(newState.contentRotations || {});
       setExtraElements(newState.extraElements || {});
     }
