@@ -1594,8 +1594,18 @@ export default function CalculadoraLosaFundacion({ onBack }) {
     checkSnap(0, 0); checkSnap(params.Lx, 0); checkSnap(0, params.Ly); checkSnap(params.Lx, params.Ly);
     // Revisar todos los muros
     allWalls.forEach(w => {
+      // Snap a vértices (Endpoints)
       checkSnap(w.x1, w.y1);
       checkSnap(w.x2, w.y2);
+      
+      // Snap a bordes (Point-to-Segment) para permitir terminar líneas sobre muros existentes
+      const l2 = (w.x2 - w.x1)**2 + (w.y2 - w.y1)**2;
+      if (l2 > 0) {
+        const t = Math.max(0, Math.min(1, ((rawMx - w.x1)*(w.x2 - w.x1) + (rawMy - w.y1)*(w.y2 - w.y1)) / l2));
+        const pX = w.x1 + t * (w.x2 - w.x1);
+        const pY = w.y1 + t * (w.y2 - w.y1);
+        checkSnap(pX, pY);
+      }
     });
 
     // Clamp a los límites exactos del canvas después del snap
