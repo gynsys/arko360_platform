@@ -27,40 +27,56 @@ const getIconPath = (iconType) => {
   return iconPaths[iconType] || iconPaths.circle;
 };
 
-const parseHighlightedText = (text, highlightColor, highlightSize) => {
+const parseHighlightedText = (text, highlightColor, highlightSize, bulletColor = '#10b981') => {
   if (!text) return '';
-  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|_.*?_)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return (
-        <span 
-          key={i} 
-          style={{ 
-            color: highlightColor || '#ff0000', 
-            fontSize: highlightSize ? highlightSize + 'px' : 'inherit',
-            fontStyle: 'italic', 
-            fontWeight: '900' 
-          }}
-        >
-          {part.slice(2, -2)}
+  
+  return text.split('\n').map((line, lineIdx) => {
+    let bulletNode = null;
+    let restOfLine = line;
+    const bulletMatch = line.match(/^([•✔✅✓-]\s?)(.*)$/);
+    
+    if (bulletMatch) {
+      bulletNode = (
+        <span key={`bullet-${lineIdx}`} style={{ color: bulletColor, fontWeight: 'bold' }}>
+          {bulletMatch[1]}
         </span>
       );
+      restOfLine = bulletMatch[2];
     }
-    if (part.startsWith('*') && part.endsWith('*')) {
-      return (
-        <span key={i} style={{ fontWeight: 'bold' }}>
-          {part.slice(1, -1)}
-        </span>
-      );
-    }
-    if (part.startsWith('_') && part.endsWith('_')) {
-      return (
-        <span key={i} style={{ fontStyle: 'italic' }}>
-          {part.slice(1, -1)}
-        </span>
-      );
-    }
-    return part;
+    
+    const parts = restOfLine.split(/(\*\*.*?\*\*|\*.*?\*|_.*?_)/g);
+    const lineContent = parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <span 
+            key={i} 
+            style={{ 
+              color: highlightColor || '#ff0000', 
+              fontSize: highlightSize ? highlightSize + 'px' : 'inherit',
+              fontStyle: 'italic', 
+              fontWeight: '900' 
+            }}
+          >
+            {part.slice(2, -2)}
+          </span>
+        );
+      }
+      if (part.startsWith('*') && part.endsWith('*')) {
+        return <span key={i} style={{ fontWeight: 'bold' }}>{part.slice(1, -1)}</span>;
+      }
+      if (part.startsWith('_') && part.endsWith('_')) {
+        return <span key={i} style={{ fontStyle: 'italic' }}>{part.slice(1, -1)}</span>;
+      }
+      return part;
+    });
+
+    return (
+      <React.Fragment key={lineIdx}>
+        {bulletNode}
+        {lineContent}
+        {lineIdx < text.split('\n').length - 1 ? <br /> : null}
+      </React.Fragment>
+    );
   });
 };
 
@@ -307,7 +323,7 @@ export const SlideCanvas = ({
                 color: titleColor,
                 opacity: (isVideoMode && currentTime !== undefined && ((slide?.titleStartTime !== undefined && currentTime < slide.titleStartTime) || (slide?.titleEndTime !== undefined && currentTime > slide.titleEndTime))) ? 0 : 1
               }}>
-            {parseHighlightedText(slide?.title || '', design.headerColor, design.headerFontSize)}
+            {parseHighlightedText(slide?.title || '', design.headerColor, design.headerFontSize, design.bulletColor)}
           </h4>
           <p data-export-id="content" className="font-bold leading-relaxed whitespace-pre-wrap transition-opacity duration-300" 
              style={{ 
@@ -315,7 +331,7 @@ export const SlideCanvas = ({
                color: contentColor,
                opacity: (isVideoMode && currentTime !== undefined && ((slide?.contentStartTime !== undefined && currentTime < slide.contentStartTime) || (slide?.contentEndTime !== undefined && currentTime > slide.contentEndTime))) ? 0 : 1
              }}>
-            {parseHighlightedText(slide?.content || slide?.text || '', design.headerColor, design.headerFontSize)}
+            {parseHighlightedText(slide?.content || slide?.text || '', design.headerColor, design.headerFontSize, design.bulletColor)}
           </p>
           {slide?.overlayText && (
             <p className="mt-4 font-bold tracking-tight whitespace-pre-wrap transition-opacity duration-300" 

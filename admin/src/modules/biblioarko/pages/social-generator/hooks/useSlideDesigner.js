@@ -17,6 +17,7 @@ export const useSlideDesigner = () => {
   const [titleColor, setTitleColor] = useState(DEFAULT_DESIGN.titleColor);
   const [contentColor, setContentColor] = useState(DEFAULT_DESIGN.contentColor);
   const [headerColor, setHeaderColor] = useState(DEFAULT_DESIGN.headerColor);
+  const [bulletColor, setBulletColor] = useState(DEFAULT_DESIGN.bulletColor || '#10b981');
   const [imageBorderRadius, setImageBorderRadius] = useState('0px');
   const [fontFamily, setFontFamily] = useState('Manrope');
 
@@ -77,7 +78,7 @@ export const useSlideDesigner = () => {
       design: {
         bgColor, bgColor2, bgColor3, useBgGradient,
         fontSize, titleFontSize, headerFontSize,
-        titleColor, contentColor, headerColor,
+        titleColor, contentColor, headerColor, bulletColor,
         imageBorderRadius
       },
       global: {
@@ -107,9 +108,10 @@ export const useSlideDesigner = () => {
     setFontSize(design.fontSize);
     setTitleFontSize(design.titleFontSize || 24);
     setHeaderFontSize(design.headerFontSize);
-    setTitleColor(design.titleColor);
-    setContentColor(design.contentColor);
-    setHeaderColor(design.headerColor);
+    setTitleColor(design.titleColor || DEFAULT_DESIGN.titleColor);
+    setContentColor(design.contentColor || DEFAULT_DESIGN.contentColor);
+    setHeaderColor(design.headerColor || DEFAULT_DESIGN.headerColor);
+    setBulletColor(design.bulletColor || DEFAULT_DESIGN.bulletColor || '#10b981');
     setImageBorderRadius(design.imageBorderRadius || '0px');
     setLogoPos(global.logoPos || { x: 25, y: 12 });
     setDoctorNamePos(global.doctorNamePos || { x: 60, y: 12 });
@@ -319,6 +321,7 @@ export const useSlideDesigner = () => {
       titleColor, setTitleColor,
       contentColor, setContentColor,
       headerColor, setHeaderColor,
+      bulletColor, setBulletColor,
       logoPos, setLogoPos,
       doctorNamePos, setDoctorNamePos,
       dividerPos, setDividerPos,

@@ -212,6 +212,10 @@ export const TopToolbar = ({
             <p className="text-[9px] font-black uppercase text-gray-400">Texto</p>
             <input type="color" value={contentColor} onChange={(e) => setContentColor(e.target.value)} className="h-8 w-12 p-1 bg-white border border-gray-200 rounded-lg" />
           </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-[9px] font-black uppercase text-gray-400">Viñetas</p>
+            <input type="color" value={design.bulletColor} onChange={(e) => design.setBulletColor(e.target.value)} className="h-8 w-12 p-1 bg-white border border-gray-200 rounded-lg" />
+          </div>
         </div>
 
         {/* Font Sliders */}

@@ -171,7 +171,7 @@ export const MobileToolbar = ({
                 {/* Text Colors */}
                 <div className="space-y-3">
                   <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Colores de Texto</p>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-4 gap-3">
                     <div className="flex flex-col items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
                       <input type="color" value={design.titleColor} onChange={(e) => design.setTitleColor(e.target.value)} className="w-8 h-8 rounded-lg" />
                       <span className="text-[8px] font-black uppercase text-gray-400">Título</span>
@@ -179,6 +179,10 @@ export const MobileToolbar = ({
                     <div className="flex flex-col items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
                       <input type="color" value={design.contentColor} onChange={(e) => design.setContentColor(e.target.value)} className="w-8 h-8 rounded-lg" />
                       <span className="text-[8px] font-black uppercase text-gray-400">Cuerpo</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                      <input type="color" value={design.bulletColor} onChange={(e) => design.setBulletColor(e.target.value)} className="w-8 h-8 rounded-lg" />
+                      <span className="text-[8px] font-black uppercase text-gray-400">Viñetas</span>
                     </div>
                     <div className="flex flex-col items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
                       <input type="color" value={design.headerColor} onChange={(e) => design.setHeaderColor(e.target.value)} className="w-8 h-8 rounded-lg" />

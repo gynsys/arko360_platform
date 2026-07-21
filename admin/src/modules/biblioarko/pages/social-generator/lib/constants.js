@@ -9,6 +9,7 @@ export const DEFAULT_DESIGN = {
   titleColor: '#4f46e5',
   contentColor: '#374151',
   headerColor: '#111827',
+  bulletColor: '#10b981',
   imageSize: 100,
 };
 
