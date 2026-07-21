@@ -252,20 +252,22 @@ export const useVideoExport = (
       const audioDest = audioCtx.createMediaStreamDestination();
       let hasAudio = false;
 
-      // 1. Audio de fondo
+      // 1. Audio de fondo dedicado para exportación (evita problemas de estado con audioRef)
+      const exportBgAudio = new Audio();
+      exportBgAudio.crossOrigin = 'anonymous';
+      try {
+        // Al crear esto, el audio se dirige al WebAudio y no suena por los parlantes,
+        // garantizando que captureStream() siempre tenga la pista lista.
+        const bgSource = audioCtx.createMediaElementSource(exportBgAudio);
+        bgSource.connect(audioDest);
+        hasAudio = true;
+      } catch (audioErr) {
+        console.error('[Arko360] Error al conectar audio de fondo:', audioErr);
+      }
+      
+      // Silenciar la preview del editor para que no suene doble
       if (audioRef.current) {
-        try {
-          const bgStream = audioRef.current.captureStream
-            ? audioRef.current.captureStream()
-            : audioRef.current.mozCaptureStream();
-          if (bgStream.getAudioTracks().length > 0) {
-            const bgSource = audioCtx.createMediaStreamSource(bgStream);
-            bgSource.connect(audioDest);
-            hasAudio = true;
-          }
-        } catch (audioErr) {
-          console.error('[Arko360] Error al conectar audio de fondo:', audioErr);
-        }
+        audioRef.current.pause();
       }
 
       // 2. Audio de los videos insertados
@@ -307,13 +309,15 @@ export const useVideoExport = (
 
       const recorder = new MediaRecorder(combinedStream, { 
         mimeType,
-        videoBitsPerSecond: 2500000 // 2.5 Mbps para compresión (evita archivos de 35MB)
+        videoBitsPerSecond: 1000000 // 1.0 Mbps para forzar una compresión fuerte
       });
       const chunks = [];
       // timeslice: collect data every 1s to avoid empty blob on failure
       recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
 
       recorder.onstop = async () => {
+        exportBgAudio.pause();
+        exportBgAudio.src = '';
         if (audioRef.current) {
           audioRef.current.pause();
           audioRef.current.currentTime = 0;
@@ -403,14 +407,12 @@ export const useVideoExport = (
         });
         const slide = scenes[slideIdx];
         const audioSrc = getActiveAudioSrc(slide.audio, slide.customAudioUrl);
-        if (audioRef.current) {
-          if (audioSrc) {
-            audioRef.current.src = audioSrc;
-            audioRef.current.currentTime = 0;
-            audioRef.current.play().catch(e => console.log('Audio play error', e));
-          } else {
-            audioRef.current.pause();
-          }
+        if (audioSrc) {
+          exportBgAudio.src = audioSrc;
+          exportBgAudio.currentTime = 0;
+          exportBgAudio.play().catch(e => console.log('Audio play error', e));
+        } else {
+          exportBgAudio.pause();
         }
       };
 
