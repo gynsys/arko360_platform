@@ -22,7 +22,11 @@ payload = {
             "perimeter_wall_height": 0
         }
     ],
-    "support_beams": [],
+    "support_beams": [
+        {
+            "x1": 2, "y1": 2, "x2": 2, "y2": 8, "width": 0.3, "depth": 0.5, "id": "viga-1"
+        }
+    ],
     "mesh_nx": 40,
     "mesh_ny": 40,
     "band_width_factor": 1.0,
@@ -32,4 +36,7 @@ payload = {
 
 response = client.post("/api/v1/calculadora-losas/losa_fundacion/analyze", json=payload)
 print(response.status_code)
-print(response.json())
+if response.status_code == 500:
+    print(response.json())
+else:
+    print("Success. support_beam_designs length:", len(response.json().get("support_beam_designs", [])))
