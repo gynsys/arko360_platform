@@ -245,21 +245,51 @@ export const useVideoExport = (
       const ctx = outputCanvas.getContext('2d');
 
       const videoStream = outputCanvas.captureStream(30);
-      let combinedStream = videoStream;
 
+      // WebAudio para mezclar múltiples fuentes de audio (música + videos insertados)
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = new AudioContext();
+      const audioDest = audioCtx.createMediaStreamDestination();
+      let hasAudio = false;
+
+      // 1. Audio de fondo
       if (audioRef.current) {
         try {
-          const audioStream = audioRef.current.captureStream
+          const bgStream = audioRef.current.captureStream
             ? audioRef.current.captureStream()
             : audioRef.current.mozCaptureStream();
-          combinedStream = new MediaStream([
-            ...videoStream.getVideoTracks(),
-            ...audioStream.getAudioTracks(),
-          ]);
+          if (bgStream.getAudioTracks().length > 0) {
+            const bgSource = audioCtx.createMediaStreamSource(bgStream);
+            bgSource.connect(audioDest);
+            hasAudio = true;
+          }
         } catch (audioErr) {
-          console.error('[Arko360] Error setting up audio stream:', audioErr);
+          console.error('[Arko360] Error al conectar audio de fondo:', audioErr);
         }
       }
+
+      // 2. Audio de los videos insertados
+      slideVideos.forEach(vids => {
+        vids.forEach(v => {
+          try {
+            // Desmutear el video para extraer el audio real.
+            // Al usar createMediaElementSource, el navegador redirige el sonido al WebAudio
+            // y no a los parlantes, evitando que suene duplicado.
+            v.vid.muted = false; 
+            const vidSource = audioCtx.createMediaElementSource(v.vid);
+            vidSource.connect(audioDest);
+            hasAudio = true;
+          } catch(e) {
+            console.error('[Arko360] Error al conectar audio de video insertado:', e);
+          }
+        });
+      });
+
+      const combinedTracks = [...videoStream.getVideoTracks()];
+      if (hasAudio) {
+        combinedTracks.push(...audioDest.stream.getAudioTracks());
+      }
+      const combinedStream = new MediaStream(combinedTracks);
 
       let mimeType = 'video/webm;codecs=vp9,opus';
       let extension = 'webm';
@@ -275,7 +305,10 @@ export const useVideoExport = (
         blobType = 'video/mp4';
       }
 
-      const recorder = new MediaRecorder(combinedStream, { mimeType });
+      const recorder = new MediaRecorder(combinedStream, { 
+        mimeType,
+        videoBitsPerSecond: 2500000 // 2.5 Mbps para compresión (evita archivos de 35MB)
+      });
       const chunks = [];
       // timeslice: collect data every 1s to avoid empty blob on failure
       recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
