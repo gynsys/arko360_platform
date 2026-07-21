@@ -340,13 +340,12 @@ class StructuralChecks:
         horiz_bar_str = f"Ø12@{horiz_spacing_cm}cm"
             
         return {
-            "id": rw.id if hasattr(rw, 'id') else "Desconocido",
+            "id": rw.id if hasattr(rw, 'id') and rw.id else "Muro",
             "H_m": float(H),
             "thickness_m": float(rw.thickness),
-            "Ea_kN_m": float(Ea_N_m / 1000),
-            "Mu_kNm_m": float(Mu_Nm_m / 1000),
-            "Vu_kN_m": float(Vu_N_m / 1000),
-            "phiVc_kN_m": float(phi_Vc_N_m / 1000),
+            "Mu_tonfm_m": float(Mu_Nm_m / 9806.65),
+            "Vu_tonf_m": float(Vu_N_m / 9806.65),
+            "phiVc_tonf_m": float(phi_Vc_N_m / 9806.65),
             "shear_ok": shear_ok,
             "As_req_cm2_m": float(As_req_cm2_m),
             "proposed_rebar": bar_str,
@@ -396,18 +395,58 @@ class StructuralChecks:
         phi_flex = 0.90
         Mn_req = Mu_beam / phi_flex
         
-        As_m2 = 0.0
-        a = 0.0
-        if Mn_req > 0:
-            for _ in range(10):
-                As_m2 = Mn_req / (fy_Pa * (d - a/2))
-                a = (As_m2 * fy_Pa) / (0.85 * fc_Pa * b)
-                
-        As_min_m2 = max(0.0033 * b * d, 1.4 / self.f_y * b * d)
-        As_req_cm2 = max(As_m2, As_min_m2) * 10000
+        beta1 = 0.85
+        if self.f_c > 28.0:
+            beta1 = max(0.65, 0.85 - 0.05 * (self.f_c - 28.0) / 7.0)
+            
+        c_max = 0.375 * d
+        a_max = beta1 * c_max
+        C_max = 0.85 * fc_Pa * b * a_max
+        Mnt_max = C_max * (d - a_max / 2)
         
-        n_bars = int(np.ceil(As_req_cm2 / 1.99))
-        if n_bars < 2: n_bars = 2
+        # 1.4/fy formula usually has fy in MPa for the constant 1.4 to work.
+        # But here self.f_y is in MPa.
+        As_min_m2 = max(0.0033 * b * d, (1.4 / self.f_y) * b * d)
+        
+        if Mn_req <= Mnt_max:
+            # Singly reinforced
+            As_m2 = 0.0
+            a = 0.0
+            if Mn_req > 0:
+                for _ in range(10):
+                    As_m2 = Mn_req / (fy_Pa * (d - a/2))
+                    a = (As_m2 * fy_Pa) / (0.85 * fc_Pa * b)
+                    
+            As_req_cm2 = max(As_m2, As_min_m2) * 10000
+            
+            n_bars_bot = int(np.ceil(As_req_cm2 / 1.99))
+            if n_bars_bot < 2: n_bars_bot = 2
+            
+            n_bars_top = 2
+            proposed_rebar = f"{n_bars_bot}Ø16 Inf + {n_bars_top}Ø10 Sup"
+        else:
+            # Doubly reinforced
+            Mn2 = Mn_req - Mnt_max
+            d_prime = cover
+            
+            epsilon_s_prime = 0.003 * (c_max - d_prime) / c_max
+            fs_prime = min(fy_Pa, 200e9 * epsilon_s_prime)
+            if fs_prime <= 0: fs_prime = 1.0 # fallback
+            
+            As_prime_m2 = Mn2 / (fs_prime * (d - d_prime))
+            As1_m2 = C_max / fy_Pa
+            As2_m2 = Mn2 / (fy_Pa * (d - d_prime))
+            
+            As_req_cm2 = max(As1_m2 + As2_m2, As_min_m2) * 10000
+            As_prime_cm2 = As_prime_m2 * 10000
+            
+            n_bars_bot = int(np.ceil(As_req_cm2 / 1.99))
+            if n_bars_bot < 2: n_bars_bot = 2
+            
+            n_bars_top = int(np.ceil(As_prime_cm2 / 1.99))
+            if n_bars_top < 2: n_bars_top = 2
+            
+            proposed_rebar = f"{n_bars_bot}Ø16 Inf + {n_bars_top}Ø16 Sup"
         
         phi_shear = 0.75
         vc_MPa = 0.17 * np.sqrt(self.f_c)
@@ -429,10 +468,10 @@ class StructuralChecks:
             "b_m": float(b),
             "h_m": float(h),
             "length_m": float(sb.length),
-            "Mu_kNm": float(Mu_beam / 1000),
-            "Vu_kN": float(Vu_beam / 1000),
+            "Mu_tonfm": float(Mu_beam / 9806.65),
+            "Vu_tonf": float(Vu_beam / 9806.65),
             "As_req_cm2": float(As_req_cm2),
-            "proposed_rebar": f"{n_bars}Ø16",
+            "proposed_rebar": f"{n_bars_bot}Ø16 Inf + {n_bars_top}Ø10 Sup",
             "proposed_stirrups": f"Ø10@{s_cm}cm"
         }
 
