@@ -3933,9 +3933,9 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                       <th style={{padding: '8px'}}>ID Muro</th>
                       <th style={{padding: '8px'}}>H Tierra (m)</th>
                       <th style={{padding: '8px'}}>Espesor (m)</th>
-                      <th style={{padding: '8px'}}>Mu (tonf·m/m)</th>
-                      <th style={{padding: '8px'}}>Vu (tonf/m)</th>
-                      <th style={{padding: '8px'}}>φVc (tonf/m)</th>
+                      <th style={{padding: '8px'}}>Mu (kgf·m/m)</th>
+                      <th style={{padding: '8px'}}>Vu (kgf/m)</th>
+                      <th style={{padding: '8px'}}>φVc (kgf/m)</th>
                       <th style={{padding: '8px'}}>Corte</th>
                       <th style={{padding: '8px'}}>Acero Vertical</th>
                       <th style={{padding: '8px'}}>Prop. Vert</th>
@@ -3949,9 +3949,9 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                         <td style={{padding: '8px', fontWeight: 'bold'}}>{wd.id.substring(0, 8)}</td>
                         <td style={{padding: '8px'}}>{wd.H_m.toFixed(2)}</td>
                         <td style={{padding: '8px'}}>{wd.thickness_m.toFixed(2)}</td>
-                        <td style={{padding: '8px'}}>{wd.Mu_tonfm_m.toFixed(1)}</td>
-                        <td style={{padding: '8px'}}>{wd.Vu_tonf_m.toFixed(1)}</td>
-                        <td style={{padding: '8px'}}>{wd.phiVc_tonf_m.toFixed(1)}</td>
+                        <td style={{padding: '8px'}}>{wd.Mu_kgfm_m.toFixed(0)}</td>
+                        <td style={{padding: '8px'}}>{wd.Vu_kgf_m.toFixed(0)}</td>
+                        <td style={{padding: '8px'}}>{wd.phiVc_kgf_m.toFixed(0)}</td>
                         <td style={{padding: '8px', color: wd.shear_ok ? '#2e7d32' : '#c62828', fontWeight: 'bold'}}>
                           {wd.shear_ok ? 'OK' : 'FALLA (Espesor insuficiente)'}
                         </td>
@@ -3977,8 +3977,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                     <tr style={{background: '#c5cae9', borderBottom: '2px solid #9fa8da'}}>
                       <th style={{padding: '8px'}}>ID Viga</th>
                       <th style={{padding: '8px'}}>Dimensiones (cm)</th>
-                      <th style={{padding: '8px'}}>Mu (tonf·m)</th>
-                      <th style={{padding: '8px'}}>Vu (tonf)</th>
+                      <th style={{padding: '8px'}}>Mu (kgf·m)</th>
+                      <th style={{padding: '8px'}}>Vu (kgf)</th>
                       <th style={{padding: '8px'}}>Acero Requerido</th>
                       <th style={{padding: '8px'}}>Armadura Principal</th>
                       <th style={{padding: '8px'}}>Estribos</th>
@@ -3989,8 +3989,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                       <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
                         <td style={{padding: '8px', fontWeight: 'bold'}}>{sb.id.substring(0, 10)}</td>
                         <td style={{padding: '8px'}}>{Math.round(sb.b_m * 100)} x {Math.round(sb.h_m * 100)}</td>
-                        <td style={{padding: '8px'}}>{sb.Mu_tonfm.toFixed(1)}</td>
-                        <td style={{padding: '8px'}}>{sb.Vu_tonf.toFixed(1)}</td>
+                        <td style={{padding: '8px'}}>{sb.Mu_kgfm.toFixed(0)}</td>
+                        <td style={{padding: '8px'}}>{sb.Vu_kgf.toFixed(0)}</td>
                         <td style={{padding: '8px'}}>{sb.As_req_cm2.toFixed(2)} cm²</td>
                         <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>{sb.proposed_rebar}</td>
                         <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>{sb.proposed_stirrups}</td>

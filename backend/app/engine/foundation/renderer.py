@@ -317,6 +317,54 @@ class PlanRenderer:
                 f'fill="#333" stroke="#000" stroke-width="1"/>'
             )
 
+        # Retaining walls with labels
+        if hasattr(self, 'retaining_walls'):
+            for rw in self.retaining_walls:
+                color = "#e65100" # Naranja oscuro
+                width_px = max(3, rw.thickness * scale)
+                x1, y1 = to_svg(rw.x1, rw.y1)
+                x2, y2 = to_svg(rw.x2, rw.y2)
+                svg_parts.append(
+                    f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
+                    f'stroke="{color}" stroke-width="{width_px:.1f}" stroke-linecap="round"/>'
+                )
+                
+                cx, cy = to_svg((rw.x1 + rw.x2) / 2, (rw.y1 + rw.y2) / 2)
+                label = getattr(rw, 'id', "MC")
+                svg_parts.append(
+                    f'<rect x="{cx - 15}" y="{cy - 10}" width="30" height="20" '
+                    f'rx="3" fill="rgba(255,255,255,0.9)" stroke="{color}" stroke-width="2"/>'
+                )
+                svg_parts.append(
+                    f'<text x="{cx}" y="{cy + 4}" font-family="sans-serif" '
+                    f'font-size="11" font-weight="bold" fill="{color}" '
+                    f'text-anchor="middle">{label}</text>'
+                )
+
+        # Support beams with labels
+        if hasattr(self, 'support_beams'):
+            for sb in self.support_beams:
+                color = "#4a148c" # Morado oscuro
+                width_px = max(4, sb.width * scale)
+                x1, y1 = to_svg(sb.x1, sb.y1)
+                x2, y2 = to_svg(sb.x2, sb.y2)
+                svg_parts.append(
+                    f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
+                    f'stroke="{color}" stroke-width="{width_px:.1f}" stroke-linecap="round" stroke-dasharray="8,4"/>'
+                )
+                
+                cx, cy = to_svg((sb.x1 + sb.x2) / 2, (sb.y1 + sb.y2) / 2)
+                label = getattr(sb, 'id', "VA")
+                svg_parts.append(
+                    f'<rect x="{cx - 15}" y="{cy - 10}" width="30" height="20" '
+                    f'rx="3" fill="rgba(255,255,255,0.9)" stroke="{color}" stroke-width="2"/>'
+                )
+                svg_parts.append(
+                    f'<text x="{cx}" y="{cy + 4}" font-family="sans-serif" '
+                    f'font-size="11" font-weight="bold" fill="{color}" '
+                    f'text-anchor="middle">{label}</text>'
+                )
+
         # Openings (windows and doors)
         for wall in self.walls:
             if not wall.openings:

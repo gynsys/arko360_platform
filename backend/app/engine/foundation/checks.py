@@ -313,7 +313,7 @@ class StructuralChecks:
         As_min_m2 = 0.0018 * b * rw.thickness
         As_req_cm2_m = max(As_m2, As_min_m2) * 10000
         
-        # Propose rebar
+        # Propose rebar for tension face (Interior)
         bar_area = 1.99 # phi 16 (5/8")
         spacing_m = bar_area / As_req_cm2_m
         spacing_cm = int(spacing_m * 100)
@@ -324,9 +324,20 @@ class StructuralChecks:
             spacing_m = bar_area / As_req_cm2_m
             spacing_cm = int(spacing_m * 100)
             if spacing_cm < 10: spacing_cm = 10
-            bar_str = f"Ø19@{spacing_cm}cm"
+            bar_str = f"Trac: Ø19@{spacing_cm}cm"
         else:
-            bar_str = f"Ø16@{spacing_cm}cm"
+            bar_str = f"Trac: Ø16@{spacing_cm}cm"
+            
+        # Compression face (Exterior) min steel
+        As_comp_min_m2 = 0.0012 * b * rw.thickness
+        As_comp_cm2_m = As_comp_min_m2 * 10000
+        comp_bar_area = 0.785 # phi 10 (3/8")
+        comp_spacing_m = comp_bar_area / As_comp_cm2_m
+        comp_spacing_cm = int(comp_spacing_m * 100)
+        if comp_spacing_cm > 30: comp_spacing_cm = 30
+        if comp_spacing_cm < 10: comp_spacing_cm = 10
+        
+        bar_str += f" / Comp: Ø10@{comp_spacing_cm}cm"
             
         # Horizontal steel (temperature and shrinkage)
         As_horiz_min_m2 = 0.0020 * b * rw.thickness
@@ -343,9 +354,9 @@ class StructuralChecks:
             "id": rw.id if hasattr(rw, 'id') and rw.id else "Muro",
             "H_m": float(H),
             "thickness_m": float(rw.thickness),
-            "Mu_tonfm_m": float(Mu_Nm_m / 9806.65),
-            "Vu_tonf_m": float(Vu_N_m / 9806.65),
-            "phiVc_tonf_m": float(phi_Vc_N_m / 9806.65),
+            "Mu_kgfm_m": float(Mu_Nm_m / 9.80665),
+            "Vu_kgf_m": float(Vu_N_m / 9.80665),
+            "phiVc_kgf_m": float(phi_Vc_N_m / 9.80665),
             "shear_ok": shear_ok,
             "As_req_cm2_m": float(As_req_cm2_m),
             "proposed_rebar": bar_str,
@@ -468,8 +479,8 @@ class StructuralChecks:
             "b_m": float(b),
             "h_m": float(h),
             "length_m": float(sb.length),
-            "Mu_tonfm": float(Mu_beam / 9806.65),
-            "Vu_tonf": float(Vu_beam / 9806.65),
+            "Mu_kgfm": float(Mu_beam / 9.80665),
+            "Vu_kgf": float(Vu_beam / 9.80665),
             "As_req_cm2": float(As_req_cm2),
             "proposed_rebar": f"{n_bars_bot}Ø16 Inf + {n_bars_top}Ø10 Sup",
             "proposed_stirrups": f"Ø10@{s_cm}cm"
