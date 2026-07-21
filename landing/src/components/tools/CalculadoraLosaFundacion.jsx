@@ -1923,12 +1923,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
         soil_density: w.soil_density || 18000.0, 
         phi: w.phi || 30.0,
         perimeter_wall_height: w.perimeter_wall_height || 2.5,
-        id: w.id
+        id: String(w.id)
       })),
       support_beams: allWalls.filter(w => w.type === 'support_beam').map(w => ({
         x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
         width: w.thickness || 0.3, depth: w.depth || 0.5,
-        id: w.id
+        id: String(w.id)
       })),
       beams: perimeterWalls.filter(w => w.type === 'perimetral' || w.type === 'interno').map(w => ({
         x1: w.x1 - offsetX, y1: w.y1 - offsetY, x2: w.x2 - offsetX, y2: w.y2 - offsetY,
