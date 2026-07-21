@@ -3003,11 +3003,17 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                           <td><button className="del-btn" onClick={() => removeInternalWall(w.id)}>X</button></td>
                         </tr>
                         {w.type === 'retaining_wall' && (
+                          <>
                           <tr style={{background:'#f9f9f9'}}><td colSpan="6" style={{padding:'4px 8px', fontSize:'11px', textAlign:'left'}}>
                             <span style={{marginRight:'8px'}}>Espesor (m): <input type="number" step="0.05" value={w.thickness || 0.3} onChange={e => updateInternalWall(w.id, 'thickness', parseFloat(e.target.value))} style={{width:'50px'}} /></span>
                             <span style={{marginRight:'8px'}}>H Tierra (m): <input type="number" step="0.1" value={w.soil_height || 1.4} onChange={e => updateInternalWall(w.id, 'soil_height', parseFloat(e.target.value))} style={{width:'50px'}} /></span>
                             <span style={{marginRight:'8px'}}>H Muro (m): <input type="number" step="0.1" value={w.perimeter_wall_height || 2.5} onChange={e => updateInternalWall(w.id, 'perimeter_wall_height', parseFloat(e.target.value))} style={{width:'50px'}} /></span>
                           </td></tr>
+                          <tr style={{background:'#f9f9f9', borderBottom:'1px solid #ddd'}}><td colSpan="6" style={{padding:'0px 8px 4px 8px', fontSize:'11px', textAlign:'left'}}>
+                            <span style={{marginRight:'8px'}}>Fricción ϕ (°): <input type="number" step="1" value={w.phi || 30} onChange={e => updateInternalWall(w.id, 'phi', parseFloat(e.target.value))} style={{width:'50px'}} /></span>
+                            <span style={{marginRight:'8px'}}>γ Suelo (N/m³): <input type="number" step="100" value={w.soil_density || 18000} onChange={e => updateInternalWall(w.id, 'soil_density', parseFloat(e.target.value))} style={{width:'70px'}} /></span>
+                          </td></tr>
+                          </>
                         )}
                         {w.type === 'support_beam' && (
                           <tr style={{background:'#f9f9f9'}}><td colSpan="6" style={{padding:'4px 8px', fontSize:'11px', textAlign:'left'}}>
@@ -3901,6 +3907,47 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Tabla de Diseño de Muros de Contención */}
+          {results.retaining_wall_designs && results.retaining_wall_designs.length > 0 && (
+            <div style={{padding:'20px 24px', borderBottom:'1px solid #eee', background:'#fff8e1'}}>
+              <h4 style={{margin:'0 0 12px 0', color:'#f57f17'}}>🧱 Diseño de Pantalla de Muros de Contención</h4>
+              <div style={{overflowX: 'auto'}}>
+                <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left', background: '#fff'}}>
+                  <thead>
+                    <tr style={{background: '#ffe082', borderBottom: '2px solid #ffca28'}}>
+                      <th style={{padding: '8px'}}>ID Muro</th>
+                      <th style={{padding: '8px'}}>H Tierra (m)</th>
+                      <th style={{padding: '8px'}}>Espesor (m)</th>
+                      <th style={{padding: '8px'}}>Mu (kN·m/m)</th>
+                      <th style={{padding: '8px'}}>Vu (kN/m)</th>
+                      <th style={{padding: '8px'}}>φVc (kN/m)</th>
+                      <th style={{padding: '8px'}}>Corte</th>
+                      <th style={{padding: '8px'}}>Acero Vertical</th>
+                      <th style={{padding: '8px'}}>Propuesta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.retaining_wall_designs.map((wd, idx) => (
+                      <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
+                        <td style={{padding: '8px', fontWeight: 'bold'}}>{wd.id.substring(0, 8)}</td>
+                        <td style={{padding: '8px'}}>{wd.H_m.toFixed(2)}</td>
+                        <td style={{padding: '8px'}}>{wd.thickness_m.toFixed(2)}</td>
+                        <td style={{padding: '8px'}}>{wd.Mu_kNm_m.toFixed(1)}</td>
+                        <td style={{padding: '8px'}}>{wd.Vu_kN_m.toFixed(1)}</td>
+                        <td style={{padding: '8px'}}>{wd.phiVc_kN_m.toFixed(1)}</td>
+                        <td style={{padding: '8px', color: wd.shear_ok ? '#2e7d32' : '#c62828', fontWeight: 'bold'}}>
+                          {wd.shear_ok ? 'OK' : 'FALLA (Espesor insuficiente)'}
+                        </td>
+                        <td style={{padding: '8px'}}>{wd.As_req_cm2_m.toFixed(2)} cm²/m</td>
+                        <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>{wd.proposed_rebar}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 

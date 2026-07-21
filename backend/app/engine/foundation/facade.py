@@ -27,6 +27,12 @@ class FoundationSlabDesigner(
         self.check_differential_settlements()
         self.check_punching()
         self.check_sliding()
+        
+        if hasattr(self, 'retaining_walls') and self.retaining_walls:
+            self.retaining_wall_designs = [self.design_retaining_wall_stem(rw) for rw in self.retaining_walls]
+        else:
+            self.retaining_wall_designs = []
+            
         return self._build_results_dict()
     
     def _build_results_dict(self) -> dict:
@@ -68,6 +74,7 @@ class FoundationSlabDesigner(
             "punching": self.punching_data,
             "settlements": self.settlement_data,
             "sliding": getattr(self, 'sliding_data', {"active": False}),
+            "retaining_wall_designs": getattr(self, 'retaining_wall_designs', []),
             "svg_plan": self.get_svg_plan(),
             "materials_computation": self._compute_quantities()
         }

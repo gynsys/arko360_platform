@@ -256,6 +256,90 @@ class StructuralChecks:
             "ok": ok
         }
         return self.sliding_data
+    def design_retaining_wall_stem(self, rw) -> dict:
+        """
+        Design the vertical stem of a cantilever retaining wall.
+        Uses 1.6 load factor for earth pressure (ACI 318).
+        """
+        gamma = rw.soil_density # N/m3
+        H = rw.soil_height
+        phi_rad = np.radians(rw.phi)
+        
+        # Ka = tan^2(45 - phi/2)
+        Ka = np.tan(np.radians(45) - phi_rad/2)**2
+        
+        # Ea = 0.5 * gamma * H^2 * Ka
+        Ea_N_m = 0.5 * gamma * (H**2) * Ka
+        
+        # M_o = Ea * H/3 (Volcamiento base)
+        Mo_Nm_m = Ea_N_m * (H / 3)
+        
+        # Factores de carga (ACI-318 empuje suelo = 1.6)
+        Mu_Nm_m = 1.6 * Mo_Nm_m
+        Vu_N_m = 1.6 * Ea_N_m
+        
+        b = 1.0 # m
+        cover = 0.05 # m
+        d = rw.thickness - cover
+        
+        if d <= 0:
+            d = 0.01
+            
+        # Shear capacity: phi_Vc = 0.75 * 0.17 * sqrt(f_c MPa) * b * d * 1e6
+        phi_shear = 0.75
+        fc_MPa = self.f_c
+        phi_Vc_N_m = phi_shear * 0.17 * np.sqrt(fc_MPa) * b * d * 1e6
+        
+        shear_ok = bool(Vu_N_m <= phi_Vc_N_m)
+        
+        # Flexural steel (Whitney)
+        phi_flex = 0.90
+        # Mu = phi * As * fy * (d - a/2)
+        # a = As * fy / (0.85 * f_c * b)
+        # Simplify iteratively
+        As_m2 = 0.0
+        a = 0.0
+        fy_Pa = self.f_y * 1e6
+        fc_Pa = self.f_c * 1e6
+        
+        # M_n = Mu / phi
+        Mn_req = Mu_Nm_m / phi_flex
+        
+        if Mn_req > 0:
+            for _ in range(10):
+                As_m2 = Mn_req / (fy_Pa * (d - a/2))
+                a = (As_m2 * fy_Pa) / (0.85 * fc_Pa * b)
+            
+        As_min_m2 = 0.0018 * b * rw.thickness
+        As_req_cm2_m = max(As_m2, As_min_m2) * 10000
+        
+        # Propose rebar
+        bar_area = 1.99 # phi 16 (5/8")
+        spacing_m = bar_area / As_req_cm2_m
+        spacing_cm = int(spacing_m * 100)
+        
+        if spacing_cm > 30: spacing_cm = 30
+        if spacing_cm < 10: 
+            bar_area = 2.84 # phi 19 (3/4")
+            spacing_m = bar_area / As_req_cm2_m
+            spacing_cm = int(spacing_m * 100)
+            if spacing_cm < 10: spacing_cm = 10
+            bar_str = f"Ø19@{spacing_cm}cm"
+        else:
+            bar_str = f"Ø16@{spacing_cm}cm"
+            
+        return {
+            "id": rw.id if hasattr(rw, 'id') else "Desconocido",
+            "H_m": float(H),
+            "thickness_m": float(rw.thickness),
+            "Ea_kN_m": float(Ea_N_m / 1000),
+            "Mu_kNm_m": float(Mu_Nm_m / 1000),
+            "Vu_kN_m": float(Vu_N_m / 1000),
+            "phiVc_kN_m": float(phi_Vc_N_m / 1000),
+            "shear_ok": shear_ok,
+            "As_req_cm2_m": float(As_req_cm2_m),
+            "proposed_rebar": bar_str
+        }
 
 
     def generate_design_report(self) -> None:
