@@ -492,8 +492,10 @@ class StructuralChecks:
             "Mu_kgfm": float(Mu_beam / 9.80665),
             "Vu_kgf": float(Vu_beam / 9.80665),
             "As_req_cm2": float(As_req_cm2),
-            "proposed_rebar": proposed_rebar_options[0] if 'proposed_rebar_options' in locals() else f"{n_bars_bot}Ø16 Inf + {n_bars_top}Ø10 Sup",
-            "proposed_rebar_options": proposed_rebar_options if 'proposed_rebar_options' in locals() else [f"{n_bars_bot}Ø16 Inf + {n_bars_top}Ø10 Sup"],
+            "n_bars_bot": int(n_bars_bot),
+            "n_bars_top": int(n_bars_top),
+            "proposed_rebar": proposed_rebar,
+            "proposed_rebar_options": [proposed_rebar],
             "proposed_stirrups": f"Ø10@{s_cm}cm",
             "proposed_stirrups_options": [f"Ø10@{s_cm}cm", f"Ø10@{max(10, s_cm-5)}cm"]
         }

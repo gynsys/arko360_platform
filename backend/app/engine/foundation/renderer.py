@@ -527,117 +527,382 @@ class PlanRenderer:
 
     def get_svg_details(self) -> str:
         """
-        Build and return an SVG string showing the cross-section details.
-        Draws a generic Retaining Wall section and a Support Beam section.
+        Build and return an SVG string with two cross-section construction details:
+        - Left: Retaining Wall (MC) with actual soil height, thickness, steel labels,
+                and development length (pata) going into the slab.
+        - Right: Support Beam (VA) with actual b, h, correct bar counts and stirrup.
         """
-        svg_w = 800
-        svg_h = 400
-        
-        svg_parts = []
+        import re as _re
+
+        svg_w = 920
+        svg_h = 440
+
+        svg_parts: list = []
         svg_parts.append(
             f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_w} {svg_h}" '
-            f'style="width:100%;max-height:400px;border:1px solid #ccc;'
-            f'border-radius:8px;background:#fafafa;margin-top:20px;">'
-            f'<defs><marker id="arrow_det" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#333" /></marker></defs>'
+            f'style="width:100%;max-height:450px;border:1px solid #e2e8f0;'
+            f'border-radius:8px;background:#f8fafc;margin-top:20px;">'
+            f'<defs>'
+            f'<marker id="arr_d" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">'
+            f'<path d="M0,0 L0,6 L8,3 z" fill="#334155"/>'
+            f'</marker>'
+            f'</defs>'
         )
-        
-        # --- DETAIL 1: Retaining Wall (Left Half) ---
-        rw_thickness = 0.20
-        rw_L = 1.50
-        rw_h = 2.0
-        if hasattr(self, 'retaining_walls') and self.retaining_walls:
-            rw = self.retaining_walls[0]
-            rw_thickness = rw.thickness
-            rw_h = getattr(rw, 'soil_height', 1.5) + getattr(rw, 'perimeter_wall_height', 0.5)
-            
-        h_str = f"{rw_h:.2f} m"
-        t_str = f"{rw_thickness * 100:.0f} cm"
-        L_str = f"{rw_L:.2f} m"
-        
-        svg_parts.append('<g transform="translate(0, 0)">')
-        svg_parts.append('<text x="200" y="30" text-anchor="middle" font-size="16" font-weight="bold" font-family="sans-serif" fill="#1e293b">Detalle Muro de Contención</text>')
-        
+
+        # ----------------------------------------------------------------
+        # Pull actual design data
+        # ----------------------------------------------------------------
+        wd = (self.retaining_wall_designs[0]
+              if getattr(self, 'retaining_wall_designs', []) else None)
+        sd = (self.support_beam_designs[0]
+              if getattr(self, 'support_beam_designs', []) else None)
+
+        # Wall geometry from input objects (soil_height only = H_tierra)
+        rw_soil_h = 1.5
+        rw_thick_m = 0.20
+        if getattr(self, 'retaining_walls', []):
+            rw0 = self.retaining_walls[0]
+            rw_soil_h = float(getattr(rw0, 'soil_height', 1.5))
+            rw_thick_m = float(getattr(rw0, 'thickness', 0.20))
+        # Override with design dict if available
+        if wd:
+            rw_soil_h = float(wd.get('H_m', rw_soil_h))
+            rw_thick_m = float(wd.get('thickness_m', rw_thick_m))
+
+        rw_thick_cm = round(rw_thick_m * 100)
+
+        # Parse wall rebar labels: "Trac: Ø16@30cm / Comp: Ø10@30cm"
+        rw_trac_lbl = "—"
+        rw_comp_lbl = "—"
+        rw_horiz_lbl = "—"
+        bar_diam_mm = 12  # default for ld calc
+        if wd:
+            pr = wd.get('proposed_rebar', '')
+            m_t = _re.search(r'Trac:\s*(Ø\d+@\d+cm)', pr)
+            m_c = _re.search(r'Comp:\s*(Ø\d+@\d+cm)', pr)
+            rw_trac_lbl = m_t.group(1) if m_t else pr
+            rw_comp_lbl = m_c.group(1) if m_c else "—"
+            rw_horiz_lbl = wd.get('proposed_rebar_horiz', '—')
+            m_d = _re.search(r'Ø(\d+)', rw_trac_lbl)
+            if m_d:
+                bar_diam_mm = int(m_d.group(1))
+
+        # Development length for the "pata" (bar going horizontal into slab)
+        # Simplified: ld = max(40·db, 300 mm)  (ACI 318 §25.5 approximation)
+        ld_mm = max(40 * bar_diam_mm, 300)
+        ld_cm = round(ld_mm / 10)
+        ld_label = f"ld ≈ {ld_cm} cm"
+
+        # ----------------------------------------------------------------
+        # LEFT PANEL — Muro de Contención  (x: 0..460)
+        # ----------------------------------------------------------------
+        # Scale: map rw_soil_h meters → stem_h_px pixels
+        max_h_px = 300
+        stem_h_px = min(max_h_px, max(80, int(rw_soil_h * 100)))
+        stem_w_px = max(18, min(50, int(rw_thick_cm * 1.8)))
+        pata_px = max(50, min(120, int(ld_cm * 1.2)))   # visual pata length
+        base_h_px = 28   # footing stub height
+        cover_px = 5
+
+        # Anchor points
+        stem_left_x = 200   # right/exterior face (compression side)
+        stem_right_x = stem_left_x + stem_w_px  # left/interior face (tension side)
+        stem_top_y = 50
+        stem_bot_y = stem_top_y + stem_h_px
+        foot_right_x = stem_right_x + pata_px
+
+        svg_parts.append('<g id="mc_detail">')
+        svg_parts.append(
+            '<text x="230" y="30" text-anchor="middle" font-size="15" font-weight="bold" '
+            'font-family="sans-serif" fill="#1e293b">Detalle Muro de Contención (MC)</text>'
+        )
+
+        # Concrete L-shape
+        pts = (
+            f"{stem_left_x},{stem_top_y} "
+            f"{stem_right_x},{stem_top_y} "
+            f"{stem_right_x},{stem_bot_y} "
+            f"{foot_right_x},{stem_bot_y} "
+            f"{foot_right_x},{stem_bot_y + base_h_px} "
+            f"{stem_left_x},{stem_bot_y + base_h_px}"
+        )
+        svg_parts.append(
+            f'<polygon points="{pts}" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>'
+        )
+
+        # Traction bars — interior face (right face of stem)
+        trac_x = stem_right_x - cover_px - 4
+        for bar_y in range(stem_top_y + 14, stem_bot_y - 4, 32):
+            svg_parts.append(
+                f'<circle cx="{trac_x}" cy="{bar_y}" r="4" fill="#dc2626"/>'
+            )
+        # Pata: traction bar bends horizontal into footing slab
+        pata_y = stem_bot_y - cover_px - 4
+        svg_parts.append(
+            f'<line x1="{trac_x}" y1="{stem_bot_y - 14}" '
+            f'x2="{trac_x}" y2="{pata_y}" '
+            f'stroke="#dc2626" stroke-width="3"/>'
+        )
+        svg_parts.append(
+            f'<line x1="{trac_x}" y1="{pata_y}" '
+            f'x2="{foot_right_x - 5}" y2="{pata_y}" '
+            f'stroke="#dc2626" stroke-width="3"/>'
+        )
+        svg_parts.append(
+            f'<circle cx="{foot_right_x - 5}" cy="{pata_y}" r="4" fill="#dc2626"/>'
+        )
+
+        # Compression bars — exterior face (left face of stem)
+        comp_x = stem_left_x + cover_px + 4
+        for bar_y in range(stem_top_y + 14, stem_bot_y - 4, 32):
+            svg_parts.append(
+                f'<circle cx="{comp_x}" cy="{bar_y}" r="3" fill="#2563eb"/>'
+            )
+
+        # Horizontal bars (temperature / shrinkage)
+        h_bar_mid_x = stem_left_x + stem_w_px // 2
+        for bar_y in range(stem_top_y + 28, stem_bot_y - 4, 32):
+            svg_parts.append(
+                f'<line x1="{stem_left_x + 5}" y1="{bar_y}" '
+                f'x2="{stem_right_x - 5}" y2="{bar_y}" '
+                f'stroke="#7c3aed" stroke-width="2"/>'
+            )
+
+        # Cover rectangle (dashed)
+        svg_parts.append(
+            f'<rect x="{stem_left_x + cover_px}" y="{stem_top_y + cover_px}" '
+            f'width="{stem_w_px - 2*cover_px}" height="{stem_h_px - 2*cover_px}" '
+            f'fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>'
+        )
+
+        # ---- Dimension annotations ----
+        # H tierra (left side)
+        dim_x_left = stem_left_x - 55
+        mid_stem_y = stem_top_y + stem_h_px // 2
+        svg_parts.append(
+            f'<line x1="{dim_x_left}" y1="{stem_top_y}" '
+            f'x2="{dim_x_left}" y2="{stem_bot_y}" '
+            f'stroke="#334155" stroke-width="1.5"/>'
+        )
+        svg_parts.append(
+            f'<line x1="{dim_x_left - 4}" y1="{stem_top_y}" '
+            f'x2="{dim_x_left + 4}" y2="{stem_top_y}" '
+            f'stroke="#334155" stroke-width="1.5"/>'
+        )
+        svg_parts.append(
+            f'<line x1="{dim_x_left - 4}" y1="{stem_bot_y}" '
+            f'x2="{dim_x_left + 4}" y2="{stem_bot_y}" '
+            f'stroke="#334155" stroke-width="1.5"/>'
+        )
+        svg_parts.append(
+            f'<text x="{dim_x_left - 8}" y="{mid_stem_y + 4}" '
+            f'text-anchor="end" font-size="11" font-family="sans-serif" fill="#1e293b" '
+            f'transform="rotate(-90,{dim_x_left - 8},{mid_stem_y + 4})">'
+            f'H tierra = {rw_soil_h:.2f} m</text>'
+        )
+
+        # Thickness (top)
+        mid_stem_x = stem_left_x + stem_w_px // 2
+        svg_parts.append(
+            f'<text x="{mid_stem_x}" y="{stem_top_y - 10}" '
+            f'text-anchor="middle" font-size="11" font-family="sans-serif" fill="#1e293b">'
+            f'e = {rw_thick_cm} cm</text>'
+        )
+
+        # ld pata label (below the base)
+        pata_mid_x = trac_x + (foot_right_x - 5 - trac_x) // 2
+        svg_parts.append(
+            f'<text x="{pata_mid_x}" y="{stem_bot_y + base_h_px + 18}" '
+            f'text-anchor="middle" font-size="10" font-family="sans-serif" fill="#dc2626">'
+            f'{ld_label}</text>'
+        )
+
+        # Steel legend (right of pata area)
+        legend_x = foot_right_x + 12
+        lgy = stem_top_y + 20
+        svg_parts.append(
+            f'<circle cx="{legend_x + 4}" cy="{lgy}" r="4" fill="#dc2626"/>'
+        )
+        svg_parts.append(
+            f'<text x="{legend_x + 12}" y="{lgy + 4}" font-size="10" '
+            f'font-family="sans-serif" fill="#dc2626">Trac. (int.): {rw_trac_lbl}</text>'
+        )
+        svg_parts.append(
+            f'<circle cx="{legend_x + 4}" cy="{lgy + 20}" r="3" fill="#2563eb"/>'
+        )
+        svg_parts.append(
+            f'<text x="{legend_x + 12}" y="{lgy + 24}" font-size="10" '
+            f'font-family="sans-serif" fill="#2563eb">Comp. (ext.): {rw_comp_lbl}</text>'
+        )
+        svg_parts.append(
+            f'<line x1="{legend_x}" y1="{lgy + 38}" x2="{legend_x + 14}" y2="{lgy + 38}" '
+            f'stroke="#7c3aed" stroke-width="2"/>'
+        )
+        svg_parts.append(
+            f'<text x="{legend_x + 16}" y="{lgy + 42}" font-size="10" '
+            f'font-family="sans-serif" fill="#7c3aed">Horiz.: {rw_horiz_lbl}</text>'
+        )
+
+        svg_parts.append('</g>')
+
+        # ----------------------------------------------------------------
+        # RIGHT PANEL — Viga de Apoyo  (x: 460..920)
+        # ----------------------------------------------------------------
+        # Use support_beams for geometry (not regular beams)
+        sb_b_cm = 30
+        sb_h_cm = 50
+        if getattr(self, 'support_beams', []):
+            sb0 = self.support_beams[0]
+            sb_b_cm = round(float(getattr(sb0, 'width', 0.30)) * 100)
+            sb_h_cm = round(float(getattr(sb0, 'depth', 0.50)) * 100)
+        if sd:
+            sb_b_cm = round(float(sd.get('b_m', sb_b_cm / 100)) * 100)
+            sb_h_cm = round(float(sd.get('h_m', sb_h_cm / 100)) * 100)
+
+        # Parse bar counts from design
+        n_bot = sd.get('n_bars_bot', 2) if sd else 2
+        n_top = sd.get('n_bars_top', 2) if sd else 2
+        stirrup_lbl = sd.get('proposed_stirrups', 'Ø10@s') if sd else 'Ø10@s'
+
+        # Extract bar diameters from proposed_rebar string
+        d_bot_mm = 16
+        d_top_mm = 10
+        if sd:
+            pr_beam = sd.get('proposed_rebar', '')
+            m_beam = _re.match(r'(\d+)Ø(\d+) Inf \+ (\d+)Ø(\d+)', pr_beam)
+            if m_beam:
+                n_bot = int(m_beam.group(1))
+                d_bot_mm = int(m_beam.group(2))
+                n_top = int(m_beam.group(3))
+                d_top_mm = int(m_beam.group(4))
+
+        # Scale beam cross-section
+        panel_cx = 690
+        panel_cy = 210
+        aspect = sb_h_cm / max(sb_b_cm, 1)
+        b_px = max(50, min(130, int(sb_b_cm * 2.5)))
+        h_px = max(100, min(280, int(b_px * aspect))  )
+        bx1 = panel_cx - b_px / 2
+        by1 = panel_cy - h_px / 2
+        cover_beam = 18  # px representing ~5cm cover
+        sx1 = bx1 + cover_beam
+        sy1 = by1 + cover_beam
+        sw = b_px - 2 * cover_beam
+        sh = h_px - 2 * cover_beam
+
+        svg_parts.append('<g id="va_detail">')
+        svg_parts.append(
+            '<text x="690" y="30" text-anchor="middle" font-size="15" font-weight="bold" '
+            'font-family="sans-serif" fill="#1e293b">Detalle Viga de Apoyo (VA)</text>'
+        )
+
         # Concrete outline
         svg_parts.append(
-            '<polygon points="120,60 120,320 320,320 320,290 150,290 150,60" '
-            'fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>'
+            f'<rect x="{bx1:.1f}" y="{by1:.1f}" width="{b_px:.1f}" height="{h_px:.1f}" '
+            f'fill="#e2e8f0" stroke="#64748b" stroke-width="2" rx="2"/>'
         )
-        
-        # Vertical traction (inside face - right side of stem)
-        svg_parts.append('<line x1="140" y1="70" x2="140" y2="310" stroke="#dc2626" stroke-width="3" stroke-dasharray="5,5"/>')
-        # Vertical compression (outside face - left side of stem)
-        svg_parts.append('<line x1="130" y1="70" x2="130" y2="310" stroke="#2563eb" stroke-width="3" stroke-dasharray="5,5"/>')
-        
-        for y in range(80, 300, 40):
-            svg_parts.append(f'<circle cx="140" cy="{y}" r="3" fill="#dc2626"/>')
-            svg_parts.append(f'<circle cx="130" cy="{y}" r="3" fill="#2563eb"/>')
-            
-        # Labels
-        svg_parts.append(f'<text x="110" y="180" text-anchor="end" font-size="12" font-family="sans-serif" fill="#1e293b">Acero Compresión</text>')
-        svg_parts.append(f'<line x1="110" y1="175" x2="125" y2="175" stroke="#333" stroke-width="1" marker-end="url(#arrow_det)"/>')
-        
-        svg_parts.append(f'<text x="200" y="140" font-size="12" font-family="sans-serif" fill="#1e293b">Acero Tracción</text>')
-        svg_parts.append(f'<line x1="195" y1="145" x2="145" y2="145" stroke="#333" stroke-width="1" marker-end="url(#arrow_det)"/>')
-        
-        # Dimensions
-        svg_parts.append(f'<text x="100" y="190" text-anchor="end" font-size="12" font-family="sans-serif" fill="#1e293b">h={h_str}</text>')
-        svg_parts.append(f'<text x="220" y="340" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#1e293b">L={L_str}</text>')
-        svg_parts.append(f'<text x="135" y="50" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#1e293b">{t_str}</text>')
-        svg_parts.append('</g>')
-        
-        # --- DETAIL 2: Support Beam (Right Half) ---
-        sb_b = 30
-        sb_h = 50
-        if hasattr(self, 'beams') and self.beams:
-            b = self.beams[0]
-            sb_b = int(b.width * 100)
-            sb_h = int(b.depth * 100)
-            
-        svg_parts.append('<g transform="translate(400, 0)">')
-        svg_parts.append('<text x="200" y="30" text-anchor="middle" font-size="16" font-weight="bold" font-family="sans-serif" fill="#1e293b">Detalle Viga de Apoyo</text>')
-        
-        w_px = max(60, min(200, sb_b * 3))
-        h_px = max(100, min(250, sb_h * 3))
-        cx, cy = 200, 190
-        bx1 = cx - w_px/2
-        by1 = cy - h_px/2
-        
+
+        # Stirrup
         svg_parts.append(
-            f'<rect x="{bx1}" y="{by1}" width="{w_px}" height="{h_px}" '
-            'fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>'
+            f'<rect x="{sx1:.1f}" y="{sy1:.1f}" width="{sw:.1f}" height="{sh:.1f}" '
+            f'fill="none" stroke="#16a34a" stroke-width="2.5" rx="4"/>'
         )
-        
-        cover = 20
-        sx1 = bx1 + cover
-        sy1 = by1 + cover
-        sw = w_px - 2*cover
-        sh = h_px - 2*cover
+
+        # Bottom bars (inferior = traction)
+        n_bot_draw = max(1, min(n_bot, 6))
+        if n_bot_draw == 1:
+            bot_xs = [sx1 + sw / 2]
+        else:
+            bot_xs = [sx1 + (sw / (n_bot_draw - 1)) * i for i in range(n_bot_draw)]
+        bot_y = sy1 + sh - 8
+        for bx in bot_xs:
+            svg_parts.append(
+                f'<circle cx="{bx:.1f}" cy="{bot_y:.1f}" r="5" fill="#1e3a8a"/>'
+            )
+
+        # Top bars (superior = compression if doubly reinforced)
+        n_top_draw = max(1, min(n_top, 4))
+        if n_top_draw == 1:
+            top_xs = [sx1 + sw / 2]
+        else:
+            top_xs = [sx1 + (sw / (n_top_draw - 1)) * i for i in range(n_top_draw)]
+        top_y = sy1 + 8
+        for bx in top_xs:
+            svg_parts.append(
+                f'<circle cx="{bx:.1f}" cy="{top_y:.1f}" r="4" fill="#dc2626"/>'
+            )
+
+        # ---- Dimension annotations ----
+        # h (right side)
+        dim_xr = bx1 + b_px + 10
         svg_parts.append(
-            f'<rect x="{sx1}" y="{sy1}" width="{sw}" height="{sh}" '
-            'fill="none" stroke="#16a34a" stroke-width="3" rx="5" ry="5"/>'
+            f'<line x1="{dim_xr}" y1="{by1}" x2="{dim_xr}" y2="{by1 + h_px}" '
+            f'stroke="#334155" stroke-width="1.2"/>'
         )
-        
-        # Bottom bars
-        svg_parts.append(f'<circle cx="{sx1 + 10}" cy="{sy1 + sh - 10}" r="6" fill="#1e3a8a"/>')
-        svg_parts.append(f'<circle cx="{sx1 + sw - 10}" cy="{sy1 + sh - 10}" r="6" fill="#1e3a8a"/>')
-        svg_parts.append(f'<circle cx="{sx1 + sw/2}" cy="{sy1 + sh - 10}" r="6" fill="#1e3a8a"/>')
-        
-        # Top bars
-        svg_parts.append(f'<circle cx="{sx1 + 10}" cy="{sy1 + 10}" r="5" fill="#dc2626"/>')
-        svg_parts.append(f'<circle cx="{sx1 + sw - 10}" cy="{sy1 + 10}" r="5" fill="#dc2626"/>')
-        
-        # Labels
-        svg_parts.append(f'<text x="{cx}" y="{by1 + h_px + 20}" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#1e293b">b = {sb_b} cm</text>')
-        svg_parts.append(f'<text x="{bx1 - 10}" y="{cy}" text-anchor="end" font-size="12" font-family="sans-serif" fill="#1e293b">h = {sb_h} cm</text>')
-        
-        svg_parts.append(f'<text x="{bx1 + w_px + 10}" y="{sy1 + 15}" font-size="12" font-family="sans-serif" fill="#1e293b">Acero Superior</text>')
-        svg_parts.append(f'<text x="{bx1 + w_px + 10}" y="{sy1 + sh - 5}" font-size="12" font-family="sans-serif" fill="#1e293b">Acero Inferior</text>')
-        svg_parts.append(f'<text x="{bx1 + w_px + 10}" y="{cy}" font-size="12" font-family="sans-serif" fill="#1e293b">Estribo</text>')
-        
+        svg_parts.append(
+            f'<line x1="{dim_xr - 4}" y1="{by1}" x2="{dim_xr + 4}" y2="{by1}" '
+            f'stroke="#334155" stroke-width="1.2"/>'
+        )
+        svg_parts.append(
+            f'<line x1="{dim_xr - 4}" y1="{by1 + h_px}" x2="{dim_xr + 4}" y2="{by1 + h_px}" '
+            f'stroke="#334155" stroke-width="1.2"/>'
+        )
+        svg_parts.append(
+            f'<text x="{dim_xr + 6}" y="{panel_cy + 4}" '
+            f'font-size="11" font-family="sans-serif" fill="#1e293b">'
+            f'h = {sb_h_cm} cm</text>'
+        )
+
+        # b (bottom)
+        dim_yb = by1 + h_px + 16
+        svg_parts.append(
+            f'<line x1="{bx1}" y1="{dim_yb}" x2="{bx1 + b_px}" y2="{dim_yb}" '
+            f'stroke="#334155" stroke-width="1.2"/>'
+        )
+        svg_parts.append(
+            f'<line x1="{bx1}" y1="{dim_yb - 4}" x2="{bx1}" y2="{dim_yb + 4}" '
+            f'stroke="#334155" stroke-width="1.2"/>'
+        )
+        svg_parts.append(
+            f'<line x1="{bx1 + b_px}" y1="{dim_yb - 4}" '
+            f'x2="{bx1 + b_px}" y2="{dim_yb + 4}" '
+            f'stroke="#334155" stroke-width="1.2"/>'
+        )
+        svg_parts.append(
+            f'<text x="{bx1 + b_px / 2:.1f}" y="{dim_yb + 14}" '
+            f'text-anchor="middle" font-size="11" font-family="sans-serif" fill="#1e293b">'
+            f'b = {sb_b_cm} cm</text>'
+        )
+
+        # Cover label
+        svg_parts.append(
+            f'<text x="{bx1 - 6}" y="{by1 + cover_beam + 4}" '
+            f'text-anchor="end" font-size="10" font-family="sans-serif" fill="#64748b">'
+            f'r = 5 cm</text>'
+        )
+
+        # Steel labels (left side)
+        label_xl = bx1 - 8
+        svg_parts.append(
+            f'<text x="{label_xl}" y="{bot_y + 4}" '
+            f'text-anchor="end" font-size="11" font-family="sans-serif" fill="#1e3a8a">'
+            f'Inf: {n_bot}Ø{d_bot_mm}</text>'
+        )
+        svg_parts.append(
+            f'<text x="{label_xl}" y="{top_y + 4}" '
+            f'text-anchor="end" font-size="11" font-family="sans-serif" fill="#dc2626">'
+            f'Sup: {n_top}Ø{d_top_mm}</text>'
+        )
+        svg_parts.append(
+            f'<text x="{label_xl}" y="{panel_cy + 4}" '
+            f'text-anchor="end" font-size="11" font-family="sans-serif" fill="#16a34a">'
+            f'Est: {stirrup_lbl}</text>'
+        )
+
         svg_parts.append('</g>')
-        
-        svg_parts.append("</svg>")
-        return "\n".join(svg_parts)
+
+        svg_parts.append('</svg>')
+        return '\n'.join(svg_parts)
 
     # ------------------------------------------------------------------
     # HTML plan sketch export

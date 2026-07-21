@@ -272,7 +272,8 @@ export const useVideoExport = (
 
       const recorder = new MediaRecorder(combinedStream, { mimeType });
       const chunks = [];
-      recorder.ondataavailable = e => chunks.push(e.data);
+      // timeslice: collect data every 1s to avoid empty blob on failure
+      recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
 
       recorder.onstop = async () => {
         if (audioRef.current) {
@@ -312,7 +313,7 @@ export const useVideoExport = (
         }
       };
 
-      recorder.start();
+      recorder.start(1000); // emit data every 1 second (timeslice)
 
       const fps = 30;
       const transitionFrames = Math.round(fps * transitionDuration);
@@ -351,26 +352,18 @@ export const useVideoExport = (
         });
       };
 
-      for (let i = 0; i < capturedFrames.length; i++) {
-        const currentSlideSnapshots = capturedFrames[i] || [];
-        const prevSlideSnapshots = i > 0 ? (capturedFrames[i - 1] || []) : null;
-        
-        // El último frame del slide anterior
-        const prevFrameCanvas = prevSlideSnapshots ? prevSlideSnapshots[prevSlideSnapshots.length - 1].canvas : null;
+      // Capture the video track to request frames explicitly
+      const videoTrack = videoStream.getVideoTracks()[0];
 
-        const currentVids = slideVideos[i] || [];
-        const prevVids = i > 0 ? slideVideos[i - 1] || [] : [];
-        
-        currentVids.forEach(v => {
-           // Si el usuario aplicó recortes y velocidad en el modal de edición de video, aplícalos aquí:
-           v.vid.currentTime = v.pos.trimStart !== undefined ? v.pos.trimStart : 0;
-           v.vid.playbackRate = v.pos.speed !== undefined ? v.pos.speed : 1;
-           v.vid.play().catch(e => console.log('video play error', e));
+      // Helper: start videos + audio for a slide
+      const startSlideMedia = (slideIdx) => {
+        const vids = slideVideos[slideIdx] || [];
+        vids.forEach(v => {
+          v.vid.currentTime = v.pos.trimStart !== undefined ? v.pos.trimStart : 0;
+          v.vid.playbackRate = v.pos.speed !== undefined ? v.pos.speed : 1;
+          v.vid.play().catch(e => console.log('video play error', e));
         });
-
-        const framesPerSlide = fps * slideDurations[i];
-
-        const slide = scenes[i];
+        const slide = scenes[slideIdx];
         const audioSrc = getActiveAudioSrc(slide.audio, slide.customAudioUrl);
         if (audioRef.current) {
           if (audioSrc) {
@@ -381,38 +374,65 @@ export const useVideoExport = (
             audioRef.current.pause();
           }
         }
+      };
 
-        for (let f = 0; f < framesPerSlide; f++) {
-          ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
-          
-          const currentSlideTime = f / fps;
-          const currentSnap = currentSlideSnapshots.find(s => currentSlideTime >= s.start && currentSlideTime <= s.end) || currentSlideSnapshots[0];
+      // === PASO 3: Render loop via requestAnimationFrame (synced with captureStream) ===
+      await new Promise(resolve => {
+        let slideIdx = 0;
+        let slideStartTime = null;  // timestamp (ms) when current slide started
+        let prevSlideLastCanvas = null; // for transition
+
+        if (capturedFrames.length === 0) { resolve(); return; }
+
+        startSlideMedia(0);
+
+        const renderFrame = (timestamp) => {
+          // All slides done
+          if (slideIdx >= capturedFrames.length) { resolve(); return; }
+
+          if (slideStartTime === null) slideStartTime = timestamp;
+          const slideElapsed = (timestamp - slideStartTime) / 1000; // seconds
+          const slideDur = slideDurations[slideIdx];
+
+          const currentSlideSnapshots = capturedFrames[slideIdx] || [];
+          const currentVids = slideVideos[slideIdx] || [];
+          const prevVids = slideIdx > 0 ? (slideVideos[slideIdx - 1] || []) : [];
+
+          // Find the correct snapshot for this time point
+          const currentSnap =
+            currentSlideSnapshots.find(s => slideElapsed >= s.start && slideElapsed <= s.end)
+            || currentSlideSnapshots[currentSlideSnapshots.length - 1];
           const currentFrameCanvas = currentSnap ? currentSnap.canvas : null;
 
-          const inTransition = f < transitionFrames && prevFrameCanvas !== null;
+          // === Draw frame ===
+          ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+          // Always fill a solid background so the canvas is never empty/transparent
+          // (a transparent canvas may cause captureStream to skip emitting frames)
+          ctx.fillStyle = designer.design?.bgColor || '#ffffff';
+          ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+
+          const inTransition = slideElapsed < transitionDuration && prevSlideLastCanvas !== null;
 
           if (inTransition) {
-            const progress = f / transitionFrames; // 0 → 1
+            const progress = slideElapsed / transitionDuration; // 0→1
             const exitProgress = 1 - progress;
 
-            // Dibujar frame anterior (saliendo)
             ctx.save();
             if (transitionType === 'fade') {
               ctx.globalAlpha = exitProgress;
-              drawSlide(prevFrameCanvas, prevVids);
+              drawSlide(prevSlideLastCanvas, prevVids);
             } else if (transitionType === 'slide') {
               ctx.translate(-outputCanvas.width * progress, 0);
-              drawSlide(prevFrameCanvas, prevVids);
+              drawSlide(prevSlideLastCanvas, prevVids);
             } else if (transitionType === 'zoom') {
               ctx.translate(outputCanvas.width / 2, outputCanvas.height / 2);
               ctx.scale(1 + progress, 1 + progress);
               ctx.globalAlpha = exitProgress;
               ctx.translate(-outputCanvas.width / 2, -outputCanvas.height / 2);
-              drawSlide(prevFrameCanvas, prevVids);
+              drawSlide(prevSlideLastCanvas, prevVids);
             }
             ctx.restore();
 
-            // Dibujar frame actual (entrando)
             ctx.save();
             if (transitionType === 'fade') {
               ctx.globalAlpha = progress;
@@ -422,26 +442,35 @@ export const useVideoExport = (
               drawSlide(currentFrameCanvas, currentVids);
             } else if (transitionType === 'zoom') {
               ctx.translate(outputCanvas.width / 2, outputCanvas.height / 2);
-              ctx.scale(1 + (1 - progress) * 0.2, 1 + (1 - progress) * 0.2); // slight zoom out
+              ctx.scale(1 + (1 - progress) * 0.2, 1 + (1 - progress) * 0.2);
               ctx.globalAlpha = progress;
               ctx.translate(-outputCanvas.width / 2, -outputCanvas.height / 2);
               drawSlide(currentFrameCanvas, currentVids);
             }
             ctx.restore();
           } else {
-            // Animación Normal (sin transición)
             drawSlide(currentFrameCanvas, currentVids);
           }
 
-          await new Promise(r => setTimeout(r, 1000 / fps));
-        }
+          // Explicitly request a new frame from the captureStream
+          // This is the key fix: forces the browser to emit a video frame NOW
+          if (videoTrack?.requestFrame) videoTrack.requestFrame();
 
-        currentVids.forEach(v => {
-           v.vid.pause();
-        });
+          // Advance to next slide when time is up
+          if (slideElapsed >= slideDur) {
+            prevSlideLastCanvas = currentFrameCanvas;
+            currentVids.forEach(v => v.vid.pause());
+            slideIdx++;
+            slideStartTime = null;
+            setExportProgress(40 + Math.round((slideIdx / capturedFrames.length) * 60));
+            if (slideIdx < capturedFrames.length) startSlideMedia(slideIdx);
+          }
 
-        setExportProgress(40 + Math.round(((i + 1) / scenes.length) * 60)); // 40-100%
-      }
+          requestAnimationFrame(renderFrame);
+        };
+
+        requestAnimationFrame(renderFrame);
+      });
 
       recorder.stop();
     } catch (err) {
