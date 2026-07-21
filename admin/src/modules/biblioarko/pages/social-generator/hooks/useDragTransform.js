@@ -148,8 +148,8 @@ export const useDragTransform = (onUpdateElement, scale = 1, globalSetters = {})
             onUpdateElement(parseInt(sIdx), elId, { rotation: newRotation });
           }
         } else if (action === 'resize' || action === 'resize-w' || action === 'resize-h') {
-          const newWidth = Math.min(600, Math.max(100, transformData.width + dx * 2));
-          const newHeight = Math.min(600, Math.max(10, transformData.height + dy * 2));
+          const newWidth = Math.min(600, Math.max(20, transformData.width + dx * 2));
+          const newHeight = Math.min(600, Math.max(20, transformData.height + dy * 2));
 
           if (type === 'image') setImageSizes(prev => ({ ...prev, [id]: newWidth }));
           else if (type === 'content') setContentSizes(prev => ({ ...prev, [index]: newWidth }));
