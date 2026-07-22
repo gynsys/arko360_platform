@@ -5,6 +5,7 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange, onD
   const trackRef = useRef(null);
   const [isDragging, setIsDragging] = useState(null); // 'start', 'end', 'move'
   const [dragOffset, setDragOffset] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const dragContext = useRef({ maxDuration: maxDuration, rectWidth: 1 });
 
   const startPercent = (startTime / maxDuration) * 100;
@@ -101,17 +102,41 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange, onD
             <div className="w-0.5 h-3 bg-white/70 rounded-full pointer-events-none"></div>
           </div>
           
-          <div className="flex-1 flex items-center justify-between px-1 overflow-hidden pointer-events-none">
-            <span className="text-[10px] text-white font-mono truncate">
-              {startTime.toFixed(1)}s - {endTime.toFixed(1)}s
-            </span>
-          </div>
+          {confirmDelete ? (
+            /* ── Toast de confirmación ── */
+            <div
+              className="flex-1 flex items-center justify-between px-2 gap-2 pointer-events-auto"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <span className="text-[10px] text-white font-semibold whitespace-nowrap">¿Eliminar audio?</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(id); setConfirmDelete(false); }}
+                  className="px-2 py-0.5 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded cursor-pointer transition-colors"
+                >
+                  Confirmar
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }}
+                  className="px-2 py-0.5 text-[10px] font-bold bg-white/20 hover:bg-white/30 text-white rounded cursor-pointer transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-between px-1 overflow-hidden pointer-events-none">
+              <span className="text-[10px] text-white font-mono truncate">
+                {startTime.toFixed(1)}s - {endTime.toFixed(1)}s
+              </span>
+            </div>
+          )}
 
-          {onDelete && (
+          {!confirmDelete && onDelete && (
             <button 
-              onClick={(e) => { e.stopPropagation(); onDelete(id); }} 
+              onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }} 
               className="p-1 shrink-0 text-white/70 hover:text-red-400 hover:bg-red-500/20 rounded-md transition-colors mr-1 cursor-pointer pointer-events-auto"
-              title="Eliminar"
+              title="Eliminar audio"
             >
               <FiTrash2 size={12} />
             </button>
