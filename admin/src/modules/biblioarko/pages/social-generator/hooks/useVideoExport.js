@@ -515,13 +515,11 @@ export const useVideoExport = (
       };
 
       // Iniciar recorder AHORA, justo antes del render loop
-      recorder.start(1000);
+      recorder.start(100);
 
-      // Render loop determinista
+      // Render loop sincronizado estrictamente con tiempo real del reloj del sistema
       await new Promise((resolve, reject) => {
-        let frameIndex = 0;
         let slideIdx = 0;
-        let slideStartFrame = 0;
         let prevSlideLastCanvas = null;
 
         if (capturedFrames.length === 0) { 
@@ -530,6 +528,7 @@ export const useVideoExport = (
         }
 
         startSlideMedia(0);
+        const startTime = performance.now();
 
         const renderFrame = () => {
           if (abortRef.current) {
@@ -537,8 +536,14 @@ export const useVideoExport = (
             return;
           }
 
-          // Calcular tiempo de video basado en frame index (determinista)
-          const videoTime = frameIndex / fps;
+          const now = performance.now();
+          const videoTime = (now - startTime) / 1000;
+
+          // Verificar si alcanzamos la duración exacta del proyecto (ej. 28.0s)
+          if (videoTime >= totalDuration) {
+            resolve();
+            return;
+          }
 
           // Calcular en qué slide estamos basándonos en duraciones acumuladas
           let accumulatedTime = 0;
@@ -568,7 +573,6 @@ export const useVideoExport = (
             ]?.canvas || null;
 
             slideIdx = currentSlideIdx;
-            slideStartFrame = frameIndex;
 
             if (slideIdx < capturedFrames.length) {
               startSlideMedia(slideIdx);
@@ -578,12 +582,6 @@ export const useVideoExport = (
           // Tiempo relativo dentro del slide actual
           const slideElapsed = videoTime - slideStartTime;
           const slideDur = slideDurations[slideIdx];
-
-          // Verificar si terminamos
-          if (videoTime >= totalDuration || slideIdx >= capturedFrames.length) {
-            resolve();
-            return;
-          }
 
           const currentSlideSnapshots = capturedFrames[slideIdx] || [];
           const currentVids = slideVideos[slideIdx] || [];
@@ -667,20 +665,13 @@ export const useVideoExport = (
           }
 
           // Actualizar progreso
-          setExportProgress(40 + Math.round((frameIndex / totalFrames) * 60));
+          setExportProgress(40 + Math.min(60, Math.round((videoTime / totalDuration) * 60)));
 
-          frameIndex++;
-
-          // Programar siguiente frame con setTimeout determinista
-          if (frameIndex < totalFrames) {
-            setTimeout(renderFrame, frameDurationMs);
-          } else {
-            resolve();
-          }
+          // Programar siguiente frame
+          requestAnimationFrame(renderFrame);
         };
 
-        // Iniciar el primer frame
-        renderFrame();
+        requestAnimationFrame(renderFrame);
       });
 
       recorder.stop();
