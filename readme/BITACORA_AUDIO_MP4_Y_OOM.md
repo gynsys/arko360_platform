@@ -113,11 +113,9 @@ Estas modificaciones garantizan la estabilidad del servidor ante proyectos legad
 ### E. Visualización de Duración Total para Audio Global
 - **Mejora:** La pista morada de `Fondo (Global)` en la línea de tiempo ahora muestra la etiqueta de tiempo calculada sobre el total del proyecto (ej. `0.0s - 28.0s (Global)`), evitando confundir al usuario haciendo parecer que el audio global solo dura 2.0s como la escena individual.
 
-### G. Actualización con `useVideoExport_fixed (1).js`
-- **Mejoras Integradas:**
-  - Control de vida útil y revocación de `blobUrl` para videos insertados (`revokeAllBlobUrls`).
-  - Uso de `safeSetState` para evitar fugas de memoria y errores si el componente se desmonta durante la exportación.
-  - Sincronización del bucle por conteo de cuadros exactos (`frameIndex >= totalFrames`) y temporización ajustada de la captura.
-  - Protección de transiciones ante duraciones nulas o flotantes.
+### H. Inyección de Cabecera de Duración (`fix-webm-duration`)
+- **Problema Descubierto:** La API nativa `MediaRecorder` de los navegadores (Chrome/Edge/Firefox) codifica videos en tiempo real sin escribir la cabecera `Duration` en los metadatos del contenedor WebM/MP4 (dejando la duración como desconocida/`--:--`). Al abrir estos archivos en el **Reproductor de Windows** o VLC, el reproductor intentaba calcular la duración dividiendo el tamaño del archivo entre la tasa de bits inicial, mostrando tiempos erróneos e inflados (1:39, 5:00) o deshabilitando la barra de tiempo.
+- **Solución:** Se integró la librería `fix-webm-duration`. Ahora, al finalizar la grabación, se inyecta la marca exacto de milisegundos (`totalDuration * 1000`) directamente en el bloque EBML del archivo justo antes de descargarlo. El Reproductor de Windows ahora muestra la barra de tiempo exacta (ej. `00:18` o `00:28`) y permite adelantar/retroceder sin errores.
+
 
 

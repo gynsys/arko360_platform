@@ -78,13 +78,13 @@ export const ImageCropperModal = ({ isOpen, onClose, imageUrl, onCropComplete })
   ];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 shrink-0">
           <h2 className="text-sm font-black uppercase text-gray-700 dark:text-gray-200 flex items-center gap-2">
             <FiCrop size={16} className="text-indigo-500" />
-            Recortar Imagen (react-image-crop)
+            Recortar Imagen
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl text-gray-400 transition-colors">
             <FiX size={20} />

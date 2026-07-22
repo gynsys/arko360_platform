@@ -16,6 +16,7 @@
     "@headlessui/react": "^2.2.10",
     "@sanity/client": "^7.22.1",
     "axios": "^1.18.1",
+    "fix-webm-duration": "^1.0.6",
     "framer-motion": "^11.2.10",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",

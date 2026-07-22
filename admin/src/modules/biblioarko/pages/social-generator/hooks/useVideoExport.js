@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import html2canvas from 'html2canvas';
+import fixWebmDuration from 'fix-webm-duration';
 import { blogService } from '../../../services/blogService';
 import { isCapacitor, downloadFile, openExternalFile } from '../../../../../utils/platform';
 
@@ -485,11 +486,28 @@ export const useVideoExport = (
         safeSetState(setIsExporting, false);
         safeSetState(setExportStatus, 'downloading');
 
-        const blob = new Blob(chunks, { type: blobType });
+        const rawBlob = new Blob(chunks, { type: blobType });
+        const durationMs = Math.round(totalDuration * 1000);
+
+        // ✅ FIX CRÍTICO: Inyectar metadatos de duración en la cabecera del video
+        // Chrome MediaRecorder NO escribe la duración en la cabecera por defecto,
+        // lo que provocaba que el Reproductor de Windows muestre '--:--' o tiempos erróneos.
+        let blob = rawBlob;
+        if (typeof fixWebmDuration === 'function' && durationMs > 0) {
+          try {
+            blob = await new Promise((resolve) => {
+              fixWebmDuration(rawBlob, durationMs, (fixedBlob) => resolve(fixedBlob));
+            });
+          } catch (fixErr) {
+            console.warn('[Arko360] No se pudo inyectar metadatos de duración:', fixErr);
+            blob = rawBlob;
+          }
+        }
 
         // ✅ DEBUG: Log del blob generado
         console.log('=== VIDEO GENERADO ===');
         console.log('Tamaño del blob:', blob.size, 'bytes');
+        console.log('Duración inyectada:', durationMs, 'ms');
         console.log('Tipo:', blobType);
         console.log('=======================');
 
@@ -629,14 +647,12 @@ export const useVideoExport = (
         }
       };
 
-      // Iniciar recorder AHORA, justo antes del render loop
+      // Iniciar recorder AHORA, justo antes del      // ✅ FIX DEFINTIVO: Render loop sincronizado con tiempo real (performance.now() + rAF)
       recorder.start(100);
 
-      // ✅ FIX CRÍTICO: Render loop determinista por frames con setTimeout
       await new Promise((resolve, reject) => {
         let slideIdx = 0;
         let prevSlideLastCanvas = null;
-        let frameIndex = 0;
 
         if (capturedFrames.length === 0) { 
           resolve(); 
@@ -652,15 +668,15 @@ export const useVideoExport = (
             return;
           }
 
-          // ✅ FIX CRÍTICO: Detenerse por conteo de frames, no por tiempo real
-          if (frameIndex >= totalFrames) {
-            console.log('[Arko360] Render loop completado. Frames generados:', frameIndex);
+          const now = performance.now();
+          const videoTime = (now - startTime) / 1000;
+
+          // ✅ DETENERSE EXACTAMENTE AL ALCANZAR LA DURACIÓN TOTAL DEL PROYECTO (ej. 18.0s o 28.0s)
+          if (videoTime >= totalDuration) {
+            console.log('[Arko360] Render loop completado en tiempo real:', videoTime.toFixed(2), 's (Duración esperada:', totalDuration, 's)');
             resolve();
             return;
           }
-
-          // ✅ FIX CRÍTICO: Tiempo del video basado en índice de frame
-          const videoTime = frameIndex / fps;
 
           // Calcular en qué slide estamos basándonos en duraciones acumuladas
           let accumulatedTime = 0;
@@ -679,9 +695,8 @@ export const useVideoExport = (
             accumulatedTime += transitionTime + slideDur;
           }
 
-          // ✅ FIX BUG #5: Iniciar audio del nuevo slide DESPUÉS de la transición
+          // Iniciar audio / video del nuevo slide
           if (currentSlideIdx !== slideIdx) {
-            // Pausar videos del slide anterior
             const prevVids = slideVideos[slideIdx] || [];
             prevVids.forEach(v => v.vid.pause());
 
@@ -691,14 +706,12 @@ export const useVideoExport = (
 
             slideIdx = currentSlideIdx;
 
-            // Solo iniciar media del nuevo slide si NO estamos en transición
             const slideElapsed = videoTime - slideStartTime;
             if (slideIdx < capturedFrames.length && slideElapsed >= transitionDuration) {
               startSlideMedia(slideIdx);
             }
           }
 
-          // Si estamos en transición, iniciar media del nuevo slide
           const slideElapsed = videoTime - slideStartTime;
           if (slideIdx > 0 && slideElapsed >= transitionDuration && slideElapsed < transitionDuration + 0.05) {
             startSlideMedia(slideIdx);
@@ -722,7 +735,6 @@ export const useVideoExport = (
           ctx.fillStyle = designer.design?.bgColor || '#ffffff';
           ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
 
-          // ✅ FIX BUG #15: Guard contra transitionDuration = 0
           const effectiveTransitionDuration = transitionDuration > 0.001 ? transitionDuration : 0;
           const inTransition = effectiveTransitionDuration > 0 && 
                                slideElapsed < effectiveTransitionDuration && 
@@ -786,24 +798,14 @@ export const useVideoExport = (
             }
           }
 
-          // ✅ FIX CRÍTICO: Eliminar requestFrame() - NO es necesario con setTimeout determinista
-          // El captureStream(30) ya captura automáticamente cada 33.33ms
-
           // Actualizar progreso
           safeSetState(setExportProgress, 40 + Math.min(60, Math.round((videoTime / totalDuration) * 60)));
 
-          // ✅ FIX CRÍTICO: Avanzar contador de frames
-          frameIndex++;
-
-          // ✅ FIX CRÍTICO: Programar siguiente frame exactamente a 33.33ms
-          const nextFrameTime = startTime + (frameIndex * frameDurationMs);
-          const delay = nextFrameTime - performance.now();
-
-          setTimeout(renderFrame, Math.max(0, delay));
+          // Programar siguiente frame
+          requestAnimationFrame(renderFrame);
         };
 
-        // Iniciar el primer frame inmediatamente
-        renderFrame();
+        requestAnimationFrame(renderFrame);
       });
 
       recorder.stop();
