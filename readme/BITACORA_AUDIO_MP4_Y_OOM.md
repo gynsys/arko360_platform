@@ -67,3 +67,48 @@ if (currentScene && currentPlayingAudioSrc) {
 
 ## Conclusión
 Estas modificaciones garantizan la estabilidad del servidor ante proyectos legados extremadamente pesados y dotan al generador de video de un nivel de producción profesional, permitiendo verdaderas pistas de fondo y efectos especiales precisos sin solapamientos.
+
+---
+
+## 3. Bitácora de Depuración Avanzada: Estado de Audios, Sincronización y Renderizado MP4
+
+### A. Solución de Carrera de Estados (Race Conditions en React) al Eliminar Pistas
+- **Problema:** Al hacer clic en el botón de eliminar audio en la línea de tiempo, se invocaban dos setters de estado independientes en React (`setSelectedAudio(null)` y `setCustomAudioUrl(null)`). Como ambos partían del mismo snapshot de `generatedContent`, el segundo commit de estado sobreescribía al primero, dejando el audio intacto en la vista.
+- **Solución:** Se consolidaron todas las operaciones de eliminación en una **actualización atómica** utilizando el callback funcional de `setGeneratedContent(prev => ...)`:
+  ```javascript
+  setGeneratedContent(prev => {
+    if (!prev?.video_slides) return prev;
+    const targetIdx = activeSlideIdx < prev.video_slides.length ? activeSlideIdx : 0;
+    const newSlides = [...prev.video_slides];
+    newSlides[targetIdx] = {
+      ...newSlides[targetIdx],
+      audio: null,
+      customAudioUrl: null,
+    };
+    return { ...prev, video_slides: newSlides };
+  });
+  ```
+
+### B. Descalce entre `currentVideoSlide` y `designer.canvas.currentSlidePage`
+- **Problema:** El reproductor automático de video mantenía su propio contador `currentVideoSlide`. Cuando el usuario estaba pausado editando una diapositiva en particular (ej. diapositiva 3), `designer.canvas.currentSlidePage` valía 3, pero `currentVideoSlide` mantenía 0. Las mutaciones de audio se aplicaban sobre `currentVideoSlide` (diapositiva 0), lo que provocaba que la diapositiva en pantalla jamás borrara su pista rosa de audio.
+- **Solución:** Se creó `activeSlideIdx` que conmuta dinámicamente:
+  ```javascript
+  const activeSlideIdx = isPlaying 
+    ? currentVideoSlide 
+    : (designer.canvas?.currentSlidePage !== undefined ? designer.canvas.currentSlidePage : currentVideoSlide);
+  ```
+  Esto garantizó que tanto el panel lateral como la línea de tiempo y sus eliminadores operaran sobre la diapositiva que el usuario está viendo activamente.
+
+### C. Desactivación de Autoplay en Carga de Proyectos / Reels
+- **Problema:** Cada vez que se abría un reel guardado o se refrescaba la aplicación, `useVideoPlayback` inicializaba `isPlaying = true`, iniciando la reproducción inmediatamente sin acción del usuario.
+- **Solución:** Se cambió el valor inicial de `isPlaying` a `false` en `useVideoPlayback.js` y se añadió `setIsPlaying(false)` dentro de `handleLoadProject` en `index.jsx`.
+
+### D. Eliminador con Toast Inline en la Pista
+- **Funcionalidad:** En lugar de lanzar popups modals agresivos, el botón 🗑️ de la pista transforma temporalmente la barra del audio en un toast de confirmación integrado (Inline Toast) con los botones `Confirmar` y `Cancelar`, deteniendo la propagación de eventos (`e.stopPropagation()`).
+
+### E. Visualización de Duración Total para Audio Global
+- **Mejora:** La pista morada de `Fondo (Global)` en la línea de tiempo ahora muestra la etiqueta de tiempo calculada sobre el total del proyecto (ej. `0.0s - 28.0s (Global)`), evitando confundir al usuario haciendo parecer que el audio global solo dura 2.0s como la escena individual.
+
+### F. Recorte Libre de Imágenes (Cropper Estilo Office / Formatos Preset)
+- **Mejora:** Se agregaron controles de relación de aspecto (`aspect`) al componente `ImageCropperModal.jsx`: `Libre` (`undefined`), `1:1`, `4:5`, `3:4`, `16:9` y `9:16`. La opción **Libre** permite arrastrar libremente los controles laterales y verticales como en Microsoft Office / Photoshop.
+

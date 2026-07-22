@@ -40,6 +40,7 @@ async function getCroppedImg(imageSrc, pixelCrop) {
 export const ImageCropperModal = ({ isOpen, onClose, imageUrl, onCropComplete }) => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [aspect, setAspect] = useState(undefined);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -63,6 +64,15 @@ export const ImageCropperModal = ({ isOpen, onClose, imageUrl, onCropComplete })
 
   if (!isOpen || !imageUrl) return null;
 
+  const aspectOptions = [
+    { label: 'Libre', value: undefined },
+    { label: '1:1', value: 1 },
+    { label: '4:5', value: 4 / 5 },
+    { label: '3:4', value: 3 / 4 },
+    { label: '16:9', value: 16 / 9 },
+    { label: '9:16', value: 9 / 16 },
+  ];
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80">
       <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col">
@@ -78,15 +88,34 @@ export const ImageCropperModal = ({ isOpen, onClose, imageUrl, onCropComplete })
         </div>
 
         {/* Cropper Area */}
-        <div className="relative w-full h-[500px] bg-gray-100 dark:bg-gray-950">
+        <div className="relative w-full h-[450px] bg-gray-100 dark:bg-gray-950">
           <Cropper
             image={imageUrl}
             crop={crop}
             zoom={zoom}
+            aspect={aspect}
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={handleCropComplete}
           />
+        </div>
+
+        {/* Aspect Ratio Presets */}
+        <div className="px-6 pt-4 bg-white dark:bg-gray-800 flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 uppercase mr-2">Formato:</span>
+          {aspectOptions.map((opt) => (
+            <button
+              key={opt.label}
+              onClick={() => setAspect(opt.value)}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                aspect === opt.value
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
 
         {/* Controls */}

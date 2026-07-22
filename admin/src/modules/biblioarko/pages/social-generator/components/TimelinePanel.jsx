@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FiClock, FiAlignLeft, FiType, FiImage, FiMusic, FiTrash2 } from 'react-icons/fi';
 
-const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange, onDelete }) => {
+const Track = ({ id, label, icon, startTime, endTime, maxDuration, customTimeText, onChange, onDelete }) => {
   const trackRef = useRef(null);
   const [isDragging, setIsDragging] = useState(null); // 'start', 'end', 'move'
   const [dragOffset, setDragOffset] = useState(0);
@@ -127,7 +127,7 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange, onD
           ) : (
             <div className="flex-1 flex items-center justify-between px-1 overflow-hidden pointer-events-none">
               <span className="text-[10px] text-white font-mono truncate">
-                {startTime.toFixed(1)}s - {endTime.toFixed(1)}s
+                {customTimeText || `${startTime.toFixed(1)}s - ${endTime.toFixed(1)}s`}
               </span>
             </div>
           )}
@@ -157,7 +157,7 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange, onD
   );
 };
 
-export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, onUpdateTiming, onScrub, extraElements = [], imagePositions = {}, globalAudio = null, onDeleteTrack }) => {
+export const TimelinePanel = ({ slide, slideIndex, slideDuration, totalVideoDuration = null, currentTime, onUpdateTiming, onScrub, extraElements = [], imagePositions = {}, globalAudio = null, onDeleteTrack }) => {
   if (!slide) return null;
 
   const tStart = slide.titleStartTime !== undefined ? slide.titleStartTime : 0;
@@ -236,6 +236,7 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
                 startTime={0} 
                 endTime={slideDuration} 
                 maxDuration={actualDuration}
+                customTimeText={`0.0s - ${(totalVideoDuration || slideDuration).toFixed(1)}s (Global)`}
                 onChange={() => {}} // Global audio cannot be trimmed per slide
                 onDelete={onDeleteTrack}
               />

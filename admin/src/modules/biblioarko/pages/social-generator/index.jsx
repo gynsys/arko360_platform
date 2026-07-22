@@ -1311,14 +1311,17 @@ export default function SocialGenerator() {
                       }
                       
                       // Asegurar un mínimo de 1 segundo
-                      if (maxVidDur < 1) maxVidDur = 1;
-                      
+                      const totalVideoDuration = (generatedContent?.video_slides || []).reduce((acc, s) => {
+                        return acc + (s.duration || slideDuration);
+                      }, 0);
+
                       return (
                         <div className="w-full mt-4">
                           <TimelinePanel 
                             slide={slide}
                             slideIndex={designer.canvas.currentSlidePage}
                             slideDuration={maxVidDur}
+                            totalVideoDuration={totalVideoDuration}
                             currentTime={videoTime}
                             onUpdateTiming={handleUpdateTiming}
                             onScrub={setVideoTime}
