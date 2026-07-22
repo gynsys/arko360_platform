@@ -1317,6 +1317,7 @@ export default function SocialGenerator() {
                             onScrub={setVideoTime}
                             extraElements={designer.canvas.extraElements[designer.canvas.currentSlidePage] || []}
                             imagePositions={transformer.state.imagePositions || {}}
+                            globalAudio={globalAudio}
                           />
                         </div>
                       );

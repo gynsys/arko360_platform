@@ -119,7 +119,7 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange }) =
   );
 };
 
-export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, onUpdateTiming, onScrub, extraElements = [], imagePositions = {} }) => {
+export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, onUpdateTiming, onScrub, extraElements = [], imagePositions = {}, globalAudio = null }) => {
   if (!slide) return null;
 
   const tStart = slide.titleStartTime !== undefined ? slide.titleStartTime : 0;
@@ -190,6 +190,17 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
 
           {/* Tracks */}
           <div className="relative z-10 space-y-1 pb-2 max-h-40 overflow-y-auto pr-2">
+            {globalAudio && (
+              <Track 
+                id="globalAudio" 
+                label={`Fondo: ${globalAudio.startsWith('User-') ? 'Subido' : (globalAudio === 'Custom' ? 'Personalizado' : globalAudio)}`} 
+                icon={<FiMusic className="text-purple-500" />} 
+                startTime={0} 
+                endTime={slideDuration} 
+                maxDuration={actualDuration}
+                onChange={() => {}} // Global audio cannot be trimmed per slide
+              />
+            )}
             {slide.audio && (
               <Track 
                 id="audio" 
