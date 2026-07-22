@@ -300,6 +300,23 @@ export default function SocialGenerator() {
     designer, transformer.state
   );
 
+  // Exponer helper de prueba rápida en la consola F12
+  useEffect(() => {
+    window.testVideoExport = async () => {
+      console.log('🧪 === INICIANDO PRUEBA RÁPIDA DE EXPORTACIÓN MP4 ===');
+      console.time('⏱️ Tiempo de Exportación');
+      const start = performance.now();
+      try {
+        await handleExportVideo();
+        const duration = ((performance.now() - start) / 1000).toFixed(2);
+        console.log(`✅ PRUEBA COMPLETADA EXITOSAMENTE en ${duration} segundos.`);
+      } catch (err) {
+        console.error('❌ ERROR EN PRUEBA DE EXPORTACIÓN:', err);
+      }
+      console.timeEnd('⏱️ Tiempo de Exportación');
+    };
+  }, [handleExportVideo]);
+
   const exporter = useExport(selectedPost, designer, generatedContent);
 
   // --- Initial Data Load ---

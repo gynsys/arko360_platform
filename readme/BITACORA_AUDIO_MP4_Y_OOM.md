@@ -109,6 +109,11 @@ Estas modificaciones garantizan la estabilidad del servidor ante proyectos legad
 ### E. Visualización de Duración Total para Audio Global
 - **Mejora:** La pista morada de `Fondo (Global)` en la línea de tiempo ahora muestra la etiqueta de tiempo calculada sobre el total del proyecto (ej. `0.0s - 28.0s (Global)`), evitando confundir al usuario haciendo parecer que el audio global solo dura 2.0s como la escena individual.
 
-### F. Recorte Libre de Imágenes (Cropper Estilo Office / Formatos Preset)
-- **Mejora:** Se agregaron controles de relación de aspecto (`aspect`) al componente `ImageCropperModal.jsx`: `Libre` (`undefined`), `1:1`, `4:5`, `3:4`, `16:9` y `9:16`. La opción **Libre** permite arrastrar libremente los controles laterales y verticales como en Microsoft Office / Photoshop.
+### G. Actualización con `useVideoExport_fixed (1).js`
+- **Mejoras Integradas:**
+  - Control de vida útil y revocación de `blobUrl` para videos insertados (`revokeAllBlobUrls`).
+  - Uso de `safeSetState` para evitar fugas de memoria y errores si el componente se desmonta durante la exportación.
+  - Sincronización del bucle por conteo de cuadros exactos (`frameIndex >= totalFrames`) y temporización ajustada de la captura.
+  - Protección de transiciones ante duraciones nulas o flotantes.
+
 

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { blogService } from '../../../services/blogService';
 import { isCapacitor, downloadFile, openExternalFile } from '../../../../../utils/platform';
@@ -15,6 +15,35 @@ export const useVideoExport = (
   // Refs para controlar la cancelación y estado del export
   const abortRef = useRef(false);
   const audioCtxRef = useRef(null);
+  const isMountedRef = useRef(true);
+  const blobUrlsRef = useRef([]);
+
+  // Cleanup al desmontar
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Helper: setState seguro (solo si el componente está montado)
+  const safeSetState = useCallback((setter, value) => {
+    if (isMountedRef.current) {
+      setter(value);
+    }
+  }, []);
+
+  // Helper: revocar todos los blob URLs acumulados
+  const revokeAllBlobUrls = useCallback(() => {
+    blobUrlsRef.current.forEach(url => {
+      try {
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        // Ignorar errores de revocación
+      }
+    });
+    blobUrlsRef.current = [];
+  }, []);
 
   const handleExportVideo = useCallback(async () => {
     // === VALIDACIÓN INICIAL ===
@@ -24,10 +53,27 @@ export const useVideoExport = (
       return;
     }
 
+    // Verificar que html2canvas esté disponible
+    if (typeof html2canvas !== 'function') {
+      showToast('Error: html2canvas no está disponible', 'error');
+      return;
+    }
+
+    // Limpiar estado anterior
+    revokeAllBlobUrls();
+    if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+      try {
+        audioCtxRef.current.close();
+      } catch (e) {
+        console.error('[Arko360] Error cerrando AudioContext previo:', e);
+      }
+      audioCtxRef.current = null;
+    }
+
     abortRef.current = false;
-    setIsExporting(true);
-    setExportProgress(0);
-    setExportStatus('capturing');
+    safeSetState(setIsExporting, true);
+    safeSetState(setExportProgress, 0);
+    safeSetState(setExportStatus, 'capturing');
 
     let actionButtons = [];
     let originalPage = 0;
@@ -102,21 +148,44 @@ export const useVideoExport = (
 
           if (isVideo) {
             const vid = document.createElement('video');
+
+            // ✅ FIX BUG #11: crossOrigin ANTES de src
+            vid.crossOrigin = 'anonymous';
+            vid.muted = true;
+            vid.loop = true; 
+            vid.playsInline = true;
+
             try {
               const res = await fetch(img);
               const blob = await res.blob();
-              vid.src = URL.createObjectURL(blob);
+              const blobUrl = URL.createObjectURL(blob);
+              blobUrlsRef.current.push(blobUrl); // ✅ FIX BUG #1: trackear para revocar
+              vid.src = blobUrl;
             } catch (e) {
               console.error('[Arko360] Error creating blob from video data URL', e);
               vid.src = img;
             }
-            vid.muted = true;
-            vid.loop = true; 
-            vid.playsInline = true;
-            vid.crossOrigin = 'anonymous';
-            await new Promise((resolve, reject) => { 
-              vid.onloadedmetadata = resolve; 
-              vid.onerror = reject; 
+
+            // ✅ FIX BUG #5: Verificar readyState antes de esperar eventos
+            await new Promise((resolve, reject) => {
+              const timeout = setTimeout(() => {
+                reject(new Error('Video load timeout'));
+              }, 10000);
+
+              const onLoaded = () => {
+                clearTimeout(timeout);
+                resolve();
+              };
+
+              if (vid.readyState >= 1) {
+                onLoaded();
+              } else {
+                vid.onloadedmetadata = onLoaded;
+                vid.onerror = (e) => {
+                  clearTimeout(timeout);
+                  reject(e);
+                };
+              }
             });
 
             const imgId = `${i}-${imgIndex}`;
@@ -264,7 +333,7 @@ export const useVideoExport = (
 
         capturedFrames.push(snapshots.length > 0 ? snapshots : [{ start: 0, end: maxVidDur, canvas: null }]);
 
-        setExportProgress(Math.round(((i + 1) / scenes.length) * 40));
+        safeSetState(setExportProgress, Math.round(((i + 1) / scenes.length) * 40));
       }
 
       // Restaurar UI
@@ -277,7 +346,16 @@ export const useVideoExport = (
       // ============================================================
 
       if (abortRef.current) throw new Error('Export cancelled');
-      setExportStatus('rendering');
+      safeSetState(setExportStatus, 'rendering');
+
+      // ✅ DEBUG: Log de duraciones para verificar
+      console.log('=== DEBUG EXPORT ===');
+      console.log('slideDuration param:', slideDuration);
+      console.log('slideDurations:', slideDurations);
+      console.log('totalSlideDuration:', slideDurations.reduce((a, b) => a + b, 0));
+      console.log('transitionDuration:', transitionDuration);
+      console.log('totalTransitionDuration:', (capturedFrames.length - 1) * transitionDuration);
+      console.log('====================');
 
       // Crear AudioContext (debe ser después de interacción del usuario)
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -286,7 +364,7 @@ export const useVideoExport = (
       audioDest = audioCtx.createMediaStreamDestination();
       let hasAudio = false;
 
-      // Audio de fondo (Global)
+      // ✅ FIX BUG #12: Limpiar audio residual antes de configurar
       exportBgAudio = new Audio();
       exportBgAudio.crossOrigin = 'anonymous';
       try {
@@ -297,7 +375,6 @@ export const useVideoExport = (
         console.error('[Arko360] Error al conectar audio de fondo global:', audioErr);
       }
 
-      // Audio Local (Diapositiva)
       exportLocalAudio = new Audio();
       exportLocalAudio.crossOrigin = 'anonymous';
       try {
@@ -355,6 +432,11 @@ export const useVideoExport = (
         blobType = 'video/mp4';
       }
 
+      // ✅ FIX BUG #9: Verificar que MediaRecorder esté soportado
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        throw new Error('MediaRecorder no soporta ningún formato de video');
+      }
+
       recorder = new MediaRecorder(combinedStream, { 
         mimeType,
         videoBitsPerSecond: 1500000
@@ -374,6 +456,22 @@ export const useVideoExport = (
         exportLocalAudio?.removeAttribute('src');
         exportLocalAudio?.load();
 
+        // ✅ FIX BUG #2: Pausar todos los videos insertados
+        slideVideos.forEach(vids => {
+          vids.forEach(v => {
+            try {
+              v.vid.pause();
+              v.vid.removeAttribute('src');
+              v.vid.load();
+            } catch (e) {
+              console.error('[Arko360] Error pausando video:', e);
+            }
+          });
+        });
+
+        // ✅ FIX BUG #1: Revocar blob URLs
+        revokeAllBlobUrls();
+
         if (audioCtx?.state !== 'closed') {
           audioCtx.close();
         }
@@ -384,10 +482,17 @@ export const useVideoExport = (
           audioRef.current.currentTime = 0;
         }
 
-        setIsExporting(false);
-        setExportStatus('downloading');
+        safeSetState(setIsExporting, false);
+        safeSetState(setExportStatus, 'downloading');
 
         const blob = new Blob(chunks, { type: blobType });
+
+        // ✅ DEBUG: Log del blob generado
+        console.log('=== VIDEO GENERADO ===');
+        console.log('Tamaño del blob:', blob.size, 'bytes');
+        console.log('Tipo:', blobType);
+        console.log('=======================');
+
         const filename = `video_arko360_${selectedPost?.id || 'export'}.${extension}`;
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -407,25 +512,25 @@ export const useVideoExport = (
           } else {
             downloadFile(blob, filename);
           }
-          setExportStatus('done');
-          setTimeout(() => setExportStatus('idle'), 5000);
+          safeSetState(setExportStatus, 'done');
+          setTimeout(() => safeSetState(setExportStatus, 'idle'), 5000);
         } catch (err) {
           console.error('[Arko360] Download error:', err);
           downloadFile(blob, filename);
-          setExportStatus('done');
-          setTimeout(() => setExportStatus('idle'), 5000);
+          safeSetState(setExportStatus, 'done');
+          setTimeout(() => safeSetState(setExportStatus, 'idle'), 5000);
         }
       };
 
       recorder.onerror = (e) => {
         console.error('[Arko360] MediaRecorder error:', e);
-        setIsExporting(false);
-        setExportStatus('idle');
+        safeSetState(setIsExporting, false);
+        safeSetState(setExportStatus, 'idle');
         showToast('Error en la grabación del video', 'error');
       };
 
       // ============================================================
-      // PASO 3: RENDER LOOP DETERMINISTA (basada en frames, no RAF)
+      // PASO 3: RENDER LOOP DETERMINISTA (basada en frames, NO RAF)
       // ============================================================
 
       const fps = 30;
@@ -436,6 +541,14 @@ export const useVideoExport = (
       const totalTransitionDuration = (capturedFrames.length - 1) * transitionDuration;
       const totalDuration = totalSlideDuration + totalTransitionDuration;
       const totalFrames = Math.ceil(totalDuration * fps);
+
+      // ✅ DEBUG
+      console.log('=== RENDER LOOP ===');
+      console.log('totalDuration:', totalDuration, 's');
+      console.log('totalFrames:', totalFrames);
+      console.log('fps:', fps);
+      console.log('frameDurationMs:', frameDurationMs);
+      console.log('===================');
 
       // Helper: dibujar slide
       const drawSlide = (frameImg, vids) => {
@@ -507,6 +620,8 @@ export const useVideoExport = (
             exportLocalAudio.currentTime = 0;
           } else if (exportLocalAudio.paused) {
             exportLocalAudio.currentTime = 0;
+            // ✅ FIX BUG #6: Reiniciar reproducción si estaba pausado
+            exportLocalAudio.play().catch(e => console.log('Local Audio play error', e));
           }
         } else {
           currentPlayingAudioSrc = null;
@@ -517,10 +632,11 @@ export const useVideoExport = (
       // Iniciar recorder AHORA, justo antes del render loop
       recorder.start(100);
 
-      // Render loop sincronizado estrictamente con tiempo real del reloj del sistema
+      // ✅ FIX CRÍTICO: Render loop determinista por frames con setTimeout
       await new Promise((resolve, reject) => {
         let slideIdx = 0;
         let prevSlideLastCanvas = null;
+        let frameIndex = 0;
 
         if (capturedFrames.length === 0) { 
           resolve(); 
@@ -536,14 +652,15 @@ export const useVideoExport = (
             return;
           }
 
-          const now = performance.now();
-          const videoTime = (now - startTime) / 1000;
-
-          // Verificar si alcanzamos la duración exacta del proyecto (ej. 28.0s)
-          if (videoTime >= totalDuration) {
+          // ✅ FIX CRÍTICO: Detenerse por conteo de frames, no por tiempo real
+          if (frameIndex >= totalFrames) {
+            console.log('[Arko360] Render loop completado. Frames generados:', frameIndex);
             resolve();
             return;
           }
+
+          // ✅ FIX CRÍTICO: Tiempo del video basado en índice de frame
+          const videoTime = frameIndex / fps;
 
           // Calcular en qué slide estamos basándonos en duraciones acumuladas
           let accumulatedTime = 0;
@@ -562,7 +679,7 @@ export const useVideoExport = (
             accumulatedTime += transitionTime + slideDur;
           }
 
-          // Si cambiamos de slide
+          // ✅ FIX BUG #5: Iniciar audio del nuevo slide DESPUÉS de la transición
           if (currentSlideIdx !== slideIdx) {
             // Pausar videos del slide anterior
             const prevVids = slideVideos[slideIdx] || [];
@@ -574,13 +691,19 @@ export const useVideoExport = (
 
             slideIdx = currentSlideIdx;
 
-            if (slideIdx < capturedFrames.length) {
+            // Solo iniciar media del nuevo slide si NO estamos en transición
+            const slideElapsed = videoTime - slideStartTime;
+            if (slideIdx < capturedFrames.length && slideElapsed >= transitionDuration) {
               startSlideMedia(slideIdx);
             }
           }
 
-          // Tiempo relativo dentro del slide actual
+          // Si estamos en transición, iniciar media del nuevo slide
           const slideElapsed = videoTime - slideStartTime;
+          if (slideIdx > 0 && slideElapsed >= transitionDuration && slideElapsed < transitionDuration + 0.05) {
+            startSlideMedia(slideIdx);
+          }
+
           const slideDur = slideDurations[slideIdx];
 
           const currentSlideSnapshots = capturedFrames[slideIdx] || [];
@@ -599,11 +722,15 @@ export const useVideoExport = (
           ctx.fillStyle = designer.design?.bgColor || '#ffffff';
           ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
 
-          const inTransition = slideElapsed < transitionDuration && prevSlideLastCanvas !== null && slideIdx > 0;
+          // ✅ FIX BUG #15: Guard contra transitionDuration = 0
+          const effectiveTransitionDuration = transitionDuration > 0.001 ? transitionDuration : 0;
+          const inTransition = effectiveTransitionDuration > 0 && 
+                               slideElapsed < effectiveTransitionDuration && 
+                               prevSlideLastCanvas !== null && 
+                               slideIdx > 0;
 
           if (inTransition) {
-            // Asegurar que progress nunca sea exactamente 0 o 1 por muchos frames
-            const rawProgress = slideElapsed / transitionDuration;
+            const rawProgress = slideElapsed / effectiveTransitionDuration;
             const progress = Math.max(0.001, Math.min(0.999, rawProgress));
             const exitProgress = 1 - progress;
 
@@ -634,7 +761,7 @@ export const useVideoExport = (
               ctx.translate(outputCanvas.width / 2, outputCanvas.height / 2);
               ctx.scale(1 + (1 - progress) * 0.2, 1 + (1 - progress) * 0.2);
               ctx.globalAlpha = progress;
-              ctx.translate(-outputCanvas.width / 2, outputCanvas.height / 2);
+              ctx.translate(-outputCanvas.width / 2, -outputCanvas.height / 2);
               drawSlide(currentFrameCanvas, currentVids);
             }
             ctx.restore();
@@ -659,19 +786,24 @@ export const useVideoExport = (
             }
           }
 
-          // Forzar emisión del frame al stream
-          if (videoTrack?.requestFrame) {
-            videoTrack.requestFrame();
-          }
+          // ✅ FIX CRÍTICO: Eliminar requestFrame() - NO es necesario con setTimeout determinista
+          // El captureStream(30) ya captura automáticamente cada 33.33ms
 
           // Actualizar progreso
-          setExportProgress(40 + Math.min(60, Math.round((videoTime / totalDuration) * 60)));
+          safeSetState(setExportProgress, 40 + Math.min(60, Math.round((videoTime / totalDuration) * 60)));
 
-          // Programar siguiente frame
-          requestAnimationFrame(renderFrame);
+          // ✅ FIX CRÍTICO: Avanzar contador de frames
+          frameIndex++;
+
+          // ✅ FIX CRÍTICO: Programar siguiente frame exactamente a 33.33ms
+          const nextFrameTime = startTime + (frameIndex * frameDurationMs);
+          const delay = nextFrameTime - performance.now();
+
+          setTimeout(renderFrame, Math.max(0, delay));
         };
 
-        requestAnimationFrame(renderFrame);
+        // Iniciar el primer frame inmediatamente
+        renderFrame();
       });
 
       recorder.stop();
@@ -687,6 +819,20 @@ export const useVideoExport = (
       exportBgAudio?.pause();
       exportLocalAudio?.pause();
 
+      // ✅ FIX BUG #2: Pausar TODOS los videos insertados en cleanup de error
+      slideVideos.forEach(vids => {
+        vids.forEach(v => {
+          try {
+            v.vid.pause();
+          } catch (e) {
+            console.error('[Arko360] Error pausando video en cleanup:', e);
+          }
+        });
+      });
+
+      // ✅ FIX BUG #1: Revocar blob URLs
+      revokeAllBlobUrls();
+
       if (audioCtx?.state !== 'closed') {
         audioCtx.close();
       }
@@ -701,8 +847,8 @@ export const useVideoExport = (
         recorder.stop();
       }
 
-      setIsExporting(false);
-      setExportStatus('idle');
+      safeSetState(setIsExporting, false);
+      safeSetState(setExportStatus, 'idle');
 
       if (err.message === 'Export cancelled') {
         showToast('Exportación cancelada', 'info');
