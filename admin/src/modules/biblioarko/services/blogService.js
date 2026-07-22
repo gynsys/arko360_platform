@@ -95,6 +95,11 @@ export const blogService = {
     return response.data
   },
 
+  getCarouselProjectById: async (projectId) => {
+    const response = await api.get(`/blog/carousels/${projectId}`)
+    return response.data
+  },
+
   saveCarouselProject: async (projectData) => {
     const response = await api.post('/blog/carousels', projectData)
     return response.data

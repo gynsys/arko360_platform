@@ -3,7 +3,7 @@ import {
   FiTrash2, FiX, FiBold, FiItalic, FiType, 
   FiLayers, FiMove, FiMaximize, FiMinimize, 
   FiCornerUpLeft, FiSquare, FiCircle, FiImage,
-  FiEye, FiCopy, FiPlay, FiPause
+  FiEye, FiCopy, FiPlay, FiPause, FiCrop
 } from 'react-icons/fi';
 
 export const ContextualBar = ({ 
@@ -17,7 +17,8 @@ export const ContextualBar = ({
   isVideo = false,
   imagePositions = {},
   updateImage,
-  onRemoveImage
+  onRemoveImage,
+  onCropImage
 }) => {
   if (!selectedId) return null;
 
@@ -256,18 +257,30 @@ export const ContextualBar = ({
         )}
 
         {isImage && (
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 rounded-2xl px-3 py-1 flex-shrink-0">
-            <FiEye size={18} className="text-gray-400" />
-            <input 
-              type="range" 
-              min="0.1" 
-              max="1" 
-              step="0.1"
-              value={imagePositions[selectedId]?.opacity !== undefined ? imagePositions[selectedId].opacity : 1}
-              onChange={(e) => updateImage(selectedId, { opacity: parseFloat(e.target.value) })}
-              className="w-20 cursor-pointer"
-            />
-          </div>
+          <>
+            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 rounded-2xl px-3 py-1 flex-shrink-0">
+              <FiEye size={18} className="text-gray-400" />
+              <input 
+                type="range" 
+                min="0.1" 
+                max="1" 
+                step="0.1"
+                value={imagePositions[selectedId]?.opacity !== undefined ? imagePositions[selectedId].opacity : 1}
+                onChange={(e) => updateImage(selectedId, { opacity: parseFloat(e.target.value) })}
+                className="w-20 cursor-pointer"
+              />
+            </div>
+            
+            {!isVideo && (
+              <button
+                onClick={() => onCropImage(parseInt(slideIdx), parseInt(elId))}
+                className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-2"
+                title="Recortar Imagen"
+              >
+                <FiCrop size={18} />
+              </button>
+            )}
+          </>
         )}
 
         {isVideo && (

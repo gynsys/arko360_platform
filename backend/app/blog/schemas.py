@@ -181,6 +181,7 @@ class SocialContentResponse(BaseModel):
 
 # Social Carousel Schemas
 class SocialCarouselBase(BaseModel):
+
     name: str
     content: Any
     design: Any
@@ -192,6 +193,16 @@ class SocialCarouselCreate(SocialCarouselBase):
 
 class SocialCarouselResponse(SocialCarouselBase):
     id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    admin_id: int
+
+    class Config:
+        from_attributes = True
+
+class SocialCarouselListResponse(BaseModel):
+    id: int
+    name: str
     created_at: datetime
     updated_at: Optional[datetime] = None
     admin_id: int
@@ -219,4 +230,3 @@ class SocialAudioResponse(SocialAudioBase):
 BlogPostCreate.model_rebuild()
 BlogPostUpdate.model_rebuild()
 BlogPostResponse.model_rebuild()
-

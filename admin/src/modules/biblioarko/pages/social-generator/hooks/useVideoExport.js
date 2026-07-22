@@ -441,12 +441,11 @@ export const useVideoExport = (
             currentPlayingAudioSrc = audioSrc;
             exportLocalAudio.src = audioSrc;
             exportLocalAudio.currentTime = 0; // Local audio SIEMPRE empieza desde el inicio al entrar en la slide
-            exportLocalAudio.play().catch(e => console.log('Local Audio play error', e));
           } else if (exportLocalAudio.paused) {
             // Si es la misma pista pero por alguna razon se pauso, reanudar desde 0
             exportLocalAudio.currentTime = 0;
-            exportLocalAudio.play().catch(e => console.log('Local Audio play error', e));
           }
+          // The actual play/pause logic will be handled inside renderFrame based on slideElapsed
         } else {
           currentPlayingAudioSrc = null;
           exportLocalAudio.pause();
@@ -527,6 +526,23 @@ export const useVideoExport = (
             ctx.restore();
           } else {
             drawSlide(currentFrameCanvas, currentVids);
+          }
+
+          // === Sync Local Audio with Timeline ===
+          const currentScene = scenes[slideIdx];
+          if (currentScene && currentPlayingAudioSrc) {
+            const aStart = currentScene.audioStartTime !== undefined ? currentScene.audioStartTime : 0;
+            const aEnd = currentScene.audioEndTime !== undefined ? currentScene.audioEndTime : slideDur;
+            
+            if (slideElapsed >= aStart && slideElapsed <= aEnd) {
+              if (exportLocalAudio.paused) {
+                exportLocalAudio.play().catch(e => console.log('Local Audio play error', e));
+              }
+            } else {
+              if (!exportLocalAudio.paused) {
+                exportLocalAudio.pause();
+              }
+            }
           }
 
           // Explicitly request a new frame from the captureStream

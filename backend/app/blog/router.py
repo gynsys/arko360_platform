@@ -305,7 +305,7 @@ def create_social_carousel(
     """Save a new carousel project to the database."""
     return crud.create_carousel(db=db, carousel=carousel, admin_id=current_user.id)
 
-@router.get("/carousels", response_model=List[schemas.SocialCarouselResponse])
+@router.get("/carousels", response_model=List[schemas.SocialCarouselListResponse])
 def get_my_carousels(
     skip: int = 0,
     limit: int = 100,
@@ -314,6 +314,18 @@ def get_my_carousels(
 ):
     """List all carousel projects for the current ArkoAdmin."""
     return crud.get_carousels_by_ArkoAdmin(db=db, admin_id=current_user.id, skip=skip, limit=limit)
+
+@router.get("/carousels/{carousel_id}", response_model=schemas.SocialCarouselResponse)
+def get_my_carousel(
+    carousel_id: int,
+    db: Session = Depends(get_db),
+    current_user: ArkoAdmin = Depends(get_current_user)
+):
+    """Get a specific carousel project with full content."""
+    carousel = crud.get_carousel(db=db, carousel_id=carousel_id)
+    if not carousel or carousel.admin_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+    return carousel
 
 @router.get("/social-audios", response_model=List[schemas.SocialAudioResponse])
 def get_my_social_audios(

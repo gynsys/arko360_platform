@@ -25,6 +25,10 @@ import { SlideCanvas } from './components/SlideCanvas';
 import { SlidePaginator } from './components/SlidePaginator';
 import { PreviewModal } from './components/PreviewModal';
 import { EnhancedSidebar } from './components/EnhancedSidebar';
+import { TimelinePanel } from './components/TimelinePanel';
+import { AIGenerationModal } from './components/AIGenerationModal';
+import { ImageCropperModal } from './components/ImageCropperModal';
+
 const Modal = ({ isOpen, onClose, title, children }) => isOpen ? (<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"><div className="bg-white p-6 rounded-lg"><h2>{title}</h2>{children}<button onClick={onClose}>Cerrar</button></div></div>) : null;
 
 import { MobileLayout } from './components/MobileLayout';
@@ -32,7 +36,6 @@ import { ArticleSelector } from './components/ArticleSelector';
 import { ProjectGrid } from './components/ProjectGrid';
 import { ContextualBar } from './components/ContextualBar';
 import VideoEditorModal from './components/VideoEditorModal';
-import { TimelinePanel } from './components/TimelinePanel';
 
 export default function SocialGenerator() {
   // --- States ---
@@ -75,6 +78,8 @@ export default function SocialGenerator() {
   const [lastGeneratedBlogContent, setLastGeneratedBlogContent] = useState(null);
   const saveProgressRef = useRef(null);
   const [siteConfig, setSiteConfig] = useState(null);
+  
+  const [cropModalData, setCropModalData] = useState({ isOpen: false, slideIdx: null, imgIdx: null, imageUrl: null });
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -458,27 +463,35 @@ export default function SocialGenerator() {
     }
   };
 
-  const handleLoadProject = (project) => {
-    const content = designer.canvas.loadProject(project);
-    if (content) {
-      if (content.videoSettings && content.video_slides) {
-        // En lugar de sobrescribir el audio de cada slide con el global, dejamos que el global sea independiente
-        // Si el usuario traía audios viejos donde selectedAudio era el global, migrarlos a globalAudio
-        if (content.videoSettings.selectedAudio && !content.videoSettings.globalAudio) {
-          content.videoSettings.globalAudio = content.videoSettings.selectedAudio;
-        }
-        
-        content.video_slides = content.video_slides.map((slide, i) => ({
-          ...slide,
-          duration: slide.duration || content.videoSettings.slideDuration || 2,
-          // Mantener el audio de la slide si existe, sino no heredar el global (ya que ahora son paralelos)
-          audio: slide.audio || null,
-          customAudioUrl: slide.customAudioUrl || null,
-          videoStyles: slide.videoStyles || content.videoSettings.videoStyles || null,
-          pos: slide.pos || { scale: 1, x: 0, y: 0, cropStart: 0, cropEnd: null }
-        }));
+  const handleLoadProject = async (projectInfo) => {
+    try {
+      showToast('Cargando proyecto...', 'info');
+      let fullProject = projectInfo;
+      if (projectInfo.is_backend && !projectInfo.content) {
+        // Fetch full project data from backend (lazy loading)
+        fullProject = await blogService.getCarouselProjectById(projectInfo.id);
+        fullProject.is_backend = true;
       }
-
+      
+      const content = designer.canvas.loadProject(fullProject);
+      if (content) {
+        if (content.videoSettings && content.video_slides) {
+          // En lugar de sobrescribir el audio de cada slide con el global, dejamos que el global sea independiente
+          // Si el usuario traía audios viejos donde selectedAudio era el global, migrarlos a globalAudio
+          if (content.videoSettings.selectedAudio && !content.videoSettings.globalAudio) {
+            content.videoSettings.globalAudio = content.videoSettings.selectedAudio;
+          }
+          
+          content.video_slides = content.video_slides.map((slide, i) => ({
+            ...slide,
+            duration: slide.duration || content.videoSettings.slideDuration || 2,
+            // Mantener el audio de la slide si existe, sino no heredar el global (ya que ahora son paralelos)
+            audio: slide.audio || null,
+            customAudioUrl: slide.customAudioUrl || null,
+            videoStyles: slide.videoStyles || content.videoSettings.videoStyles || null,
+            pos: slide.pos || { scale: 1, x: 0, y: 0, cropStart: 0, cropEnd: null }
+          }));
+        }
       setGeneratedContent(content);
       if (content.transformerState) {
         transformer.loadState(content.transformerState);
@@ -492,9 +505,13 @@ export default function SocialGenerator() {
       } else {
         setActiveTab('carousel');
       }
-      setActiveProjectName(project.name || null);
-      setActiveProjectId(project.id || null);
-      showToast(`Proyecto "${project.name}" cargado`, 'success');
+      setActiveProjectName(fullProject.name || null);
+      setActiveProjectId(fullProject.id || null);
+      showToast(`Proyecto "${fullProject.name}" cargado`, 'success');
+      }
+    } catch (err) {
+      console.error('[Arko360] Error al cargar proyecto:', err);
+      showToast('Error al cargar el proyecto', 'error');
     }
   };
 
@@ -851,6 +868,31 @@ export default function SocialGenerator() {
       newSlides[slideIndex].customImages = newSlides[slideIndex].customImages.filter((_, i) => i !== imgIndex);
       setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
     }
+  };
+
+  const handleOpenCropImage = (slideIdx, imgIdx) => {
+    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+    const img = generatedContent?.[slidesProp]?.[slideIdx]?.customImages?.[imgIdx];
+    if (img) {
+      setCropModalData({ isOpen: true, slideIdx, imgIdx, imageUrl: img });
+    }
+  };
+
+  const handleCropComplete = (croppedImageBase64) => {
+    const { slideIdx, imgIdx } = cropModalData;
+    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+    const newSlides = [...generatedContent[slidesProp]];
+    if (newSlides[slideIdx]?.customImages) {
+      newSlides[slideIdx].customImages[imgIdx] = croppedImageBase64;
+      setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+      
+      // Update transformer dimensions
+      const imgId = `${slideIdx}-${imgIdx}`;
+      if (transformer.state.imagePositions?.[imgId]) {
+        // Just let it re-render, no need to manually touch positions unless size aspect ratio changed drastically
+      }
+    }
+    designer.canvas.selectElement(null, null);
   };
 
   const handleAddImageToVideoSlide = async (index, e) => {
@@ -1304,6 +1346,14 @@ export default function SocialGenerator() {
         imagePositions={transformer.state.imagePositions}
         updateImage={transformer.handlers.updateImage}
         onRemoveImage={handleRemoveImage}
+        onCropImage={handleOpenCropImage}
+      />
+
+      <ImageCropperModal
+        isOpen={cropModalData.isOpen}
+        onClose={() => setCropModalData({ isOpen: false, slideIdx: null, imgIdx: null, imageUrl: null })}
+        imageUrl={cropModalData.imageUrl}
+        onCropComplete={handleCropComplete}
       />
 
       {/* Edit Content Modal */}

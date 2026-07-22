@@ -1,6 +1,6 @@
 import re
 from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 from app.blog.models import BlogPost, Comment, BlogPostSEO, SocialCarousel
 from app.blog.schemas import BlogPostCreate, BlogPostUpdate, CommentCreate, SocialCarouselCreate, SocialAudioCreate
 
@@ -8,7 +8,7 @@ def get_carousel(db: Session, carousel_id: int):
     return db.query(SocialCarousel).filter(SocialCarousel.id == carousel_id).first()
 
 def get_carousels_by_ArkoAdmin(db: Session, admin_id: int, skip: int = 0, limit: int = 100):
-    return db.query(SocialCarousel).filter(SocialCarousel.admin_id == admin_id).order_by(SocialCarousel.created_at.desc()).offset(skip).limit(limit).all()
+    return db.query(SocialCarousel).options(defer(SocialCarousel.content)).filter(SocialCarousel.admin_id == admin_id).order_by(SocialCarousel.created_at.desc()).offset(skip).limit(limit).all()
 
 def create_carousel(db: Session, carousel: SocialCarouselCreate, admin_id: int):
     db_carousel = SocialCarousel(

@@ -120,7 +120,7 @@ export const ProjectGrid = ({
               >
                 <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => onLoad(p)}>
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeProjectId === p.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-900 text-gray-500 group-hover:text-indigo-500'}`}>
-                     {p.content?.video_slides ? <FiVideo size={18} /> : <FiImage size={18} />}
+                     <FiVideo size={18} />
                   </div>
                   <div className="text-left">
                     <p className={`text-sm font-black uppercase tracking-tight ${activeProjectId === p.id ? 'text-indigo-900 dark:text-indigo-100' : 'text-gray-700 dark:text-gray-300'}`}>{p.name}</p>
@@ -156,7 +156,7 @@ export const ProjectGrid = ({
             >
               <div className="flex justify-between items-start mb-4">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${activeProjectId === p.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600'}`}>
-                   {p.content?.video_slides ? <FiVideo size={24} /> : <FiImage size={24} />}
+                   <FiVideo size={24} />
                 </div>
                 <div className="flex gap-2">
                   <span className={`text-[8px] px-2 py-1 rounded-lg uppercase font-black tracking-widest ${p.is_backend ? 'bg-indigo-100 text-indigo-600' : 'bg-amber-100 text-amber-600'}`}>
