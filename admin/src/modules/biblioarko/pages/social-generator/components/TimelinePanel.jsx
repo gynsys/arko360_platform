@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiClock, FiAlignLeft, FiType, FiImage, FiMusic } from 'react-icons/fi';
+import { FiClock, FiAlignLeft, FiType, FiImage, FiMusic, FiTrash2 } from 'react-icons/fi';
 
-const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange }) => {
+const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange, onDelete }) => {
   const trackRef = useRef(null);
   const [isDragging, setIsDragging] = useState(null); // 'start', 'end', 'move'
   const [dragOffset, setDragOffset] = useState(0);
@@ -115,11 +115,21 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange }) =
           </div>
         </div>
       </div>
+      
+      {onDelete && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); onDelete(id); }} 
+          className="p-1.5 shrink-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+          title="Eliminar"
+        >
+          <FiTrash2 size={16} />
+        </button>
+      )}
     </div>
   );
 };
 
-export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, onUpdateTiming, onScrub, extraElements = [], imagePositions = {}, globalAudio = null }) => {
+export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, onUpdateTiming, onScrub, extraElements = [], imagePositions = {}, globalAudio = null, onDeleteTrack }) => {
   if (!slide) return null;
 
   const tStart = slide.titleStartTime !== undefined ? slide.titleStartTime : 0;
@@ -199,6 +209,7 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
                 endTime={slideDuration} 
                 maxDuration={actualDuration}
                 onChange={() => {}} // Global audio cannot be trimmed per slide
+                onDelete={onDeleteTrack}
               />
             )}
             {slide.audio && (
@@ -210,6 +221,7 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, currentTime, o
                 endTime={slide.audioEndTime !== undefined ? slide.audioEndTime : slideDuration} 
                 maxDuration={actualDuration}
                 onChange={onUpdateTiming}
+                onDelete={onDeleteTrack}
               />
             )}
             {slide.title && String(slide.title).trim() !== '' && (

@@ -1318,6 +1318,10 @@ export default function SocialGenerator() {
                             extraElements={designer.canvas.extraElements[designer.canvas.currentSlidePage] || []}
                             imagePositions={transformer.state.imagePositions || {}}
                             globalAudio={globalAudio}
+                            onDeleteTrack={(trackId) => {
+                              if (trackId === 'globalAudio') setGlobalAudio(null);
+                              if (trackId === 'audio') setSelectedAudio(null);
+                            }}
                           />
                         </div>
                       );
