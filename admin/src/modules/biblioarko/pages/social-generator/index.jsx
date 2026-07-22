@@ -1319,14 +1319,29 @@ export default function SocialGenerator() {
                             imagePositions={transformer.state.imagePositions || {}}
                             globalAudio={globalAudio}
                             onDeleteTrack={(trackId) => {
-                              console.log('[TimelinePanel] Deleting track:', trackId);
                               if (trackId === 'globalAudio') {
-                                setGlobalAudio(null);
-                                setGlobalCustomAudioUrl(null);
+                                // Actualización atómica: un solo setGeneratedContent
+                                setGeneratedContent(prev => ({
+                                  ...prev,
+                                  videoSettings: {
+                                    ...(prev?.videoSettings || {}),
+                                    globalAudio: null,
+                                    globalCustomAudioUrl: null,
+                                  }
+                                }));
                               }
                               if (trackId === 'audio') {
-                                setSelectedAudio(null);
-                                setCustomAudioUrl(null);
+                                // Actualización atómica: un solo setGeneratedContent
+                                setGeneratedContent(prev => {
+                                  if (!prev?.video_slides) return prev;
+                                  const newSlides = [...prev.video_slides];
+                                  newSlides[currentVideoSlide] = {
+                                    ...newSlides[currentVideoSlide],
+                                    audio: null,
+                                    customAudioUrl: null,
+                                  };
+                                  return { ...prev, video_slides: newSlides };
+                                });
                               }
                             }}
                           />
