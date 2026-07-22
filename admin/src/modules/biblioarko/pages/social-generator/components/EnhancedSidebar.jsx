@@ -20,6 +20,10 @@ export const EnhancedSidebar = ({
   isVideoMode,
   selectedAudio,
   setSelectedAudio,
+  globalAudio,
+  setGlobalAudio,
+  audioApplyMode,
+  setAudioApplyMode,
   userAudios,
   loadingAudios,
   handleUploadAudio,
@@ -778,40 +782,61 @@ export const EnhancedSidebar = ({
               <div className="p-4 space-y-6">
                 <div>
                   <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3">Pistas de Audio</h3>
+                  
+                  {/* Toggle Global vs Diapositiva */}
+                  <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
+                    <button
+                      onClick={() => setAudioApplyMode('global')}
+                      className={`flex-1 text-xs font-bold py-2 rounded-lg transition-all ${
+                        audioApplyMode === 'global' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Aplicar a todo el video
+                    </button>
+                    <button
+                      onClick={() => setAudioApplyMode('slide')}
+                      className={`flex-1 text-xs font-bold py-2 rounded-lg transition-all ${
+                        audioApplyMode === 'slide' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Solo en esta diapositiva
+                    </button>
+                  </div>
+
                   <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                     {/* None option */}
                     <button
-                      onClick={() => setSelectedAudio(null)}
+                      onClick={() => audioApplyMode === 'global' ? setGlobalAudio(null) : setSelectedAudio(null)}
                       className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all flex justify-between items-center ${
-                        !selectedAudio ? 'bg-indigo-50 text-indigo-700 font-bold border-2 border-indigo-500' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-2 border-transparent'
+                        !(audioApplyMode === 'global' ? globalAudio : selectedAudio) ? 'bg-indigo-50 text-indigo-700 font-bold border-2 border-indigo-500' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-2 border-transparent'
                       }`}
                     >
                       <span className="flex items-center gap-2"><FiVolumeX /> Sin Música</span>
-                      {!selectedAudio && <FiCheck className="text-indigo-600" />}
+                      {!(audioApplyMode === 'global' ? globalAudio : selectedAudio) && <FiCheck className="text-indigo-600" />}
                     </button>
                     {/* Default Tracks */}
                     {Object.entries(AUDIO_TRACKS).map(([name, path]) => (
                       <button
                         key={name}
-                        onClick={() => setSelectedAudio(name)}
+                        onClick={() => audioApplyMode === 'global' ? setGlobalAudio(name) : setSelectedAudio(name)}
                         className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all flex justify-between items-center ${
-                          selectedAudio === name ? 'bg-indigo-50 text-indigo-700 font-bold border-2 border-indigo-500' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-2 border-transparent'
+                          (audioApplyMode === 'global' ? globalAudio : selectedAudio) === name ? 'bg-indigo-50 text-indigo-700 font-bold border-2 border-indigo-500' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-2 border-transparent'
                         }`}
                       >
-                        <span className="flex items-center gap-2 truncate"><FiVolume2 className={selectedAudio === name ? 'text-indigo-500' : 'text-gray-400'} /> {name}</span>
-                        {selectedAudio === name && <FiCheck className="text-indigo-600" />}
+                        <span className="flex items-center gap-2 truncate"><FiVolume2 className={(audioApplyMode === 'global' ? globalAudio : selectedAudio) === name ? 'text-indigo-500' : 'text-gray-400'} /> {name}</span>
+                        {(audioApplyMode === 'global' ? globalAudio : selectedAudio) === name && <FiCheck className="text-indigo-600" />}
                       </button>
                     ))}
                     {/* User Audios */}
                     {userAudios?.map(audio => (
                       <div key={audio.id} className="flex gap-1 mb-2">
                         <button
-                          onClick={() => setSelectedAudio(`User-${audio.id}`)}
+                          onClick={() => audioApplyMode === 'global' ? setGlobalAudio(`User-${audio.id}`) : setSelectedAudio(`User-${audio.id}`)}
                           className={`flex-1 text-left px-3 py-2 rounded-xl text-sm transition-all flex justify-between items-center ${
-                            selectedAudio === `User-${audio.id}` ? 'bg-indigo-50 text-indigo-700 font-bold border-2 border-indigo-500' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-2 border-transparent'
+                            (audioApplyMode === 'global' ? globalAudio : selectedAudio) === `User-${audio.id}` ? 'bg-indigo-50 text-indigo-700 font-bold border-2 border-indigo-500' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-2 border-transparent'
                           }`}
                         >
-                          <span className="flex items-center gap-2 truncate max-w-[140px]"><FiVolume2 className={selectedAudio === `User-${audio.id}` ? 'text-indigo-500' : 'text-gray-400'} /> {audio.original_name || audio.name || audio.filename || 'Audio sin nombre'}</span>
+                          <span className="flex items-center gap-2 truncate max-w-[140px]"><FiVolume2 className={(audioApplyMode === 'global' ? globalAudio : selectedAudio) === `User-${audio.id}` ? 'text-indigo-500' : 'text-gray-400'} /> {audio.original_name || audio.name || audio.filename || 'Audio sin nombre'}</span>
                         </button>
                         <button
                           onClick={() => handleDeleteAudio(audio.id)}

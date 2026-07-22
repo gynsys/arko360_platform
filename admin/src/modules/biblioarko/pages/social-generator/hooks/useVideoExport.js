@@ -5,7 +5,7 @@ import { isCapacitor, downloadFile, openExternalFile } from '../../../../../util
 
 export const useVideoExport = (
   generatedContent, videoStyles, slideDuration, transitionType, transitionDuration,
-  selectedPost, audioRef, getActiveAudioSrc, showToast,
+  selectedPost, audioRef, globalAudioRef, getActiveAudioSrc, showToast,
   designer, transformState
 ) => {
   const [isExporting, setIsExporting] = useState(false);
@@ -31,7 +31,7 @@ export const useVideoExport = (
     const audioDest = audioCtx.createMediaStreamDestination();
     let hasAudio = false;
 
-    // Audio de fondo dedicado para exportación
+    // Audio de fondo (Global)
     const exportBgAudio = new Audio();
     exportBgAudio.crossOrigin = 'anonymous';
     try {
@@ -39,13 +39,22 @@ export const useVideoExport = (
       bgSource.connect(audioDest);
       hasAudio = true;
     } catch (audioErr) {
-      console.error('[Arko360] Error al conectar audio de fondo:', audioErr);
+      console.error('[Arko360] Error al conectar audio de fondo global:', audioErr);
+    }
+
+    // Audio Local (Diapositiva)
+    const exportLocalAudio = new Audio();
+    exportLocalAudio.crossOrigin = 'anonymous';
+    try {
+      const localSource = audioCtx.createMediaElementSource(exportLocalAudio);
+      localSource.connect(audioDest);
+    } catch (audioErr) {
+      console.error('[Arko360] Error al conectar audio local:', audioErr);
     }
     
-    // Silenciar la preview del editor para que no suene doble
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    // Silenciar las previews del editor para que no suene doble
+    if (audioRef.current) audioRef.current.pause();
+    if (globalAudioRef.current) globalAudioRef.current.pause();
 
     try {
       // === PASO 1: Capturar cada slide como imagen usando html2canvas ===
@@ -315,7 +324,14 @@ export const useVideoExport = (
 
       recorder.onstop = async () => {
         exportBgAudio.pause();
-        exportBgAudio.src = '';
+        exportBgAudio.removeAttribute('src');
+        exportBgAudio.load();
+        exportLocalAudio.pause();
+        exportLocalAudio.removeAttribute('src');
+        exportLocalAudio.load();
+        if (audioCtx.state !== 'closed') {
+          audioCtx.close();
+        }
         if (audioRef.current) {
           audioRef.current.pause();
           audioRef.current.currentTime = 0;
@@ -396,8 +412,18 @@ export const useVideoExport = (
       const videoTrack = videoStream.getVideoTracks()[0];
       
       let currentPlayingAudioSrc = null;
+      let currentGlobalAudioSrc = null;
 
-      // Helper: start videos + audio for a slide
+      // Iniciar el global audio solo una vez o cuando cambie
+      const globalAudioSrc = getActiveAudioSrc(generatedContent?.videoSettings?.globalAudio, generatedContent?.videoSettings?.globalCustomAudioUrl);
+      if (globalAudioSrc) {
+        currentGlobalAudioSrc = globalAudioSrc;
+        exportBgAudio.src = globalAudioSrc;
+        exportBgAudio.currentTime = 0;
+        exportBgAudio.play().catch(e => console.log('Global Audio play error', e));
+      }
+
+      // Helper: start videos + local audio for a slide
       const startSlideMedia = (slideIdx) => {
         const vids = slideVideos[slideIdx] || [];
         vids.forEach(v => {
@@ -405,20 +431,25 @@ export const useVideoExport = (
           v.vid.playbackRate = v.pos.speed !== undefined ? v.pos.speed : 1;
           v.vid.play().catch(e => console.log('video play error', e));
         });
+        
         const slide = scenes[slideIdx];
         const audioSrc = getActiveAudioSrc(slide.audio, slide.customAudioUrl);
+        
+        // Manejar el audio local
         if (audioSrc) {
           if (currentPlayingAudioSrc !== audioSrc) {
             currentPlayingAudioSrc = audioSrc;
-            exportBgAudio.src = audioSrc;
-            exportBgAudio.currentTime = 0;
-            exportBgAudio.play().catch(e => console.log('Audio play error', e));
-          } else if (exportBgAudio.paused) {
-            exportBgAudio.play().catch(e => console.log('Audio play error', e));
+            exportLocalAudio.src = audioSrc;
+            exportLocalAudio.currentTime = 0; // Local audio SIEMPRE empieza desde el inicio al entrar en la slide
+            exportLocalAudio.play().catch(e => console.log('Local Audio play error', e));
+          } else if (exportLocalAudio.paused) {
+            // Si es la misma pista pero por alguna razon se pauso, reanudar desde 0
+            exportLocalAudio.currentTime = 0;
+            exportLocalAudio.play().catch(e => console.log('Local Audio play error', e));
           }
         } else {
           currentPlayingAudioSrc = null;
-          exportBgAudio.pause();
+          exportLocalAudio.pause();
         }
       };
 

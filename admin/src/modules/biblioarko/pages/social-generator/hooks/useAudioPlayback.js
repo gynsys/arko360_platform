@@ -5,7 +5,8 @@ import { getImageUrl } from '../../../../../lib/imageUtils';
 
 export const useAudioPlayback = (
   activeTab, isPlaying, setIsPlaying, showToast,
-  selectedAudio, setSelectedAudio, customAudioUrl, setCustomAudioUrl, currentVideoSlide
+  selectedAudio, setSelectedAudio, customAudioUrl, setCustomAudioUrl, currentVideoSlide,
+  globalAudio, setGlobalAudio, globalCustomAudioUrl, setGlobalCustomAudioUrl, audioApplyMode
 ) => {
   const [prelisteningTrack, setPrelisteningTrack] = useState(null);
   const [userAudios, setUserAudios] = useState([]);
@@ -13,6 +14,7 @@ export const useAudioPlayback = (
   const [volume, setVolume] = useState(0.5); // Default volume to 50%
   
   const audioRef = useRef(null);
+  const globalAudioRef = useRef(null);
   const previewAudioRef = useRef(null);
 
   useEffect(() => {
@@ -92,21 +94,35 @@ export const useAudioPlayback = (
     return getImageUrl(AUDIO_TRACKS[overrideAudio] || AUDIO_TRACKS['Medical']);
   };
 
-  // Main Audio Effect
+  // Main Audio Effect (Local Slide Audio)
   useEffect(() => {
     if (audioRef.current) {
       if (activeTab === 'video' && isPlaying && selectedAudio) {
-        const src = getActiveAudioSrc();
+        const src = getActiveAudioSrc(selectedAudio, customAudioUrl);
         if (src && audioRef.current.src !== src) {
           audioRef.current.src = src;
           audioRef.current.load();
-          // We let index.jsx's preview interval handle the .play() and .pause() to support audioStartTime and audioEndTime
         }
-      } else if (!isPlaying) {
+      } else if (!isPlaying || !selectedAudio) {
         audioRef.current.pause();
       }
     }
   }, [activeTab, isPlaying, selectedAudio, customAudioUrl, userAudios, currentVideoSlide]);
+
+  // Global Audio Effect
+  useEffect(() => {
+    if (globalAudioRef.current) {
+      if (activeTab === 'video' && isPlaying && globalAudio) {
+        const src = getActiveAudioSrc(globalAudio, globalCustomAudioUrl);
+        if (src && globalAudioRef.current.src !== src) {
+          globalAudioRef.current.src = src;
+          globalAudioRef.current.load();
+        }
+      } else if (!isPlaying || !globalAudio) {
+        globalAudioRef.current.pause();
+      }
+    }
+  }, [activeTab, isPlaying, globalAudio, globalCustomAudioUrl, userAudios]);
 
   // Prelistening Effect
   useEffect(() => {
@@ -140,6 +156,9 @@ export const useAudioPlayback = (
     if (audioRef.current) {
       audioRef.current.volume = volume;
     }
+    if (globalAudioRef.current) {
+      globalAudioRef.current.volume = volume;
+    }
     if (previewAudioRef.current) {
       previewAudioRef.current.volume = volume;
     }
@@ -147,6 +166,7 @@ export const useAudioPlayback = (
 
   return {
     audioRef,
+    globalAudioRef,
     previewAudioRef,
     selectedAudio,
     setSelectedAudio,

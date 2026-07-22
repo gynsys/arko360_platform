@@ -21,6 +21,10 @@ export const MobileToolbar = ({
   isVideoMode = false,
   selectedAudio,
   setSelectedAudio,
+  globalAudio,
+  setGlobalAudio,
+  audioApplyMode,
+  setAudioApplyMode,
   userAudios,
   loadingAudios,
   handleUploadAudio,
@@ -289,45 +293,69 @@ export const MobileToolbar = ({
                 />
               </div>
               
-              <div className="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4">
-                {/* None option */}
-                <button
-                  onClick={() => setSelectedAudio(null)}
-                  className={`w-full text-left px-4 py-3 rounded-2xl text-sm transition-all flex justify-between items-center ${
-                    !selectedAudio ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-transparent'
-                  }`}
-                >
-                  <span className="flex items-center gap-2"><FiVolumeX /> Sin Música</span>
-                  {!selectedAudio && <FiCheck className="text-indigo-600" />}
-                </button>
-
-                {/* Default Tracks */}
-                {Object.entries(AUDIO_TRACKS).map(([name, path]) => (
+              {/* Audio Tracks */}
+              <div className="p-4 border-t border-gray-100">
+                <h3 className="text-xs font-bold text-gray-500 mb-3">Música / Audio</h3>
+                
+                {/* Toggle Global vs Diapositiva */}
+                <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
                   <button
-                    key={name}
-                    onClick={() => setSelectedAudio(name)}
-                    className={`w-full text-left px-4 py-3 rounded-2xl text-sm transition-all flex justify-between items-center ${
-                      selectedAudio === name ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-transparent'
+                    onClick={() => setAudioApplyMode('global')}
+                    className={`flex-1 text-xs font-bold py-2 rounded-lg transition-all ${
+                      audioApplyMode === 'global' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    <span className="flex items-center gap-2 truncate"><FiVolume2 className={selectedAudio === name ? 'text-indigo-500' : 'text-gray-400'} /> {name}</span>
-                    {selectedAudio === name && <FiCheck className="text-indigo-600" />}
+                    Todo el video
                   </button>
-                ))}
+                  <button
+                    onClick={() => setAudioApplyMode('slide')}
+                    className={`flex-1 text-xs font-bold py-2 rounded-lg transition-all ${
+                      audioApplyMode === 'slide' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Solo en esta
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {/* None */}
+                  <button
+                    onClick={() => audioApplyMode === 'global' ? setGlobalAudio(null) : setSelectedAudio(null)}
+                    className={`w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex justify-between items-center ${
+                      !(audioApplyMode === 'global' ? globalAudio : selectedAudio) ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-transparent'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2"><FiVolumeX /> Sin Música</span>
+                    {!(audioApplyMode === 'global' ? globalAudio : selectedAudio) && <FiCheck className="text-indigo-600" />}
+                  </button>
+
+                  {/* Default */}
+                  {Object.entries(AUDIO_TRACKS).map(([name, path]) => (
+                    <button
+                      key={name}
+                      onClick={() => audioApplyMode === 'global' ? setGlobalAudio(name) : setSelectedAudio(name)}
+                      className={`w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex justify-between items-center ${
+                        (audioApplyMode === 'global' ? globalAudio : selectedAudio) === name ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-transparent'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 truncate"><FiVolume2 className={(audioApplyMode === 'global' ? globalAudio : selectedAudio) === name ? 'text-indigo-500' : 'text-gray-400'} /> {name}</span>
+                      {(audioApplyMode === 'global' ? globalAudio : selectedAudio) === name && <FiCheck className="text-indigo-600" />}
+                    </button>
+                  ))}
+                </div>
 
                 {/* User Audios */}
                 {userAudios?.length > 0 && (
                   <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-700">
-                    <p className="text-[10px] font-black text-gray-400 uppercase mb-3">Tus Audios</p>
-                    {userAudios.map(audio => (
-                      <div key={audio.id} className="flex gap-2 mb-2">
+                    {userAudios?.map(audio => (
+                      <div key={audio.id} className="flex gap-1 mb-2">
                         <button
-                          onClick={() => setSelectedAudio(`User-${audio.id}`)}
-                          className={`flex-1 text-left px-4 py-3 rounded-2xl text-sm transition-all flex justify-between items-center ${
-                            selectedAudio === `User-${audio.id}` ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-transparent'
+                          onClick={() => audioApplyMode === 'global' ? setGlobalAudio(`User-${audio.id}`) : setSelectedAudio(`User-${audio.id}`)}
+                          className={`flex-1 text-left px-3 py-3 rounded-xl text-sm transition-all flex justify-between items-center ${
+                            (audioApplyMode === 'global' ? globalAudio : selectedAudio) === `User-${audio.id}` ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-transparent'
                           }`}
                         >
-                          <span className="flex items-center gap-2 truncate max-w-[200px]"><FiVolume2 className={selectedAudio === `User-${audio.id}` ? 'text-indigo-500' : 'text-gray-400'} /> {audio.original_name}</span>
+                          <span className="flex items-center gap-2 truncate max-w-[200px]"><FiVolume2 className={(audioApplyMode === 'global' ? globalAudio : selectedAudio) === `User-${audio.id}` ? 'text-indigo-500' : 'text-gray-400'} /> {audio.original_name}</span>
                         </button>
                         <button
                           onClick={() => handleDeleteAudio(audio.id)}

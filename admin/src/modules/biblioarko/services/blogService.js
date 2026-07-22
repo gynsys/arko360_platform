@@ -125,6 +125,15 @@ export const blogService = {
     return response.data
   },
 
+  uploadSocialMedia: async (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await api.post('/uploads/social-media', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return response.data
+  },
+
   deleteSocialAudio: async (audioId) => {
     const response = await api.delete(`/blog/social-audios/${audioId}`)
     return response.data

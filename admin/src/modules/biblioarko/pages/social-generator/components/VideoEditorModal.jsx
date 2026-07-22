@@ -1,22 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiX, FiCheck, FiScissors, FiClock } from 'react-icons/fi';
 
-const VideoEditorModal = ({ file, initialState, onClose, onApply }) => {
+const VideoEditorModal = ({ file, url: providedUrl, initialState, onClose, onApply }) => {
   const videoRef = useRef(null);
   const [duration, setDuration] = useState(0);
   const [startTime, setStartTime] = useState(initialState?.trimStart || 0);
   const [endTime, setEndTime] = useState(initialState?.trimEnd || 0);
   const [speed, setSpeed] = useState(initialState?.speed || 1);
-  const [videoUrl, setVideoUrl] = useState(null);
+  const [videoUrl, setVideoUrl] = useState(providedUrl || null);
 
   useEffect(() => {
-    const url = URL.createObjectURL(file);
-    setVideoUrl(url);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setVideoUrl(url);
 
-    return () => {
-      URL.revokeObjectURL(url);
-    };
-  }, [file]);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else if (providedUrl) {
+      setVideoUrl(providedUrl);
+    }
+  }, [file, providedUrl]);
 
   useEffect(() => {
     if (videoRef.current) {

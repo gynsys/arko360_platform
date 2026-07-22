@@ -14,6 +14,8 @@ router = APIRouter()
 UPLOAD_DIR = Path(settings.UPLOAD_DIR).resolve()
 AUDIO_DIR = UPLOAD_DIR / "audios"
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+MEDIA_DIR = UPLOAD_DIR / "media"
+MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.post("/social-audio", status_code=status.HTTP_201_CREATED)
 async def upload_social_audio(
@@ -57,3 +59,31 @@ async def upload_social_audio(
         logger = logging.getLogger(__name__)
         logger.error(f"Error uploading social audio: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error uploading audio")
+
+@router.post("/social-media", status_code=status.HTTP_201_CREATED)
+async def upload_social_media(
+    file: UploadFile = File(...),
+    current_user = Depends(get_current_user)
+):
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_extension = Path(file.filename).suffix
+        filename = f"media_{timestamp}{file_extension}"
+        file_path = MEDIA_DIR / filename
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # Get relative path for URL
+        relative_path = file_path.relative_to(UPLOAD_DIR)
+        url_path = f"/uploads/{relative_path.as_posix()}"
+        
+        return {
+            "url": url_path,
+            "filename": file.filename
+        }
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error uploading social media: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error uploading media")

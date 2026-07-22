@@ -114,6 +114,22 @@ export default function SocialGenerator() {
   const currentVideoSlideData = activeTab === 'video' ? (generatedContent?.video_slides?.[currentVideoSlide] || {}) : {};
   const selectedAudio = currentVideoSlideData.audio || null;
   const customAudioUrl = currentVideoSlideData.customAudioUrl || null;
+  
+  // Nuevo estado para la Dualidad Global vs Diapositiva
+  const [audioApplyMode, setAudioApplyMode] = useState('global');
+  const globalAudio = generatedContent?.videoSettings?.globalAudio || null;
+  const globalCustomAudioUrl = generatedContent?.videoSettings?.globalCustomAudioUrl || null;
+
+  const setGlobalAudio = (val) => {
+    if (activeTab !== 'video') return;
+    const newSettings = { ...(generatedContent?.videoSettings || {}), globalAudio: val };
+    setGeneratedContent({ ...generatedContent, videoSettings: newSettings });
+  };
+  const setGlobalCustomAudioUrl = (val) => {
+    if (activeTab !== 'video') return;
+    const newSettings = { ...(generatedContent?.videoSettings || {}), globalCustomAudioUrl: val };
+    setGeneratedContent({ ...generatedContent, videoSettings: newSettings });
+  };
 
   const setSelectedAudio = (val) => {
     if (activeTab !== 'video' || !generatedContent?.video_slides) return;
@@ -130,12 +146,13 @@ export default function SocialGenerator() {
   };
 
   const { 
-    audioRef, previewAudioRef, prelisteningTrack, setPrelisteningTrack, 
+    audioRef, globalAudioRef, previewAudioRef, prelisteningTrack, setPrelisteningTrack, 
     getActiveAudioSrc, userAudios, loadingAudios, handleUploadAudio, handleDeleteAudio,
     volume, setVolume
   } = useAudioPlayback(
     activeTab, isPlaying, setIsPlaying, showToast,
-    selectedAudio, setSelectedAudio, customAudioUrl, setCustomAudioUrl, currentVideoSlide
+    selectedAudio, setSelectedAudio, customAudioUrl, setCustomAudioUrl, currentVideoSlide,
+    globalAudio, setGlobalAudio, globalCustomAudioUrl, setGlobalCustomAudioUrl, audioApplyMode
   );
 
   useEffect(() => {
@@ -185,6 +202,16 @@ export default function SocialGenerator() {
                   audioRef.current.pause();
                 }
               }
+            } else {
+                if (!audioRef.current.paused) audioRef.current.pause();
+            }
+          }
+          
+          if (globalAudioRef?.current) {
+            if (globalAudio) {
+                if (globalAudioRef.current.paused) globalAudioRef.current.play().catch(e => console.log('Global audio sync play error', e));
+            } else {
+                if (!globalAudioRef.current.paused) globalAudioRef.current.pause();
             }
           }
 
@@ -194,9 +221,10 @@ export default function SocialGenerator() {
     } else {
       setVideoTime(0);
       if (audioRef?.current && !audioRef.current.paused) audioRef.current.pause();
+      if (globalAudioRef?.current && !globalAudioRef.current.paused) globalAudioRef.current.pause();
     }
     return () => clearInterval(interval);
-  }, [isPlaying, activeTab, slideDuration, currentVideoSlide, generatedContent, audioRef]);
+  }, [isPlaying, activeTab, slideDuration, currentVideoSlide, generatedContent, audioRef, globalAudioRef, globalAudio]);
 
   const handleUpdateTiming = (trackId, start, end) => {
     if (!generatedContent) return;
@@ -258,7 +286,7 @@ export default function SocialGenerator() {
   });
 
   const { isExporting, exportProgress, handleExportVideo, exportStatus } = useVideoExport(
-    generatedContent, videoStyles, slideDuration, transitionType, transitionDuration, selectedPost, audioRef, getActiveAudioSrc, showToast,
+    generatedContent, videoStyles, slideDuration, transitionType, transitionDuration, selectedPost, audioRef, globalAudioRef, getActiveAudioSrc, showToast,
     designer, transformer.state
   );
 
@@ -433,11 +461,21 @@ export default function SocialGenerator() {
   const handleLoadProject = (project) => {
     const content = designer.canvas.loadProject(project);
     if (content) {
-      if (content.videoSettings?.selectedAudio && content.video_slides) {
-        content.video_slides = content.video_slides.map(slide => ({
+      if (content.videoSettings && content.video_slides) {
+        // En lugar de sobrescribir el audio de cada slide con el global, dejamos que el global sea independiente
+        // Si el usuario traía audios viejos donde selectedAudio era el global, migrarlos a globalAudio
+        if (content.videoSettings.selectedAudio && !content.videoSettings.globalAudio) {
+          content.videoSettings.globalAudio = content.videoSettings.selectedAudio;
+        }
+        
+        content.video_slides = content.video_slides.map((slide, i) => ({
           ...slide,
-          audio: slide.audio || content.videoSettings.selectedAudio,
-          customAudioUrl: slide.customAudioUrl || content.videoSettings.customAudioUrl
+          duration: slide.duration || content.videoSettings.slideDuration || 2,
+          // Mantener el audio de la slide si existe, sino no heredar el global (ya que ahora son paralelos)
+          audio: slide.audio || null,
+          customAudioUrl: slide.customAudioUrl || null,
+          videoStyles: slide.videoStyles || content.videoSettings.videoStyles || null,
+          pos: slide.pos || { scale: 1, x: 0, y: 0, cropStart: 0, cropEnd: null }
         }));
       }
 
@@ -785,18 +823,23 @@ export default function SocialGenerator() {
     }
   };
 
-  const handleAddImage = (index, e) => {
+  const handleAddImage = async (index, e) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        pushToHistory(generatedContent);
-        const newSlides = [...generatedContent.slides];
-        if (!newSlides[index].customImages) newSlides[index].customImages = [];
-        newSlides[index].customImages.push(reader.result);
-        setGeneratedContent({ ...generatedContent, slides: newSlides });
-      };
-      reader.readAsDataURL(file);
+      try {
+        const response = await blogService.uploadSocialMedia(file);
+        if (response && response.url) {
+          pushToHistory(generatedContent);
+          const newSlides = [...generatedContent.slides];
+          if (!newSlides[index].customImages) newSlides[index].customImages = [];
+          // Asegurarse de agregar el origen para que sea una URL absoluta si es necesario, 
+          // o getImageUrl lo manejará si se usa en la renderización.
+          newSlides[index].customImages.push(response.url);
+          setGeneratedContent({ ...generatedContent, slides: newSlides });
+        }
+      } catch (error) {
+        showToast('Error al subir imagen', 'error');
+      }
       if (e.target) e.target.value = null;
     }
   };
@@ -810,31 +853,25 @@ export default function SocialGenerator() {
     }
   };
 
-  const handleAddImageToVideoSlide = (index, e) => {
+  const handleAddImageToVideoSlide = async (index, e) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newSlides = [...generatedContent.video_slides];
-        if (!newSlides[index].customImages) newSlides[index].customImages = [];
-        newSlides[index].customImages.push(reader.result);
-        setGeneratedContent({ ...generatedContent, video_slides: newSlides });
-      };
-      reader.readAsDataURL(file);
+      try {
+        const response = await blogService.uploadSocialMedia(file);
+        if (response && response.url) {
+          const newSlides = [...generatedContent.video_slides];
+          if (!newSlides[index].customImages) newSlides[index].customImages = [];
+          newSlides[index].customImages.push(response.url);
+          setGeneratedContent({ ...generatedContent, video_slides: newSlides });
+        }
+      } catch (error) {
+        showToast('Error al subir video/imagen', 'error');
+      }
       if (e.target) e.target.value = null;
     }
   };
 
   const handleEditVideo = (slideIndex, imgIndex, dataUrl) => {
-    const arr = dataUrl.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-    const file = new File([u8arr], 'video.mp4', { type: mime });
     const imgId = `${slideIndex}-${imgIndex}`;
     const pos = transformer?.state?.imagePositions?.[imgId] || {};
     
@@ -848,7 +885,24 @@ export default function SocialGenerator() {
         speed: pos.speed || 1
       }
     });
-    setPendingVideoFile(file);
+
+    if (dataUrl.startsWith('data:')) {
+      // Legacy base64 support (for older projects already saved)
+      const arr = dataUrl.split(',');
+      const mime = arr[0].match(/:(.*?);/)[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const file = new File([u8arr], 'video.mp4', { type: mime });
+      setPendingVideoFile(file);
+    } else {
+      // It's an uploaded URL, pass the URL directly
+      const fullUrl = getImageUrl(dataUrl);
+      setPendingVideoTarget(prev => ({ ...prev, url: fullUrl }));
+    }
   };
 
 
@@ -877,11 +931,13 @@ export default function SocialGenerator() {
         isPlaying={isPlaying} setIsPlaying={setIsPlaying}
         currentVideoSlide={currentVideoSlide} setCurrentVideoSlide={setCurrentVideoSlide}
         selectedAudio={selectedAudio} setSelectedAudio={setSelectedAudio}
+        globalAudio={globalAudio} setGlobalAudio={setGlobalAudio}
+        audioApplyMode={audioApplyMode} setAudioApplyMode={setAudioApplyMode}
         userAudios={userAudios} loadingAudios={loadingAudios}
         handleUploadAudio={handleUploadAudio} handleDeleteAudio={handleDeleteAudio}
         prelisteningTrack={prelisteningTrack} setPrelisteningTrack={setPrelisteningTrack}
         customAudioUrl={customAudioUrl} setCustomAudioUrl={setCustomAudioUrl}
-        audioRef={audioRef} previewAudioRef={previewAudioRef}
+        audioRef={audioRef} globalAudioRef={globalAudioRef} previewAudioRef={previewAudioRef}
         isExporting={isExporting} exportProgress={exportProgress}
         handleExportVideo={handleExportVideo} handleAddImageToVideoSlide={handleAddImageToVideoSlide}
         enterMobileFullscreen={enterMobileFullscreen}
@@ -1071,10 +1127,12 @@ export default function SocialGenerator() {
                     onSave={handleSaveProject} onConvertToVideo={handleConvertToVideo}
                     isVideoMode={activeTab === 'video'}
                     selectedAudio={selectedAudio} setSelectedAudio={setSelectedAudio}
+                    globalAudio={globalAudio} setGlobalAudio={setGlobalAudio}
+                    audioApplyMode={audioApplyMode} setAudioApplyMode={setAudioApplyMode}
+                    handleUploadAudio={handleUploadAudio}
                     slideDuration={slideDuration} setSlideDuration={setSlideDuration}
                     userAudios={userAudios}
                     loadingAudios={loadingAudios}
-                    handleUploadAudio={handleUploadAudio}
                     handleDeleteAudio={handleDeleteAudio}
                     isExporting={isExporting}
                     exportProgress={exportProgress}
@@ -1425,12 +1483,15 @@ export default function SocialGenerator() {
 
       {/* Hidden audio elements for playback */}
       <audio ref={audioRef} style={{ display: 'none' }} crossOrigin="anonymous" />
+      <audio ref={globalAudioRef} style={{ display: 'none' }} crossOrigin="anonymous" />
       <audio ref={previewAudioRef} style={{ display: 'none' }} crossOrigin="anonymous" />
 
       {/* Video Editor Modal */}
-      {pendingVideoFile && (
+      {(pendingVideoFile || pendingVideoTarget?.url) && (
         <VideoEditorModal
           file={pendingVideoFile}
+          url={pendingVideoTarget?.url}
+          initialState={pendingVideoTarget?.initialState}
           onClose={() => {
             setPendingVideoFile(null);
             setPendingVideoTarget(null);
