@@ -115,7 +115,11 @@ export default function SocialGenerator() {
     if (activeTab === 'carousel' && isPlaying) setIsPlaying(false);
   }, [activeTab]);
 
-  const currentVideoSlideData = activeTab === 'video' ? (generatedContent?.video_slides?.[currentVideoSlide] || {}) : {};
+  const activeSlideIdx = isPlaying 
+    ? currentVideoSlide 
+    : (designer.canvas?.currentSlidePage !== undefined ? designer.canvas.currentSlidePage : currentVideoSlide);
+
+  const currentVideoSlideData = activeTab === 'video' ? (generatedContent?.video_slides?.[activeSlideIdx] || {}) : {};
   const selectedAudio = currentVideoSlideData.audio || null;
   const customAudioUrl = currentVideoSlideData.customAudioUrl || null;
   
@@ -138,14 +142,16 @@ export default function SocialGenerator() {
   const setSelectedAudio = (val) => {
     if (activeTab !== 'video' || !generatedContent?.video_slides) return;
     const newSlides = [...generatedContent.video_slides];
-    newSlides[currentVideoSlide] = { ...newSlides[currentVideoSlide], audio: val };
+    const targetIdx = activeSlideIdx < newSlides.length ? activeSlideIdx : 0;
+    newSlides[targetIdx] = { ...newSlides[targetIdx], audio: val };
     setGeneratedContent({ ...generatedContent, video_slides: newSlides });
   };
   
   const setCustomAudioUrl = (val) => {
     if (activeTab !== 'video' || !generatedContent?.video_slides) return;
     const newSlides = [...generatedContent.video_slides];
-    newSlides[currentVideoSlide] = { ...newSlides[currentVideoSlide], customAudioUrl: val };
+    const targetIdx = activeSlideIdx < newSlides.length ? activeSlideIdx : 0;
+    newSlides[targetIdx] = { ...newSlides[targetIdx], customAudioUrl: val };
     setGeneratedContent({ ...generatedContent, video_slides: newSlides });
   };
 
@@ -504,6 +510,7 @@ export default function SocialGenerator() {
       } else {
         setActiveTab('carousel');
       }
+      setIsPlaying(false);
       setActiveProjectName(fullProject.name || null);
       setActiveProjectId(fullProject.id || null);
       showToast(`Proyecto "${fullProject.name}" cargado`, 'success');
@@ -1334,9 +1341,10 @@ export default function SocialGenerator() {
                                 // Actualización atómica: un solo setGeneratedContent
                                 setGeneratedContent(prev => {
                                   if (!prev?.video_slides) return prev;
+                                  const targetIdx = activeSlideIdx < prev.video_slides.length ? activeSlideIdx : 0;
                                   const newSlides = [...prev.video_slides];
-                                  newSlides[currentVideoSlide] = {
-                                    ...newSlides[currentVideoSlide],
+                                  newSlides[targetIdx] = {
+                                    ...newSlides[targetIdx],
                                     audio: null,
                                     customAudioUrl: null,
                                   };

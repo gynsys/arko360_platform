@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 
 export const useVideoPlayback = (activeTab, generatedContent, isExporting, slideDuration) => {
   const [currentVideoSlide, setCurrentVideoSlide] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     let interval;
