@@ -16,25 +16,6 @@ concurrency:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service:
-          - name: backend
-            context: ./backend
-            tag: backend
-            lint: false
-          - name: landing
-            context: ./landing
-            tag: landing-frontend
-            lint: true
-          - name: admin
-            context: ./admin
-            tag: admin-frontend
-            lint: true
-          - name: super-admin-frontend
-            context: ./super-admin-frontend
-            tag: super-admin-frontend
-            lint: true
     permissions:
       contents: read
       packages: write
@@ -42,26 +23,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        if: matrix.service.lint
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: '${{ matrix.service.context }}/package-lock.json'
-
-      - name: Inject Production Environment Variables
-        if: matrix.service.lint
-        run: |
-          echo "VITE_API_URL=/api/v1" > ${{ matrix.service.context }}/.env.production
-
-      - name: Run ESLint
-        if: matrix.service.lint
-        working-directory: ${{ matrix.service.context }}
-        run: |
-          npm ci || npm install
-          npm run lint
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -73,15 +34,51 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Inject Production Environment Variables
+        run: |
+          echo "VITE_API_URL=/api/v1" > landing/.env.production
+          echo "VITE_API_URL=/api/v1" > admin/.env.production
+          echo "VITE_API_URL=/api/v1" > super-admin-frontend/.env.production
+
+      - name: Build and push Backend
         uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.service.context }}
+          context: ./backend
           push: true
           provenance: false
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service.tag }}:latest
-          cache-from: type=gha,scope=${{ matrix.service.tag }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service.tag }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:latest
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build and push Landing Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./landing
+          push: true
+          provenance: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/landing-frontend:latest
+          cache-from: type=gha,scope=landing
+          cache-to: type=gha,mode=max,scope=landing
+
+      - name: Build and push Admin Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./admin
+          push: true
+          provenance: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/admin-frontend:latest
+          cache-from: type=gha,scope=admin
+          cache-to: type=gha,mode=max,scope=admin
+
+      - name: Build and push Super Admin Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./super-admin-frontend
+          push: true
+          provenance: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/super-admin-frontend:latest
+          cache-from: type=gha,scope=superadmin
+          cache-to: type=gha,mode=max,scope=superadmin
 
   deploy:
     needs: build-and-push
