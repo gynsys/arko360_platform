@@ -26,7 +26,6 @@ import { SlidePaginator } from './components/SlidePaginator';
 import { PreviewModal } from './components/PreviewModal';
 import { EnhancedSidebar } from './components/EnhancedSidebar';
 import { TimelinePanel } from './components/TimelinePanel';
-import { AIGenerationModal } from './components/AIGenerationModal';
 import { ImageCropperModal } from './components/ImageCropperModal';
 
 const Modal = ({ isOpen, onClose, title, children }) => isOpen ? (<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"><div className="bg-white p-6 rounded-lg"><h2>{title}</h2>{children}<button onClick={onClose}>Cerrar</button></div></div>) : null;
