@@ -1319,8 +1319,15 @@ export default function SocialGenerator() {
                             imagePositions={transformer.state.imagePositions || {}}
                             globalAudio={globalAudio}
                             onDeleteTrack={(trackId) => {
-                              if (trackId === 'globalAudio') setGlobalAudio(null);
-                              if (trackId === 'audio') setSelectedAudio(null);
+                              console.log('[TimelinePanel] Deleting track:', trackId);
+                              if (trackId === 'globalAudio') {
+                                setGlobalAudio(null);
+                                setGlobalCustomAudioUrl(null);
+                              }
+                              if (trackId === 'audio') {
+                                setSelectedAudio(null);
+                                setCustomAudioUrl(null);
+                              }
                             }}
                           />
                         </div>

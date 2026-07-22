@@ -101,9 +101,21 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange, onD
             <div className="w-0.5 h-3 bg-white/70 rounded-full pointer-events-none"></div>
           </div>
           
-          <span className="text-[10px] text-white font-mono pointer-events-none px-1 truncate">
-            {startTime.toFixed(1)}s - {endTime.toFixed(1)}s
-          </span>
+          <div className="flex-1 flex items-center justify-between px-1 overflow-hidden pointer-events-none">
+            <span className="text-[10px] text-white font-mono truncate">
+              {startTime.toFixed(1)}s - {endTime.toFixed(1)}s
+            </span>
+          </div>
+
+          {onDelete && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete(id); }} 
+              className="p-1 shrink-0 text-white/70 hover:text-red-400 hover:bg-red-500/20 rounded-md transition-colors mr-1 cursor-pointer pointer-events-auto"
+              title="Eliminar"
+            >
+              <FiTrash2 size={12} />
+            </button>
+          )}
 
           {/* End Handle */}
           <div 
@@ -116,15 +128,6 @@ const Track = ({ id, label, icon, startTime, endTime, maxDuration, onChange, onD
         </div>
       </div>
       
-      {onDelete && (
-        <button 
-          onClick={(e) => { e.stopPropagation(); onDelete(id); }} 
-          className="p-1.5 shrink-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-          title="Eliminar"
-        >
-          <FiTrash2 size={16} />
-        </button>
-      )}
     </div>
   );
 };
