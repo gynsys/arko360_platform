@@ -32,6 +32,10 @@ Se implementó una solución en dos etapas para resolver permanentemente el cola
 
 ## 2. Problemas con la Reproducción de Audios en MP4 Generados
 
+### F. Recorte Intuitivo de Imágenes con `react-image-crop`
+- **Mejora:** Se reemplazó la experiencia anterior por la librería `react-image-crop`.
+- **Ventajas:** Proporciona un marco interactivo con tiradores visibles en esquinas y bordes laterales/verticales que el usuario puede arrastrar directamente como en Microsoft Office o Photoshop, admitiendo también formatos preset (1:1, 4:5, 3:4, 16:9, 9:16) y modo **Libre**.
+
 ### El Problema Original
 Existía un comportamiento defectuoso en la exportación de video (`useVideoExport.js`) respecto a las pistas de audio:
 1. **Audio Global vs Audio Local:** El audio global sobreescribía los audios locales de cada diapositiva en la exportación, o viceversa, provocando que no se pudiera tener una pista de fondo general (Global) simultánea a efectos especiales específicos en una sola diapositiva (Local).
