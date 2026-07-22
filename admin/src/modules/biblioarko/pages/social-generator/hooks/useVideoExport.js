@@ -394,6 +394,8 @@ export const useVideoExport = (
 
       // Capture the video track to request frames explicitly
       const videoTrack = videoStream.getVideoTracks()[0];
+      
+      let currentPlayingAudioSrc = null;
 
       // Helper: start videos + audio for a slide
       const startSlideMedia = (slideIdx) => {
@@ -406,10 +408,16 @@ export const useVideoExport = (
         const slide = scenes[slideIdx];
         const audioSrc = getActiveAudioSrc(slide.audio, slide.customAudioUrl);
         if (audioSrc) {
-          exportBgAudio.src = audioSrc;
-          exportBgAudio.currentTime = 0;
-          exportBgAudio.play().catch(e => console.log('Audio play error', e));
+          if (currentPlayingAudioSrc !== audioSrc) {
+            currentPlayingAudioSrc = audioSrc;
+            exportBgAudio.src = audioSrc;
+            exportBgAudio.currentTime = 0;
+            exportBgAudio.play().catch(e => console.log('Audio play error', e));
+          } else if (exportBgAudio.paused) {
+            exportBgAudio.play().catch(e => console.log('Audio play error', e));
+          }
         } else {
+          currentPlayingAudioSrc = null;
           exportBgAudio.pause();
         }
       };
