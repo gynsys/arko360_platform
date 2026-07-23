@@ -363,6 +363,9 @@ export const SlideCanvas = ({
           <Resizable
             key={imgId}
             size={{ width, height }}
+            onResizeStart={(e) => {
+              e.stopPropagation();
+            }}
             onResizeStop={(e, direction, ref, d) => {
               const newW = Math.max(30, Math.round(width + d.width));
               const newH = Math.max(30, Math.round(height + d.height));
@@ -375,10 +378,10 @@ export const SlideCanvas = ({
               topRight: true, bottomRight: true, bottomLeft: true, topLeft: true
             } : false}
             handleStyles={{
-              top: { cursor: 'ns-resize', height: '8px', top: '-4px' },
-              bottom: { cursor: 'ns-resize', height: '8px', bottom: '-4px' },
-              left: { cursor: 'ew-resize', width: '8px', left: '-4px' },
-              right: { cursor: 'ew-resize', width: '8px', right: '-4px' },
+              top: { cursor: 'ns-resize', height: '10px', top: '-5px' },
+              bottom: { cursor: 'ns-resize', height: '10px', bottom: '-5px' },
+              left: { cursor: 'ew-resize', width: '10px', left: '-5px' },
+              right: { cursor: 'ew-resize', width: '10px', right: '-5px' },
             }}
             handleClasses={{
               top: 'bg-indigo-500/70 hover:bg-indigo-600 rounded-full z-40',
@@ -403,14 +406,30 @@ export const SlideCanvas = ({
               borderRadius: imageBorderRadius,
               overflow: 'visible'
             }}
-            onMouseDown={(e) => isSelected && handleDragStart(e, index, 'image', imgId, containerRef.current, pos)}
+            onMouseDown={(e) => {
+              if (e.target.closest('[class*="handle"]') || e.target.closest('.react-resizable-handle')) {
+                e.stopPropagation();
+                return;
+              }
+              if (isSelected) handleDragStart(e, index, 'image', imgId, containerRef.current, pos);
+            }}
             onTouchStart={(e) => {
+              if (e.target.closest('[class*="handle"]') || e.target.closest('.react-resizable-handle')) {
+                e.stopPropagation();
+                return;
+              }
               if (isSelected) {
                 selectElement('image', imgId);
                 handleDragStart(e, index, 'image', imgId, containerRef.current, pos);
               }
             }}
             onClick={(e) => { e.stopPropagation(); isSelected && selectElement('image', imgId); }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              if (onCropImage && img && !img.startsWith('data:video')) {
+                onCropImage(index, imgIdx, img);
+              }
+            }}
           >
             <div data-export-id={`img-${imgId}`} className="w-full h-full relative overflow-hidden" style={{ borderRadius: imageBorderRadius }}>
               {img && img.startsWith('data:video') ? (

@@ -124,6 +124,13 @@ Estas modificaciones garantizan la estabilidad del servidor ante proyectos legad
 ### J. Estiramiento y Escalado de Imágenes con `re-resizable`
 - **Mejora:** Se reemplazó el control manual escalar único por la librería `re-resizable` directamente sobre el lienzo (`SlideCanvas.jsx`).
 - **Funcionalidad:** Al seleccionar una imagen en la diapositiva, se activan **8 tiradores interactivos** (*arriba, abajo, izquierda, derecha y las 4 esquinas*). Arrastrar los bordes laterales/verticales modifica el ancho (`width`) y alto (`height`) de forma independiente, permitiendo estirar, ensanchar o escalar la imagen libremente. El exportador de MP4 (`useVideoExport.js`) soporta dimensiones independientes dibujando la proporción exacta estirada en el video final.
+- **Aislamiento de Eventos (`e.stopPropagation()`):** Se solucionó el conflicto donde arrastrar un tirador de estiramiento desplazaba simultáneamente la posición `x, y` de la imagen por propagación de eventos (`onMouseDown`). Ahora, agarrar un tirador aísla la acción exclusivamente al redimensionado de bordes sin mover la imagen de su lugar.
+
+### K. Atenuación de Doble Clic en Imágenes vs Edición de Textos
+- **Problema:** Al hacer doble clic en una imagen o elemento del lienzo, el evento propagaba hasta el contenedor principal de la diapositiva (`SlideCanvas.jsx`), abriendo indebidamente el modal "Editar Diapositiva" (editor de textos de título/contenido).
+- **Solución:** Se añadió un gestor `onDoubleClick` con `e.stopPropagation()` directamente sobre los contenedores de imágenes. Ahora, hacer doble clic en una foto abre **directamente el modal de recortar imagen (`react-image-crop`)**, y evita abrir por error el editor de texto.
+
+
 
 
 
