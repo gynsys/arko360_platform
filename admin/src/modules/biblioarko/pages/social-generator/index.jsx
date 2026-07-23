@@ -1203,7 +1203,7 @@ export default function SocialGenerator() {
                     exportProgress={exportProgress}
                   />
                   <div className="flex-1 space-y-6 flex flex-col items-center justify-start pt-10">
-                    <div ref={editorWrapperRef} className={`bg-white dark:bg-gray-800 rounded-[40px] ${activeTab === 'video' ? 'p-4 overflow-hidden' : 'p-12 max-w-full min-h-[600px] w-full overflow-hidden'} shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center relative`}>
+                    <div ref={editorWrapperRef} className={`bg-white dark:bg-gray-800 rounded-[40px] ${activeTab === 'video' ? 'p-4 pr-16 overflow-visible' : 'p-12 pr-16 max-w-full min-h-[600px] w-full overflow-visible'} shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center relative`}>
                       <div style={{ width: 410 * scale, height: (activeTab === 'video' ? 728 : 410) * scale }} className="relative flex items-center justify-center transition-all duration-300">
                         <div id="main-slide-canvas" className="absolute top-0 left-0 origin-top-left" style={{ transform: `scale(${scale})` }}>
                           <SlideCanvas 
