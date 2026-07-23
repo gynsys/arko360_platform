@@ -378,22 +378,26 @@ export const SlideCanvas = ({
               topRight: true, bottomRight: true, bottomLeft: true, topLeft: true
             } : false}
             handleStyles={{
-              top: { cursor: 'ns-resize', height: '10px', top: '-5px' },
-              bottom: { cursor: 'ns-resize', height: '10px', bottom: '-5px' },
-              left: { cursor: 'ew-resize', width: '10px', left: '-5px' },
-              right: { cursor: 'ew-resize', width: '10px', right: '-5px' },
+              top: { cursor: 'ns-resize', height: '2px', top: '-1px' },
+              bottom: { cursor: 'ns-resize', height: '2px', bottom: '-1px' },
+              left: { cursor: 'ew-resize', width: '2px', left: '-1px' },
+              right: { cursor: 'ew-resize', width: '2px', right: '-1px' },
+              topLeft: { cursor: 'nwse-resize', width: '6px', height: '6px', top: '-3px', left: '-3px' },
+              topRight: { cursor: 'nesw-resize', width: '6px', height: '6px', top: '-3px', right: '-3px' },
+              bottomLeft: { cursor: 'nesw-resize', width: '6px', height: '6px', bottom: '-3px', left: '-3px' },
+              bottomRight: { cursor: 'nwse-resize', width: '6px', height: '6px', bottom: '-3px', right: '-3px' },
             }}
             handleClasses={{
-              top: 'bg-indigo-500/70 hover:bg-indigo-600 rounded-full z-40',
-              bottom: 'bg-indigo-500/70 hover:bg-indigo-600 rounded-full z-40',
-              left: 'bg-indigo-500/70 hover:bg-indigo-600 rounded-full z-40',
-              right: 'bg-indigo-500/70 hover:bg-indigo-600 rounded-full z-40',
-              topLeft: 'bg-indigo-600 border-2 border-white rounded-full shadow-md z-50',
-              topRight: 'bg-indigo-600 border-2 border-white rounded-full shadow-md z-50',
-              bottomLeft: 'bg-indigo-600 border-2 border-white rounded-full shadow-md z-50',
-              bottomRight: 'bg-indigo-600 border-2 border-white rounded-full shadow-md z-50',
+              top: 'bg-indigo-500/60 hover:bg-indigo-600 transition-colors z-40',
+              bottom: 'bg-indigo-500/60 hover:bg-indigo-600 transition-colors z-40',
+              left: 'bg-indigo-500/60 hover:bg-indigo-600 transition-colors z-40',
+              right: 'bg-indigo-500/60 hover:bg-indigo-600 transition-colors z-40',
+              topLeft: 'bg-indigo-600 border border-white rounded-full shadow-sm z-50 hover:scale-125 transition-transform',
+              topRight: 'bg-indigo-600 border border-white rounded-full shadow-sm z-50 hover:scale-125 transition-transform',
+              bottomLeft: 'bg-indigo-600 border border-white rounded-full shadow-sm z-50 hover:scale-125 transition-transform',
+              bottomRight: 'bg-indigo-600 border border-white rounded-full shadow-md z-50 hover:scale-125 transition-transform',
             }}
-            className={`absolute transition-shadow ${isCurrentImgSelected ? 'ring-2 ring-indigo-500 ring-offset-2 shadow-2xl z-30' : ''}`}
+            className={`absolute transition-shadow ${isCurrentImgSelected ? 'ring-1 ring-indigo-500/60 shadow-md z-30' : ''}`}
             style={{
               zIndex: pos.zIndex !== undefined ? pos.zIndex : 20,
               opacity: (isVideoMode && currentTime !== undefined && ((pos.startTime !== undefined && currentTime < pos.startTime) || (pos.endTime !== undefined && currentTime > pos.endTime))) ? 0 : (pos.opacity !== undefined ? pos.opacity : 1),

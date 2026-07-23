@@ -456,19 +456,20 @@ export const useVideoExport = (
           ctx.translate(-dSizeX / 2, -dSizeY / 2);
 
           if (v.vid.videoWidth && v.vid.videoHeight) {
+            const containerRatio = dSizeX / dSizeY;
             const vidRatio = v.vid.videoWidth / v.vid.videoHeight;
-            let drawW = dSizeX;
-            let drawH = dSizeY;
-            let offsetX = 0;
-            let offsetY = 0;
-            if (vidRatio > 1) {
-              drawH = dSizeX / vidRatio;
-              offsetY = (dSizeY - drawH) / 2;
-            } else if (vidRatio < 1) {
-              drawW = dSizeY * vidRatio;
-              offsetX = (dSizeX - drawW) / 2;
+            let srcX = 0, srcY = 0;
+            let srcW = v.vid.videoWidth;
+            let srcH = v.vid.videoHeight;
+
+            if (vidRatio > containerRatio) {
+              srcW = v.vid.videoHeight * containerRatio;
+              srcX = (v.vid.videoWidth - srcW) / 2;
+            } else {
+              srcH = v.vid.videoWidth / containerRatio;
+              srcY = (v.vid.videoHeight - srcH) / 2;
             }
-            ctx.drawImage(v.vid, offsetX, offsetY, drawW, drawH);
+            ctx.drawImage(v.vid, srcX, srcY, srcW, srcH, 0, 0, dSizeX, dSizeY);
           }
           ctx.restore();
         });
