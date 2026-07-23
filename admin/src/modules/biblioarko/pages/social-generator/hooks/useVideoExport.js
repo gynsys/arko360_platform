@@ -444,8 +444,10 @@ export const useVideoExport = (
         }
         vids.forEach(v => {
           ctx.save();
-          const dSizeX = v.size * scaleX;
-          const dSizeY = v.size * scaleY;
+          const widthVal = typeof v.size === 'object' ? v.size.width : v.size;
+          const heightVal = typeof v.size === 'object' ? v.size.height : v.size;
+          const dSizeX = widthVal * scaleX;
+          const dSizeY = heightVal * scaleY;
           const cx = (v.pos.x / 100) * outputCanvas.width;
           const cy = (v.pos.y / 100) * outputCanvas.height;
 

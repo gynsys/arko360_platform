@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { Resizable } from 're-resizable';
 import { FiMaximize2, FiEdit3, FiPlusCircle, FiCopy, FiCheck, FiTrash2, FiRefreshCw, FiLayers, FiImage } from 'react-icons/fi';
 import { SVGIcons } from '../lib/svgIcons';
 
@@ -352,29 +353,55 @@ export const SlideCanvas = ({
       {slide?.customImages?.map((img, imgIdx) => {
         const imgId = `${index}-${imgIdx}`;
         const pos = imagePositions[imgId] || { x: 50, y: 70 };
-        const size = imageSizes[imgId] || 100;
+        const sizeVal = imageSizes[imgId] || 100;
+        const width = typeof sizeVal === 'object' ? sizeVal.width : sizeVal;
+        const height = typeof sizeVal === 'object' ? sizeVal.height : sizeVal;
         const rot = imageRotations[imgId] || 0;
+        const isCurrentImgSelected = isSelected && selectedImageId === imgId;
         
         return (
-          <div
+          <Resizable
             key={imgId}
-            data-element="image"
-            data-slide-element="true"
-            data-export-id={`img-${imgId}`}
-            className={`absolute transition-shadow ${isSelected && selectedImageId === imgId ? 'border-[2px] border-indigo-500 ring-4 ring-indigo-500/20 shadow-xl' : ''}`}
+            size={{ width, height }}
+            onResizeStop={(e, direction, ref, d) => {
+              const newW = Math.max(30, Math.round(width + d.width));
+              const newH = Math.max(30, Math.round(height + d.height));
+              if (handlers.updateImageSize) {
+                handlers.updateImageSize(imgId, { width: newW, height: newH });
+              }
+            }}
+            enable={isCurrentImgSelected ? {
+              top: true, right: true, bottom: true, left: true,
+              topRight: true, bottomRight: true, bottomLeft: true, topLeft: true
+            } : false}
+            handleStyles={{
+              top: { cursor: 'ns-resize', height: '8px', top: '-4px' },
+              bottom: { cursor: 'ns-resize', height: '8px', bottom: '-4px' },
+              left: { cursor: 'ew-resize', width: '8px', left: '-4px' },
+              right: { cursor: 'ew-resize', width: '8px', right: '-4px' },
+            }}
+            handleClasses={{
+              top: 'bg-indigo-500/70 hover:bg-indigo-600 rounded-full z-40',
+              bottom: 'bg-indigo-500/70 hover:bg-indigo-600 rounded-full z-40',
+              left: 'bg-indigo-500/70 hover:bg-indigo-600 rounded-full z-40',
+              right: 'bg-indigo-500/70 hover:bg-indigo-600 rounded-full z-40',
+              topLeft: 'bg-indigo-600 border-2 border-white rounded-full shadow-md z-50',
+              topRight: 'bg-indigo-600 border-2 border-white rounded-full shadow-md z-50',
+              bottomLeft: 'bg-indigo-600 border-2 border-white rounded-full shadow-md z-50',
+              bottomRight: 'bg-indigo-600 border-2 border-white rounded-full shadow-md z-50',
+            }}
+            className={`absolute transition-shadow ${isCurrentImgSelected ? 'ring-2 ring-indigo-500 ring-offset-2 shadow-2xl z-30' : ''}`}
             style={{
               zIndex: pos.zIndex !== undefined ? pos.zIndex : 20,
               opacity: (isVideoMode && currentTime !== undefined && ((pos.startTime !== undefined && currentTime < pos.startTime) || (pos.endTime !== undefined && currentTime > pos.endTime))) ? 0 : (pos.opacity !== undefined ? pos.opacity : 1),
               left: pos.x + '%',
               top: pos.y + '%',
-              width: size + 'px',
-              height: size + 'px',
-              marginLeft: `-${size / 2}px`,
-              marginTop: `-${size / 2}px`,
+              marginLeft: `-${width / 2}px`,
+              marginTop: `-${height / 2}px`,
               transform: `rotate(${rot}deg)`,
               cursor: isSelected ? 'grab' : 'default',
               borderRadius: imageBorderRadius,
-              overflow: 'hidden'
+              overflow: 'visible'
             }}
             onMouseDown={(e) => isSelected && handleDragStart(e, index, 'image', imgId, containerRef.current, pos)}
             onTouchStart={(e) => {
@@ -385,72 +412,70 @@ export const SlideCanvas = ({
             }}
             onClick={(e) => { e.stopPropagation(); isSelected && selectElement('image', imgId); }}
           >
-            {img && img.startsWith('data:video') ? (
-              <video
-                id={`video-${imgId}`}
-                src={img}
-                muted
-                playsInline
-                className="w-full h-full object-contain pointer-events-none"
-                style={{ borderRadius: imageBorderRadius }}
-                onLoadedMetadata={(e) => {
-                  if (pos.endTime === undefined && transform.setImagePositions) {
-                    const dur = e.target.duration;
-                    if (dur && !isNaN(dur) && dur > 0) {
-                      transform.setImagePositions(prev => ({
-                        ...prev,
-                        [imgId]: {
-                          ...(prev[imgId] || { x: 50, y: 70 }),
-                          endTime: (pos.startTime || 0) + dur,
-                          trimEnd: dur
-                        }
-                      }));
+            <div data-export-id={`img-${imgId}`} className="w-full h-full relative overflow-hidden" style={{ borderRadius: imageBorderRadius }}>
+              {img && img.startsWith('data:video') ? (
+                <video
+                  id={`video-${imgId}`}
+                  src={img}
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover pointer-events-none"
+                  style={{ borderRadius: imageBorderRadius }}
+                  onLoadedMetadata={(e) => {
+                    if (pos.endTime === undefined && transform.setImagePositions) {
+                      const dur = e.target.duration;
+                      if (dur && !isNaN(dur) && dur > 0) {
+                        transform.setImagePositions(prev => ({
+                          ...prev,
+                          [imgId]: {
+                            ...(prev[imgId] || { x: 50, y: 70 }),
+                            endTime: (pos.startTime || 0) + dur,
+                            trimEnd: dur
+                          }
+                        }));
+                      }
                     }
-                  }
-                }}
-              />
-            ) : (
-              <div 
-                className="w-full h-full pointer-events-none" 
-                style={{ 
-                  backgroundImage: `url(${img})`, 
-                  backgroundSize: 'contain', 
-                  backgroundPosition: 'center', 
-                  backgroundRepeat: 'no-repeat', 
-                  borderRadius: imageBorderRadius 
-                }} 
-              />
-            )}
-            
-            {isSelected && selectedImageId === imgId && (
+                  }}
+                />
+              ) : (
+                <div 
+                  className="w-full h-full pointer-events-none" 
+                  style={{ 
+                    backgroundImage: `url(${img})`, 
+                    backgroundSize: 'cover', 
+                    backgroundPosition: 'center', 
+                    backgroundRepeat: 'no-repeat', 
+                    borderRadius: imageBorderRadius 
+                  }} 
+                />
+              )}
+            </div>
+
+            {isCurrentImgSelected && (
               <>
-                {/* Rotate */}
+                {/* Rotate Handle */}
                 <div className="absolute -top-3 -left-3 w-6 h-6 bg-white rounded-full shadow-lg border-2 border-indigo-500 flex items-center justify-center cursor-alias text-indigo-600 z-50 hover:scale-110 transition-transform" 
-                  onMouseDown={(e) => handleTransformStart(e, index, 'rotate', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}
-                  onTouchStart={(e) => handleTransformStart(e, index, 'rotate', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}><FiRefreshCw size={12}/></div>
-                
-                {/* Resize Handle */}
-                <div className="absolute -bottom-3 -right-3 w-8 h-8 flex items-center justify-center cursor-se-resize z-50 group" 
-                  onMouseDown={(e) => handleTransformStart(e, index, 'resize', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}
-                  onTouchStart={(e) => handleTransformStart(e, index, 'resize', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width: size, height: size, rotation: rot })}>
-                  <div className="w-4 h-4 bg-indigo-600 rounded-full border-2 border-white shadow-lg transition-transform group-hover:scale-125"></div>
+                  onMouseDown={(e) => handleTransformStart(e, index, 'rotate', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width, height, rotation: rot })}
+                  onTouchStart={(e) => handleTransformStart(e, index, 'rotate', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width, height, rotation: rot })}>
+                  <FiRefreshCw size={12}/>
                 </div>
 
                 {/* Edit Video Handle */}
-                {img && img.startsWith('data:video') && (
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-indigo-600/90 rounded-full shadow-xl border-2 border-white flex items-center justify-center cursor-pointer text-white z-50 hover:scale-110 hover:bg-indigo-500 transition-all"
-                    onMouseDown={(e) => { e.stopPropagation(); }}
+                {img && (img.startsWith('data:video') || img.match(/\.(mp4|webm|mov|ogg)(\?.*)?$/i)) && (
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (onEditVideo) onEditVideo(index, imgIdx, img);
+                      if (onEditVideo) onEditVideo(index, imgId);
                     }}
-                    title="Editar Video (Recortar/Velocidad)">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-                  </div>
+                    className="absolute -top-3 -right-3 w-7 h-7 bg-indigo-600 text-white rounded-full shadow-lg border-2 border-white flex items-center justify-center cursor-pointer hover:bg-indigo-700 hover:scale-110 transition-all z-50"
+                    title="Editar Video (Recortar/Velocidad)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                  </button>
                 )}
               </>
             )}
-          </div>
+          </Resizable>
         );
       })}
 

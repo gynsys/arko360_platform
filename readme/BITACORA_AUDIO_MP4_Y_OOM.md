@@ -115,7 +115,15 @@ Estas modificaciones garantizan la estabilidad del servidor ante proyectos legad
 
 ### H. Inyección de Cabecera de Duración (`fix-webm-duration`)
 - **Problema Descubierto:** La API nativa `MediaRecorder` de los navegadores (Chrome/Edge/Firefox) codifica videos en tiempo real sin escribir la cabecera `Duration` en los metadatos del contenedor WebM/MP4 (dejando la duración como desconocida/`--:--`). Al abrir estos archivos en el **Reproductor de Windows** o VLC, el reproductor intentaba calcular la duración dividiendo el tamaño del archivo entre la tasa de bits inicial, mostrando tiempos erróneos e inflados (1:39, 5:00) o deshabilitando la barra de tiempo.
-- **Solución:** Se integró la librería `fix-webm-duration`. Ahora, al finalizar la grabación, se inyecta la marca exacto de milisegundos (`totalDuration * 1000`) directamente en el bloque EBML del archivo justo antes de descargarlo. El Reproductor de Windows ahora muestra la barra de tiempo exacta (ej. `00:18` o `00:28`) y permite adelantar/retroceder sin errores.
+- **Solución:** Se integró la librería `fix-webm-duration`. Ahora, al finalizar la grabación, se inyecta la marca exacta de milisegundos (`totalDuration * 1000`) directamente en el bloque EBML del archivo justo antes de descargarlo. El Reproductor de Windows ahora muestra la barra de tiempo exacta (ej. `00:18` o `00:28`) y permite adelantar/retroceder sin errores.
+
+### I. Corrección del Estado "suspended" en AudioContext
+- **Problema:** Si la instanciación de `new AudioContext()` se pospone hasta después de tareas asíncronas (`await html2canvas`), las políticas de seguridad del navegador (Chrome/Edge/Safari) cambian el estado del mezclador a `"suspended"`, resultando en un MP4 completamente mudo.
+- **Solución:** Se restauró la instanciación de `new AudioContext()` al primer milisegundo del evento de clic del usuario (`handleExportVideo`), manteniendo el mezclador en estado `"running"` y asegurando una salida de audio limpia tanto para audio de fondo como para audios locales de diapositivas.
+
+### J. Estiramiento y Escalado de Imágenes con `re-resizable`
+- **Mejora:** Se reemplazó el control manual escalar único por la librería `re-resizable` directamente sobre el lienzo (`SlideCanvas.jsx`).
+- **Funcionalidad:** Al seleccionar una imagen en la diapositiva, se activan **8 tiradores interactivos** (*arriba, abajo, izquierda, derecha y las 4 esquinas*). Arrastrar los bordes laterales/verticales modifica el ancho (`width`) y alto (`height`) de forma independiente, permitiendo estirar, ensanchar o escalar la imagen libremente. El exportador de MP4 (`useVideoExport.js`) soporta dimensiones independientes dibujando la proporción exacta estirada en el video final.
 
 
 
