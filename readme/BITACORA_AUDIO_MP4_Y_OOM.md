@@ -140,6 +140,12 @@ Estas modificaciones garantizan la estabilidad del servidor ante proyectos legad
   5. **Barra de Acciones Externa:** Se reubicó la barra de herramientas flotante (`.slide-actions`) a la derecha, fuera del lienzo de la diapositiva (`left-full ml-4`), asignando un contenedor con fondo índigo (`bg-indigo-600`) a cada botón para despejar la vista de edición.
   6. **Barra Contextual Vertical Izquierda:** Se reestructuró `ContextualBar.jsx` para mostrar los controles de edición de forma vertical a la izquierda de la diapositiva (`right-full mr-4 top-1/2 -translate-y-1/2`), logrando un espacio de trabajo simétrico en escritorio.
 
+### M. Opacidad en Formas, Selector de Fondo de Perfil y Corrección del Botón Guardar
+- **Opacidad en Formas y Elementos Extra:** Se habilitó el control de transparencia (`<FiEye />` + slider de opacidad) en [ContextualBar.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/components/ContextualBar.jsx) para formas geométricas, íconos y textos.
+- **Selector "Fondo Perfil: ON/OFF":** Se ubicó un botón conmutador en la parte superior de la diapositiva (recuadro verde) para ocultar o mostrar la imagen de fondo de "Mi Perfil" sin borrarla del perfil.
+- **Flujo de Guardado Directo:** Se vinculó la asignación de `activeProjectId` en `useSlideDesigner.js` e `index.jsx`. El botón **GUARDAR** actualiza el proyecto actual directamente en el backend, mientras que **GUARDAR COMO...** solicita un nuevo nombre para clonarlo.
+
+
 
 
 

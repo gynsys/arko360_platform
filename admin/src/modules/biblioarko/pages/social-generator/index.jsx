@@ -57,6 +57,7 @@ export default function SocialGenerator() {
   const [showProjects, setShowProjects] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(null);
   const [showGrid, setShowGrid] = useState(false);
+  const [showBgImage, setShowBgImage] = useState(true);
   const [isSaveAsModalOpen, setIsSaveAsModalOpen] = useState(false);
   const [saveAsProjectName, setSaveAsProjectName] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
@@ -527,6 +528,9 @@ export default function SocialGenerator() {
       } else {
         setActiveTab('carousel');
       }
+      if (content.showBgImage !== undefined) {
+        setShowBgImage(content.showBgImage);
+      }
       setIsPlaying(false);
       setActiveProjectName(fullProject.name || null);
       setActiveProjectId(fullProject.id || null);
@@ -626,10 +630,10 @@ export default function SocialGenerator() {
     startSaveProgress();
     try {
       const videoSettings = { videoStyles, slideDuration };
-      const contentToSave = { ...generatedContent, videoSettings, transformerState: transformer.state };
-      const ok = await designer.canvas.saveProject(activeProjectName, contentToSave, activeProjectId);
+      const contentToSave = { ...generatedContent, videoSettings, transformerState: transformer.state, showBgImage };
+      const savedResult = await designer.canvas.saveProject(activeProjectName, contentToSave, activeProjectId);
       
-      if (ok) {
+      if (savedResult) {
         stopSaveProgress(true);
         showToast(`"${activeProjectName}" actualizado con éxito`, 'success');
       } else {
@@ -664,11 +668,13 @@ export default function SocialGenerator() {
     startSaveProgress();
     try {
       const videoSettings = { videoStyles, slideDuration };
-      const contentToSave = { ...generatedContent, videoSettings, transformerState: transformer.state };
-      const ok = await designer.canvas.saveProject(name, contentToSave, null);
+      const contentToSave = { ...generatedContent, videoSettings, transformerState: transformer.state, showBgImage };
+      const savedResult = await designer.canvas.saveProject(name, contentToSave, null);
       
-      if (ok) {
+      if (savedResult) {
+        const newId = (typeof savedResult === 'object' && savedResult.id) ? savedResult.id : (designer.canvas.projects?.find(p => p.name === name)?.id || null);
         setActiveProjectName(name);
+        if (newId) setActiveProjectId(newId);
         stopSaveProgress(true);
         showToast(`Nuevo proyecto "${name}" creado con éxito`, 'success');
       } else {
@@ -1204,6 +1210,25 @@ export default function SocialGenerator() {
                   />
                   <div className="flex-1 space-y-6 flex flex-col items-center justify-start pt-10">
                     <div ref={editorWrapperRef} className={`bg-white dark:bg-gray-800 rounded-[40px] ${activeTab === 'video' ? 'p-4 pr-16 overflow-visible' : 'p-12 pr-16 max-w-full min-h-[600px] w-full overflow-visible'} shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center relative`}>
+                      
+                      {/* Fondo Perfil ON/OFF Selector */}
+                      {siteConfig?.socialBackgroundImage && (
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+                          <button
+                            onClick={() => setShowBgImage(!showBgImage)}
+                            className={`px-3.5 py-1.5 rounded-full transition-all text-xs font-black flex items-center gap-2 shadow-md cursor-pointer border ${
+                              showBgImage 
+                                ? 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-700' 
+                                : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50'
+                            }`}
+                            title="Prender / Apagar Imagen de Fondo de Perfil"
+                          >
+                            <FiImage size={14} />
+                            <span>Fondo Perfil: {showBgImage ? 'ON' : 'OFF'}</span>
+                          </button>
+                        </div>
+                      )}
+
                       <div style={{ width: 410 * scale, height: (activeTab === 'video' ? 728 : 410) * scale }} className="relative flex items-center justify-center transition-all duration-300">
                         <div id="main-slide-canvas" className="absolute top-0 left-0 origin-top-left" style={{ transform: `scale(${scale})` }}>
                           <SlideCanvas 
@@ -1219,6 +1244,7 @@ export default function SocialGenerator() {
                             onAddImage={(e) => activeTab === 'video' ? handleAddImageToVideoSlide(designer.canvas.currentSlidePage, e) : handleAddImage(designer.canvas.currentSlidePage, e)}
                             isVideoMode={activeTab === 'video'}
                             showGrid={showGrid}
+                            showBgImage={showBgImage}
                             currentTime={videoTime}
                             isPlaying={isPlaying}
                             onEditVideo={handleEditVideo}
@@ -1257,6 +1283,16 @@ export default function SocialGenerator() {
                         >
                           <FiGrid size={16} />
                         </button>
+
+                        {siteConfig?.socialBackgroundImage && (
+                          <button 
+                            onClick={() => setShowBgImage(!showBgImage)}
+                            className={`p-1.5 rounded-full transition-all ${showBgImage ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400' : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/20'}`}
+                            title="Prender / Apagar Imagen de Fondo de Perfil"
+                          >
+                            <FiImage size={16} />
+                          </button>
+                        )}
 
                         {activeTab === 'video' && (
                           <>

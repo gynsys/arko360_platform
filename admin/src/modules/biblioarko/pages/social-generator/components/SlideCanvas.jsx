@@ -102,8 +102,10 @@ export const SlideCanvas = ({
   onClearMainContent,
   onAddImage,
   onRemoveImage,
+  onCropImage,
   isVideoMode = false,
   showGrid = false,
+  showBgImage = true,
   currentTime = 0,
   isPlaying = false,
   onEditVideo
@@ -179,12 +181,12 @@ export const SlideCanvas = ({
       className={`relative w-[410px] ${isVideoMode ? 'h-[728px]' : 'h-[410px]'} overflow-visible shadow-2xl transition-all duration-500 ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-4 ring-offset-gray-50' : ''}`}
       style={{ 
         backgroundColor: design.bgColor,
-        backgroundImage: siteConfig?.socialBackgroundImage 
+        backgroundImage: (showBgImage && siteConfig?.socialBackgroundImage) 
           ? `url(${siteConfig.socialBackgroundImage})` 
           : (design.useBgGradient 
             ? `linear-gradient(to bottom right, ${design.bgColor}, ${design.bgColor2}, ${design.bgColor3})` 
             : 'none'),
-        backgroundSize: siteConfig?.socialBackgroundImage ? '100% 100%' : 'auto',
+        backgroundSize: (showBgImage && siteConfig?.socialBackgroundImage) ? '100% 100%' : 'auto',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         userSelect: isSelected ? 'none' : 'auto'

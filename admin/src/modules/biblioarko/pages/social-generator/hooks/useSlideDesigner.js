@@ -132,7 +132,7 @@ export const useSlideDesigner = () => {
   };
 
   const saveProject = async (name, generatedContent, projectId = null) => {
-    if (!name || !generatedContent) return;
+    if (!name || !generatedContent) return null;
     const projectData = {
       name,
       content: generatedContent,
@@ -154,16 +154,17 @@ export const useSlideDesigner = () => {
     }
     
     try {
+      let savedResult = null;
       if (projectId) {
-        await blogService.updateCarouselProject(projectId, projectData);
+        savedResult = await blogService.updateCarouselProject(projectId, projectData);
       } else {
-        await blogService.saveCarouselProject(projectData);
+        savedResult = await blogService.saveCarouselProject(projectData);
       }
       await fetchProjects();
-      return true;
+      return savedResult || { id: projectId, name };
     } catch (error) {
       console.error('Error saving project:', error);
-      return false;
+      return null;
     }
   };
 

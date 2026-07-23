@@ -268,32 +268,37 @@ export const ContextualBar = ({
         </>
       )}
 
-      {/* Image Specific Controls */}
-      {isImage && (
-        <>
-          <div className="flex flex-col items-center gap-1.5 bg-gray-50 dark:bg-gray-900 rounded-2xl p-2 flex-shrink-0" title="Opacidad / Transparencia">
-            <FiEye size={16} className="text-gray-400" />
-            <input 
-              type="range" 
-              min="0.1" 
-              max="1" 
-              step="0.1"
-              value={imagePositions[selectedId]?.opacity !== undefined ? imagePositions[selectedId].opacity : 1}
-              onChange={(e) => updateImage(selectedId, { opacity: parseFloat(e.target.value) })}
-              className="w-12 h-1.5 accent-indigo-600 cursor-pointer"
-            />
-          </div>
-          
-          {!isVideo && (
-            <button
-              onClick={() => onCropImage && onCropImage(parseInt(slideIdx), parseInt(elId))}
-              className="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center cursor-pointer shadow-sm"
-              title="Recortar Imagen"
-            >
-              <FiCrop size={18} />
-            </button>
-          )}
-        </>
+      {/* Opacidad / Transparencia para todos los elementos (Imágenes, Formas, Textos) */}
+      <div className="flex flex-col items-center gap-1.5 bg-gray-50 dark:bg-gray-900 rounded-2xl p-2 flex-shrink-0" title="Opacidad / Transparencia">
+        <FiEye size={16} className="text-gray-400" />
+        <input 
+          type="range" 
+          min="0.1" 
+          max="1" 
+          step="0.1"
+          value={
+            isImage 
+              ? (imagePositions[selectedId]?.opacity !== undefined ? imagePositions[selectedId].opacity : 1)
+              : (el?.opacity !== undefined ? el.opacity : 1)
+          }
+          onChange={(e) => {
+            const val = parseFloat(e.target.value);
+            if (isImage) updateImage(selectedId, { opacity: val });
+            else updateElement(parseInt(slideIdx), elId, { opacity: val });
+          }}
+          className="w-12 h-1.5 accent-indigo-600 cursor-pointer"
+        />
+      </div>
+
+      {/* Image Specific Crop Control */}
+      {isImage && !isVideo && (
+        <button
+          onClick={() => onCropImage && onCropImage(parseInt(slideIdx), parseInt(elId))}
+          className="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center cursor-pointer shadow-sm"
+          title="Recortar Imagen"
+        >
+          <FiCrop size={18} />
+        </button>
       )}
 
       {/* Video Specific Controls */}
