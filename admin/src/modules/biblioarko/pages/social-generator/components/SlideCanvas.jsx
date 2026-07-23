@@ -363,6 +363,7 @@ export const SlideCanvas = ({
           <Resizable
             key={imgId}
             size={{ width, height }}
+            lockAspectRatio={true}
             onResizeStart={(e) => {
               e.stopPropagation();
             }}

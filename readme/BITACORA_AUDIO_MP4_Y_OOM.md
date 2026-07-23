@@ -130,6 +130,16 @@ Estas modificaciones garantizan la estabilidad del servidor ante proyectos legad
 - **Problema:** Al hacer doble clic en una imagen o elemento del lienzo, el evento propagaba hasta el contenedor principal de la diapositiva (`SlideCanvas.jsx`), abriendo indebidamente el modal "Editar Diapositiva" (editor de textos de título/contenido).
 - **Solución:** Se añadió un gestor `onDoubleClick` con `e.stopPropagation()` directamente sobre los contenedores de imágenes. Ahora, hacer doble clic en una foto abre **directamente el modal de recortar imagen (`react-image-crop`)**, y evita abrir por error el editor de texto.
 
+### L. Ajuste de Proporción (`object-cover`), Escalado Armónico (`lockAspectRatio`) y Reducción del Grosor de Tiradores (`re-resizable`)
+- **Problema:** Al encoger o estirar los bordes laterales o verticales de las imágenes o videos con los tiradores de `re-resizable`, la imagen cambiaba su relación de aspecto respecto al contenedor, lo que provocaba un re-escalado/zoom interno al alternar el eje dominante de `cover`. Además, los bordes visuales eran demasiado gruesos (4px a 8px).
+- **Solución:**
+  1. **Ajuste Proporcional:** Se cambió `backgroundSize: '100% 100%'` por `backgroundSize: 'cover'` (para imágenes) y `object-fill` por `object-cover` (para videos) en [SlideCanvas.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/components/SlideCanvas.jsx).
+  2. **Bloqueo de Relación de Aspecto (`lockAspectRatio={true}`):** Se activó `lockAspectRatio={true}` en `<Resizable>` para que tanto el estiramiento horizontal como el vertical mantengan la proporción exacta del marco. El marco y la imagen escalan en sincronía uniforme en cualquier dirección sin causar recortes o zoom interno.
+  3. **Renderizado de Exportación:** Se adaptó la función `drawSlide` en [useVideoExport.js](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/hooks/useVideoExport.js) con cálculo de recorte de 9 parámetros en el canvas para mantener `object-cover` al grabar el archivo MP4.
+  4. **Reducción de Grosor a la Mitad:** Se redujo el grosor de los tiradores laterales de **4px a 2px** (`height: 2px`, `width: 2px`) y los tiradores de las esquinas de **8px a 6px**, suavizando la línea de selección a `ring-1 ring-indigo-500/60 shadow-md`.
+
+
+
 
 
 

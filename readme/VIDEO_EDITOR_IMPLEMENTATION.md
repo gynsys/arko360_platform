@@ -58,3 +58,9 @@ En lugar de generar un archivo `.mp4` nuevo en cada edición, simplemente guarda
 - **Corrección de la Barra de Desplazamiento (`useMobileFullscreen.js`):**
   - **Problema:** Un bug generalizado causaba que la barra de desplazamiento lateral del navegador (scrollbar) desapareciera al redimensionar de móvil a escritorio.
   - **Solución:** Se corrigió el hook para que restaure los valores de estilos del body a su estado por defecto estricto (`''`) en lugar de usar `'auto'` (lo cual sobreescribía clases globales de Tailwind). Además, se añadió la limpieza obligatoria (`cleanup`) en el `useEffect` tanto en el evento `unmount` como al detectar `!isMobile`.
+
+- **Ajuste de Proporción y Grosor de Tiradores (`SlideCanvas.jsx` & `useVideoExport.js`):**
+  - **Problema:** Al redimensionar imágenes/videos horizontal o verticalmente, el marco cambiaba su relación de aspecto respecto a la imagen, lo que generaba un zoom o re-escalado interno al alternar la dimensión dominante de `cover`. Asimismo, los bordes de selección creados por `re-resizable` eran gruesos (4px a 8px).
+  - **Solución:** Se configuró `background-size: cover` y `object-fit: cover` combinados con `lockAspectRatio={true}` en el componente `<Resizable>`. Esto garantiza que al manipular cualquier tirador (horizontal, vertical o esquinas), el marco y la imagen escalen de forma uniforme y proporcional sin re-escalados o recortes internos. Se sincronizó el renderizado en canvas de `useVideoExport.js` con recorte de 9 parámetros para que los videos exportados preserven el aspecto. Finalmente, se redujo el grosor de los tiradores a la mitad (**2px** laterales y **6px** esquinas) con un delineado sutil `ring-1 ring-indigo-500/60 shadow-md`.
+
+
