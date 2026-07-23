@@ -586,18 +586,15 @@ export const SlideCanvas = ({
                 dangerouslySetInnerHTML={{ __html: el.content }}
               />
             ) : (
-              <div style={{ width: '100%', height: '100%', color: el.color }} className="flex items-center justify-center">
+              <div style={{ width: '100%', height: '100%', color: el.color || '#000000', fill: el.color || '#000000' }} className="flex items-center justify-center">
                 {(() => {
-                  // Check if this is a React Icon component (new icons) or SVG path (original icons)
-                  const isReactIcon = ['check', 'x', 'alertTriangle', 'bell', 'calendar', 'clock', 'mail', 'phone', 'user', 'mapPin', 'home', 'briefcase', 'heartIcon', 'starIcon', 'trendingUp', 'activity', 'zap', 'sun', 'moon', 'cloud', 'umbrella', 'target', 'compass', 'navigation', 'flag', 'bookmark', 'messageSquare', 'share2', 'refreshCw', 'cpu', 'database', 'wifi', 'bluetooth', 'battery', 'volume2', 'volumeX', 'play', 'pause', 'skipBack', 'skipForward', 'repeat'].includes(el.content);
-                  
-                  if (isReactIcon && IconComp) {
-                    // Render React Icon component directly
+                  if (IconComp) {
                     return (
                       <div 
                         className="w-full h-full flex items-center justify-center"
                         style={{ 
-                          color: el.useGradient ? 'inherit' : (el.color || 'inherit'),
+                          color: el.useGradient ? 'inherit' : (el.color || '#000000'),
+                          fill: el.useGradient ? 'inherit' : (el.color || '#000000'),
                           fontSize: `${Math.min(el.width, el.height) * 0.8}px`
                         }}
                       >
@@ -616,13 +613,13 @@ export const SlideCanvas = ({
                           style={{ 
                             width: '100%', 
                             height: '100%',
-                            fill: el.useGradient ? `url(#grad-${elId})` : undefined
+                            color: el.useGradient ? 'inherit' : (el.color || '#000000'),
+                            fill: el.useGradient ? `url(#grad-${elId})` : (el.color || 'currentColor')
                           }} 
                         />
                       </div>
                     );
                   } else {
-                    // Render original SVG icons
                     return (
                       <svg 
                         xmlns="http://www.w3.org/2000/svg" 
@@ -631,7 +628,7 @@ export const SlideCanvas = ({
                         viewBox="0 0 24 24"
                         className="w-full h-full"
                         preserveAspectRatio="none"
-                        style={{ display: 'block' }}
+                        style={{ display: 'block', color: el.color || '#000000', fill: el.color || '#000000' }}
                       >
                         {el.useGradient ? (
                           <>
@@ -650,7 +647,7 @@ export const SlideCanvas = ({
                         ) : (
                           <path 
                             d={getIconPath(el.content)}
-                            fill={el.color}
+                            fill={el.color || '#000000'}
                           />
                         )}
                       </svg>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FiTrash2, FiX, FiBold, FiItalic, FiType, 
   FiLayers, FiMove, FiMaximize, FiMinimize, 
@@ -23,6 +23,25 @@ export const ContextualBar = ({
   if (!selectedId) return null;
 
   const [isPlaying, setIsPlaying] = useState(true);
+  const colorInputRef = useRef(null);
+
+  const handleOpenColorPicker = (e) => {
+    e.stopPropagation();
+    if (colorInputRef.current) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      colorInputRef.current.style.top = `${rect.top}px`;
+      colorInputRef.current.style.left = `${rect.left}px`;
+      if (colorInputRef.current.showPicker) {
+        try {
+          colorInputRef.current.showPicker();
+        } catch (err) {
+          colorInputRef.current.click();
+        }
+      } else {
+        colorInputRef.current.click();
+      }
+    }
+  };
 
   useEffect(() => {
     if (isVideo && selectedId) {
@@ -78,19 +97,17 @@ export const ContextualBar = ({
 
           {/* Color del elemento */}
           {!isImage && (
-            <label className="relative flex items-center justify-center w-8 h-8 rounded-xl border-2 border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm bg-white flex-shrink-0 cursor-pointer" title="Color del elemento">
+            <button
+              type="button"
+              onClick={handleOpenColorPicker}
+              className="relative flex items-center justify-center w-8 h-8 rounded-xl border-2 border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm bg-white flex-shrink-0 cursor-pointer"
+              title="Color del elemento"
+            >
               <div 
                 className="w-full h-full rounded-lg"
                 style={{ backgroundColor: el?.color || '#000000' }}
               />
-              <input
-                type="color"
-                value={el?.color || '#000000'}
-                onChange={(e) => updateElement(parseInt(slideIdx), elId, { color: e.target.value })}
-                onInput={(e) => updateElement(parseInt(slideIdx), elId, { color: e.target.value })}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-            </label>
+            </button>
           )}
 
           {isText && (
@@ -216,19 +233,29 @@ export const ContextualBar = ({
 
       {/* Common: Color Picker */}
       {!isImage && (
-        <label className="relative flex items-center justify-center w-10 h-10 rounded-2xl border-2 border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm bg-white flex-shrink-0 cursor-pointer hover:scale-105 transition-transform" title="Color del elemento">
+        <button
+          type="button"
+          onClick={handleOpenColorPicker}
+          className="relative flex items-center justify-center w-10 h-10 rounded-2xl border-2 border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm bg-white flex-shrink-0 cursor-pointer hover:scale-105 transition-transform"
+          title="Color del elemento"
+        >
           <div 
             className="w-full h-full rounded-xl"
             style={{ backgroundColor: el?.color || '#000000' }}
           />
-          <input
-            type="color"
-            value={el?.color || '#000000'}
-            onChange={(e) => updateElement(parseInt(slideIdx), elId, { color: e.target.value })}
-            onInput={(e) => updateElement(parseInt(slideIdx), elId, { color: e.target.value })}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          />
-        </label>
+        </button>
+      )}
+
+      {/* Invisible fixed input positioned on-the-fly at the button's screen coordinates */}
+      {!isImage && (
+        <input
+          ref={colorInputRef}
+          type="color"
+          value={el?.color || '#000000'}
+          onChange={(e) => updateElement(parseInt(slideIdx), elId, { color: e.target.value })}
+          onInput={(e) => updateElement(parseInt(slideIdx), elId, { color: e.target.value })}
+          className="fixed z-[9999] opacity-0 pointer-events-none w-8 h-8"
+        />
       )}
 
       {/* Text Specific Controls */}
