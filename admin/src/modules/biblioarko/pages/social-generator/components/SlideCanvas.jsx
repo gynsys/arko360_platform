@@ -595,7 +595,7 @@ export const SlideCanvas = ({
                         style={{ 
                           color: el.useGradient ? 'inherit' : (el.color || '#000000'),
                           fill: el.useGradient ? 'inherit' : (el.color || '#000000'),
-                          fontSize: `${Math.min(el.width, el.height) * 0.8}px`
+                          ...(el.type === 'icon' ? { fontSize: `${Math.min(el.width, el.height) * 0.8}px` } : {})
                         }}
                       >
                         {el.useGradient && (
@@ -610,6 +610,7 @@ export const SlideCanvas = ({
                           </svg>
                         )}
                         <IconComp 
+                          preserveAspectRatio={el.type === 'shape' ? 'none' : undefined}
                           style={{ 
                             width: '100%', 
                             height: '100%',
