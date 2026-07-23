@@ -143,7 +143,12 @@ Estas modificaciones garantizan la estabilidad del servidor ante proyectos legad
 ### M. Opacidad en Formas, Selector de Fondo de Perfil y Corrección del Botón Guardar
 - **Opacidad en Formas y Elementos Extra:** Se habilitó el control de transparencia (`<FiEye />` + slider de opacidad) en [ContextualBar.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/components/ContextualBar.jsx) para formas geométricas, íconos y textos.
 - **Selector "Fondo Perfil: ON/OFF":** Se ubicó un botón conmutador en la parte superior de la diapositiva (recuadro verde) para ocultar o mostrar la imagen de fondo de "Mi Perfil" sin borrarla del perfil.
-- **Flujo de Guardado Directo:** Se vinculó la asignación de `activeProjectId` en `useSlideDesigner.js` e `index.jsx`. El botón **GUARDAR** actualiza el proyecto actual directamente en el backend, mientras que **GUARDAR COMO...** solicita un nuevo nombre para clonarlo.
+### N. Corrección de Desplazamiento del Selector de Color, Opacidad Real de Formas y Botón Fondo Perfil
+- **Reposicionamiento del Selector de Color:** Se reestructuró el elemento `<input type="color">` envolviéndolo en un `<label>` transparente con muestra visual en [ContextualBar.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/components/ContextualBar.jsx#L210). Esto eliminó la deformación por `scale-150` que hacía que el cuadro nativo del navegador se abriera desplazado en la esquina superior izquierda `(0,0)` de la pantalla.
+- **Sincronización `onChange` / `onInput`:** Se habilitaron eventos duales para transmitir en tiempo real los cambios de color a las formas geométricas y textos al deslizar en la paleta.
+- **Aplicación Real de Opacidad (`el.opacity`):** Se corrigió [SlideCanvas.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/components/SlideCanvas.jsx#L522) donde la opacidad de los elementos extra estaba forzada a `: 1`. Ahora aplica respetando `el.opacity` definido por la barra contextual.
+- **Visibilidad Permanente del Conmutador Fondo Perfil:** Se garantizó que el botón flotante **`Fondo Perfil: ON/OFF`** en la parte superior de la diapositiva se muestre siempre activo y funcional para activar/desactivar la imagen de fondo en cualquier momento.
+
 
 
 

@@ -1212,22 +1212,20 @@ export default function SocialGenerator() {
                     <div ref={editorWrapperRef} className={`bg-white dark:bg-gray-800 rounded-[40px] ${activeTab === 'video' ? 'p-4 pr-16 overflow-visible' : 'p-12 pr-16 max-w-full min-h-[600px] w-full overflow-visible'} shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center relative`}>
                       
                       {/* Fondo Perfil ON/OFF Selector */}
-                      {siteConfig?.socialBackgroundImage && (
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-                          <button
-                            onClick={() => setShowBgImage(!showBgImage)}
-                            className={`px-3.5 py-1.5 rounded-full transition-all text-xs font-black flex items-center gap-2 shadow-md cursor-pointer border ${
-                              showBgImage 
-                                ? 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-700' 
-                                : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50'
-                            }`}
-                            title="Prender / Apagar Imagen de Fondo de Perfil"
-                          >
-                            <FiImage size={14} />
-                            <span>Fondo Perfil: {showBgImage ? 'ON' : 'OFF'}</span>
-                          </button>
-                        </div>
-                      )}
+                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+                        <button
+                          onClick={() => setShowBgImage(!showBgImage)}
+                          className={`px-3.5 py-1.5 rounded-full transition-all text-xs font-black flex items-center gap-2 shadow-md cursor-pointer border ${
+                            showBgImage 
+                              ? 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-700' 
+                              : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50'
+                          }`}
+                          title="Prender / Apagar Imagen de Fondo de Perfil"
+                        >
+                          <FiImage size={14} />
+                          <span>Fondo Perfil: {showBgImage ? 'ON' : 'OFF'}</span>
+                        </button>
+                      </div>
 
                       <div style={{ width: 410 * scale, height: (activeTab === 'video' ? 728 : 410) * scale }} className="relative flex items-center justify-center transition-all duration-300">
                         <div id="main-slide-canvas" className="absolute top-0 left-0 origin-top-left" style={{ transform: `scale(${scale})` }}>

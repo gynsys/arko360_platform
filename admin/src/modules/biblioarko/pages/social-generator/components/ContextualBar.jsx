@@ -78,14 +78,19 @@ export const ContextualBar = ({
 
           {/* Color del elemento */}
           {!isImage && (
-            <div className="relative flex items-center justify-center w-8 h-8 rounded-xl border-2 border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm bg-white flex-shrink-0">
+            <label className="relative flex items-center justify-center w-8 h-8 rounded-xl border-2 border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm bg-white flex-shrink-0 cursor-pointer" title="Color del elemento">
+              <div 
+                className="w-full h-full rounded-lg"
+                style={{ backgroundColor: el?.color || '#000000' }}
+              />
               <input
                 type="color"
                 value={el?.color || '#000000'}
                 onChange={(e) => updateElement(parseInt(slideIdx), elId, { color: e.target.value })}
-                className="absolute inset-0 w-full h-full scale-150 cursor-pointer border-none p-0 bg-transparent"
+                onInput={(e) => updateElement(parseInt(slideIdx), elId, { color: e.target.value })}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
-            </div>
+            </label>
           )}
 
           {isText && (
@@ -211,14 +216,19 @@ export const ContextualBar = ({
 
       {/* Common: Color Picker */}
       {!isImage && (
-        <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl border-2 border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm bg-white flex-shrink-0" title="Color del elemento">
+        <label className="relative flex items-center justify-center w-10 h-10 rounded-2xl border-2 border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm bg-white flex-shrink-0 cursor-pointer hover:scale-105 transition-transform" title="Color del elemento">
+          <div 
+            className="w-full h-full rounded-xl"
+            style={{ backgroundColor: el?.color || '#000000' }}
+          />
           <input
             type="color"
             value={el?.color || '#000000'}
             onChange={(e) => updateElement(parseInt(slideIdx), elId, { color: e.target.value })}
-            className="absolute inset-0 w-full h-full scale-150 cursor-pointer border-none p-0 bg-transparent"
+            onInput={(e) => updateElement(parseInt(slideIdx), elId, { color: e.target.value })}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
-        </div>
+        </label>
       )}
 
       {/* Text Specific Controls */}

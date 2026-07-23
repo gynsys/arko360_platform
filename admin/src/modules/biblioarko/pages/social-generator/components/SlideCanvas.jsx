@@ -175,18 +175,20 @@ export const SlideCanvas = ({
     }
   }, [currentTime, isPlaying, isVideoMode, slide, imagePositions, index]);
 
+  const profileBgUrl = siteConfig?.socialBackgroundImage || siteConfig?.social_background_image || doctor?.social_background_image || doctor?.socialBackgroundImage;
+
   return (
     <div 
       ref={containerRef}
       className={`relative w-[410px] ${isVideoMode ? 'h-[728px]' : 'h-[410px]'} overflow-visible shadow-2xl transition-all duration-500 ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-4 ring-offset-gray-50' : ''}`}
       style={{ 
         backgroundColor: design.bgColor,
-        backgroundImage: (showBgImage && siteConfig?.socialBackgroundImage) 
-          ? `url(${siteConfig.socialBackgroundImage})` 
+        backgroundImage: (showBgImage && profileBgUrl) 
+          ? `url(${profileBgUrl})` 
           : (design.useBgGradient 
             ? `linear-gradient(to bottom right, ${design.bgColor}, ${design.bgColor2}, ${design.bgColor3})` 
             : 'none'),
-        backgroundSize: (showBgImage && siteConfig?.socialBackgroundImage) ? '100% 100%' : 'auto',
+        backgroundSize: (showBgImage && profileBgUrl) ? '100% 100%' : 'auto',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         userSelect: isSelected ? 'none' : 'auto'
@@ -519,7 +521,7 @@ export const SlideCanvas = ({
             className="absolute transition-opacity duration-300"
             style={{
               zIndex: el.zIndex || 30,
-              opacity: (isVideoMode && currentTime !== undefined && ((el.startTime !== undefined && currentTime < el.startTime) || (el.endTime !== undefined && currentTime > el.endTime))) ? 0 : 1,
+              opacity: (isVideoMode && currentTime !== undefined && ((el.startTime !== undefined && currentTime < el.startTime) || (el.endTime !== undefined && currentTime > el.endTime))) ? 0 : (el.opacity !== undefined ? el.opacity : 1),
               left: el.fullWidth ? '0px' : (el.x + '%'),
               top: el.y + '%',
               width: el.fullWidth ? '410px' : 0,
