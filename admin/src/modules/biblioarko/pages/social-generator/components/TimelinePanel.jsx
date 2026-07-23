@@ -190,7 +190,7 @@ export const TimelinePanel = ({ slide, slideIndex, slideDuration, totalVideoDura
     <div className="w-full bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0 z-40">
       <div className="max-w-4xl mx-auto">
         <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-          <FiClock /> Línea de Tiempo (Track History)
+          <FiClock /> Línea de Tiempo
         </h4>
         
         <div className="relative">

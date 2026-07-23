@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { Resizable } from 're-resizable';
 import { FiMaximize2, FiEdit3, FiPlusCircle, FiCopy, FiCheck, FiTrash2, FiRefreshCw, FiLayers, FiImage } from 'react-icons/fi';
 import { SVGIcons } from '../lib/svgIcons';
+import { ContextualBar } from './ContextualBar';
 
 // Function to get SVG path for each icon type
 const getIconPath = (iconType) => {
@@ -706,6 +707,32 @@ export const SlideCanvas = ({
         </div>
       )}
       </div>
+
+      {/* Left-side Vertical Contextual Properties Bar */}
+      {isSelected && (selectedExtraId || selectedImageId) && (
+        <ContextualBar 
+          selectedId={selectedExtraId || selectedImageId}
+          canvas={canvas}
+          updateElement={canvas.updateExtraElement}
+          removeElement={(sIdx, elId) => canvas.removeExtraElement && canvas.removeExtraElement(sIdx, elId)}
+          deselectElement={selectElement}
+          isImage={!!selectedImageId}
+          isVideo={(() => {
+            if (!selectedImageId) return false;
+            const imgIdx = selectedImageId.split('-')[1];
+            const img = slide?.customImages?.[imgIdx];
+            return img?.startsWith('data:video');
+          })()}
+          imagePositions={imagePositions}
+          updateImage={handlers.updateImage}
+          onRemoveImage={(sIdx, imgIdx) => onRemoveImage && onRemoveImage(imgIdx)}
+          onCropImage={(sIdx, imgIdx) => {
+            if (onCropImage && slide?.customImages?.[imgIdx]) {
+              onCropImage(sIdx, imgIdx, slide.customImages[imgIdx]);
+            }
+          }}
+        />
+      )}
 
       {isSelected && (
         <div className="absolute top-1/2 left-full ml-4 -translate-y-1/2 slide-actions z-[60] flex flex-col gap-2 pointer-events-auto">

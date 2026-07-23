@@ -1383,25 +1383,7 @@ export default function SocialGenerator() {
           </div>
         </div>
 
-      <ContextualBar 
-        selectedId={designer.canvas.selectedExtraId || designer.canvas.selectedImageId}
-        canvas={designer.canvas}
-        updateElement={designer.canvas.updateExtraElement}
-        removeElement={handleRemoveElement}
-        deselectElement={designer.canvas.selectElement}
-        isImage={!!designer.canvas.selectedImageId}
-        isVideo={(() => {
-          if (!designer.canvas.selectedImageId) return false;
-          const [slideIdx, imgIdx] = designer.canvas.selectedImageId.split('-');
-          const scenes = generatedContent?.video_slides || generatedContent?.slides;
-          const img = scenes?.[slideIdx]?.customImages?.[imgIdx];
-          return img?.startsWith('data:video');
-        })()}
-        imagePositions={transformer.state.imagePositions}
-        updateImage={transformer.handlers.updateImage}
-        onRemoveImage={handleRemoveImage}
-        onCropImage={handleOpenCropImage}
-      />
+
 
       <ImageCropperModal
         isOpen={cropModalData.isOpen}
