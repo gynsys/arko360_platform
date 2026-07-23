@@ -137,6 +137,8 @@ Estas modificaciones garantizan la estabilidad del servidor ante proyectos legad
   2. **Bloqueo de Relación de Aspecto (`lockAspectRatio={true}`):** Se activó `lockAspectRatio={true}` en `<Resizable>` para que tanto el estiramiento horizontal como el vertical mantengan la proporción exacta del marco. El marco y la imagen escalan en sincronía uniforme en cualquier dirección sin causar recortes o zoom interno.
   3. **Renderizado de Exportación:** Se adaptó la función `drawSlide` en [useVideoExport.js](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/hooks/useVideoExport.js) con cálculo de recorte de 9 parámetros en el canvas para mantener `object-cover` al grabar el archivo MP4.
   4. **Reducción de Grosor a la Mitad:** Se redujo el grosor de los tiradores laterales de **4px a 2px** (`height: 2px`, `width: 2px`) y los tiradores de las esquinas de **8px a 6px**, suavizando la línea de selección a `ring-1 ring-indigo-500/60 shadow-md`.
+  5. **Barra de Acciones Externa:** Se reubicó la barra de herramientas flotante (`.slide-actions`) a la derecha, fuera del lienzo de la diapositiva (`left-full ml-4`), asignando un contenedor con fondo índigo (`bg-indigo-600`) a cada botón para despejar la vista de edición.
+
 
 
 

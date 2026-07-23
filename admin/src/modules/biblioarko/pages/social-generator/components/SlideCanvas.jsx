@@ -705,20 +705,20 @@ export const SlideCanvas = ({
           />
         </div>
       )}
+      </div>
 
       {isSelected && (
-        <div className="absolute top-1/2 right-4 -translate-y-1/2 slide-actions z-[60] flex flex-col gap-1 pointer-events-auto">
-          <button onClick={(e) => { e.stopPropagation(); onPreview(index); }} className="p-2 bg-white text-indigo-600 rounded-xl hover:bg-indigo-50 shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Vista Previa"><FiMaximize2 size={14}/></button>
-          <button onClick={(e) => { e.stopPropagation(); onEdit(index); }} className="p-2 bg-white text-amber-500 rounded-xl hover:bg-amber-50 shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Editar Contenido"><FiEdit3 size={14}/></button>
-          <label className="p-2 bg-white text-indigo-400 rounded-xl hover:bg-indigo-50 shadow-xl border border-gray-100 cursor-pointer transition-all transform hover:scale-110" title="Insertar Multimedia">
-            <FiPlusCircle size={14} />
+        <div className="absolute top-1/2 left-full ml-4 -translate-y-1/2 slide-actions z-[60] flex flex-col gap-2 pointer-events-auto">
+          <button onClick={(e) => { e.stopPropagation(); onPreview(index); }} className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-xl border border-indigo-500/30 transition-all transform hover:scale-110 flex items-center justify-center cursor-pointer" title="Vista Previa"><FiMaximize2 size={15}/></button>
+          <button onClick={(e) => { e.stopPropagation(); onEdit(index); }} className="p-2.5 bg-indigo-600 text-amber-300 rounded-xl hover:bg-indigo-700 shadow-xl border border-indigo-500/30 transition-all transform hover:scale-110 flex items-center justify-center cursor-pointer" title="Editar Contenido"><FiEdit3 size={15}/></button>
+          <label className="p-2.5 bg-indigo-600 text-emerald-300 rounded-xl hover:bg-indigo-700 shadow-xl border border-indigo-500/30 cursor-pointer transition-all transform hover:scale-110 flex items-center justify-center" title="Insertar Multimedia">
+            <FiPlusCircle size={15} />
             <input type="file" className="hidden" accept="image/*,video/*" onChange={onAddImage} />
           </label>
-          <button onClick={(e) => { e.stopPropagation(); onCopy(index); }} className="p-2 bg-white text-gray-400 rounded-xl hover:bg-gray-50 shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Duplicar Diapositiva"><FiCopy size={14} /></button>
-          <button onClick={(e) => { e.stopPropagation(); onRemove(index); }} className="p-2 bg-white text-red-400 hover:bg-red-500 hover:text-white rounded-xl shadow-xl border border-gray-100 transition-all transform hover:scale-110" title="Eliminar"><FiTrash2 size={14} /></button>
+          <button onClick={(e) => { e.stopPropagation(); onCopy(index); }} className="p-2.5 bg-indigo-600 text-indigo-100 rounded-xl hover:bg-indigo-700 shadow-xl border border-indigo-500/30 transition-all transform hover:scale-110 flex items-center justify-center cursor-pointer" title="Duplicar Diapositiva"><FiCopy size={15} /></button>
+          <button onClick={(e) => { e.stopPropagation(); onRemove(index); }} className="p-2.5 bg-indigo-600 text-red-300 hover:bg-red-600 hover:text-white rounded-xl shadow-xl border border-indigo-500/30 transition-all transform hover:scale-110 flex items-center justify-center cursor-pointer" title="Eliminar"><FiTrash2 size={15} /></button>
         </div>
       )}
-      </div>
     </div>
   );
 };
