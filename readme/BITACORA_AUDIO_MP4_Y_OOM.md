@@ -152,9 +152,11 @@ Estas modificaciones garantizan la estabilidad del servidor ante proyectos legad
 ### P. Escalado y Estiramiento Flexible de Formas Geométricas
 - **Problema:** Al redimensionar una forma (cuadrado, rectángulo, círculo, blob, etc.) horizontal o verticalmente mediante los tiradores del lienzo, el marco azul aumentaba su tamaño pero la forma SVG interna permanecía como un pequeño cuadrado estático en el centro debido a la restricción `fontSize: Math.min(w, h)` y al `preserveAspectRatio` por defecto del navegador.
 ### Q. Solución al Botón de Eliminación de Imágenes (Papelera en Barra Lateral y Barra Contextual)
-- **Problema:** Al presionar la papelera para borrar una imagen agregada a la diapositiva (tanto desde la barra lateral `EnhancedSidebar` como desde la barra contextual flotante), la imagen permanecía en pantalla sin eliminarse.
-- **Causa:** En [index.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/index.jsx#L1197), el handler `handleRemoveImage` no estaba siendo pasado como prop `onRemoveImage` ni a la barra lateral ni al lienzo principal, dejando la función como `undefined`. Además, en [SlideCanvas.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/components/SlideCanvas.jsx#L730), la invocación hacia la barra contextual omitía el índice de la diapositiva `sIdx`.
-- **Solución:** Se inyectó `onRemoveImage={handleRemoveImage}` en la barra lateral y en el canvas, se corrigió el paso de parámetros `(sIdx, imgIdx)` en `SlideCanvas.jsx` y se añadió `setSelectedImageId(null)` en `handleRemoveImage` para deseleccionar el marco inmediatamente al eliminar la imagen.
+### R. Iconos Dinámicos por Tipo de Proyecto (Carrusel vs Video / Reel)
+- **Problema:** En la lista desplegable "Mis Proyectos Guardados" y en la vista en cuadrícula, todos los proyectos (incluyendo Carruseles como `MI CARRUSEL` o `SDECUS1`) mostraban de forma fija el icono de cámara de video (`<FiVideo />`).
+- **Causa:** En [ProjectGrid.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/components/ProjectGrid.jsx#L123), los contenedores gráficos del proyecto tenían `<FiVideo />` codificado de forma estática sin verificar el tipo de proyecto.
+- **Solución:** Se integró la condición dinámica `isVideoProject` en las vistas compacta y completa de `ProjectGrid.jsx`. Los proyectos de tipo **Carrusel** ahora muestran el icono de imagen (`<FiImage />`) y la insignia "Carrusel", mientras que los de tipo **Video/Reel** muestran la cámara (`<FiVideo />`) y la insignia "Video".
+
 
 
 
