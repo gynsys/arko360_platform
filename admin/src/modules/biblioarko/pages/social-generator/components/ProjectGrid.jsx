@@ -57,6 +57,47 @@ const DeleteModal = ({ projectName, onConfirm, onCancel }) => (
 );
 
 
+const checkIsVideoProject = (p) => {
+  if (!p) return false;
+  
+  // 1. Check explicit type fields
+  const typeStr = (p.type || p.project_type || p.gen_type || '').toLowerCase();
+  if (typeStr === 'video' || typeStr === 'reel') return true;
+  if (typeStr === 'carousel') return false;
+
+  // 2. Check content object
+  let contentObj = p.content;
+  if (typeof contentObj === 'string') {
+    try { contentObj = JSON.parse(contentObj); } catch (e) {}
+  }
+
+  if (contentObj) {
+    const cType = (contentObj.type || '').toLowerCase();
+    if (cType === 'video' || cType === 'reel') return true;
+    if (cType === 'carousel') return false;
+
+    if (Array.isArray(contentObj.video_slides) && contentObj.video_slides.length > 0) {
+      if (!Array.isArray(contentObj.slides) || contentObj.slides.length === 0) {
+        return true;
+      }
+    }
+  }
+
+  if (Array.isArray(p.video_slides) && p.video_slides.length > 0) {
+    if (!Array.isArray(p.slides) || p.slides.length === 0) {
+      return true;
+    }
+  }
+
+  // 3. Fallback name heuristics if type was not in summary
+  const nameStr = (p.name || '').toLowerCase();
+  if (nameStr.includes('video') || nameStr.includes('reel') || nameStr.includes('mp4')) {
+    return true;
+  }
+
+  return false;
+};
+
 /* ─────────────── ProjectGrid ─────────────── */
 export const ProjectGrid = ({ 
   projects, 
@@ -114,7 +155,7 @@ export const ProjectGrid = ({
         <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 z-[100] max-h-[400px] overflow-y-auto no-scrollbar animate-slideDown">
           <div className="p-2 space-y-1">
             {projects.map(p => {
-              const isVideoProject = p.type === 'video' || p.type === 'reel' || p.content?.type === 'video' || p.content?.type === 'reel' || (p.content?.video_slides && p.content.video_slides.length > 0 && (!p.content?.slides || p.content.slides.length === 0)) || (p.video_slides && p.video_slides.length > 0 && (!p.slides || p.slides.length === 0));
+              const isVideoProject = checkIsVideoProject(p);
               return (
                 <div
                   key={p.id}
@@ -153,7 +194,7 @@ export const ProjectGrid = ({
         /* ── FULL (grid) ── */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {projects.map(p => {
-            const isVideoProject = p.type === 'video' || p.type === 'reel' || p.content?.type === 'video' || p.content?.type === 'reel' || (p.content?.video_slides && p.content.video_slides.length > 0 && (!p.content?.slides || p.content.slides.length === 0)) || (p.video_slides && p.video_slides.length > 0 && (!p.slides || p.slides.length === 0));
+            const isVideoProject = checkIsVideoProject(p);
             return (
               <div 
                 key={p.id} 

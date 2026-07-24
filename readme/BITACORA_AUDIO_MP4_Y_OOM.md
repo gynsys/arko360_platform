@@ -152,10 +152,13 @@ Estas modificaciones garantizan la estabilidad del servidor ante proyectos legad
 ### P. Escalado y Estiramiento Flexible de Formas Geométricas
 - **Problema:** Al redimensionar una forma (cuadrado, rectángulo, círculo, blob, etc.) horizontal o verticalmente mediante los tiradores del lienzo, el marco azul aumentaba su tamaño pero la forma SVG interna permanecía como un pequeño cuadrado estático en el centro debido a la restricción `fontSize: Math.min(w, h)` y al `preserveAspectRatio` por defecto del navegador.
 ### Q. Solución al Botón de Eliminación de Imágenes (Papelera en Barra Lateral y Barra Contextual)
-### R. Iconos Dinámicos por Tipo de Proyecto (Carrusel vs Video / Reel)
-- **Problema:** En la lista desplegable "Mis Proyectos Guardados" y en la vista en cuadrícula, todos los proyectos (incluyendo Carruseles como `MI CARRUSEL` o `SDECUS1`) mostraban de forma fija el icono de cámara de video (`<FiVideo />`).
-- **Causa:** En [ProjectGrid.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/components/ProjectGrid.jsx#L123), los contenedores gráficos del proyecto tenían `<FiVideo />` codificado de forma estática sin verificar el tipo de proyecto.
-- **Solución:** Se integró la condición dinámica `isVideoProject` en las vistas compacta y completa de `ProjectGrid.jsx`. Los proyectos de tipo **Carrusel** ahora muestran el icono de imagen (`<FiImage />`) y la insignia "Carrusel", mientras que los de tipo **Video/Reel** muestran la cámara (`<FiVideo />`) y la insignia "Video".
+### R. Clasificación Robusta e Iconografía Dinámica de Proyectos (Carrusel vs Video / Reel)
+- **Problema:** En la lista desplegable "Mis Proyectos Guardados", proyectos de video/reel (como `PRUEBAMP4` o `REFUERZO`) o de carrusel (como `MI CARRUSEL` o `THAIS2`) mostraban un mismo icono estático para todos los archivos.
+- **Causa:** La lista de resumen enviada por el servidor no incluye el cuerpo extenso de `content` hasta que el usuario hace clic para abrir el proyecto. Por ello, validar únicamente `p.content?.video_slides` daba `undefined`, provocando que todos los archivos cayeran en el icono por defecto.
+- **Solución:**
+  1. En [ProjectGrid.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/components/ProjectGrid.jsx#L60), se implementó la función auxiliar `checkIsVideoProject(p)` con análisis en 3 capas: verifica campos `type` raíz, intenta parsear `content` (en caso de ser un string JSON), analiza la presencia de diapositivas de video e incluye una heurística inteligente por palabras clave en el nombre (`mp4`, `video`, `reel`).
+  2. En [useSlideDesigner.js](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/hooks/useSlideDesigner.js#L137), se aseguró la inyección del campo explícito `type` (`video` o `carousel`) en el objeto raíz guardado en el servidor.
+
 
 
 

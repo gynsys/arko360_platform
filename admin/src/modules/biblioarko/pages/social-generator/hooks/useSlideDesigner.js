@@ -135,6 +135,7 @@ export const useSlideDesigner = () => {
     if (!name || !generatedContent) return null;
     const projectData = {
       name,
+      type: generatedContent?.type || (generatedContent?.video_slides ? 'video' : 'carousel'),
       content: generatedContent,
       design: {
         bgColor, bgColor2, bgColor3, useBgGradient,
