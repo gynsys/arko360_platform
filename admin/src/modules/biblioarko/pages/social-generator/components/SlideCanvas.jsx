@@ -727,7 +727,7 @@ export const SlideCanvas = ({
           })()}
           imagePositions={imagePositions}
           updateImage={handlers.updateImage}
-          onRemoveImage={(sIdx, imgIdx) => onRemoveImage && onRemoveImage(imgIdx)}
+          onRemoveImage={(sIdx, imgIdx) => onRemoveImage && onRemoveImage(sIdx, imgIdx)}
           onCropImage={(sIdx, imgIdx) => {
             if (onCropImage && slide?.customImages?.[imgIdx]) {
               onCropImage(sIdx, imgIdx, slide.customImages[imgIdx]);

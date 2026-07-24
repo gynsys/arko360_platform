@@ -896,6 +896,9 @@ export default function SocialGenerator() {
     if (newSlides[slideIndex]?.customImages) {
       newSlides[slideIndex].customImages = newSlides[slideIndex].customImages.filter((_, i) => i !== imgIndex);
       setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+      if (designer.canvas.setSelectedImageId) {
+        designer.canvas.setSelectedImageId(null);
+      }
     }
   };
 
@@ -1194,6 +1197,7 @@ export default function SocialGenerator() {
                     design={designer.design} canvas={designer.canvas} 
                     transform={transformer.state} currentSlide={designer.canvas.currentSlidePage}
                     onAddElement={designer.canvas.addExtraElement} 
+                    onRemoveImage={handleRemoveImage}
                     onDownload={activeTab === 'video' ? handleExportVideo : exporter.downloadCarousel}
                     onSave={handleSaveProject} onConvertToVideo={handleConvertToVideo}
                     isVideoMode={activeTab === 'video'}
@@ -1240,6 +1244,8 @@ export default function SocialGenerator() {
                             onPreview={setPreviewIndex} onRemove={handleRemoveSlide} onCopy={handleCopySlide}
                             onClearMainContent={handleClearMainContent}
                             onAddImage={(e) => activeTab === 'video' ? handleAddImageToVideoSlide(designer.canvas.currentSlidePage, e) : handleAddImage(designer.canvas.currentSlidePage, e)}
+                            onRemoveImage={handleRemoveImage}
+                            onCropImage={handleOpenCropImage}
                             isVideoMode={activeTab === 'video'}
                             showGrid={showGrid}
                             showBgImage={showBgImage}
