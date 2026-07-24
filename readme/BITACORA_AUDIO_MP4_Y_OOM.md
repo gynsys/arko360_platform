@@ -159,6 +159,11 @@ Estas modificaciones garantizan la estabilidad del servidor ante proyectos legad
   1. En [ProjectGrid.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/components/ProjectGrid.jsx#L60), se implementó la función auxiliar `checkIsVideoProject(p)` con análisis en 3 capas: verifica campos `type` raíz, intenta parsear `content` (en caso de ser un string JSON), analiza la presencia de diapositivas de video e incluye una heurística inteligente por palabras clave en el nombre (`mp4`, `video`, `reel`).
   2. En [useSlideDesigner.js](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/hooks/useSlideDesigner.js#L137), se aseguró la inyección del campo explícito `type` (`video` o `carousel`) en el objeto raíz guardado en el servidor.
 
+### S. Sincronización del Fondo de Perfil en la Modal de Previsualización (`PreviewModal`)
+- **Problema:** Al apagar el fondo de perfil con el conmutador ("Fondo Perfil: OFF"), la diapositiva se mostraba sin fondo en el editor principal, pero al presionar el botón azul de previsualización, la modal desplegaba la diapositiva con el fondo visible.
+- **Causa:** En [index.jsx](file:///c:/Users/pablo/Documents/arko360_platform/admin/src/modules/biblioarko/pages/social-generator/index.jsx#L1568), la instancia de `<SlideCanvas />` dentro del `renderSlide` de `<PreviewModal />` omitía el prop `showBgImage`, por lo que utilizaba el valor por defecto `showBgImage = true`.
+- **Solución:** Se inyectó `showBgImage={showBgImage}` en la llamada de renderizado de la modal de previsualización. Ahora la pantalla completa respeta si el fondo de perfil está encendido o apagado.
+
 
 
 

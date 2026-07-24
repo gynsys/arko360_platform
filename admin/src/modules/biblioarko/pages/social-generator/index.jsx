@@ -1565,7 +1565,7 @@ export default function SocialGenerator() {
         slides={activeTab === 'video' ? (generatedContent?.video_slides || []) : (generatedContent?.slides || [])}
         onClose={() => setPreviewIndex(null)} onNavigate={setPreviewIndex}
         renderSlide={(slide, i, isPrev) => (
-          <SlideCanvas slide={slide} index={i} isPreview={isPrev} doctor={doctor} doctorLogo={doctorLogoBase64} siteConfig={siteConfig} design={designer.design} canvas={designer.canvas} transform={transformer.state} watermark={watermarkImage} handlers={transformer.handlers} isVideoMode={activeTab === 'video'} />
+          <SlideCanvas slide={slide} index={i} isPreview={isPrev} doctor={doctor} doctorLogo={doctorLogoBase64} siteConfig={siteConfig} design={designer.design} canvas={designer.canvas} transform={transformer.state} watermark={watermarkImage} handlers={transformer.handlers} isVideoMode={activeTab === 'video'} showBgImage={showBgImage} />
         )}
       />
 
