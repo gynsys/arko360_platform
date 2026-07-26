@@ -599,9 +599,11 @@ class PlanRenderer:
         # ----------------------------------------------------------------
         # LEFT PANEL — Muro de Contención CAD (x: 0..480) - Scaled UP +40%
         # ----------------------------------------------------------------
+        scale_px_per_cm = 3.2
+
         max_h_px = 310
         stem_h_px = min(max_h_px, max(170, int(rw_soil_h * 130)))
-        stem_w_px = max(35, min(70, int(rw_thick_cm * 2.5)))
+        stem_w_px = max(35, min(120, int(rw_thick_cm * scale_px_per_cm)))
         pata_px = max(85, min(160, int(ld_cm * 1.7)))
         base_h_px = 38
         cover_px = 8
@@ -783,11 +785,11 @@ class PlanRenderer:
 
         panel_cx = 740
         panel_cy = 250
-        b_px = max(80, min(160, int(sb_b_cm * 2.8)))
+        b_px = max(35, min(160, int(sb_b_cm * scale_px_per_cm)))
         h_px = max(140, min(290, int(b_px * (sb_h_cm / max(sb_b_cm, 1)))))
         bx1 = panel_cx - b_px / 2
         by1 = panel_cy - h_px / 2
-        cover_beam = 20
+        cover_beam = max(10, min(20, int(b_px * 0.18)))
         sx1 = bx1 + cover_beam
         sy1 = by1 + cover_beam
         sw = b_px - 2 * cover_beam
