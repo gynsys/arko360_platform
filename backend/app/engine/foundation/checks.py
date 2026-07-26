@@ -401,8 +401,49 @@ class StructuralChecks:
             max_M = max(max_M, float(M))
             max_V = max(max_V, float(V))
             
-        Mu_beam = max_M * sb.width
-        Vu_beam = max_V * sb.width
+        # Band width for support beam moment integration
+        band_w = max(sb.width + 2 * self.d_eff, 0.50)
+        Mu_slab = max_M * band_w
+        Vu_slab = max_V * band_w
+
+        # Compute direct moment from collinear walls and machones (column point loads)
+        def _pt_seg_dist(px, py, x1, y1, x2, y2):
+            dx, dy = x2 - x1, y2 - y1
+            l2 = dx*dx + dy*dy
+            if l2 < 1e-9:
+                return float(np.hypot(px - x1, py - y1))
+            t = max(0.0, min(1.0, ((px - x1)*dx + (py - y1)*dy)/l2))
+            return float(np.hypot(px - (x1 + t*dx), py - (y1 + t*dy)))
+
+        q_wall = 0.0
+        for w in getattr(self, 'walls', []):
+            w_mid_x = (w.x1 + w.x2) / 2.0
+            w_mid_y = (w.y1 + w.y2) / 2.0
+            if _pt_seg_dist(w_mid_x, w_mid_y, sb.x1, sb.y1, sb.x2, sb.y2) < 0.4:
+                q_wall += getattr(w, 'q_lineal', 0.0)
+
+        P_cols = 0.0
+        col_count = 0
+        for col in getattr(self, 'columns', []):
+            if _pt_seg_dist(col.x, col.y, sb.x1, sb.y1, sb.x2, sb.y2) < 0.4:
+                P_cols += getattr(col, 'P_u', 0.0)
+                col_count += 1
+
+        q_beam_self = sb.width * sb.depth * self.gamma_horm * 9.81 * 1.2
+        q_total_m = q_wall + q_beam_self
+
+        l_span = sb.length / max(col_count - 1, 1) if col_count > 1 else max(1.5, sb.length / 3)
+        l_span = min(l_span, 3.0)
+
+        Mu_direct = (q_total_m * (l_span ** 2)) / 8.0
+        if col_count > 0 and P_cols > 0:
+            P_avg = P_cols / col_count
+            Mu_direct += (P_avg * l_span) / 4.0
+
+        Vu_direct = (q_total_m * l_span) / 2.0 + (P_cols / 2.0 if col_count > 0 else 0.0)
+
+        Mu_beam = max(Mu_slab, Mu_direct)
+        Vu_beam = max(Vu_slab, Vu_direct)
         
         b = sb.width
         h = sb.depth
@@ -429,6 +470,9 @@ class StructuralChecks:
         # But here self.f_y is in MPa.
         As_min_m2 = max(0.0033 * b * d, (1.4 / self.f_y) * b * d)
         
+        # Commercial bar sizes: (diam_mm, area_cm2)
+        BAR_SIZES = [(12, 1.13), (10, 0.71), (16, 2.01), (20, 3.14)]
+        
         if Mn_req <= Mnt_max:
             # Singly reinforced
             As_m2 = 0.0
@@ -440,11 +484,21 @@ class StructuralChecks:
                     
             As_req_cm2 = max(As_m2, As_min_m2) * 10000
             
-            n_bars_bot = int(np.ceil(As_req_cm2 / 1.99))
-            if n_bars_bot < 2: n_bars_bot = 2
-            
+            # Select most efficient commercial bar size (preferring Ø12 or Ø10 for light/moderate beams)
+            best_bot_d = 16
+            best_bot_n = 2
+            for d_mm, area_bar in [(12, 1.13), (10, 0.71), (16, 2.01), (20, 3.14)]:
+                n_req = int(np.ceil((As_req_cm2 - 0.05) / area_bar))
+                if n_req < 2:
+                    n_req = 2
+                if n_req <= 4:
+                    best_bot_d = d_mm
+                    best_bot_n = n_req
+                    break
+
+            n_bars_bot = best_bot_n
             n_bars_top = 2
-            proposed_rebar = f"{n_bars_bot}Ø16 Inf + {n_bars_top}Ø10 Sup"
+            proposed_rebar = f"{n_bars_bot}Ø{best_bot_d} Inf + {n_bars_top}Ø10 Sup"
         else:
             # Doubly reinforced
             Mn2 = Mn_req - Mnt_max
@@ -461,13 +515,22 @@ class StructuralChecks:
             As_req_cm2 = max(As1_m2 + As2_m2, As_min_m2) * 10000
             As_prime_cm2 = As_prime_m2 * 10000
             
-            n_bars_bot = int(np.ceil(As_req_cm2 / 1.99))
-            if n_bars_bot < 2: n_bars_bot = 2
-            
-            n_bars_top = int(np.ceil(As_prime_cm2 / 1.99))
+            best_bot_d = 16
+            best_bot_n = 2
+            for d_mm, area_bar in [(16, 2.01), (12, 1.13), (20, 3.14)]:
+                n_req = int(np.ceil((As_req_cm2 - 0.05) / area_bar))
+                if n_req < 2:
+                    n_req = 2
+                if n_req <= 6:
+                    best_bot_d = d_mm
+                    best_bot_n = n_req
+                    break
+
+            n_bars_bot = best_bot_n
+            n_bars_top = int(np.ceil(As_prime_cm2 / 2.01))
             if n_bars_top < 2: n_bars_top = 2
             
-            proposed_rebar = f"{n_bars_bot}Ø16 Inf + {n_bars_top}Ø16 Sup"
+            proposed_rebar = f"{n_bars_bot}Ø{best_bot_d} Inf + {n_bars_top}Ø16 Sup"
         
         phi_shear = 0.75
         vc_MPa = 0.17 * np.sqrt(self.f_c)
