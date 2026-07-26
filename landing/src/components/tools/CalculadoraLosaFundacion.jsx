@@ -3938,7 +3938,12 @@ export default function CalculadoraLosaFundacion({ onBack }) {
           {/* Tabla de Diseño de Muros de Contención */}
           {results.retaining_wall_designs && results.retaining_wall_designs.length > 0 && (
             <div style={{padding:'20px 24px', borderBottom:'1px solid #eee', background:'#fff8e1'}}>
-              <h4 style={{margin:'0 0 12px 0', color:'#f57f17'}}>🧱 Diseño de Pantalla de Muros de Contención</h4>
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px'}}>
+                <h4 style={{margin:0, color:'#f57f17'}}>🧱 Diseño de Pantalla de Muros de Contención</h4>
+                <span style={{fontSize:'12px', background:'#fff3e0', color:'#e65100', padding:'4px 10px', borderRadius:'6px', border:'1px solid #ffe082', fontWeight:'600'}}>
+                  💡 Puedes cambiar el diámetro/separación de acero si no lo consigues en el mercado. El sistema verifica el cumplimiento en tiempo real.
+                </span>
+              </div>
               <div style={{overflowX: 'auto'}}>
                 <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'center', background: '#fff', border: '1px solid #ffca28'}}>
                   <thead>
@@ -3962,10 +3967,21 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                   </thead>
                   <tbody>
                     {results.retaining_wall_designs.map((wd, idx) => {
-                      const tracVert = wd.rebar_trac_vert || (wd.proposed_rebar ? wd.proposed_rebar.split('|')[0]?.replace(/.*:/, '').trim() : 'Ø10@29cm');
-                      const tracHoriz = wd.rebar_trac_horiz || (wd.proposed_rebar_horiz ? wd.proposed_rebar_horiz.split('|')[0]?.replace(/.*:/, '').trim() : 'Ø10@26cm');
-                      const compVert = wd.rebar_comp_vert || (wd.proposed_rebar ? wd.proposed_rebar.split('|')[1]?.replace(/.*:/, '').trim() : 'Ø10@30cm');
-                      const compHoriz = wd.rebar_comp_horiz || (wd.proposed_rebar_horiz ? wd.proposed_rebar_horiz.split('|')[1]?.replace(/.*:/, '').trim() : 'Ø10@26cm');
+                      const asTracReq = wd.As_req_cm2_m || 2.25;
+                      const asCompReq = wd.As_comp_cm2_m || 1.50;
+                      const asHorizReq = wd.As_horiz_cm2_m || 1.50;
+                      const asHorizCompReq = wd.As_horiz_comp_cm2_m || 1.50;
+
+                      const defaultTracVert = wd.rebar_trac_vert || (wd.proposed_rebar ? wd.proposed_rebar.split('|')[0]?.replace(/.*:/, '').trim() : 'Ø10@29cm');
+                      const defaultTracHoriz = wd.rebar_trac_horiz || (wd.proposed_rebar_horiz ? wd.proposed_rebar_horiz.split('|')[0]?.replace(/.*:/, '').trim() : 'Ø10@26cm');
+                      const defaultCompVert = wd.rebar_comp_vert || (wd.proposed_rebar ? wd.proposed_rebar.split('|')[1]?.replace(/.*:/, '').trim() : 'Ø10@30cm');
+                      const defaultCompHoriz = wd.rebar_comp_horiz || (wd.proposed_rebar_horiz ? wd.proposed_rebar_horiz.split('|')[1]?.replace(/.*:/, '').trim() : 'Ø10@26cm');
+
+                      const optsTracVert = wd.rebar_trac_vert_options || [defaultTracVert, 'Ø7@14cm', 'Ø8@18cm', 'Ø10@25cm', 'Ø10@30cm', 'Ø12@30cm'];
+                      const optsTracHoriz = wd.rebar_trac_horiz_options || [defaultTracHoriz, 'Ø7@17cm', 'Ø8@22cm', 'Ø10@25cm', 'Ø10@30cm', 'Ø12@30cm'];
+                      const optsCompVert = wd.rebar_comp_vert_options || [defaultCompVert, 'Ø7@25cm', 'Ø8@30cm', 'Ø10@30cm', 'Ø12@30cm'];
+                      const optsCompHoriz = wd.rebar_comp_horiz_options || [defaultCompHoriz, 'Ø7@25cm', 'Ø8@30cm', 'Ø10@30cm', 'Ø12@30cm'];
+
                       return (
                         <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
                           <td style={{padding: '8px', fontWeight: 'bold', borderRight: '1px solid #eee'}}>{wd.id.substring(0, 8)}</td>
@@ -3977,10 +3993,18 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                           <td style={{padding: '8px', borderRight: '1px solid #eee', color: wd.shear_ok ? '#2e7d32' : '#c62828', fontWeight: 'bold'}}>
                             {wd.shear_ok ? 'OK' : 'FALLA'}
                           </td>
-                          <td style={{padding: '8px', borderRight: '1px solid #eee', color: '#1565c0', fontWeight: 'bold'}}>{tracVert}</td>
-                          <td style={{padding: '8px', borderRight: '2px solid #ffb300', color: '#1565c0', fontWeight: 'bold'}}>{tracHoriz}</td>
-                          <td style={{padding: '8px', borderRight: '1px solid #eee', color: '#2e7d32', fontWeight: 'bold'}}>{compVert}</td>
-                          <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>{compHoriz}</td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee'}}>
+                            <InteractiveRebarSelect options={optsTracVert} defaultVal={defaultTracVert} asReq={asTracReq} />
+                          </td>
+                          <td style={{padding: '8px', borderRight: '2px solid #ffb300'}}>
+                            <InteractiveRebarSelect options={optsTracHoriz} defaultVal={defaultTracHoriz} asReq={asHorizReq} />
+                          </td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee'}}>
+                            <InteractiveRebarSelect options={optsCompVert} defaultVal={defaultCompVert} asReq={asCompReq} />
+                          </td>
+                          <td style={{padding: '8px'}}>
+                            <InteractiveRebarSelect options={optsCompHoriz} defaultVal={defaultCompHoriz} asReq={asHorizCompReq} />
+                          </td>
                         </tr>
                       );
                     })}
@@ -4255,5 +4279,62 @@ export default function CalculadoraLosaFundacion({ onBack }) {
       />
     )}
     </>
+  );
+}
+
+// Helper for dynamic interactive rebar verification
+function verifyRebarSpacing(selectedStr, asReqCm2M) {
+  if (!selectedStr) return { ok: true, asProv: 0 };
+  const m = selectedStr.match(/Ø(\d+)@(\d+)cm/);
+  if (!m) return { ok: true, asProv: 0 };
+  const d_mm = parseInt(m[1]);
+  const s_cm = parseInt(m[2]);
+  const areas = { 6: 0.283, 7: 0.385, 8: 0.503, 10: 0.785, 12: 1.13, 16: 1.99, 19: 2.84, 20: 3.14 };
+  const a_bar = areas[d_mm] || (Math.PI * (d_mm/10)**2 / 4);
+  const asProv = (a_bar / (s_cm / 100));
+  const ok = asProv >= (asReqCm2M - 0.05);
+  return { ok, asProv };
+}
+
+function InteractiveRebarSelect({ options, defaultVal, asReq }) {
+  const [val, setVal] = useState(defaultVal);
+  useEffect(() => {
+    setVal(defaultVal);
+  }, [defaultVal]);
+  const { ok, asProv } = verifyRebarSpacing(val, asReq);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+      <select
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        style={{
+          background: ok ? '#f0fdf4' : '#fef2f2',
+          border: `1.5px solid ${ok ? '#16a34a' : '#dc2626'}`,
+          borderRadius: '6px',
+          color: ok ? '#15803d' : '#b91c1c',
+          fontWeight: 'bold',
+          padding: '4px 6px',
+          fontSize: '12.5px',
+          outline: 'none',
+          cursor: 'pointer'
+        }}
+      >
+        {options && options.map((opt, i) => (
+          <option key={i} value={opt}>{opt}</option>
+        ))}
+      </select>
+      <span style={{
+        fontSize: '10.5px',
+        fontWeight: 'bold',
+        padding: '2px 6px',
+        borderRadius: '4px',
+        background: ok ? '#dcfce7' : '#fee2e2',
+        color: ok ? '#166534' : '#991b1b',
+        border: `1px solid ${ok ? '#86efac' : '#fca5a5'}`
+      }}>
+        {ok ? `✓ Cumple (${asProv.toFixed(2)} cm²/m)` : `⚠️ Insuficiente (${asProv.toFixed(2)} < ${asReq.toFixed(2)})`}
+      </span>
+    </div>
   );
 }

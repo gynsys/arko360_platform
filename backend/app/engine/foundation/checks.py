@@ -13,17 +13,26 @@ import re
 import numpy as np
 
 def get_equivalent_rebars_spacing(as_req_cm2_m, min_spacing=10, max_spacing=30):
-    diameters = {10: 0.785, 12: 1.13, 16: 1.99, 19: 2.84}
+    diameters = {7: 0.385, 8: 0.503, 10: 0.785, 12: 1.13, 16: 1.99, 19: 2.84}
     options = []
+    # 1. Exact calculated options
     for d, area in diameters.items():
         s_m = area / as_req_cm2_m
         s_cm = int(s_m * 100)
         if s_cm > max_spacing:
             s_cm = max_spacing
         if s_cm >= min_spacing:
-            options.append(f"Ø{d}@{s_cm}cm")
-    if not options:
-        options.append(f"Ø19@10cm")
+            opt = f"Ø{d}@{s_cm}cm"
+            if opt not in options:
+                options.append(opt)
+            
+    # 2. Standard commercial spacings for live testing (10, 12, 15, 18, 20, 25, 30 cm)
+    for d in [7, 8, 10, 12, 16]:
+        for s_step in [10, 12, 15, 18, 20, 25, 30]:
+            opt = f"Ø{d}@{s_step}cm"
+            if opt not in options:
+                options.append(opt)
+
     return options
 
 def get_equivalent_rebars_count(as_req_cm2, min_bars=2, max_bars=6):
@@ -336,12 +345,12 @@ class StructuralChecks:
                 As_m2 = Mn_req / (fy_Pa * (d - a/2))
                 a = (As_m2 * fy_Pa) / (0.85 * fc_Pa * b)
             
-        # Vertical tension face steel (Cara Interior / Tracción: flexión + min 0.0015)
-        As_trac_min_m2 = 0.0015 * b * rw.thickness
+        # Vertical tension face steel (Cara Interior / Tracción: flexión + min 0.0018 -> 2.70 cm2/m)
+        As_trac_min_m2 = 0.0018 * b * rw.thickness
         As_trac_cm2_m = max(As_m2, As_trac_min_m2) * 10000
         trac_options = get_equivalent_rebars_spacing(As_trac_cm2_m)
         
-        # Vertical compression face steel (Cara Exterior / Compresión: min 0.0010)
+        # Vertical compression face steel (Cara Exterior / Compresión: min 0.0010 -> 1.50 cm2/m)
         As_comp_min_m2 = 0.0010 * b * rw.thickness
         As_comp_cm2_m = As_comp_min_m2 * 10000
         comp_options = get_equivalent_rebars_spacing(As_comp_cm2_m)
@@ -353,11 +362,11 @@ class StructuralChecks:
             proposed_rebar_options.append(f"Trac (Int): {trac_options[i]} | Comp (Ext): {comp}")
             
         # Horizontal steel per face (ACI 318 Cap 11)
-        # Tension face (Interior): 0.0012 * b * t
-        As_horiz_trac_cm2_m = 0.0012 * b * rw.thickness * 10000
+        # Tension face (Interior): 0.0015 * b * t -> 2.25 cm2/m
+        As_horiz_trac_cm2_m = 0.0015 * b * rw.thickness * 10000
         horiz_trac_options = get_equivalent_rebars_spacing(As_horiz_trac_cm2_m)
 
-        # Compression face (Exterior): 0.0010 * b * t
+        # Compression face (Exterior): 0.0010 * b * t -> 1.50 cm2/m
         As_horiz_comp_cm2_m = 0.0010 * b * rw.thickness * 10000
         horiz_comp_options = get_equivalent_rebars_spacing(As_horiz_comp_cm2_m)
 
