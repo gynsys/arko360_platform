@@ -577,18 +577,16 @@ class PlanRenderer:
 
         rw_thick_cm = round(rw_thick_m * 100)
 
-        rw_trac_lbl = "Ø1/2\" @ 18 cm"
-        rw_comp_lbl = "Ø3/8\" @ 25 cm"
-        rw_horiz_lbl = "Rep. 3/8\" @ 25 cm"
-        bar_diam_mm = 12
+        rw_trac_lbl = "Ø10@29cm"
+        rw_comp_lbl = "Ø10@30cm"
+        rw_horiz_trac_lbl = "Ø10@26cm"
+        rw_horiz_comp_lbl = "Ø10@26cm"
+        bar_diam_mm = 10
         if wd:
-            pr = wd.get('proposed_rebar', '')
-            m_t = _re.search(r'Trac:\s*(Ø\d+@\d+cm)', pr)
-            m_c = _re.search(r'Comp:\s*(Ø\d+@\d+cm)', pr)
-            if m_t: rw_trac_lbl = m_t.group(1)
-            if m_c: rw_comp_lbl = m_c.group(1)
-            if wd.get('proposed_rebar_horiz'):
-                rw_horiz_lbl = f"Rep. {wd.get('proposed_rebar_horiz')}"
+            rw_trac_lbl = wd.get('rebar_trac_vert') or "Ø10@29cm"
+            rw_comp_lbl = wd.get('rebar_comp_vert') or "Ø10@30cm"
+            rw_horiz_trac_lbl = wd.get('rebar_trac_horiz') or "Ø10@26cm"
+            rw_horiz_comp_lbl = wd.get('rebar_comp_horiz') or "Ø10@26cm"
             m_d = _re.search(r'Ø(\d+)', rw_trac_lbl)
             if m_d:
                 bar_diam_mm = int(m_d.group(1))
