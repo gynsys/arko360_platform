@@ -484,21 +484,41 @@ class StructuralChecks:
                     
             As_req_cm2 = max(As_m2, As_min_m2) * 10000
             
-            # Select most efficient commercial bar size (preferring Ø12 or Ø10 for light/moderate beams)
-            best_bot_d = 16
-            best_bot_n = 2
-            for d_mm, area_bar in [(12, 1.13), (10, 0.71), (16, 2.01), (20, 3.14)]:
-                n_req = int(np.ceil((As_req_cm2 - 0.05) / area_bar))
-                if n_req < 2:
-                    n_req = 2
-                if n_req <= 4:
-                    best_bot_d = d_mm
-                    best_bot_n = n_req
-                    break
+            # Fully programmed dynamic rebar combination solver
+            bars_catalog = [(10, 0.71), (12, 1.13), (16, 2.01), (20, 3.14)]
+            valid_combos = []
+            
+            # Single bar combinations (e.g., 2Ø12, 3Ø12, 2Ø16)
+            for d1, a1 in bars_catalog:
+                for n1 in range(2, 5):
+                    as_prov = round(n1 * a1, 2)
+                    if as_prov >= As_req_cm2 - 0.01:
+                        valid_combos.append((as_prov, f"{n1}Ø{d1} Inf + 2Ø10 Sup"))
 
-            n_bars_bot = best_bot_n
-            n_bars_top = 2
-            proposed_rebar = f"{n_bars_bot}Ø{best_bot_d} Inf + {n_bars_top}Ø10 Sup"
+            # Hybrid combinations (e.g., 2Ø12 + 1Ø10 = 2.97 cm2)
+            for d1, a1 in [(12, 1.13), (16, 2.01)]:
+                for d2, a2 in [(10, 0.71), (12, 1.13)]:
+                    if d1 == d2:
+                        continue
+                    for n_cent in [1, 2]:
+                        as_prov = round(2 * a1 + n_cent * a2, 2)
+                        if as_prov >= As_req_cm2 - 0.01 and (2 + n_cent) <= 4:
+                            valid_combos.append((as_prov, f"2Ø{d1} + {n_cent}Ø{d2} Inf + 2Ø10 Sup"))
+
+            # Sort programmatically by efficiency (smallest provided steel area >= required)
+            valid_combos.sort(key=lambda x: x[0])
+            
+            seen_combos = set()
+            proposed_rebar_options = []
+            for as_p, lbl in valid_combos:
+                if lbl not in seen_combos:
+                    seen_combos.add(lbl)
+                    proposed_rebar_options.append(lbl)
+                    
+            if not proposed_rebar_options:
+                proposed_rebar_options = ["2Ø16 Inf + 2Ø10 Sup"]
+                
+            proposed_rebar = proposed_rebar_options[0]
         else:
             # Doubly reinforced
             Mn2 = Mn_req - Mnt_max
@@ -518,7 +538,7 @@ class StructuralChecks:
             best_bot_d = 16
             best_bot_n = 2
             for d_mm, area_bar in [(16, 2.01), (12, 1.13), (20, 3.14)]:
-                n_req = int(np.ceil((As_req_cm2 - 0.05) / area_bar))
+                n_req = int(np.ceil(As_req_cm2 / area_bar))
                 if n_req < 2:
                     n_req = 2
                 if n_req <= 6:
@@ -558,7 +578,7 @@ class StructuralChecks:
             "n_bars_bot": int(n_bars_bot),
             "n_bars_top": int(n_bars_top),
             "proposed_rebar": proposed_rebar,
-            "proposed_rebar_options": [proposed_rebar],
+            "proposed_rebar_options": proposed_rebar_options if 'proposed_rebar_options' in locals() else [proposed_rebar],
             "proposed_stirrups": f"Ø10@{s_cm}cm",
             "proposed_stirrups_options": [f"Ø10@{s_cm}cm", f"Ø10@{max(10, s_cm-5)}cm"]
         }
