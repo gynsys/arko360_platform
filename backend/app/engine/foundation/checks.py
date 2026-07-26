@@ -518,15 +518,19 @@ class StructuralChecks:
             valid_combos = []
             
             # Maximum bars per horizontal layer based on ACI 318 Sec 25.2 (min clear spacing 2.5 cm)
-            # b_int = b - 2*cover - 2*d_stirrup = 0.15 - 0.08 - 0.02 = 0.05m -> max 2 bars per layer for b=15cm
             b_int = max(0.05, b - 2*cover - 0.02)
             max_bars_layer1 = max(2, int((b_int + 0.025) / (0.012 + 0.025))) # 2 bars for b=15cm
 
-            # Single bar combinations (e.g., 2Ø12, 2Ø16, 2Ø20)
+            # Maximum reasonable steel provided (don't suggest absurdly oversized options > 1.8x As_req or > As_req + 2.0 cm2)
+            max_as_prov = max(As_req_cm2 * 1.8, As_req_cm2 + 2.0)
+            if As_req_cm2 < 3.0:
+                max_as_prov = min(max_as_prov, 4.2)
+
+            # Single bar combinations (e.g., 2Ø10, 2Ø12, 2Ø16)
             for d1, a1 in bars_catalog:
                 for n1 in range(2, max_bars_layer1 + 1):
                     as_prov = round(n1 * a1, 2)
-                    if as_prov >= As_req_cm2 - 0.01:
+                    if As_req_cm2 - 0.05 <= as_prov <= max_as_prov:
                         valid_combos.append((as_prov, f"{n1}Ø{d1} Inf + 2Ø10 Sup"))
 
             # Hybrid / 2-layer combinations (e.g., 2Ø12 + 1Ø10 (2 capas) = 2.97 cm2)
@@ -536,7 +540,7 @@ class StructuralChecks:
                         continue
                     for n_cent in [1, 2]:
                         as_prov = round(2 * a1 + n_cent * a2, 2)
-                        if as_prov >= As_req_cm2 - 0.01:
+                        if As_req_cm2 - 0.05 <= as_prov <= max_as_prov:
                             valid_combos.append((as_prov, f"2Ø{d1} + {n_cent}Ø{d2} (2 capas) Inf + 2Ø10 Sup"))
 
             # Sort programmatically by efficiency (smallest provided steel area >= required)

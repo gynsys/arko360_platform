@@ -4314,16 +4314,16 @@ function getLiveSvgDetails(rawSvg, beamRebar, wallRebars) {
   // 2. Retaining Wall callouts text replacements
   if (wallRebars) {
     if (wallRebars.tracVert) {
-      updated = updated.replace(/Vert\. Tracción: Ø\d+@\d+cm \(Int\.\)/g, `Vert. Tracción: ${wallRebars.tracVert} (Int.)`);
+      updated = updated.replace(/(Vert\. Tracción:\s*)?Ø\d+@\d+cm(\s*\(Int\.\))?/g, wallRebars.tracVert);
     }
     if (wallRebars.tracHoriz) {
-      updated = updated.replace(/Horiz\. Tracción: Ø\d+@\d+cm \(Int\.\)/g, `Horiz. Tracción: ${wallRebars.tracHoriz} (Int.)`);
+      updated = updated.replace(/(Horiz\. Tracción:\s*)?Ø\d+@\d+cm(\s*\(Int\.\))?/g, wallRebars.tracHoriz);
     }
     if (wallRebars.compVert) {
-      updated = updated.replace(/Vert\. Compresión: Ø\d+@\d+cm \(Ext\.\)/g, `Vert. Compresión: ${wallRebars.compVert} (Ext.)`);
+      updated = updated.replace(/(Vert\. Compresión:\s*)?Ø\d+@\d+cm(\s*\(Ext\.\))?/g, wallRebars.compVert);
     }
     if (wallRebars.compHoriz) {
-      updated = updated.replace(/Horiz\. Compresión: Ø\d+@\d+cm \(Ext\.\)/g, `Horiz. Compresión: ${wallRebars.compHoriz} (Ext.)`);
+      updated = updated.replace(/(Horiz\. Compresión:\s*)?Ø\d+@\d+cm(\s*\(Ext\.\))?/g, wallRebars.compHoriz);
     }
   }
 

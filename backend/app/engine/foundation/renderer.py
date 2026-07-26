@@ -686,7 +686,7 @@ class PlanRenderer:
             f'<line x1="{call_trac_h_x2:.1f}" y1="{call_trac_h_y2:.1f}" x2="{call_trac_h_end:.1f}" y2="{call_trac_h_y2:.1f}" stroke="#1d4ed8" stroke-width="1.5" fill="none"/>'
         )
         svg_parts.append(
-            f'<text x="{call_trac_h_end + 6:.1f}" y="{call_trac_h_y2 + 4:.1f}" font-size="13" font-weight="bold" font-family="monospace" fill="#1d4ed8">Horiz. Tracción: {rw_horiz_trac_lbl} (Int.)</text>'
+            f'<text x="{call_trac_h_end + 6:.1f}" y="{call_trac_h_y2 + 4:.1f}" font-size="13" font-weight="bold" font-family="monospace" fill="#1d4ed8">{rw_horiz_trac_lbl}</text>'
         )
 
         # Directriz 2: Vert. Tracción (Cara Interior - Derecha Media)
@@ -702,7 +702,7 @@ class PlanRenderer:
             f'<line x1="{call_trac_v_x2:.1f}" y1="{call_trac_v_y2:.1f}" x2="{call_trac_v_end:.1f}" y2="{call_trac_v_y2:.1f}" stroke="#1d4ed8" stroke-width="1.5" fill="none"/>'
         )
         svg_parts.append(
-            f'<text x="{call_trac_v_end + 6:.1f}" y="{call_trac_v_y2 + 4:.1f}" font-size="13" font-weight="bold" font-family="monospace" fill="#1d4ed8">Vert. Tracción: {rw_trac_lbl} (Int.)</text>'
+            f'<text x="{call_trac_v_end + 6:.1f}" y="{call_trac_v_y2 + 4:.1f}" font-size="13" font-weight="bold" font-family="monospace" fill="#1d4ed8">{rw_trac_lbl}</text>'
         )
 
         # Directriz 3: Horiz. Compresión (Cara Exterior - Izquierda Superior)
@@ -718,7 +718,7 @@ class PlanRenderer:
             f'<line x1="{call_comp_h_x2:.1f}" y1="{call_comp_h_y2:.1f}" x2="{call_comp_h_end:.1f}" y2="{call_comp_h_y2:.1f}" stroke="#15803d" stroke-width="1.5" fill="none"/>'
         )
         svg_parts.append(
-            f'<text x="{call_comp_h_end - 6:.1f}" y="{call_comp_h_y2 + 4:.1f}" text-anchor="end" font-size="13" font-weight="bold" font-family="monospace" fill="#15803d">Horiz. Compresión: {rw_horiz_comp_lbl} (Ext.)</text>'
+            f'<text x="{call_comp_h_end - 6:.1f}" y="{call_comp_h_y2 + 4:.1f}" text-anchor="end" font-size="13" font-weight="bold" font-family="monospace" fill="#15803d">{rw_horiz_comp_lbl}</text>'
         )
 
         # Directriz 4: Vert. Compresión (Cara Exterior - Izquierda Media)
@@ -734,7 +734,7 @@ class PlanRenderer:
             f'<line x1="{call_comp_v_x2:.1f}" y1="{call_comp_v_y2:.1f}" x2="{call_comp_v_end:.1f}" y2="{call_comp_v_y2:.1f}" stroke="#15803d" stroke-width="1.5" fill="none"/>'
         )
         svg_parts.append(
-            f'<text x="{call_comp_v_end - 6:.1f}" y="{call_comp_v_y2 + 4:.1f}" text-anchor="end" font-size="13" font-weight="bold" font-family="monospace" fill="#15803d">Vert. Compresión: {rw_comp_lbl} (Ext.)</text>'
+            f'<text x="{call_comp_v_end - 6:.1f}" y="{call_comp_v_y2 + 4:.1f}" text-anchor="end" font-size="13" font-weight="bold" font-family="monospace" fill="#15803d">{rw_comp_lbl}</text>'
         )
 
         # 6. CAD Dimensions with Slash Ticks
