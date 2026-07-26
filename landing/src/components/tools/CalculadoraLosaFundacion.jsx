@@ -3940,52 +3940,50 @@ export default function CalculadoraLosaFundacion({ onBack }) {
             <div style={{padding:'20px 24px', borderBottom:'1px solid #eee', background:'#fff8e1'}}>
               <h4 style={{margin:'0 0 12px 0', color:'#f57f17'}}>🧱 Diseño de Pantalla de Muros de Contención</h4>
               <div style={{overflowX: 'auto'}}>
-                <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left', background: '#fff'}}>
+                <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'center', background: '#fff', border: '1px solid #ffca28'}}>
                   <thead>
-                    <tr style={{background: '#ffe082', borderBottom: '2px solid #ffca28'}}>
-                      <th style={{padding: '8px'}}>ID Muro</th>
-                      <th style={{padding: '8px'}}>H Tierra (m)</th>
-                      <th style={{padding: '8px'}}>Espesor (m)</th>
-                      <th style={{padding: '8px'}}>Mu (kgf·m/m)</th>
-                      <th style={{padding: '8px'}}>Vu (kgf/m)</th>
-                      <th style={{padding: '8px'}}>φVc (kgf/m)</th>
-                      <th style={{padding: '8px'}}>Corte</th>
-                      <th style={{padding: '8px'}}>Acero Vertical</th>
-                      <th style={{padding: '8px'}}>Prop. Vert</th>
-                      <th style={{padding: '8px'}}>Acero Horiz</th>
-                      <th style={{padding: '8px'}}>Prop. Horiz</th>
+                    <tr style={{background: '#ffe082', borderBottom: '1px solid #ffca28'}}>
+                      <th rowSpan="2" style={{padding: '8px', borderRight: '1px solid #ffd54f'}}>ID Muro</th>
+                      <th rowSpan="2" style={{padding: '8px', borderRight: '1px solid #ffd54f'}}>H Tierra (m)</th>
+                      <th rowSpan="2" style={{padding: '8px', borderRight: '1px solid #ffd54f'}}>Espesor (m)</th>
+                      <th rowSpan="2" style={{padding: '8px', borderRight: '1px solid #ffd54f'}}>Mu (kgf·m/m)</th>
+                      <th rowSpan="2" style={{padding: '8px', borderRight: '1px solid #ffd54f'}}>Vu (kgf/m)</th>
+                      <th rowSpan="2" style={{padding: '8px', borderRight: '1px solid #ffd54f'}}>φVc (kgf/m)</th>
+                      <th rowSpan="2" style={{padding: '8px', borderRight: '1px solid #ffd54f'}}>Corte</th>
+                      <th colSpan="2" style={{padding: '8px', borderRight: '2px solid #ffb300', background: '#ffecb3', fontWeight: 'bold', fontSize: '14px'}}>Armadura Tracción (Cara Int)</th>
+                      <th colSpan="2" style={{padding: '8px', background: '#fff3e0', fontWeight: 'bold', fontSize: '14px'}}>Armadura Compresión (Cara Ext)</th>
+                    </tr>
+                    <tr style={{background: '#fff8e1', borderBottom: '2px solid #ffca28'}}>
+                      <th style={{padding: '6px', borderRight: '1px solid #ffd54f'}}>Ver.</th>
+                      <th style={{padding: '6px', borderRight: '2px solid #ffb300'}}>Hoz.</th>
+                      <th style={{padding: '6px', borderRight: '1px solid #ffd54f'}}>Ver.</th>
+                      <th style={{padding: '6px'}}>Hoz.</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {results.retaining_wall_designs.map((wd, idx) => (
-                      <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
-                        <td style={{padding: '8px', fontWeight: 'bold'}}>{wd.id.substring(0, 8)}</td>
-                        <td style={{padding: '8px'}}>{wd.H_m.toFixed(2)}</td>
-                        <td style={{padding: '8px'}}>{wd.thickness_m.toFixed(2)}</td>
-                        <td style={{padding: '8px'}}>{wd.Mu_kgfm_m.toFixed(0)}</td>
-                        <td style={{padding: '8px'}}>{wd.Vu_kgf_m.toFixed(0)}</td>
-                        <td style={{padding: '8px'}}>{wd.phiVc_kgf_m.toFixed(0)}</td>
-                        <td style={{padding: '8px', color: wd.shear_ok ? '#2e7d32' : '#c62828', fontWeight: 'bold'}}>
-                          {wd.shear_ok ? 'OK' : 'FALLA (Espesor insuficiente)'}
-                        </td>
-                        <td style={{padding: '8px'}}>{wd.As_req_cm2_m.toFixed(2)} cm²/m</td>
-                        <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>
-                          {wd.proposed_rebar_options && wd.proposed_rebar_options.length > 1 ? (
-                            <select style={{background:'transparent', border:'1px solid #ddd', borderRadius:'4px', color:'inherit', fontWeight:'inherit', outline:'none', cursor:'pointer', padding:'2px'}} defaultValue={wd.proposed_rebar}>
-                              {wd.proposed_rebar_options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                            </select>
-                          ) : wd.proposed_rebar}
-                        </td>
-                        <td style={{padding: '8px'}}>{wd.As_horiz_cm2_m ? wd.As_horiz_cm2_m.toFixed(2) + ' cm²/m' : '-'}</td>
-                        <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>
-                          {wd.proposed_rebar_horiz_options && wd.proposed_rebar_horiz_options.length > 1 ? (
-                            <select style={{background:'transparent', border:'1px solid #ddd', borderRadius:'4px', color:'inherit', fontWeight:'inherit', outline:'none', cursor:'pointer', padding:'2px'}} defaultValue={wd.proposed_rebar_horiz}>
-                              {wd.proposed_rebar_horiz_options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                            </select>
-                          ) : (wd.proposed_rebar_horiz || '-')}
-                        </td>
-                      </tr>
-                    ))}
+                    {results.retaining_wall_designs.map((wd, idx) => {
+                      const tracVert = wd.rebar_trac_vert || (wd.proposed_rebar ? wd.proposed_rebar.split('|')[0]?.replace(/.*:/, '').trim() : 'Ø10@29cm');
+                      const tracHoriz = wd.rebar_trac_horiz || (wd.proposed_rebar_horiz ? wd.proposed_rebar_horiz.split('|')[0]?.replace(/.*:/, '').trim() : 'Ø10@26cm');
+                      const compVert = wd.rebar_comp_vert || (wd.proposed_rebar ? wd.proposed_rebar.split('|')[1]?.replace(/.*:/, '').trim() : 'Ø10@30cm');
+                      const compHoriz = wd.rebar_comp_horiz || (wd.proposed_rebar_horiz ? wd.proposed_rebar_horiz.split('|')[1]?.replace(/.*:/, '').trim() : 'Ø10@26cm');
+                      return (
+                        <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
+                          <td style={{padding: '8px', fontWeight: 'bold', borderRight: '1px solid #eee'}}>{wd.id.substring(0, 8)}</td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{wd.H_m.toFixed(2)}</td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{wd.thickness_m.toFixed(2)}</td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{wd.Mu_kgfm_m.toFixed(0)}</td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{wd.Vu_kgf_m.toFixed(0)}</td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{wd.phiVc_kgf_m.toFixed(0)}</td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee', color: wd.shear_ok ? '#2e7d32' : '#c62828', fontWeight: 'bold'}}>
+                            {wd.shear_ok ? 'OK' : 'FALLA'}
+                          </td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee', color: '#1565c0', fontWeight: 'bold'}}>{tracVert}</td>
+                          <td style={{padding: '8px', borderRight: '2px solid #ffb300', color: '#1565c0', fontWeight: 'bold'}}>{tracHoriz}</td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee', color: '#2e7d32', fontWeight: 'bold'}}>{compVert}</td>
+                          <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>{compHoriz}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

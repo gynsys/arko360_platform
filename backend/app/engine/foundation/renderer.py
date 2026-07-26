@@ -913,7 +913,48 @@ class PlanRenderer:
             f'<text x="{call_right_start_x + 6:.1f}" y="{bot_y + 15:.1f}" font-size="14.5" font-weight="bold" font-family="monospace" fill="#000000">{n_bot} - Ø{d_bot_mm}</text>'
         )
 
-        # 5. Width b (Top side)
+        # 5. Height CAD Dimensions (Left side: 10 cm, 40 cm & 50 cm without e=, h_c=, h=)
+        cuelgue_h_cm = max(0, sb_h_cm - slab_h_cm)
+        dim_h_x1 = bx1 - wing_w - 20
+        dim_h_x2 = dim_h_x1 - 45
+
+        # A. Slab Thickness Dimension (10 cm)
+        svg_parts.append(
+            f'<line x1="{dim_h_x1:.1f}" y1="{by1:.1f}" x2="{dim_h_x1:.1f}" y2="{by1 + slab_h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
+        )
+        svg_parts.append(f'<line x1="{dim_h_x1 - 4:.1f}" y1="{by1 + 4:.1f}" x2="{dim_h_x1 + 4:.1f}" y2="{by1 - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
+        svg_parts.append(f'<line x1="{dim_h_x1 - 4:.1f}" y1="{by1 + slab_h_px + 4:.1f}" x2="{dim_h_x1 + 4:.1f}" y2="{by1 + slab_h_px - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
+        svg_parts.append(
+            f'<text x="{dim_h_x1 - 8:.1f}" y="{by1 + slab_h_px / 2:.1f}" text-anchor="middle" font-size="13" font-weight="bold" '
+            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x1 - 8:.1f},{by1 + slab_h_px / 2:.1f})">'
+            f'{slab_h_cm} cm</text>'
+        )
+
+        # B. Beam Cuelgue/Drop Dimension (40 cm)
+        svg_parts.append(
+            f'<line x1="{dim_h_x1:.1f}" y1="{by1 + slab_h_px:.1f}" x2="{dim_h_x1:.1f}" y2="{by1 + h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
+        )
+        svg_parts.append(f'<line x1="{dim_h_x1 - 4:.1f}" y1="{by1 + h_px + 4:.1f}" x2="{dim_h_x1 + 4:.1f}" y2="{by1 + h_px - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
+        mid_cuelgue_y = by1 + slab_h_px + (h_px - slab_h_px) / 2
+        svg_parts.append(
+            f'<text x="{dim_h_x1 - 8:.1f}" y="{mid_cuelgue_y:.1f}" text-anchor="middle" font-size="13" font-weight="bold" '
+            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x1 - 8:.1f},{mid_cuelgue_y:.1f})">'
+            f'{cuelgue_h_cm} cm</text>'
+        )
+
+        # C. Total Structural Height Dimension Line (50 cm)
+        svg_parts.append(
+            f'<line x1="{dim_h_x2:.1f}" y1="{by1:.1f}" x2="{dim_h_x2:.1f}" y2="{by1 + h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
+        )
+        svg_parts.append(f'<line x1="{dim_h_x2 - 4:.1f}" y1="{by1 + 4:.1f}" x2="{dim_h_x2 + 4:.1f}" y2="{by1 - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
+        svg_parts.append(f'<line x1="{dim_h_x2 - 4:.1f}" y1="{by1 + h_px + 4:.1f}" x2="{dim_h_x2 + 4:.1f}" y2="{by1 + h_px - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
+        svg_parts.append(
+            f'<text x="{dim_h_x2 - 9:.1f}" y="{panel_cy:.1f}" text-anchor="middle" font-size="14" font-weight="bold" '
+            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x2 - 9:.1f},{panel_cy:.1f})">'
+            f'{sb_h_cm} cm</text>'
+        )
+
+        # 6. Width b (Top side)
         dim_b_y = by1 - 22
         svg_parts.append(
             f'<line x1="{bx1:.1f}" y1="{dim_b_y:.1f}" x2="{bx1 + b_px:.1f}" y2="{dim_b_y:.1f}" stroke="#000000" stroke-width="1.2"/>'

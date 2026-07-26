@@ -336,27 +336,36 @@ class StructuralChecks:
                 As_m2 = Mn_req / (fy_Pa * (d - a/2))
                 a = (As_m2 * fy_Pa) / (0.85 * fc_Pa * b)
             
-        As_min_m2 = 0.0018 * b * rw.thickness
-        As_req_cm2_m = max(As_m2, As_min_m2) * 10000
+        # Vertical tension face steel (Cara Interior / Tracción: flexión + min 0.0015)
+        As_trac_min_m2 = 0.0015 * b * rw.thickness
+        As_trac_cm2_m = max(As_m2, As_trac_min_m2) * 10000
+        trac_options = get_equivalent_rebars_spacing(As_trac_cm2_m)
         
-        # Propose rebar options for tension face (Interior)
-        trac_options = get_equivalent_rebars_spacing(As_req_cm2_m)
-        
-        # Compression face (Exterior) min steel
-        As_comp_min_m2 = 0.0012 * b * rw.thickness
+        # Vertical compression face steel (Cara Exterior / Compresión: min 0.0010)
+        As_comp_min_m2 = 0.0010 * b * rw.thickness
         As_comp_cm2_m = As_comp_min_m2 * 10000
         comp_options = get_equivalent_rebars_spacing(As_comp_cm2_m)
         
-        # Combine options pairwise
+        # Combine vertical options pairwise with explicit face names
         proposed_rebar_options = []
         for i in range(len(trac_options)):
             comp = comp_options[i] if i < len(comp_options) else comp_options[-1]
-            proposed_rebar_options.append(f"Trac: {trac_options[i]} / Comp: {comp}")
+            proposed_rebar_options.append(f"Trac (Int): {trac_options[i]} | Comp (Ext): {comp}")
             
-        # Horizontal steel (temperature and shrinkage)
-        As_horiz_min_m2 = 0.0020 * b * rw.thickness
-        As_horiz_cm2_m = As_horiz_min_m2 * 10000
-        horiz_options = get_equivalent_rebars_spacing(As_horiz_cm2_m)
+        # Horizontal steel per face (ACI 318 Cap 11)
+        # Tension face (Interior): 0.0012 * b * t
+        As_horiz_trac_cm2_m = 0.0012 * b * rw.thickness * 10000
+        horiz_trac_options = get_equivalent_rebars_spacing(As_horiz_trac_cm2_m)
+
+        # Compression face (Exterior): 0.0010 * b * t
+        As_horiz_comp_cm2_m = 0.0010 * b * rw.thickness * 10000
+        horiz_comp_options = get_equivalent_rebars_spacing(As_horiz_comp_cm2_m)
+
+        # Pairwise horizontal rebar options for both faces independently
+        horiz_options = []
+        for i in range(len(horiz_trac_options)):
+            h_comp = horiz_comp_options[i] if i < len(horiz_comp_options) else horiz_comp_options[-1]
+            horiz_options.append(f"Trac (Int): {horiz_trac_options[i]} | Comp (Ext): {h_comp}")
             
         return {
             "id": rw.id if hasattr(rw, 'id') and rw.id else "Muro",
@@ -366,12 +375,23 @@ class StructuralChecks:
             "Vu_kgf_m": float(Vu_N_m / 9.80665),
             "phiVc_kgf_m": float(phi_Vc_N_m / 9.80665),
             "shear_ok": shear_ok,
-            "As_req_cm2_m": float(As_req_cm2_m),
+            "As_req_cm2_m": float(As_trac_cm2_m),
+            "As_comp_cm2_m": float(As_comp_cm2_m),
             "proposed_rebar": proposed_rebar_options[0] if proposed_rebar_options else "",
             "proposed_rebar_options": proposed_rebar_options,
-            "As_horiz_cm2_m": float(As_horiz_cm2_m),
+            "As_horiz_cm2_m": float(As_horiz_trac_cm2_m),
+            "As_horiz_comp_cm2_m": float(As_horiz_comp_cm2_m),
             "proposed_rebar_horiz": horiz_options[0] if horiz_options else "",
-            "proposed_rebar_horiz_options": horiz_options
+            "proposed_rebar_horiz_options": horiz_options,
+            # Explicit separate fields for constructor table
+            "rebar_trac_vert": trac_options[0] if trac_options else "",
+            "rebar_trac_vert_options": trac_options,
+            "rebar_trac_horiz": horiz_trac_options[0] if horiz_trac_options else "",
+            "rebar_trac_horiz_options": horiz_trac_options,
+            "rebar_comp_vert": comp_options[0] if comp_options else "",
+            "rebar_comp_vert_options": comp_options,
+            "rebar_comp_horiz": horiz_comp_options[0] if horiz_comp_options else "",
+            "rebar_comp_horiz_options": horiz_comp_options
         }
 
     def design_support_beam(self, sb) -> dict:
