@@ -585,6 +585,14 @@ export default function CalculadoraLosaFundacion() {
             </table>
           </div>
 
+          {/* Details SVG overlay */}
+          {results.svg_details && (
+            <div style={{ marginTop: '24px' }}>
+              <h4 style={{ margin: '0 0 12px 0', color: '#1e293b', fontWeight: 'bold' }}>Detalles Constructivos Transversales (Planos CAD)</h4>
+              <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '12px', overflow: 'auto' }} dangerouslySetInnerHTML={{ __html: results.svg_details }} />
+            </div>
+          )}
+
           {/* Settlements */}
           <div className="settlements">
             <h4>Asentamientos Diferenciales</h4>
