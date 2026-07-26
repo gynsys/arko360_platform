@@ -650,19 +650,19 @@ class PlanRenderer:
         comp_x = stem_left_x + cover_px + 4
         pata_y = stem_bot_y + base_h_px - cover_px - 4
 
-        # Inner face tension bar (Tracción / Interior) - Hooks UP into footing end
+        # Inner face tension bar (Tracción / Interior) - Clean L-shape into footing
         svg_parts.append(
             f'<path d="M {trac_x:.1f} {stem_top_y + 10} L {trac_x:.1f} {pata_y:.1f} '
-            f'L {foot_right_x - 8:.1f} {pata_y:.1f} L {foot_right_x - 8:.1f} {pata_y - 12:.1f}" fill="none" stroke="#000000" stroke-width="2.5" stroke-linejoin="round"/>'
+            f'L {foot_right_x - 15:.1f} {pata_y:.1f}" fill="none" stroke="#000000" stroke-width="2.5" stroke-linejoin="round"/>'
         )
 
-        # Outer face compression bar (Compresión / Exterior)
+        # Outer face compression bar (Compresión / Exterior) - Clean L-shape into footing
         svg_parts.append(
-            f'<path d="M {comp_x:.1f} {stem_top_y + 10} L {comp_x:.1f} {pata_y - 10:.1f} '
-            f'L {trac_x - 5:.1f} {pata_y - 10:.1f}" fill="none" stroke="#000000" stroke-width="2.2" stroke-linejoin="round"/>'
+            f'<path d="M {comp_x:.1f} {stem_top_y + 10} L {comp_x:.1f} {pata_y - 8:.1f} '
+            f'L {foot_right_x - 15:.1f} {pata_y - 8:.1f}" fill="none" stroke="#000000" stroke-width="2.2" stroke-linejoin="round"/>'
         )
 
-        # 3. Horizontal Repetition Rebar Dots (Repartición / Temperatura)
+        # 3. Horizontal Repetition Rebar Dots (Repartición / Temperatura en pantalla)
         dot_spacing = 34
         horiz_dots_y = []
         for bar_y in range(stem_top_y + 25, stem_bot_y - 12, dot_spacing):
@@ -671,12 +671,6 @@ class PlanRenderer:
             svg_parts.append(f'<circle cx="{trac_x - 6:.1f}" cy="{bar_y:.1f}" r="3.5" fill="#000000"/>')
             # Outer dots
             svg_parts.append(f'<circle cx="{comp_x + 6:.1f}" cy="{bar_y:.1f}" r="3.5" fill="#000000"/>')
-
-        # Horizontal dots in footing slab
-        foot_dots_x = [stem_left_x + 20, stem_left_x + 45, stem_right_x + 25, stem_right_x + 65, foot_right_x - 25]
-        for f_x in foot_dots_x:
-            svg_parts.append(f'<circle cx="{f_x:.1f}" cy="{pata_y - 5:.1f}" r="3" fill="#000000"/>')
-            svg_parts.append(f'<circle cx="{f_x:.1f}" cy="{stem_bot_y + cover_px + 4:.1f}" r="3" fill="#000000"/>')
 
         # 4. Four Leader Callout Lines & Text Labels (Matching User CAD Layout)
         # Directriz 1: Horiz. Tracción (Cara Interior - Derecha Superior)

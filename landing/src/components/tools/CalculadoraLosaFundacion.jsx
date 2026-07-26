@@ -1339,6 +1339,10 @@ export default function CalculadoraLosaFundacion({ onBack }) {
 
   const snapToGrid = useCallback((val) => gridStep > 0 ? Math.round(val / gridStep) * gridStep : val, [gridStep]);
 
+  // Dynamic rebar selection state for live SVG updates
+  const [customBeamRebar, setCustomBeamRebar] = useState(null);
+  const [customWallRebars, setCustomWallRebars] = useState({ tracVert: null, tracHoriz: null, compVert: null, compHoriz: null });
+
   // Escala para el SVG
   const MARGIN = 40; // Margen para los ejes
   const scale = 50;  // Píxeles por metro constantes para evitar distorsiones y huecos vacíos
@@ -3884,7 +3888,8 @@ export default function CalculadoraLosaFundacion({ onBack }) {
               {results.svg_details && (
                 <div style={{marginTop: '20px'}}>
                   <h4 style={{margin:'0 0 12px 0', color:'#333'}}>Detalles Constructivos Transversales</h4>
-                  <div style={{background:'#fafafa', border:'1px solid #eee', borderRadius:'8px', padding:'12px', overflow:'auto'}} dangerouslySetInnerHTML={{__html: results.svg_details}} />
+                  <div style={{background:'#fafafa', border:'1px solid #eee', borderRadius:'8px', padding:'12px', overflow:'auto'}}
+                       dangerouslySetInnerHTML={{__html: getLiveSvgDetails(results.svg_details, customBeamRebar, customWallRebars)}} />
                 </div>
               )}
               
@@ -3994,16 +3999,16 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                             {wd.shear_ok ? 'OK' : 'FALLA'}
                           </td>
                           <td style={{padding: '8px', borderRight: '1px solid #eee'}}>
-                            <InteractiveRebarSelect options={optsTracVert} defaultVal={defaultTracVert} asReq={asTracReq} />
+                            <InteractiveRebarSelect options={optsTracVert} defaultVal={defaultTracVert} asReq={asTracReq} onChange={(v) => setCustomWallRebars(prev => ({...prev, tracVert: v}))} />
                           </td>
                           <td style={{padding: '8px', borderRight: '2px solid #ffb300'}}>
-                            <InteractiveRebarSelect options={optsTracHoriz} defaultVal={defaultTracHoriz} asReq={asHorizReq} />
+                            <InteractiveRebarSelect options={optsTracHoriz} defaultVal={defaultTracHoriz} asReq={asHorizReq} onChange={(v) => setCustomWallRebars(prev => ({...prev, tracHoriz: v}))} />
                           </td>
                           <td style={{padding: '8px', borderRight: '1px solid #eee'}}>
-                            <InteractiveRebarSelect options={optsCompVert} defaultVal={defaultCompVert} asReq={asCompReq} />
+                            <InteractiveRebarSelect options={optsCompVert} defaultVal={defaultCompVert} asReq={asCompReq} onChange={(v) => setCustomWallRebars(prev => ({...prev, compVert: v}))} />
                           </td>
                           <td style={{padding: '8px'}}>
-                            <InteractiveRebarSelect options={optsCompHoriz} defaultVal={defaultCompHoriz} asReq={asHorizCompReq} />
+                            <InteractiveRebarSelect options={optsCompHoriz} defaultVal={defaultCompHoriz} asReq={asHorizCompReq} onChange={(v) => setCustomWallRebars(prev => ({...prev, compHoriz: v}))} />
                           </td>
                         </tr>
                       );
@@ -4032,13 +4037,35 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {results.support_beam_designs.map((sb, idx) => (
-                      <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
-                        <td style={{padding: '8px', fontWeight: 'bold'}}>{sb.id.substring(0, 10)}</td>
-                        <td style={{padding: '8px'}}>{Math.round(sb.b_m * 100)} x {Math.round(sb.h_m * 100)}</td>
-                        <td style={{padding: '8px'}}>{sb.Mu_kgfm.toFixed(0)}</td>
-                        <td style={{padding: '8px'}}>{sb.Vu_kgf.toFixed(0)}</td>
-                        <td style={{padding: '8px'}}>{sb.As_req_cm2.toFixed(2)} cm²</td>
+                    {results.support_beam_designs.map((sb, idx) => {
+                      const asBeamReq = sb.As_req_cm2 || 2.25;
+                      const defaultBeamRebar = sb.proposed_rebar || "2Ø12 Inf + 2Ø10 Sup";
+                      const beamOptions = sb.proposed_rebar_options || [defaultBeamRebar, '3 - Ø16', '2 - Ø16', '2Ø12 + 1Ø10 Inf + 2Ø10 Sup'];
+                      return (
+                        <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
+                          <td style={{padding: '8px', fontWeight: 'bold'}}>{sb.id.substring(0, 10)}</td>
+                          <td style={{padding: '8px'}}>{Math.round(sb.b_m * 100)} x {Math.round(sb.h_m * 100)}</td>
+                          <td style={{padding: '8px'}}>{sb.Mu_kgfm.toFixed(0)}</td>
+                          <td style={{padding: '8px'}}>{sb.Vu_kgf.toFixed(0)}</td>
+                          <td style={{padding: '8px'}}>{sb.As_req_cm2.toFixed(2)} cm²</td>
+                          <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>
+                            <InteractiveBeamRebarSelect options={beamOptions} defaultVal={defaultBeamRebar} asReq={asBeamReq} onChange={(v) => setCustomBeamRebar(v)} />
+                          </td>
+                          <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>
+                            {sb.proposed_stirrups_options && sb.proposed_stirrups_options.length > 1 ? (
+                              <select style={{background:'transparent', border:'1px solid #ddd', borderRadius:'4px', color:'inherit', fontWeight:'inherit', outline:'none', cursor:'pointer', padding:'2px'}} defaultValue={sb.proposed_stirrups}>
+                                {sb.proposed_stirrups_options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                              </select>
+                            ) : sb.proposed_stirrups}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}     <td style={{padding: '8px'}}>{sb.As_req_cm2.toFixed(2)} cm²</td>
                         <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>
                           {sb.proposed_rebar_options && sb.proposed_rebar_options.length > 1 ? (
                             <select style={{background:'transparent', border:'1px solid #ddd', borderRadius:'4px', color:'inherit', fontWeight:'inherit', outline:'none', cursor:'pointer', padding:'2px'}} defaultValue={sb.proposed_rebar}>
@@ -4282,6 +4309,48 @@ export default function CalculadoraLosaFundacion({ onBack }) {
   );
 }
 
+// Helper for live SVG detail text replacement
+function getLiveSvgDetails(rawSvg, beamRebar, wallRebars) {
+  if (!rawSvg) return '';
+  let updated = rawSvg;
+
+  // 1. Support Beam text replacement
+  if (beamRebar) {
+    let displayLabel = beamRebar;
+    if (beamRebar.includes('Inf')) {
+      const infStr = beamRebar.split('Inf')[0].trim();
+      if (infStr.startsWith('3Ø')) displayLabel = `3 - Ø${infStr.substring(2)}`;
+      else if (infStr.startsWith('2Ø') && !infStr.includes('+')) displayLabel = `2 - Ø${infStr.substring(2)}`;
+      else if (infStr.startsWith('4Ø')) displayLabel = `4 - Ø${infStr.substring(2)}`;
+      else displayLabel = infStr.replace(' (2 capas)', '');
+    }
+    
+    // Replace Support Beam bottom label in SVG text element
+    updated = updated.replace(/ font-family="monospace" fill="#000000">(\d+ - Ø\d+|[^<]+ Inf[^<]*|\d+ - Ø\d+[^<]*)<\/text>/g, (match) => {
+      if (match.includes('Est.')) return match;
+      return ` font-family="monospace" fill="#000000">${displayLabel}</text>`;
+    });
+  }
+
+  // 2. Retaining Wall callouts text replacements
+  if (wallRebars) {
+    if (wallRebars.tracVert) {
+      updated = updated.replace(/Vert\. Tracción: Ø\d+@\d+cm \(Int\.\)/g, `Vert. Tracción: ${wallRebars.tracVert} (Int.)`);
+    }
+    if (wallRebars.tracHoriz) {
+      updated = updated.replace(/Horiz\. Tracción: Ø\d+@\d+cm \(Int\.\)/g, `Horiz. Tracción: ${wallRebars.tracHoriz} (Int.)`);
+    }
+    if (wallRebars.compVert) {
+      updated = updated.replace(/Vert\. Compresión: Ø\d+@\d+cm \(Ext\.\)/g, `Vert. Compresión: ${wallRebars.compVert} (Ext.)`);
+    }
+    if (wallRebars.compHoriz) {
+      updated = updated.replace(/Horiz\. Compresión: Ø\d+@\d+cm \(Ext\.\)/g, `Horiz. Compresión: ${wallRebars.compHoriz} (Ext.)`);
+    }
+  }
+
+  return updated;
+}
+
 // Helper for dynamic interactive rebar verification
 function verifyRebarSpacing(selectedStr, asReqCm2M) {
   if (!selectedStr) return { ok: true, asProv: 0 };
@@ -4296,18 +4365,24 @@ function verifyRebarSpacing(selectedStr, asReqCm2M) {
   return { ok, asProv };
 }
 
-function InteractiveRebarSelect({ options, defaultVal, asReq }) {
+function InteractiveRebarSelect({ options, defaultVal, asReq, onChange }) {
   const [val, setVal] = useState(defaultVal);
   useEffect(() => {
     setVal(defaultVal);
   }, [defaultVal]);
+
+  const handleChange = (newVal) => {
+    setVal(newVal);
+    if (onChange) onChange(newVal);
+  };
+
   const { ok, asProv } = verifyRebarSpacing(val, asReq);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
       <select
         value={val}
-        onChange={(e) => setVal(e.target.value)}
+        onChange={(e) => handleChange(e.target.value)}
         style={{
           background: ok ? '#f0fdf4' : '#fef2f2',
           border: `1.5px solid ${ok ? '#16a34a' : '#dc2626'}`,
@@ -4334,6 +4409,74 @@ function InteractiveRebarSelect({ options, defaultVal, asReq }) {
         border: `1px solid ${ok ? '#86efac' : '#fca5a5'}`
       }}>
         {ok ? `✓ Cumple (${asProv.toFixed(2)} cm²/m)` : `⚠️ Insuficiente (${asProv.toFixed(2)} < ${asReq.toFixed(2)})`}
+      </span>
+    </div>
+  );
+}
+
+function verifyBeamRebar(selectedStr, asReqCm2) {
+  if (!selectedStr) return { ok: true, asProv: 0 };
+  let asProv = 0.0;
+  const infPart = selectedStr.split('Inf')[0] || selectedStr;
+  const areaMap = { 10: 0.71, 12: 1.13, 16: 2.01, 20: 3.14 };
+  const matches = [...infPart.matchAll(/(\d+)Ø(\d+)/g)];
+  for (const m of matches) {
+    const count = parseInt(m[1]);
+    const diam = parseInt(m[2]);
+    asProv += count * (areaMap[diam] || (Math.PI * (diam/10)**2 / 4));
+  }
+  if (asProv === 0) {
+    const m = selectedStr.match(/(\d+)Ø(\d+)/);
+    if (m) asProv = parseInt(m[1]) * (areaMap[parseInt(m[2])] || 1.13);
+  }
+  const ok = asProv >= (asReqCm2 - 0.05);
+  return { ok, asProv };
+}
+
+function InteractiveBeamRebarSelect({ options, defaultVal, asReq, onChange }) {
+  const [val, setVal] = useState(defaultVal);
+  useEffect(() => {
+    setVal(defaultVal);
+  }, [defaultVal]);
+
+  const handleChange = (newVal) => {
+    setVal(newVal);
+    if (onChange) onChange(newVal);
+  };
+
+  const { ok, asProv } = verifyBeamRebar(val, asReq);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+      <select
+        value={val}
+        onChange={(e) => handleChange(e.target.value)}
+        style={{
+          background: ok ? '#f0fdf4' : '#fef2f2',
+          border: `1.5px solid ${ok ? '#16a34a' : '#dc2626'}`,
+          borderRadius: '6px',
+          color: ok ? '#15803d' : '#b91c1c',
+          fontWeight: 'bold',
+          padding: '4px 6px',
+          fontSize: '12.5px',
+          outline: 'none',
+          cursor: 'pointer'
+        }}
+      >
+        {options && options.map((opt, i) => (
+          <option key={i} value={opt}>{opt}</option>
+        ))}
+      </select>
+      <span style={{
+        fontSize: '10.5px',
+        fontWeight: 'bold',
+        padding: '2px 6px',
+        borderRadius: '4px',
+        background: ok ? '#dcfce7' : '#fee2e2',
+        color: ok ? '#166534' : '#991b1b',
+        border: `1px solid ${ok ? '#86efac' : '#fca5a5'}`
+      }}>
+        {ok ? `✓ Cumple (${asProv.toFixed(2)} cm²)` : `⚠️ Insuficiente (${asProv.toFixed(2)} < ${asReq.toFixed(2)})`}
       </span>
     </div>
   );
