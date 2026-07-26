@@ -9,7 +9,7 @@ Units: N, m, Pa  →  outputs reported in kN, mm
 """
 
 from typing import List
-
+import re
 import numpy as np
 
 def get_equivalent_rebars_spacing(as_req_cm2_m, min_spacing=10, max_spacing=30):
@@ -519,6 +519,18 @@ class StructuralChecks:
                 proposed_rebar_options = ["2Ø16 Inf + 2Ø10 Sup"]
                 
             proposed_rebar = proposed_rebar_options[0]
+            
+            # Determine n_bars_bot and n_bars_top for return dict
+            n_bars_top = 2
+            if '+' in proposed_rebar.split('Inf')[0]:
+                n_bars_bot = 0
+                for pt in proposed_rebar.split('Inf')[0].split('+'):
+                    m_p = re.search(r'(\d+)Ø', pt)
+                    if m_p:
+                        n_bars_bot += int(m_p.group(1))
+            else:
+                m_p = re.search(r'(\d+)Ø', proposed_rebar)
+                n_bars_bot = int(m_p.group(1)) if m_p else 2
         else:
             # Doubly reinforced
             Mn2 = Mn_req - Mnt_max
