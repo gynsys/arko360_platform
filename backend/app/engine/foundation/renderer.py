@@ -530,18 +530,19 @@ class PlanRenderer:
         Build and return an SVG string with two cross-section construction details:
         - Left: Retaining Wall (MC) with CAD style linework, triple arrow callouts,
                 and rebar schedules.
-        - Right: Support Beam (VA) with CAD style stirrups (135-deg hooks), solid rebar,
+        - Right: Support Beam (VA) with CAD style stirrups (135-deg seismic hooks), solid rebar,
                  elbow callouts, and dimension slashes.
+        Scaled up font sizes by +30% for maximum legibility.
         """
         import re as _re
 
-        svg_w = 920
-        svg_h = 440
+        svg_w = 960
+        svg_h = 460
 
         svg_parts: list = []
         svg_parts.append(
             f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_w} {svg_h}" '
-            f'style="width:100%;max-height:450px;border:1px solid #cbd5e1;'
+            f'style="width:100%;max-height:480px;border:1px solid #cbd5e1;'
             f'border-radius:8px;background:#ffffff;margin-top:20px;">'
             f'<defs>'
             f'  <pattern id="concreteHatch" width="16" height="16" patternUnits="userSpaceOnUse">'
@@ -600,21 +601,21 @@ class PlanRenderer:
         # LEFT PANEL — Muro de Contención CAD (x: 0..460)
         # ----------------------------------------------------------------
         max_h_px = 280
-        stem_h_px = min(max_h_px, max(120, int(rw_soil_h * 90)))
-        stem_w_px = max(24, min(50, int(rw_thick_cm * 1.8)))
-        pata_px = max(60, min(130, int(ld_cm * 1.3)))
+        stem_h_px = min(max_h_px, max(130, int(rw_soil_h * 90)))
+        stem_w_px = max(26, min(55, int(rw_thick_cm * 1.8)))
+        pata_px = max(65, min(130, int(ld_cm * 1.3)))
         base_h_px = 30
         cover_px = 6
 
-        stem_left_x = 180
+        stem_left_x = 175
         stem_right_x = stem_left_x + stem_w_px
-        stem_top_y = 65
+        stem_top_y = 70
         stem_bot_y = stem_top_y + stem_h_px
         foot_right_x = stem_right_x + pata_px
 
         svg_parts.append('<g id="mc_detail_cad">')
         svg_parts.append(
-            '<text x="230" y="32" text-anchor="middle" font-size="13" font-weight="bold" '
+            '<text x="230" y="32" text-anchor="middle" font-size="17" font-weight="bold" '
             'font-family="\'Consolas\', \'Roboto Mono\', \'Courier New\', monospace" fill="#000000">'
             'DETALLE MURO DE CONTENCIÓN (MC)</text>'
         )
@@ -665,12 +666,11 @@ class PlanRenderer:
             svg_parts.append(f'<circle cx="{f_x:.1f}" cy="{pata_y - 4:.1f}" r="2.5" fill="#000000"/>')
             svg_parts.append(f'<circle cx="{f_x:.1f}" cy="{stem_bot_y + cover_px + 3:.1f}" r="2.5" fill="#000000"/>')
 
-        # 4. Triple Arrow Callout Leader Line for Horizontal Repetition (Triple-Arrow Pointer like CAD!)
+        # 4. Triple Arrow Callout Leader Line for Horizontal Repetition (Shifted right to avoid text collision)
         if len(horiz_dots_y) >= 3:
             y1_d, y2_d, y3_d = horiz_dots_y[1], horiz_dots_y[2], horiz_dots_y[3]
             x_dot = trac_x - 5
-            # Diagonal callout box with 3 arrows
-            call_x1 = x_dot + 35
+            call_x1 = x_dot + 45
             call_y1 = y1_d + 15
             svg_parts.append(
                 f'<line x1="{x_dot:.1f}" y1="{y1_d:.1f}" x2="{call_x1:.1f}" y2="{call_y1:.1f}" stroke="#000000" stroke-width="1" marker-start="url(#arr_cad)"/>'
@@ -682,77 +682,76 @@ class PlanRenderer:
                 f'<line x1="{x_dot:.1f}" y1="{y3_d:.1f}" x2="{call_x1:.1f}" y2="{call_y1 + 20:.1f}" stroke="#000000" stroke-width="1" marker-start="url(#arr_cad)"/>'
             )
             svg_parts.append(
-                f'<line x1="{call_x1:.1f}" y1="{call_y1:.1f}" x2="{call_x1 + 60:.1f}" y2="{call_y1:.1f}" stroke="#000000" stroke-width="1"/>'
+                f'<line x1="{call_x1:.1f}" y1="{call_y1:.1f}" x2="{call_x1 + 120:.1f}" y2="{call_y1:.1f}" stroke="#000000" stroke-width="1"/>'
             )
             svg_parts.append(
-                f'<text x="{call_x1:.1f}" y="{call_y1 - 4:.1f}" font-size="9" font-weight="bold" font-family="monospace" fill="#000000">{rw_horiz_lbl}</text>'
+                f'<text x="{call_x1 + 4:.1f}" y="{call_y1 - 6:.1f}" font-size="12" font-weight="bold" font-family="monospace" fill="#000000">{rw_horiz_lbl}</text>'
             )
 
         # 5. Side Rebar Schedules / CAD Vertical Bar Labels (Outer Left & Inner Right)
         # Left side schedule line & text (Compresión / Exterior)
-        sch_left_x = stem_left_x - 30
+        sch_left_x = stem_left_x - 40
         svg_parts.append(
             f'<line x1="{sch_left_x:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_left_x:.1f}" y2="{stem_bot_y:.1f}" stroke="#000000" stroke-width="1.2"/>'
         )
         svg_parts.append(
-            f'<line x1="{sch_left_x - 4:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_left_x + 4:.1f}" y2="{stem_top_y + 10:.1f}" stroke="#000000" stroke-width="1.2"/>'
+            f'<line x1="{sch_left_x - 5:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_left_x + 5:.1f}" y2="{stem_top_y + 10:.1f}" stroke="#000000" stroke-width="1.2"/>'
         )
         svg_parts.append(
-            f'<line x1="{sch_left_x - 4:.1f}" y1="{stem_bot_y:.1f}" x2="{sch_left_x + 4:.1f}" y2="{stem_bot_y:.1f}" stroke="#000000" stroke-width="1.2"/>'
+            f'<line x1="{sch_left_x - 5:.1f}" y1="{stem_bot_y:.1f}" x2="{sch_left_x + 5:.1f}" y2="{stem_bot_y:.1f}" stroke="#000000" stroke-width="1.2"/>'
         )
         mid_y = stem_top_y + stem_h_px / 2
         svg_parts.append(
-            f'<text x="{sch_left_x - 6:.1f}" y="{mid_y:.1f}" text-anchor="middle" font-size="9.5" font-weight="bold" '
-            f'font-family="monospace" fill="#000000" transform="rotate(-90,{sch_left_x - 6:.1f},{mid_y:.1f})">'
+            f'<text x="{sch_left_x - 10:.1f}" y="{mid_y:.1f}" text-anchor="middle" font-size="12" font-weight="bold" '
+            f'font-family="monospace" fill="#000000" transform="rotate(-90,{sch_left_x - 10:.1f},{mid_y:.1f})">'
             f'{rw_comp_lbl}, L = {rw_soil_h:.2f}m</text>'
         )
 
         # Right side schedule line & text (Tracción / Interior)
-        sch_right_x = foot_right_x + 25
+        sch_right_x = foot_right_x + 35
         svg_parts.append(
             f'<line x1="{sch_right_x:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_right_x:.1f}" y2="{stem_bot_y + base_h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
         )
         svg_parts.append(
-            f'<line x1="{sch_right_x - 4:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_right_x + 4:.1f}" y2="{sch_right_x + 4:.1f}" stroke="#000000" stroke-width="1.2"/>'
+            f'<line x1="{sch_right_x - 5:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_right_x + 5:.1f}" y2="{stem_top_y + 10:.1f}" stroke="#000000" stroke-width="1.2"/>'
         )
         svg_parts.append(
-            f'<line x1="{sch_right_x - 4:.1f}" y1="{stem_bot_y + base_h_px:.1f}" x2="{sch_right_x + 4:.1f}" y2="{stem_bot_y + base_h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
+            f'<line x1="{sch_right_x - 5:.1f}" y1="{stem_bot_y + base_h_px:.1f}" x2="{sch_right_x + 5:.1f}" y2="{stem_bot_y + base_h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
         )
         mid_ry = stem_top_y + (stem_h_px + base_h_px) / 2
         svg_parts.append(
-            f'<text x="{sch_right_x + 12:.1f}" y="{mid_ry:.1f}" text-anchor="middle" font-size="9.5" font-weight="bold" '
-            f'font-family="monospace" fill="#000000" transform="rotate(90,{sch_right_x + 12:.1f},{mid_ry:.1f})">'
+            f'<text x="{sch_right_x + 16:.1f}" y="{mid_ry:.1f}" text-anchor="middle" font-size="12" font-weight="bold" '
+            f'font-family="monospace" fill="#000000" transform="rotate(90,{sch_right_x + 16:.1f},{mid_ry:.1f})">'
             f'{rw_trac_lbl}, L = {rw_soil_h + 0.40:.2f}m</text>'
         )
 
         # 6. CAD Dimensions with Slash Ticks (Cotas con diagonales a 45 deg)
         # Top Thickness Dimension (e = 0.20m)
-        cota_top_y = stem_top_y - 18
+        cota_top_y = stem_top_y - 20
         svg_parts.append(
             f'<line x1="{stem_left_x:.1f}" y1="{cota_top_y:.1f}" x2="{stem_right_x:.1f}" y2="{cota_top_y:.1f}" stroke="#000000" stroke-width="1"/>'
         )
-        # 45 deg Slashes
-        svg_parts.append(f'<line x1="{stem_left_x - 3:.1f}" y1="{cota_top_y + 3:.1f}" x2="{stem_left_x + 3:.1f}" y2="{cota_top_y - 3:.1f}" stroke="#000000" stroke-width="1.5"/>')
-        svg_parts.append(f'<line x1="{stem_right_x - 3:.1f}" y1="{cota_top_y + 3:.1f}" x2="{stem_right_x + 3:.1f}" y2="{cota_top_y - 3:.1f}" stroke="#000000" stroke-width="1.5"/>')
+        svg_parts.append(f'<line x1="{stem_left_x - 4:.1f}" y1="{cota_top_y + 4:.1f}" x2="{stem_left_x + 4:.1f}" y2="{cota_top_y - 4:.1f}" stroke="#000000" stroke-width="1.5"/>')
+        svg_parts.append(f'<line x1="{stem_right_x - 4:.1f}" y1="{cota_top_y + 4:.1f}" x2="{stem_right_x + 4:.1f}" y2="{cota_top_y - 4:.1f}" stroke="#000000" stroke-width="1.5"/>')
         svg_parts.append(
-            f'<text x="{(stem_left_x + stem_right_x)/2:.1f}" y="{cota_top_y - 4:.1f}" text-anchor="middle" font-size="10" font-weight="bold" font-family="monospace" fill="#000000">{rw_thick_m:.2f}</text>'
+            f'<text x="{(stem_left_x + stem_right_x)/2:.1f}" y="{cota_top_y - 5:.1f}" text-anchor="middle" font-size="13" font-weight="bold" font-family="monospace" fill="#000000">{rw_thick_m:.2f}</text>'
         )
 
         # Footing Bottom Dimension (e = 0.20m)
-        cota_bot_y = stem_bot_y + base_h_px + 18
+        cota_bot_y = stem_bot_y + base_h_px + 22
         svg_parts.append(
             f'<line x1="{stem_left_x:.1f}" y1="{cota_bot_y:.1f}" x2="{foot_right_x:.1f}" y2="{cota_bot_y:.1f}" stroke="#000000" stroke-width="1"/>'
         )
-        svg_parts.append(f'<line x1="{stem_left_x - 3:.1f}" y1="{cota_bot_y + 3:.1f}" x2="{stem_left_x + 3:.1f}" y2="{cota_bot_y - 3:.1f}" stroke="#000000" stroke-width="1.5"/>')
-        svg_parts.append(f'<line x1="{foot_right_x - 3:.1f}" y1="{cota_bot_y + 3:.1f}" x2="{foot_right_x + 3:.1f}" y2="{cota_bot_y - 3:.1f}" stroke="#000000" stroke-width="1.5"/>')
+        svg_parts.append(f'<line x1="{stem_left_x - 4:.1f}" y1="{cota_bot_y + 4:.1f}" x2="{stem_left_x + 4:.1f}" y2="{cota_bot_y - 4:.1f}" stroke="#000000" stroke-width="1.5"/>')
+        svg_parts.append(f'<line x1="{foot_right_x - 4:.1f}" y1="{cota_bot_y + 4:.1f}" x2="{foot_right_x + 4:.1f}" y2="{cota_bot_y - 4:.1f}" stroke="#000000" stroke-width="1.5"/>')
         svg_parts.append(
-            f'<text x="{(stem_left_x + foot_right_x)/2:.1f}" y="{cota_bot_y + 14:.1f}" text-anchor="middle" font-size="9.5" font-weight="bold" font-family="monospace" fill="#000000">ld ≈ {ld_cm} cm</text>'
+            f'<text x="{(stem_left_x + foot_right_x)/2:.1f}" y="{cota_bot_y + 16:.1f}" text-anchor="middle" font-size="12" font-weight="bold" font-family="monospace" fill="#000000">ld ≈ {ld_cm} cm</text>'
         )
 
         svg_parts.append('</g>')
 
         # ----------------------------------------------------------------
-        # RIGHT PANEL — Viga de Apoyo CAD (x: 460..920)
+        # RIGHT PANEL — Viga de Apoyo CAD (x: 480..960)
         # ----------------------------------------------------------------
         sb_b_cm = 30
         sb_h_cm = 50
@@ -779,13 +778,13 @@ class PlanRenderer:
                 n_top = int(m_beam.group(3))
                 d_top_mm = int(m_beam.group(4))
 
-        panel_cx = 680
-        panel_cy = 225
-        b_px = max(60, min(140, int(sb_b_cm * 2.6)))
-        h_px = max(120, min(260, int(b_px * (sb_h_cm / max(sb_b_cm, 1)))))
+        panel_cx = 700
+        panel_cy = 230
+        b_px = max(70, min(150, int(sb_b_cm * 2.6)))
+        h_px = max(130, min(270, int(b_px * (sb_h_cm / max(sb_b_cm, 1)))))
         bx1 = panel_cx - b_px / 2
         by1 = panel_cy - h_px / 2
-        cover_beam = 16
+        cover_beam = 18
         sx1 = bx1 + cover_beam
         sy1 = by1 + cover_beam
         sw = b_px - 2 * cover_beam
@@ -793,7 +792,7 @@ class PlanRenderer:
 
         svg_parts.append('<g id="va_detail_cad">')
         svg_parts.append(
-            '<text x="680" y="32" text-anchor="middle" font-size="13" font-weight="bold" '
+            '<text x="700" y="32" text-anchor="middle" font-size="17" font-weight="bold" '
             'font-family="\'Consolas\', \'Roboto Mono\', \'Courier New\', monospace" fill="#000000">'
             'DETALLE VIGA DE APOYO (VA)</text>'
         )
@@ -804,95 +803,94 @@ class PlanRenderer:
             f'fill="url(#concreteHatch)" stroke="#000000" stroke-width="2.5"/>'
         )
 
-        # 2. Stirrup with 135-deg Hooks (Gancho sísmico ACI en esquina superior izquierda)
-        # Stirrup outer line
-        svg_parts.append(
-            f'<rect x="{sx1:.1f}" y="{sy1:.1f}" width="{sw:.1f}" height="{sh:.1f}" '
-            f'fill="none" stroke="#000000" stroke-width="1.8"/>'
+        # 2. Continuous Stirrup Path with Realistic 135-degree Seismic Hooks
+        # Path starts inside core, goes to corner (sx1, sy1), wraps full loop around beam, ends inside core
+        hook_path = (
+            f"M {sx1 + 18:.1f} {sy1 + 18:.1f} "
+            f"L {sx1:.1f} {sy1:.1f} "
+            f"L {sx1 + sw:.1f} {sy1:.1f} "
+            f"L {sx1 + sw:.1f} {sy1 + sh:.1f} "
+            f"L {sx1:.1f} {sy1 + sh:.1f} "
+            f"L {sx1:.1f} {sy1:.1f} "
+            f"L {sx1 + 14:.1f} {sy1 + 22:.1f}"
         )
-        # 135-degree seismic hooks at (sx1, sy1)
-        hook_path = f"M {sx1 + 18:.1f} {sy1 + 12:.1f} L {sx1:.1f} {sy1:.1f} L {sx1 + 12:.1f} {sy1 + 18:.1f}"
         svg_parts.append(
-            f'<path d="{hook_path}" fill="none" stroke="#000000" stroke-width="1.8" stroke-linecap="round"/>'
+            f'<path d="{hook_path}" fill="none" stroke="#000000" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>'
         )
 
         # 3. Solid Black Rebar Circles (Cabillas Longitudinales Negras)
         # Bottom bars
         n_bot_draw = max(2, min(n_bot, 6))
-        bot_xs = [sx1 + 6 + (sw - 12) * i / (n_bot_draw - 1) for i in range(n_bot_draw)]
-        bot_y = sy1 + sh - 7
+        bot_xs = [sx1 + 7 + (sw - 14) * i / (n_bot_draw - 1) for i in range(n_bot_draw)]
+        bot_y = sy1 + sh - 8
         for r_x in bot_xs:
-            svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{bot_y:.1f}" r="4.5" fill="#000000"/>')
+            svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{bot_y:.1f}" r="5.5" fill="#000000"/>')
 
         # Top bars
         n_top_draw = max(2, min(n_top, 4))
-        top_xs = [sx1 + 6 + (sw - 12) * i / (n_top_draw - 1) for i in range(n_top_draw)]
-        top_y = sy1 + 7
+        top_xs = [sx1 + 7 + (sw - 14) * i / (n_top_draw - 1) for i in range(n_top_draw)]
+        top_y = sy1 + 8
         for r_x in top_xs:
-            svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{top_y:.1f}" r="4" fill="#000000"/>')
+            svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{top_y:.1f}" r="5" fill="#000000"/>')
 
-        # 4. Elbow Callout Leader Lines (Líneas indicadoras con codo a 45 deg)
+        # 4. Elbow Callout Leader Lines (Líneas indicadoras con codo a 45 deg, font-size=12.5)
+        call_right_start_x = bx1 + b_px + 20
+        call_right_end_x = call_right_start_x + 95
+
         # Top rebar callout (Right side)
-        call_top_x = bx1 + b_px + 35
         svg_parts.append(
-            f'<path d="M {top_xs[-1]:.1f} {top_y:.1f} L {bx1 + b_px + 15:.1f} {top_y - 15:.1f} H {call_top_x + 40:.1f}" '
-            f'fill="none" stroke="#000000" stroke-width="1"/>'
+            f'<path d="M {top_xs[-1]:.1f} {top_y:.1f} L {call_right_start_x:.1f} {top_y - 18:.1f} H {call_right_end_x:.1f}" '
+            f'fill="none" stroke="#000000" stroke-width="1.2"/>'
         )
+        svg_parts.append(f'<circle cx="{top_xs[-1]:.1f}" cy="{top_y:.1f}" r="2.5" fill="#000000"/>')
         svg_parts.append(
-            f'<circle cx="{top_xs[-1]:.1f}" cy="{top_y:.1f}" r="2" fill="#000000"/>'
-        )
-        svg_parts.append(
-            f'<text x="{bx1 + b_px + 18:.1f}" y="{top_y - 19:.1f}" font-size="9.5" font-weight="bold" font-family="monospace" fill="#000000">{n_top} - Y{d_top_mm}</text>'
+            f'<text x="{call_right_start_x + 5:.1f}" y="{top_y - 23:.1f}" font-size="12.5" font-weight="bold" font-family="monospace" fill="#000000">{n_top} - Y{d_top_mm}</text>'
         )
 
         # Stirrup callout (Right side middle)
         call_mid_y = panel_cy
         svg_parts.append(
-            f'<path d="M {sx1 + sw:.1f} {call_mid_y:.1f} L {bx1 + b_px + 15:.1f} {call_mid_y:.1f} H {call_top_x + 40:.1f}" '
-            f'fill="none" stroke="#000000" stroke-width="1"/>'
+            f'<path d="M {sx1 + sw:.1f} {call_mid_y:.1f} L {call_right_start_x:.1f} {call_mid_y:.1f} H {call_right_end_x:.1f}" '
+            f'fill="none" stroke="#000000" stroke-width="1.2"/>'
         )
+        svg_parts.append(f'<circle cx="{sx1 + sw:.1f}" cy="{call_mid_y:.1f}" r="2.5" fill="#000000"/>')
         svg_parts.append(
-            f'<circle cx="{sx1 + sw:.1f}" cy="{call_mid_y:.1f}" r="2" fill="#000000"/>'
-        )
-        svg_parts.append(
-            f'<text x="{bx1 + b_px + 18:.1f}" y="{call_mid_y - 4:.1f}" font-size="9.5" font-weight="bold" font-family="monospace" fill="#000000">Est. {stirrup_lbl}</text>'
+            f'<text x="{call_right_start_x + 5:.1f}" y="{call_mid_y - 5:.1f}" font-size="12.5" font-weight="bold" font-family="monospace" fill="#000000">Est. {stirrup_lbl}</text>'
         )
 
         # Bottom rebar callout (Right side bottom)
         svg_parts.append(
-            f'<path d="M {bot_xs[-1]:.1f} {bot_y:.1f} L {bx1 + b_px + 15:.1f} {bot_y + 15:.1f} H {call_top_x + 40:.1f}" '
-            f'fill="none" stroke="#000000" stroke-width="1"/>'
+            f'<path d="M {bot_xs[-1]:.1f} {bot_y:.1f} L {call_right_start_x:.1f} {bot_y + 18:.1f} H {call_right_end_x:.1f}" '
+            f'fill="none" stroke="#000000" stroke-width="1.2"/>'
         )
+        svg_parts.append(f'<circle cx="{bot_xs[-1]:.1f}" cy="{bot_y:.1f}" r="2.5" fill="#000000"/>')
         svg_parts.append(
-            f'<circle cx="{bot_xs[-1]:.1f}" cy="{bot_y:.1f}" r="2" fill="#000000"/>'
-        )
-        svg_parts.append(
-            f'<text x="{bx1 + b_px + 18:.1f}" y="{bot_y + 11:.1f}" font-size="9.5" font-weight="bold" font-family="monospace" fill="#000000">{n_bot} - Y{d_bot_mm}</text>'
+            f'<text x="{call_right_start_x + 5:.1f}" y="{bot_y + 13:.1f}" font-size="12.5" font-weight="bold" font-family="monospace" fill="#000000">{n_bot} - Y{d_bot_mm}</text>'
         )
 
         # 5. CAD Dimensions with Slash Ticks (Cotas de ingeniería)
         # Depth h (Left side)
-        dim_h_x = bx1 - 25
+        dim_h_x = bx1 - 30
         svg_parts.append(
-            f'<line x1="{dim_h_x:.1f}" y1="{by1:.1f}" x2="{dim_h_x:.1f}" y2="{by1 + h_px:.1f}" stroke="#000000" stroke-width="1"/>'
+            f'<line x1="{dim_h_x:.1f}" y1="{by1:.1f}" x2="{dim_h_x:.1f}" y2="{by1 + h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
         )
-        svg_parts.append(f'<line x1="{dim_h_x - 3:.1f}" y1="{by1 + 3:.1f}" x2="{dim_h_x + 3:.1f}" y2="{by1 - 3:.1f}" stroke="#000000" stroke-width="1.5"/>')
-        svg_parts.append(f'<line x1="{dim_h_x - 3:.1f}" y1="{by1 + h_px + 3:.1f}" x2="{dim_h_x + 3:.1f}" y2="{by1 + h_px - 3:.1f}" stroke="#000000" stroke-width="1.5"/>')
+        svg_parts.append(f'<line x1="{dim_h_x - 4:.1f}" y1="{by1 + 4:.1f}" x2="{dim_h_x + 4:.1f}" y2="{by1 - 4:.1f}" stroke="#000000" stroke-width="1.5"/>')
+        svg_parts.append(f'<line x1="{dim_h_x - 4:.1f}" y1="{by1 + h_px + 4:.1f}" x2="{dim_h_x + 4:.1f}" y2="{by1 + h_px - 4:.1f}" stroke="#000000" stroke-width="1.5"/>')
         svg_parts.append(
-            f'<text x="{dim_h_x - 6:.1f}" y="{panel_cy:.1f}" text-anchor="middle" font-size="10" font-weight="bold" '
-            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x - 6:.1f},{panel_cy:.1f})">'
+            f'<text x="{dim_h_x - 8:.1f}" y="{panel_cy:.1f}" text-anchor="middle" font-size="13" font-weight="bold" '
+            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x - 8:.1f},{panel_cy:.1f})">'
             f'h = {sb_h_cm} cm</text>'
         )
 
         # Width b (Top side)
-        dim_b_y = by1 - 18
+        dim_b_y = by1 - 20
         svg_parts.append(
-            f'<line x1="{bx1:.1f}" y1="{dim_b_y:.1f}" x2="{bx1 + b_px:.1f}" y2="{dim_b_y:.1f}" stroke="#000000" stroke-width="1"/>'
+            f'<line x1="{bx1:.1f}" y1="{dim_b_y:.1f}" x2="{bx1 + b_px:.1f}" y2="{dim_b_y:.1f}" stroke="#000000" stroke-width="1.2"/>'
         )
-        svg_parts.append(f'<line x1="{bx1 - 3:.1f}" y1="{dim_b_y + 3:.1f}" x2="{bx1 + 3:.1f}" y2="{dim_b_y - 3:.1f}" stroke="#000000" stroke-width="1.5"/>')
-        svg_parts.append(f'<line x1="{bx1 + b_px - 3:.1f}" y1="{dim_b_y + 3:.1f}" x2="{bx1 + b_px + 3:.1f}" y2="{dim_b_y - 3:.1f}" stroke="#000000" stroke-width="1.5"/>')
+        svg_parts.append(f'<line x1="{bx1 - 4:.1f}" y1="{dim_b_y + 4:.1f}" x2="{bx1 + 4:.1f}" y2="{dim_b_y - 4:.1f}" stroke="#000000" stroke-width="1.5"/>')
+        svg_parts.append(f'<line x1="{bx1 + b_px - 4:.1f}" y1="{dim_b_y + 4:.1f}" x2="{bx1 + b_px + 4:.1f}" y2="{dim_b_y - 4:.1f}" stroke="#000000" stroke-width="1.5"/>')
         svg_parts.append(
-            f'<text x="{panel_cx:.1f}" y="{dim_b_y - 4:.1f}" text-anchor="middle" font-size="10" font-weight="bold" font-family="monospace" fill="#000000">b = {sb_b_cm} cm</text>'
+            f'<text x="{panel_cx:.1f}" y="{dim_b_y - 5:.1f}" text-anchor="middle" font-size="13" font-weight="bold" font-family="monospace" fill="#000000">b = {sb_b_cm} cm</text>'
         )
 
         svg_parts.append('</g>')
