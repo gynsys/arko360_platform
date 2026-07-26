@@ -633,22 +633,35 @@ class PlanRenderer:
         svg_parts.append(
             f'<polygon points="{pts}" fill="url(#concreteHatch)" stroke="#000000" stroke-width="2.8"/>'
         )
+        # CAD Break line symbol on right end of footing slab (Símbolo de corte de losa CAD)
+        mid_foot_y = stem_bot_y + base_h_px / 2
+        break_foot_path = (
+            f"M {foot_right_x:.1f} {stem_bot_y - 6:.1f} "
+            f"L {foot_right_x:.1f} {mid_foot_y - 8:.1f} "
+            f"L {foot_right_x + 9:.1f} {mid_foot_y - 2:.1f} "
+            f"L {foot_right_x - 9:.1f} {mid_foot_y + 2:.1f} "
+            f"L {foot_right_x:.1f} {mid_foot_y + 8:.1f} "
+            f"L {foot_right_x:.1f} {stem_bot_y + base_h_px + 6:.1f}"
+        )
+        svg_parts.append(
+            f'<path d="{break_foot_path}" fill="none" stroke="#000000" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/>'
+        )
 
-        # 2. Main Vertical Reinforcement Bars (Continuous Thick Lines with Pata)
+        # 2. Main Vertical Reinforcement Bars (Continuous Thick Lines with Pata into footing)
         trac_x = stem_right_x - cover_px - 4
         comp_x = stem_left_x + cover_px + 4
         pata_y = stem_bot_y + base_h_px - cover_px - 4
 
-        # Inner face tension bar (Tracción / Interior)
+        # Inner face tension bar (Tracción / Interior) - Hooks UP into footing end
         svg_parts.append(
             f'<path d="M {trac_x:.1f} {stem_top_y + 10} L {trac_x:.1f} {pata_y:.1f} '
-            f'L {foot_right_x - 8:.1f} {pata_y:.1f}" fill="none" stroke="#000000" stroke-width="2.5"/>'
+            f'L {foot_right_x - 8:.1f} {pata_y:.1f} L {foot_right_x - 8:.1f} {pata_y - 12:.1f}" fill="none" stroke="#000000" stroke-width="2.5" stroke-linejoin="round"/>'
         )
 
         # Outer face compression bar (Compresión / Exterior)
         svg_parts.append(
             f'<path d="M {comp_x:.1f} {stem_top_y + 10} L {comp_x:.1f} {pata_y - 10:.1f} '
-            f'L {trac_x - 5:.1f} {pata_y - 10:.1f}" fill="none" stroke="#000000" stroke-width="2.2"/>'
+            f'L {trac_x - 5:.1f} {pata_y - 10:.1f}" fill="none" stroke="#000000" stroke-width="2.2" stroke-linejoin="round"/>'
         )
 
         # 3. Horizontal Repetition Rebar Dots (Repartición / Temperatura)
@@ -667,7 +680,7 @@ class PlanRenderer:
             svg_parts.append(f'<circle cx="{f_x:.1f}" cy="{pata_y - 5:.1f}" r="3" fill="#000000"/>')
             svg_parts.append(f'<circle cx="{f_x:.1f}" cy="{stem_bot_y + cover_px + 4:.1f}" r="3" fill="#000000"/>')
 
-        # 4. Triple Arrow Callout Leader Line for Horizontal Repetition (Positioned neatly with no text collision)
+        # 4. Triple Arrow Callout Leader Line for Horizontal Repetition
         if len(horiz_dots_y) >= 3:
             y1_d, y2_d, y3_d = horiz_dots_y[1], horiz_dots_y[2], horiz_dots_y[3]
             x_dot = trac_x - 6
@@ -689,8 +702,8 @@ class PlanRenderer:
                 f'<text x="{call_x1 + 4:.1f}" y="{call_y1 - 6:.1f}" font-size="14" font-weight="bold" font-family="monospace" fill="#000000">{rw_horiz_lbl}</text>'
             )
 
-        # 5. Side Rebar Schedules / CAD Vertical Bar Labels (Pushed outwards so no collision occurs!)
-        # Left side schedule line & text (Compresión / Exterior)
+        # 5. Side Rebar Schedules / CAD Vertical Bar Labels (Both texts reading bottom-to-top with rotate(-90))
+        # Left side schedule line & text (Ext. / Compresión)
         sch_left_x = stem_left_x - 45
         svg_parts.append(
             f'<line x1="{sch_left_x:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_left_x:.1f}" y2="{stem_bot_y:.1f}" stroke="#000000" stroke-width="1.2"/>'
@@ -705,11 +718,11 @@ class PlanRenderer:
         svg_parts.append(
             f'<text x="{sch_left_x - 12:.1f}" y="{mid_y:.1f}" text-anchor="middle" font-size="14" font-weight="bold" '
             f'font-family="monospace" fill="#000000" transform="rotate(-90,{sch_left_x - 12:.1f},{mid_y:.1f})">'
-            f'{rw_comp_lbl}, L = {rw_soil_h:.2f}m</text>'
+            f'Ext. {rw_comp_lbl}, L = {rw_soil_h:.2f}m</text>'
         )
 
-        # Right side schedule line & text (Tracción / Interior - Pushed right past foot_right_x + 55)
-        sch_right_x = foot_right_x + 55
+        # Right side schedule line & text (Int. / Tracción - Rotated -90 so it reads in correct orientation!)
+        sch_right_x = foot_right_x + 45
         svg_parts.append(
             f'<line x1="{sch_right_x:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_right_x:.1f}" y2="{stem_bot_y + base_h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
         )
@@ -722,12 +735,12 @@ class PlanRenderer:
         mid_ry = stem_top_y + (stem_h_px + base_h_px) / 2
         svg_parts.append(
             f'<text x="{sch_right_x + 18:.1f}" y="{mid_ry:.1f}" text-anchor="middle" font-size="14" font-weight="bold" '
-            f'font-family="monospace" fill="#000000" transform="rotate(90,{sch_right_x + 18:.1f},{mid_ry:.1f})">'
-            f'{rw_trac_lbl}, L = {rw_soil_h + 0.40:.2f}m</text>'
+            f'font-family="monospace" fill="#000000" transform="rotate(-90,{sch_right_x + 18:.1f},{mid_ry:.1f})">'
+            f'Int. {rw_trac_lbl}, L = {rw_soil_h + 0.40:.2f}m</text>'
         )
 
-        # 6. CAD Dimensions with Slash Ticks (Cotas con diagonales a 45 deg)
-        # Top Thickness Dimension (e = 0.20m) - Placed safely below title (y = 65)
+        # 6. CAD Dimensions with Slash Ticks
+        # Top Thickness Dimension (e = 0.20m)
         cota_top_y = stem_top_y - 25
         svg_parts.append(
             f'<line x1="{stem_left_x:.1f}" y1="{cota_top_y:.1f}" x2="{stem_right_x:.1f}" y2="{cota_top_y:.1f}" stroke="#000000" stroke-width="1.2"/>'
@@ -752,7 +765,7 @@ class PlanRenderer:
         svg_parts.append('</g>')
 
         # ----------------------------------------------------------------
-        # RIGHT PANEL — Viga de Apoyo CAD (x: 500..980) - Slab Connection & Dual Heights
+        # RIGHT PANEL — Viga de Apoyo CAD (x: 500..980) - Clean Section without e, h, h_c
         # ----------------------------------------------------------------
         sb_b_cm = 30
         sb_h_cm = 50
@@ -766,7 +779,6 @@ class PlanRenderer:
 
         slab_h_m = float(getattr(self, 'h', 0.20))
         slab_h_cm = round(slab_h_m * 100)
-        cuelgue_h_cm = max(0, sb_h_cm - slab_h_cm)
 
         n_bot = sd.get('n_bars_bot', 2) if sd else 2
         n_top = sd.get('n_bars_top', 2) if sd else 2
@@ -823,15 +835,15 @@ class PlanRenderer:
         # CAD Break line symbol on slab left end (Símbolo de corte de losa tipo rayo CAD)
         mid_slab_y = by1 + slab_h_px / 2
         break_path = (
-            f"M {slab_break_x:.1f} {by1 - 8:.1f} "
+            f"M {slab_break_x:.1f} {by1 - 6:.1f} "
             f"L {slab_break_x:.1f} {mid_slab_y - 8:.1f} "
-            f"L {slab_break_x - 6:.1f} {mid_slab_y - 2:.1f} "
-            f"L {slab_break_x + 6:.1f} {mid_slab_y + 2:.1f} "
+            f"L {slab_break_x + 9:.1f} {mid_slab_y - 2:.1f} "
+            f"L {slab_break_x - 9:.1f} {mid_slab_y + 2:.1f} "
             f"L {slab_break_x:.1f} {mid_slab_y + 8:.1f} "
-            f"L {slab_break_x:.1f} {by1 + slab_h_px + 8:.1f}"
+            f"L {slab_break_x:.1f} {by1 + slab_h_px + 6:.1f}"
         )
         svg_parts.append(
-            f'<path d="{break_path}" fill="none" stroke="#000000" stroke-width="1.8"/>'
+            f'<path d="{break_path}" fill="none" stroke="#000000" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/>'
         )
 
         # 2. Stirrup Rectangle + Dual 135-degree Parallel Hooks at Top-Left Corner
@@ -901,47 +913,7 @@ class PlanRenderer:
             f'<text x="{call_right_start_x + 6:.1f}" y="{bot_y + 15:.1f}" font-size="14.5" font-weight="bold" font-family="monospace" fill="#000000">{n_bot} - Ø{d_bot_mm}</text>'
         )
 
-        # 5. Dual Height CAD Dimensions (Left side: e_losa, h_cuelgue & h_total)
-        dim_h_x1 = bx1 - wing_w - 20
-        dim_h_x2 = dim_h_x1 - 50
-
-        # A. Slab Thickness Dimension (e_losa = 20 cm)
-        svg_parts.append(
-            f'<line x1="{dim_h_x1:.1f}" y1="{by1:.1f}" x2="{dim_h_x1:.1f}" y2="{by1 + slab_h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
-        )
-        svg_parts.append(f'<line x1="{dim_h_x1 - 4:.1f}" y1="{by1 + 4:.1f}" x2="{dim_h_x1 + 4:.1f}" y2="{by1 - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
-        svg_parts.append(f'<line x1="{dim_h_x1 - 4:.1f}" y1="{by1 + slab_h_px + 4:.1f}" x2="{dim_h_x1 + 4:.1f}" y2="{by1 + slab_h_px - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
-        svg_parts.append(
-            f'<text x="{dim_h_x1 - 8:.1f}" y="{by1 + slab_h_px / 2:.1f}" text-anchor="middle" font-size="13" font-weight="bold" '
-            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x1 - 8:.1f},{by1 + slab_h_px / 2:.1f})">'
-            f'e = {slab_h_cm} cm</text>'
-        )
-
-        # B. Beam Cuelgue/Drop Dimension (h_cuelgue = 30 cm)
-        svg_parts.append(
-            f'<line x1="{dim_h_x1:.1f}" y1="{by1 + slab_h_px:.1f}" x2="{dim_h_x1:.1f}" y2="{by1 + h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
-        )
-        svg_parts.append(f'<line x1="{dim_h_x1 - 4:.1f}" y1="{by1 + h_px + 4:.1f}" x2="{dim_h_x1 + 4:.1f}" y2="{by1 + h_px - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
-        mid_cuelgue_y = by1 + slab_h_px + (h_px - slab_h_px) / 2
-        svg_parts.append(
-            f'<text x="{dim_h_x1 - 8:.1f}" y="{mid_cuelgue_y:.1f}" text-anchor="middle" font-size="13" font-weight="bold" '
-            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x1 - 8:.1f},{mid_cuelgue_y:.1f})">'
-            f'h_c = {cuelgue_h_cm} cm</text>'
-        )
-
-        # C. Total Structural Height Dimension Line (h_total = 50 cm)
-        svg_parts.append(
-            f'<line x1="{dim_h_x2:.1f}" y1="{by1:.1f}" x2="{dim_h_x2:.1f}" y2="{by1 + h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
-        )
-        svg_parts.append(f'<line x1="{dim_h_x2 - 4:.1f}" y1="{by1 + 4:.1f}" x2="{dim_h_x2 + 4:.1f}" y2="{by1 - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
-        svg_parts.append(f'<line x1="{dim_h_x2 - 4:.1f}" y1="{by1 + h_px + 4:.1f}" x2="{dim_h_x2 + 4:.1f}" y2="{by1 + h_px - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
-        svg_parts.append(
-            f'<text x="{dim_h_x2 - 9:.1f}" y="{panel_cy:.1f}" text-anchor="middle" font-size="14" font-weight="bold" '
-            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x2 - 9:.1f},{panel_cy:.1f})">'
-            f'h = {sb_h_cm} cm</text>'
-        )
-
-        # 6. Width b (Top side)
+        # 5. Width b (Top side)
         dim_b_y = by1 - 22
         svg_parts.append(
             f'<line x1="{bx1:.1f}" y1="{dim_b_y:.1f}" x2="{bx1 + b_px:.1f}" y2="{dim_b_y:.1f}" stroke="#000000" stroke-width="1.2"/>'
