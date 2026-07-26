@@ -4065,27 +4065,6 @@ export default function CalculadoraLosaFundacion({ onBack }) {
                 </table>
               </div>
             </div>
-          )}     <td style={{padding: '8px'}}>{sb.As_req_cm2.toFixed(2)} cm²</td>
-                        <td style={{padding: '8px', color: '#1565c0', fontWeight: 'bold'}}>
-                          {sb.proposed_rebar_options && sb.proposed_rebar_options.length > 1 ? (
-                            <select style={{background:'transparent', border:'1px solid #ddd', borderRadius:'4px', color:'inherit', fontWeight:'inherit', outline:'none', cursor:'pointer', padding:'2px'}} defaultValue={sb.proposed_rebar}>
-                              {sb.proposed_rebar_options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                            </select>
-                          ) : sb.proposed_rebar}
-                        </td>
-                        <td style={{padding: '8px', color: '#2e7d32', fontWeight: 'bold'}}>
-                          {sb.proposed_stirrups_options && sb.proposed_stirrups_options.length > 1 ? (
-                            <select style={{background:'transparent', border:'1px solid #ddd', borderRadius:'4px', color:'inherit', fontWeight:'inherit', outline:'none', cursor:'pointer', padding:'2px'}} defaultValue={sb.proposed_stirrups}>
-                              {sb.proposed_stirrups_options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                            </select>
-                          ) : sb.proposed_stirrups}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           )}
 
           {/* Mapas de Calor Interactivos */}
