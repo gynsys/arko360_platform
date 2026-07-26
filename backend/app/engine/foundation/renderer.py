@@ -680,63 +680,69 @@ class PlanRenderer:
             svg_parts.append(f'<circle cx="{f_x:.1f}" cy="{pata_y - 5:.1f}" r="3" fill="#000000"/>')
             svg_parts.append(f'<circle cx="{f_x:.1f}" cy="{stem_bot_y + cover_px + 4:.1f}" r="3" fill="#000000"/>')
 
-        # 4. Triple Arrow Callout Leader Line for Horizontal Repetition
-        if len(horiz_dots_y) >= 3:
-            y1_d, y2_d, y3_d = horiz_dots_y[1], horiz_dots_y[2], horiz_dots_y[3]
-            x_dot = trac_x - 6
-            call_x1 = x_dot + 40
-            call_y1 = y1_d + 10
-            svg_parts.append(
-                f'<line x1="{x_dot:.1f}" y1="{y1_d:.1f}" x2="{call_x1:.1f}" y2="{call_y1:.1f}" stroke="#000000" stroke-width="1.2" marker-start="url(#arr_cad)"/>'
-            )
-            svg_parts.append(
-                f'<line x1="{x_dot:.1f}" y1="{y2_d:.1f}" x2="{call_x1:.1f}" y2="{call_y1 + 10:.1f}" stroke="#000000" stroke-width="1.2" marker-start="url(#arr_cad)"/>'
-            )
-            svg_parts.append(
-                f'<line x1="{x_dot:.1f}" y1="{y3_d:.1f}" x2="{call_x1:.1f}" y2="{call_y1 + 20:.1f}" stroke="#000000" stroke-width="1.2" marker-start="url(#arr_cad)"/>'
-            )
-            svg_parts.append(
-                f'<line x1="{call_x1:.1f}" y1="{call_y1:.1f}" x2="{call_x1 + 130:.1f}" y2="{call_y1:.1f}" stroke="#000000" stroke-width="1.2"/>'
-            )
-            svg_parts.append(
-                f'<text x="{call_x1 + 4:.1f}" y="{call_y1 - 6:.1f}" font-size="14" font-weight="bold" font-family="monospace" fill="#000000">{rw_horiz_lbl}</text>'
-            )
-
-        # 5. Side Rebar Schedules / CAD Vertical Bar Labels (Both texts reading bottom-to-top with rotate(-90))
-        # Left side schedule line & text (Ext. / Compresión)
-        sch_left_x = stem_left_x - 45
+        # 4. Four Leader Callout Lines & Text Labels (Matching User CAD Layout)
+        # Directriz 1: Horiz. Tracción (Cara Interior - Derecha Superior)
+        call_trac_h_x1 = trac_x - 6
+        call_trac_h_y1 = stem_top_y + 40
+        call_trac_h_x2 = stem_right_x + 50
+        call_trac_h_y2 = stem_top_y + 65
+        call_trac_h_end = stem_right_x + 100
         svg_parts.append(
-            f'<line x1="{sch_left_x:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_left_x:.1f}" y2="{stem_bot_y:.1f}" stroke="#000000" stroke-width="1.2"/>'
+            f'<line x1="{call_trac_h_x1:.1f}" y1="{call_trac_h_y1:.1f}" x2="{call_trac_h_x2:.1f}" y2="{call_trac_h_y2:.1f}" stroke="#1d4ed8" stroke-width="1.5" fill="none"/>'
         )
         svg_parts.append(
-            f'<line x1="{sch_left_x - 5:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_left_x + 5:.1f}" y2="{stem_top_y + 10:.1f}" stroke="#000000" stroke-width="1.2"/>'
+            f'<line x1="{call_trac_h_x2:.1f}" y1="{call_trac_h_y2:.1f}" x2="{call_trac_h_end:.1f}" y2="{call_trac_h_y2:.1f}" stroke="#1d4ed8" stroke-width="1.5" fill="none"/>'
         )
         svg_parts.append(
-            f'<line x1="{sch_left_x - 5:.1f}" y1="{stem_bot_y:.1f}" x2="{sch_left_x + 5:.1f}" y2="{stem_bot_y:.1f}" stroke="#000000" stroke-width="1.2"/>'
-        )
-        mid_y = stem_top_y + stem_h_px / 2
-        svg_parts.append(
-            f'<text x="{sch_left_x - 12:.1f}" y="{mid_y:.1f}" text-anchor="middle" font-size="14" font-weight="bold" '
-            f'font-family="monospace" fill="#000000" transform="rotate(-90,{sch_left_x - 12:.1f},{mid_y:.1f})">'
-            f'Ext. {rw_comp_lbl}, L = {rw_soil_h:.2f}m</text>'
+            f'<text x="{call_trac_h_end + 6:.1f}" y="{call_trac_h_y2 + 4:.1f}" font-size="13" font-weight="bold" font-family="monospace" fill="#1d4ed8">Horiz. Tracción: {rw_horiz_trac_lbl} (Int.)</text>'
         )
 
-        # Right side schedule line & text (Int. / Tracción - Rotated -90 so it reads in correct orientation!)
-        sch_right_x = foot_right_x + 45
+        # Directriz 2: Vert. Tracción (Cara Interior - Derecha Media)
+        call_trac_v_x1 = trac_x
+        call_trac_v_y1 = stem_top_y + 110
+        call_trac_v_x2 = stem_right_x + 50
+        call_trac_v_y2 = stem_top_y + 140
+        call_trac_v_end = stem_right_x + 100
         svg_parts.append(
-            f'<line x1="{sch_right_x:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_right_x:.1f}" y2="{stem_bot_y + base_h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
+            f'<line x1="{call_trac_v_x1:.1f}" y1="{call_trac_v_y1:.1f}" x2="{call_trac_v_x2:.1f}" y2="{call_trac_v_y2:.1f}" stroke="#1d4ed8" stroke-width="1.5" fill="none"/>'
         )
         svg_parts.append(
-            f'<line x1="{sch_right_x - 5:.1f}" y1="{stem_top_y + 10:.1f}" x2="{sch_right_x + 5:.1f}" y2="{stem_top_y + 10:.1f}" stroke="#000000" stroke-width="1.2"/>'
+            f'<line x1="{call_trac_v_x2:.1f}" y1="{call_trac_v_y2:.1f}" x2="{call_trac_v_end:.1f}" y2="{call_trac_v_y2:.1f}" stroke="#1d4ed8" stroke-width="1.5" fill="none"/>'
         )
         svg_parts.append(
-            f'<line x1="{sch_right_x - 5:.1f}" y1="{stem_bot_y + base_h_px:.1f}" x2="{sch_right_x + 5:.1f}" y2="{stem_bot_y + base_h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
+            f'<text x="{call_trac_v_end + 6:.1f}" y="{call_trac_v_y2 + 4:.1f}" font-size="13" font-weight="bold" font-family="monospace" fill="#1d4ed8">Vert. Tracción: {rw_trac_lbl} (Int.)</text>'
         )
-        mid_ry = stem_top_y + (stem_h_px + base_h_px) / 2
+
+        # Directriz 3: Horiz. Compresión (Cara Exterior - Izquierda Superior)
+        call_comp_h_x1 = comp_x + 6
+        call_comp_h_y1 = stem_top_y + 40
+        call_comp_h_x2 = stem_left_x - 30
+        call_comp_h_y2 = stem_top_y + 70
+        call_comp_h_end = stem_left_x - 70
         svg_parts.append(
-            f'<text x="{sch_right_x + 18:.1f}" y="{mid_ry:.1f}" text-anchor="middle" font-size="14" font-weight="bold" '
-            f'font-family="monospace" fill="#000000" transform="rotate(-90,{sch_right_x + 18:.1f},{mid_ry:.1f})">'
-            f'Int. {rw_trac_lbl}, L = {rw_soil_h + 0.40:.2f}m</text>'
+            f'<line x1="{call_comp_h_x1:.1f}" y1="{call_comp_h_y1:.1f}" x2="{call_comp_h_x2:.1f}" y2="{call_comp_h_y2:.1f}" stroke="#15803d" stroke-width="1.5" fill="none"/>'
+        )
+        svg_parts.append(
+            f'<line x1="{call_comp_h_x2:.1f}" y1="{call_comp_h_y2:.1f}" x2="{call_comp_h_end:.1f}" y2="{call_comp_h_y2:.1f}" stroke="#15803d" stroke-width="1.5" fill="none"/>'
+        )
+        svg_parts.append(
+            f'<text x="{call_comp_h_end - 6:.1f}" y="{call_comp_h_y2 + 4:.1f}" text-anchor="end" font-size="13" font-weight="bold" font-family="monospace" fill="#15803d">Horiz. Compresión: {rw_horiz_comp_lbl} (Ext.)</text>'
+        )
+
+        # Directriz 4: Vert. Compresión (Cara Exterior - Izquierda Media)
+        call_comp_v_x1 = comp_x
+        call_comp_v_y1 = stem_top_y + 140
+        call_comp_v_x2 = stem_left_x - 30
+        call_comp_v_y2 = stem_top_y + 175
+        call_comp_v_end = stem_left_x - 70
+        svg_parts.append(
+            f'<line x1="{call_comp_v_x1:.1f}" y1="{call_comp_v_y1:.1f}" x2="{call_comp_v_x2:.1f}" y2="{call_comp_v_y2:.1f}" stroke="#15803d" stroke-width="1.5" fill="none"/>'
+        )
+        svg_parts.append(
+            f'<line x1="{call_comp_v_x2:.1f}" y1="{call_comp_v_y2:.1f}" x2="{call_comp_v_end:.1f}" y2="{call_comp_v_y2:.1f}" stroke="#15803d" stroke-width="1.5" fill="none"/>'
+        )
+        svg_parts.append(
+            f'<text x="{call_comp_v_end - 6:.1f}" y="{call_comp_v_y2 + 4:.1f}" text-anchor="end" font-size="13" font-weight="bold" font-family="monospace" fill="#15803d">Vert. Compresión: {rw_comp_lbl} (Ext.)</text>'
         )
 
         # 6. CAD Dimensions with Slash Ticks
@@ -864,12 +870,24 @@ class PlanRenderer:
         # 3. Solid Black Rebar Circles (Cabillas Longitudinales Negras Proporcionales)
         r_rebar = max(3.5, min(5.0, sw * 0.12))
 
-        # Bottom bars
-        n_bot_draw = max(2, min(n_bot, 6))
-        bot_xs = [sx1 + r_rebar + 3 + (sw - 2 * r_rebar - 6) * i / (n_bot_draw - 1) for i in range(n_bot_draw)]
-        bot_y = sy1 + sh - r_rebar - 3
-        for r_x in bot_xs:
-            svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{bot_y:.1f}" r="{r_rebar:.1f}" fill="#000000"/>')
+        # Bottom bars - Draw per ACI 318 Sec 25.2 (max 2 bars per horizontal layer for b=15cm)
+        bot_y_l1 = sy1 + sh - r_rebar - 3
+        bot_xs = [sx1 + r_rebar + 3, sx1 + sw - r_rebar - 3]
+        bot_y = bot_y_l1
+        if n_bot <= 2:
+            for r_x in bot_xs:
+                svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{bot_y_l1:.1f}" r="{r_rebar:.1f}" fill="#000000"/>')
+        else:
+            # 2 Layers (Capa 1: 2 varillas en esquinas inferiores, Capa 2: varillas superiores con separación vertical de 2.5cm)
+            for r_x in bot_xs:
+                svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{bot_y_l1:.1f}" r="{r_rebar:.1f}" fill="#000000"/>')
+            bot_y_l2 = bot_y_l1 - 2 * r_rebar - 6
+            n_l2 = n_bot - 2
+            if n_l2 == 1:
+                svg_parts.append(f'<circle cx="{sx1 + sw/2:.1f}" cy="{bot_y_l2:.1f}" r="{r_rebar:.1f}" fill="#000000"/>')
+            else:
+                for r_x in bot_xs:
+                    svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{bot_y_l2:.1f}" r="{r_rebar:.1f}" fill="#000000"/>')
 
         # Top bars
         n_top_draw = max(2, min(n_top, 4))
