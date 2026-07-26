@@ -785,18 +785,19 @@ class PlanRenderer:
 
         panel_cx = 740
         panel_cy = 250
-        b_px = max(35, min(160, int(sb_b_cm * scale_px_per_cm)))
+        scale_px_per_cm = 3.6
+        b_px = max(65, min(160, int(sb_b_cm * scale_px_per_cm)))
         h_px = max(140, min(290, int(b_px * (sb_h_cm / max(sb_b_cm, 1)))))
         bx1 = panel_cx - b_px / 2
         by1 = panel_cy - h_px / 2
-        cover_beam = max(10, min(20, int(b_px * 0.18)))
+        cover_beam = max(12, min(22, int(b_px * 0.18)))
         sx1 = bx1 + cover_beam
         sy1 = by1 + cover_beam
         sw = b_px - 2 * cover_beam
         sh = h_px - 2 * cover_beam
 
         slab_h_px = max(28, int(h_px * (slab_h_cm / max(sb_h_cm, 1))))
-        wing_w = 45
+        wing_w = 48
 
         svg_parts.append('<g id="va_detail_cad">')
         svg_parts.append(
@@ -819,48 +820,53 @@ class PlanRenderer:
         svg_parts.append(
             f'<path d="{beam_poly}" fill="url(#concreteHatch)" stroke="#000000" stroke-width="2.8" stroke-linejoin="miter"/>'
         )
-        # CAD Break line symbol on slab left end (Símbolo de corte de losa)
+        # CAD Break line symbol on slab left end (Símbolo de corte de losa tipo rayo CAD)
+        mid_slab_y = by1 + slab_h_px / 2
         break_path = (
-            f"M {slab_break_x:.1f} {by1 - 6:.1f} "
-            f"L {slab_break_x:.1f} {by1 + slab_h_px * 0.35:.1f} "
-            f"L {slab_break_x - 6:.1f} {by1 + slab_h_px * 0.50:.1f} "
-            f"L {slab_break_x + 6:.1f} {by1 + slab_h_px * 0.65:.1f} "
-            f"L {slab_break_x:.1f} {by1 + slab_h_px + 6:.1f}"
+            f"M {slab_break_x:.1f} {by1 - 8:.1f} "
+            f"L {slab_break_x:.1f} {mid_slab_y - 8:.1f} "
+            f"L {slab_break_x - 6:.1f} {mid_slab_y - 2:.1f} "
+            f"L {slab_break_x + 6:.1f} {mid_slab_y + 2:.1f} "
+            f"L {slab_break_x:.1f} {mid_slab_y + 8:.1f} "
+            f"L {slab_break_x:.1f} {by1 + slab_h_px + 8:.1f}"
         )
         svg_parts.append(
             f'<path d="{break_path}" fill="none" stroke="#000000" stroke-width="1.8"/>'
         )
 
-        # 2. Stirrup Rectangle + Dual 135-degree Parallel Hooks at Top-Left Corner (as drawn in green!)
+        # 2. Stirrup Rectangle + Dual 135-degree Parallel Hooks at Top-Left Corner
         svg_parts.append(
             f'<rect x="{sx1:.1f}" y="{sy1:.1f}" width="{sw:.1f}" height="{sh:.1f}" '
             f'fill="none" stroke="#000000" stroke-width="2.2"/>'
         )
-        # Hook Leg 1 (parallel diagonal extending down-right from top-left corner past corner rebar)
+        # Hook Leg 1 & 2 scaled proportionally to stirrup width
+        hook_len = max(8, min(14, int(sw * 0.35)))
+        hook_off = max(3, min(8, int(sw * 0.15)))
         svg_parts.append(
-            f'<line x1="{sx1 + 4:.1f}" y1="{sy1 + 14:.1f}" x2="{sx1 + 18:.1f}" y2="{sy1 + 28:.1f}" stroke="#000000" stroke-width="2.2" stroke-linecap="round"/>'
+            f'<line x1="{sx1 + hook_off:.1f}" y1="{sy1 + hook_off + 6:.1f}" x2="{sx1 + hook_off + hook_len:.1f}" y2="{sy1 + hook_off + 6 + hook_len:.1f}" stroke="#000000" stroke-width="2.0" stroke-linecap="round"/>'
         )
-        # Hook Leg 2 (parallel diagonal extending down-right from top-left corner past corner rebar)
         svg_parts.append(
-            f'<line x1="{sx1 + 14:.1f}" y1="{sy1 + 4:.1f}" x2="{sx1 + 28:.1f}" y2="{sy1 + 18:.1f}" stroke="#000000" stroke-width="2.2" stroke-linecap="round"/>'
+            f'<line x1="{sx1 + hook_off + 6:.1f}" y1="{sy1 + hook_off:.1f}" x2="{sx1 + hook_off + 6 + hook_len:.1f}" y2="{sy1 + hook_off + hook_len:.1f}" stroke="#000000" stroke-width="2.0" stroke-linecap="round"/>'
         )
 
-        # 3. Solid Black Rebar Circles (Cabillas Longitudinales Negras)
+        # 3. Solid Black Rebar Circles (Cabillas Longitudinales Negras Proporcionales)
+        r_rebar = max(3.5, min(5.0, sw * 0.12))
+
         # Bottom bars
         n_bot_draw = max(2, min(n_bot, 6))
-        bot_xs = [sx1 + 8 + (sw - 16) * i / (n_bot_draw - 1) for i in range(n_bot_draw)]
-        bot_y = sy1 + sh - 9
+        bot_xs = [sx1 + r_rebar + 3 + (sw - 2 * r_rebar - 6) * i / (n_bot_draw - 1) for i in range(n_bot_draw)]
+        bot_y = sy1 + sh - r_rebar - 3
         for r_x in bot_xs:
-            svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{bot_y:.1f}" r="6.0" fill="#000000"/>')
+            svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{bot_y:.1f}" r="{r_rebar:.1f}" fill="#000000"/>')
 
         # Top bars
         n_top_draw = max(2, min(n_top, 4))
-        top_xs = [sx1 + 8 + (sw - 16) * i / (n_top_draw - 1) for i in range(n_top_draw)]
-        top_y = sy1 + 9
+        top_xs = [sx1 + r_rebar + 3 + (sw - 2 * r_rebar - 6) * i / (n_top_draw - 1) for i in range(n_top_draw)]
+        top_y = sy1 + r_rebar + 3
         for r_x in top_xs:
-            svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{top_y:.1f}" r="5.5" fill="#000000"/>')
+            svg_parts.append(f'<circle cx="{r_x:.1f}" cy="{top_y:.1f}" r="{r_rebar:.1f}" fill="#000000"/>')
 
-        # 4. Elbow Callout Leader Lines (Líneas indicadoras con codo a 45 deg, font-size=14.5)
+        # 4. Elbow Callout Leader Lines (Líneas indicadoras con codo a 45 deg, font-size=14.5, Ø Symbol)
         call_right_start_x = bx1 + b_px + 22
         call_right_end_x = call_right_start_x + 110
 
@@ -871,7 +877,7 @@ class PlanRenderer:
         )
         svg_parts.append(f'<circle cx="{top_xs[-1]:.1f}" cy="{top_y:.1f}" r="3" fill="#000000"/>')
         svg_parts.append(
-            f'<text x="{call_right_start_x + 6:.1f}" y="{top_y - 25:.1f}" font-size="14.5" font-weight="bold" font-family="monospace" fill="#000000">{n_top} - Y{d_top_mm}</text>'
+            f'<text x="{call_right_start_x + 6:.1f}" y="{top_y - 25:.1f}" font-size="14.5" font-weight="bold" font-family="monospace" fill="#000000">{n_top} - Ø{d_top_mm}</text>'
         )
 
         # Stirrup callout (Right side middle)
@@ -892,7 +898,7 @@ class PlanRenderer:
         )
         svg_parts.append(f'<circle cx="{bot_xs[-1]:.1f}" cy="{bot_y:.1f}" r="3" fill="#000000"/>')
         svg_parts.append(
-            f'<text x="{call_right_start_x + 6:.1f}" y="{bot_y + 15:.1f}" font-size="14.5" font-weight="bold" font-family="monospace" fill="#000000">{n_bot} - Y{d_bot_mm}</text>'
+            f'<text x="{call_right_start_x + 6:.1f}" y="{bot_y + 15:.1f}" font-size="14.5" font-weight="bold" font-family="monospace" fill="#000000">{n_bot} - Ø{d_bot_mm}</text>'
         )
 
         # 5. Dual Height CAD Dimensions (Left side: e_losa, h_cuelgue & h_total)
