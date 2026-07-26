@@ -750,7 +750,7 @@ class PlanRenderer:
         svg_parts.append('</g>')
 
         # ----------------------------------------------------------------
-        # RIGHT PANEL — Viga de Apoyo CAD (x: 500..980) - Font +15%, Dual Hooks
+        # RIGHT PANEL — Viga de Apoyo CAD (x: 500..980) - Slab Connection & Dual Heights
         # ----------------------------------------------------------------
         sb_b_cm = 30
         sb_h_cm = 50
@@ -761,6 +761,10 @@ class PlanRenderer:
         if sd:
             sb_b_cm = round(float(sd.get('b_m', sb_b_cm / 100)) * 100)
             sb_h_cm = round(float(sd.get('h_m', sb_h_cm / 100)) * 100)
+
+        slab_h_m = float(getattr(self, 'h', 0.20))
+        slab_h_cm = round(slab_h_m * 100)
+        cuelgue_h_cm = max(0, sb_h_cm - slab_h_cm)
 
         n_bot = sd.get('n_bars_bot', 2) if sd else 2
         n_top = sd.get('n_bars_top', 2) if sd else 2
@@ -777,7 +781,7 @@ class PlanRenderer:
                 n_top = int(m_beam.group(3))
                 d_top_mm = int(m_beam.group(4))
 
-        panel_cx = 730
+        panel_cx = 740
         panel_cy = 250
         b_px = max(80, min(160, int(sb_b_cm * 2.8)))
         h_px = max(140, min(290, int(b_px * (sb_h_cm / max(sb_b_cm, 1)))))
@@ -789,17 +793,40 @@ class PlanRenderer:
         sw = b_px - 2 * cover_beam
         sh = h_px - 2 * cover_beam
 
+        slab_h_px = max(28, int(h_px * (slab_h_cm / max(sb_h_cm, 1))))
+        wing_w = 45
+
         svg_parts.append('<g id="va_detail_cad">')
         svg_parts.append(
-            '<text x="730" y="38" text-anchor="middle" font-size="18" font-weight="bold" '
+            '<text x="740" y="38" text-anchor="middle" font-size="18" font-weight="bold" '
             'font-family="\'Consolas\', \'Roboto Mono\', \'Courier New\', monospace" fill="#000000">'
             'DETALLE VIGA DE APOYO (VA)</text>'
         )
 
-        # 1. Beam Concrete Cross-Section (Pattern + Outer Border)
+        # 1. Monolithic Slab Extension + Beam Concrete Cross-Section (Pattern + Outer Border)
+        # Slab wing path on top left with CAD break line (línea de quiebre de losa)
+        slab_break_x = bx1 - wing_w
+        beam_poly = (
+            f"M {slab_break_x:.1f} {by1:.1f} "
+            f"L {bx1 + b_px:.1f} {by1:.1f} "
+            f"L {bx1 + b_px:.1f} {by1 + h_px:.1f} "
+            f"L {bx1:.1f} {by1 + h_px:.1f} "
+            f"L {bx1:.1f} {by1 + slab_h_px:.1f} "
+            f"L {slab_break_x:.1f} {by1 + slab_h_px:.1f} Z"
+        )
         svg_parts.append(
-            f'<rect x="{bx1:.1f}" y="{by1:.1f}" width="{b_px:.1f}" height="{h_px:.1f}" '
-            f'fill="url(#concreteHatch)" stroke="#000000" stroke-width="2.8"/>'
+            f'<path d="{beam_poly}" fill="url(#concreteHatch)" stroke="#000000" stroke-width="2.8" stroke-linejoin="miter"/>'
+        )
+        # CAD Break line symbol on slab left end (Símbolo de corte de losa)
+        break_path = (
+            f"M {slab_break_x:.1f} {by1 - 6:.1f} "
+            f"L {slab_break_x:.1f} {by1 + slab_h_px * 0.35:.1f} "
+            f"L {slab_break_x - 6:.1f} {by1 + slab_h_px * 0.50:.1f} "
+            f"L {slab_break_x + 6:.1f} {by1 + slab_h_px * 0.65:.1f} "
+            f"L {slab_break_x:.1f} {by1 + slab_h_px + 6:.1f}"
+        )
+        svg_parts.append(
+            f'<path d="{break_path}" fill="none" stroke="#000000" stroke-width="1.8"/>'
         )
 
         # 2. Stirrup Rectangle + Dual 135-degree Parallel Hooks at Top-Left Corner (as drawn in green!)
@@ -866,21 +893,47 @@ class PlanRenderer:
             f'<text x="{call_right_start_x + 6:.1f}" y="{bot_y + 15:.1f}" font-size="14.5" font-weight="bold" font-family="monospace" fill="#000000">{n_bot} - Y{d_bot_mm}</text>'
         )
 
-        # 5. CAD Dimensions with Slash Ticks (Cotas de ingeniería)
-        # Depth h (Left side)
-        dim_h_x = bx1 - 35
+        # 5. Dual Height CAD Dimensions (Left side: e_losa, h_cuelgue & h_total)
+        dim_h_x1 = bx1 - wing_w - 20
+        dim_h_x2 = dim_h_x1 - 50
+
+        # A. Slab Thickness Dimension (e_losa = 20 cm)
         svg_parts.append(
-            f'<line x1="{dim_h_x:.1f}" y1="{by1:.1f}" x2="{dim_h_x:.1f}" y2="{by1 + h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
+            f'<line x1="{dim_h_x1:.1f}" y1="{by1:.1f}" x2="{dim_h_x1:.1f}" y2="{by1 + slab_h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
         )
-        svg_parts.append(f'<line x1="{dim_h_x - 4:.1f}" y1="{by1 + 4:.1f}" x2="{dim_h_x + 4:.1f}" y2="{by1 - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
-        svg_parts.append(f'<line x1="{dim_h_x - 4:.1f}" y1="{by1 + h_px + 4:.1f}" x2="{dim_h_x + 4:.1f}" y2="{by1 + h_px - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
+        svg_parts.append(f'<line x1="{dim_h_x1 - 4:.1f}" y1="{by1 + 4:.1f}" x2="{dim_h_x1 + 4:.1f}" y2="{by1 - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
+        svg_parts.append(f'<line x1="{dim_h_x1 - 4:.1f}" y1="{by1 + slab_h_px + 4:.1f}" x2="{dim_h_x1 + 4:.1f}" y2="{by1 + slab_h_px - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
         svg_parts.append(
-            f'<text x="{dim_h_x - 9:.1f}" y="{panel_cy:.1f}" text-anchor="middle" font-size="14.5" font-weight="bold" '
-            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x - 9:.1f},{panel_cy:.1f})">'
+            f'<text x="{dim_h_x1 - 8:.1f}" y="{by1 + slab_h_px / 2:.1f}" text-anchor="middle" font-size="13" font-weight="bold" '
+            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x1 - 8:.1f},{by1 + slab_h_px / 2:.1f})">'
+            f'e = {slab_h_cm} cm</text>'
+        )
+
+        # B. Beam Cuelgue/Drop Dimension (h_cuelgue = 30 cm)
+        svg_parts.append(
+            f'<line x1="{dim_h_x1:.1f}" y1="{by1 + slab_h_px:.1f}" x2="{dim_h_x1:.1f}" y2="{by1 + h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
+        )
+        svg_parts.append(f'<line x1="{dim_h_x1 - 4:.1f}" y1="{by1 + h_px + 4:.1f}" x2="{dim_h_x1 + 4:.1f}" y2="{by1 + h_px - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
+        mid_cuelgue_y = by1 + slab_h_px + (h_px - slab_h_px) / 2
+        svg_parts.append(
+            f'<text x="{dim_h_x1 - 8:.1f}" y="{mid_cuelgue_y:.1f}" text-anchor="middle" font-size="13" font-weight="bold" '
+            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x1 - 8:.1f},{mid_cuelgue_y:.1f})">'
+            f'h_c = {cuelgue_h_cm} cm</text>'
+        )
+
+        # C. Total Structural Height Dimension Line (h_total = 50 cm)
+        svg_parts.append(
+            f'<line x1="{dim_h_x2:.1f}" y1="{by1:.1f}" x2="{dim_h_x2:.1f}" y2="{by1 + h_px:.1f}" stroke="#000000" stroke-width="1.2"/>'
+        )
+        svg_parts.append(f'<line x1="{dim_h_x2 - 4:.1f}" y1="{by1 + 4:.1f}" x2="{dim_h_x2 + 4:.1f}" y2="{by1 - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
+        svg_parts.append(f'<line x1="{dim_h_x2 - 4:.1f}" y1="{by1 + h_px + 4:.1f}" x2="{dim_h_x2 + 4:.1f}" y2="{by1 + h_px - 4:.1f}" stroke="#000000" stroke-width="1.8"/>')
+        svg_parts.append(
+            f'<text x="{dim_h_x2 - 9:.1f}" y="{panel_cy:.1f}" text-anchor="middle" font-size="14" font-weight="bold" '
+            f'font-family="monospace" fill="#000000" transform="rotate(-90,{dim_h_x2 - 9:.1f},{panel_cy:.1f})">'
             f'h = {sb_h_cm} cm</text>'
         )
 
-        # Width b (Top side)
+        # 6. Width b (Top side)
         dim_b_y = by1 - 22
         svg_parts.append(
             f'<line x1="{bx1:.1f}" y1="{dim_b_y:.1f}" x2="{bx1 + b_px:.1f}" y2="{dim_b_y:.1f}" stroke="#000000" stroke-width="1.2"/>'
@@ -898,7 +951,6 @@ class PlanRenderer:
 
     # ------------------------------------------------------------------
     # HTML plan sketch export
-    # ------------------------------------------------------------------
 
     def export_plan_sketch(
         self, filepath: str = "plano_armado.html", load_factor: float = 1.5
