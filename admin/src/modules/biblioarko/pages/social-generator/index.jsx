@@ -1019,7 +1019,8 @@ export default function SocialGenerator() {
       initialState: {
         trimStart: pos.trimStart || 0,
         trimEnd: pos.trimEnd,
-        speed: pos.speed || 1
+        speed: pos.speed || 1,
+        isMuted: pos.isMuted || false
       }
     };
 
@@ -1738,6 +1739,7 @@ export default function SocialGenerator() {
                   trimStart: params.trimStart,
                   trimEnd: params.trimEnd,
                   speed: params.speed,
+                  isMuted: params.isMuted,
                   endTime: startTime + computedDuration
                 }
               };

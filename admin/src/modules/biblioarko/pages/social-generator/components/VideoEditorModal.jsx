@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiX, FiCheck, FiScissors, FiClock } from 'react-icons/fi';
+import { FiX, FiCheck, FiScissors, FiClock, FiVolume2, FiVolumeX } from 'react-icons/fi';
 
 const VideoEditorModal = ({ file, url: providedUrl, initialState, onClose, onApply }) => {
   const videoRef = useRef(null);
@@ -7,6 +7,7 @@ const VideoEditorModal = ({ file, url: providedUrl, initialState, onClose, onApp
   const [startTime, setStartTime] = useState(initialState?.trimStart || 0);
   const [endTime, setEndTime] = useState(initialState?.trimEnd || 0);
   const [speed, setSpeed] = useState(initialState?.speed || 1);
+  const [isMuted, setIsMuted] = useState(initialState?.isMuted || false);
   const [videoUrl, setVideoUrl] = useState(providedUrl || null);
 
   useEffect(() => {
@@ -42,7 +43,8 @@ const VideoEditorModal = ({ file, url: providedUrl, initialState, onClose, onApp
     onApply({
       trimStart: startTime,
       trimEnd: endTime,
-      speed: speed
+      speed: speed,
+      isMuted: isMuted
     });
   };
 
@@ -142,6 +144,27 @@ const VideoEditorModal = ({ file, url: providedUrl, initialState, onClose, onApp
                 <option value={2}>2.0x (Rápido)</option>
               </select>
             </div>
+          </div>
+
+          {/* Audio Controls */}
+          <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-full ${isMuted ? 'bg-red-100 text-red-500' : 'bg-indigo-100 text-indigo-500'}`}>
+                {isMuted ? <FiVolumeX size={18} /> : <FiVolume2 size={18} />}
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300">Audio Original</h4>
+                <p className="text-xs text-gray-500">
+                  {isMuted ? 'El audio original no sonará en la exportación' : 'Se incluirá el audio de este video en la exportación'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${!isMuted ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!isMuted ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
           </div>
 
         </div>

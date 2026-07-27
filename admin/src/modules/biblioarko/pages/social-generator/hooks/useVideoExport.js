@@ -139,9 +139,13 @@ export const useVideoExport = (
           );
 
           if (isVideo) {
+            const imgId = `${i}-${imgIndex}`;
+            const pos = transformState?.imagePositions?.[imgId] || {};
+            const isMuted = pos.isMuted || false;
+
             const vid = document.createElement('video');
             vid.crossOrigin = 'anonymous';
-            vid.muted = false; // Permitir salida de audio del video
+            vid.muted = isMuted; // Permitir salida de audio solo si no esta silenciado
             vid.loop = true;
             vid.playsInline = true;
 
@@ -166,17 +170,17 @@ export const useVideoExport = (
               }
             });
 
-            // Conectar audio del video al WebAudio
-            try {
-              const vidSource = audioCtx.createMediaElementSource(vid);
-              vidSource.connect(audioDest);
-              hasAudio = true;
-            } catch (e) {
-              console.error('[Arko360] Error conectando audio de video insertado:', e);
+            // Conectar audio del video al WebAudio si no esta muteado
+            if (!isMuted) {
+              try {
+                const vidSource = audioCtx.createMediaElementSource(vid);
+                vidSource.connect(audioDest);
+                hasAudio = true;
+              } catch (e) {
+                console.error('[Arko360] Error conectando audio de video insertado:', e);
+              }
             }
 
-            const imgId = `${i}-${imgIndex}`;
-            const pos = transformState?.imagePositions?.[imgId] || { x: 50, y: 70 };
             const size = transformState?.imageSizes?.[imgId] || 100;
             const rot = transformState?.imageRotations?.[imgId] || 0;
 
