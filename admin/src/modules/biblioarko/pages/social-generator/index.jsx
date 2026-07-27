@@ -227,7 +227,12 @@ export default function SocialGenerator() {
             }
           }
 
-          return nextTime >= maxVidDur ? 0 : nextTime;
+          if (nextTime >= maxVidDur) {
+            setIsPlaying(false);
+            return 0;
+          }
+
+          return nextTime;
         });
       }, 100);
     } else {
@@ -1085,6 +1090,33 @@ export default function SocialGenerator() {
     );
   }
 
+  let currentMaxVidDur = 0;
+  if (activeTab === 'video' && generatedContent?.video_slides) {
+    const slide = generatedContent.video_slides[designer.canvas.currentSlidePage];
+    if (slide) {
+      currentMaxVidDur = slideDuration;
+      const tEnd = slide.titleEndTime !== undefined ? slide.titleEndTime : slideDuration;
+      if (tEnd > currentMaxVidDur) currentMaxVidDur = tEnd;
+      const cEnd = slide.contentEndTime !== undefined ? slide.contentEndTime : slideDuration;
+      if (cEnd > currentMaxVidDur) currentMaxVidDur = cEnd;
+      
+      const extraEls = designer.canvas.extraElements[designer.canvas.currentSlidePage] || [];
+      extraEls.forEach(el => {
+        const eEnd = el.endTime !== undefined ? el.endTime : slideDuration;
+        if (eEnd > currentMaxVidDur) currentMaxVidDur = eEnd;
+      });
+      
+      if (slide.customImages) {
+        slide.customImages.forEach((img, imgIdx) => {
+          const imgId = `${designer.canvas.currentSlidePage}-${imgIdx}`;
+          const pos = transformer?.state?.imagePositions?.[imgId] || {};
+          const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
+          if (endT > currentMaxVidDur) currentMaxVidDur = endT;
+        });
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 font-manrope">
       <div className="max-w-[1480px] mx-auto px-4 pt-6">
@@ -1372,12 +1404,20 @@ export default function SocialGenerator() {
                               <div className="w-3 h-3 bg-current rounded-sm"></div>
                             </button>
                             <button
-                              onClick={() => setIsPlaying(!isPlaying)}
+                              onClick={() => {
+                                if (!isPlaying && videoTime >= currentMaxVidDur) {
+                                  setVideoTime(0);
+                                }
+                                setIsPlaying(!isPlaying);
+                              }}
                               className={`p-2 rounded-full transition-all ${isPlaying ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'} shadow-md transform hover:scale-105 active:scale-95`}
                               title={isPlaying ? "Pausar" : "Reproducir"}
                             >
                               {isPlaying ? <FiPause size={16} /> : <FiPlay size={16} />}
                             </button>
+                            <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 min-w-[70px] text-center tracking-wider">
+                              {videoTime.toFixed(1)}s <span className="text-gray-400 font-medium">/ {currentMaxVidDur.toFixed(1)}s</span>
+                            </span>
                             <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-bold text-gray-500 uppercase">Volumen:</span>
