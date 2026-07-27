@@ -900,8 +900,25 @@ export default function SocialGenerator() {
     const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
     const newSlides = [...generatedContent[slidesProp]];
     if (newSlides[slideIndex]?.customImages) {
+      const oldImgCount = newSlides[slideIndex].customImages.length;
       newSlides[slideIndex].customImages = newSlides[slideIndex].customImages.filter((_, i) => i !== imgIndex);
       setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
+      
+      // Shift image positions state down for the remaining images
+      if (transformer?.state?.setImagePositions) {
+        transformer.state.setImagePositions(prev => {
+          const next = { ...prev };
+          delete next[`${slideIndex}-${imgIndex}`];
+          for (let i = imgIndex + 1; i < oldImgCount; i++) {
+            if (next[`${slideIndex}-${i}`]) {
+              next[`${slideIndex}-${i - 1}`] = next[`${slideIndex}-${i}`];
+              delete next[`${slideIndex}-${i}`];
+            }
+          }
+          return next;
+        });
+      }
+
       if (designer.canvas.setSelectedImageId) {
         designer.canvas.setSelectedImageId(null);
       }
