@@ -935,6 +935,41 @@ export default function SocialGenerator() {
         if (response && response.url) {
           const newSlides = [...generatedContent.video_slides];
           if (!newSlides[index].customImages) newSlides[index].customImages = [];
+          
+          const isVideo = file.type.startsWith('video/');
+          if (isVideo) {
+            const slide = newSlides[index];
+            let maxVidDur = 0;
+            const tEnd = slide?.titleEndTime !== undefined ? slide.titleEndTime : slideDuration;
+            if (tEnd > maxVidDur) maxVidDur = tEnd;
+            const cEnd = slide?.contentEndTime !== undefined ? slide.contentEndTime : slideDuration;
+            if (cEnd > maxVidDur) maxVidDur = cEnd;
+            const extraEls = designer.canvas.extraElements[index] || [];
+            extraEls.forEach(el => {
+              const eEnd = el.endTime !== undefined ? el.endTime : slideDuration;
+              if (eEnd > maxVidDur) maxVidDur = eEnd;
+            });
+            if (slide?.customImages) {
+              slide.customImages.forEach((img, i) => {
+                const imgId = `${index}-${i}`;
+                const pos = transformer.state?.imagePositions?.[imgId] || {};
+                const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
+                if (endT > maxVidDur) maxVidDur = endT;
+              });
+            }
+            
+            const newImgIdx = newSlides[index].customImages.length;
+            if (transformer.state.setImagePositions) {
+              transformer.state.setImagePositions(prev => ({
+                ...prev,
+                [`${index}-${newImgIdx}`]: {
+                  ...(prev[`${index}-${newImgIdx}`] || { x: 50, y: 70 }),
+                  startTime: maxVidDur
+                }
+              }));
+            }
+          }
+
           newSlides[index].customImages.push(response.url);
           setGeneratedContent({ ...generatedContent, video_slides: newSlides });
         }

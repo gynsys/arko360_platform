@@ -494,7 +494,7 @@ export const SlideCanvas = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (onEditVideo) onEditVideo(index, imgId);
+                      if (onEditVideo) onEditVideo(index, imgIdx, img);
                     }}
                     className="absolute -top-3 -right-3 w-7 h-7 bg-indigo-600 text-white rounded-full shadow-lg border-2 border-white flex items-center justify-center cursor-pointer hover:bg-indigo-700 hover:scale-110 transition-all z-50"
                     title="Editar Video (Recortar/Velocidad)"
