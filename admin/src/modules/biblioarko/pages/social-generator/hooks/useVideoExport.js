@@ -459,6 +459,28 @@ export const useVideoExport = (
           ctx.rotate(v.rot * Math.PI / 180);
           ctx.translate(-dSizeX / 2, -dSizeY / 2);
 
+          // Aplicar sombra si existe
+          if (v.pos.shadow) {
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 25 * scaleX;
+            ctx.shadowOffsetY = 10 * scaleY;
+          }
+
+          // Aplicar border-radius
+          const borderRadiusStr = designer.design?.imageBorderRadius || '0px';
+          const radiusPixels = (parseInt(borderRadiusStr) || 0) * scaleX;
+          
+          if (radiusPixels > 0) {
+            ctx.beginPath();
+            if (ctx.roundRect) {
+              ctx.roundRect(0, 0, dSizeX, dSizeY, radiusPixels);
+            } else {
+              // Fallback para navegadores antiguos
+              ctx.rect(0, 0, dSizeX, dSizeY);
+            }
+            ctx.clip();
+          }
+
           if (v.vid.videoWidth && v.vid.videoHeight) {
             const containerRatio = dSizeX / dSizeY;
             const vidRatio = v.vid.videoWidth / v.vid.videoHeight;
