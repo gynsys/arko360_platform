@@ -184,7 +184,10 @@ export const useVideoExport = (
             const size = transformState?.imageSizes?.[imgId] || 100;
             const rot = transformState?.imageRotations?.[imgId] || 0;
 
-            const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
+            let endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
+            if (pos.endTime === undefined && vid.duration && !isNaN(vid.duration) && vid.duration !== Infinity) {
+              endT = (pos.startTime || 0) + vid.duration;
+            }
             if (endT > maxVidDur) maxVidDur = endT;
 
             currentSlideVids.push({ vid, pos, size, rot });
