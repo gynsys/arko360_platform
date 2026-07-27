@@ -3,7 +3,7 @@ import {
   FiTrash2, FiX, FiBold, FiItalic, FiType, 
   FiLayers, FiMove, FiMaximize, FiMinimize, 
   FiCornerUpLeft, FiSquare, FiCircle, FiImage,
-  FiEye, FiCopy, FiPlay, FiPause, FiCrop
+  FiEye, FiCopy, FiPlay, FiPause, FiCrop, FiVideo
 } from 'react-icons/fi';
 
 export const ContextualBar = ({ 
@@ -18,7 +18,8 @@ export const ContextualBar = ({
   imagePositions = {},
   updateImage,
   onRemoveImage,
-  onCropImage
+  onCropImage,
+  onEditVideo
 }) => {
   if (!selectedId) return null;
 
@@ -377,6 +378,17 @@ export const ContextualBar = ({
 
       {/* Actions */}
       <div className="flex flex-col items-center gap-2 flex-shrink-0">
+        {isVideo && (
+          <button
+            onClick={() => {
+              if (onEditVideo) onEditVideo(parseInt(slideIdx), parseInt(elId));
+            }}
+            className="p-2.5 bg-indigo-50 text-indigo-500 rounded-2xl hover:bg-indigo-500 hover:text-white transition-all cursor-pointer"
+            title="Editar Video (Recortar/Velocidad)"
+          >
+            <FiVideo size={18} />
+          </button>
+        )}
         {!isImage && (
           <button
             onClick={() => {

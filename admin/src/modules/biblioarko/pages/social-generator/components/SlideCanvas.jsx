@@ -491,20 +491,6 @@ export const SlideCanvas = ({
                   onTouchStart={(e) => handleTransformStart(e, index, 'rotate', 'image', imgId, containerRef.current, { x: pos.x, y: pos.y, width, height, rotation: rot })}>
                   <FiRefreshCw size={12}/>
                 </div>
-
-                {/* Edit Video Handle */}
-                {img && (img.startsWith('data:video') || img.match(/\.(mp4|webm|mov|ogg)(\?.*)?$/i)) && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (onEditVideo) onEditVideo(index, imgIdx, img);
-                    }}
-                    className="absolute -top-3 -right-3 w-7 h-7 bg-indigo-600 text-white rounded-full shadow-lg border-2 border-white flex items-center justify-center cursor-pointer hover:bg-indigo-700 hover:scale-110 transition-all z-50"
-                    title="Editar Video (Recortar/Velocidad)"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-                  </button>
-                )}
               </>
             )}
           </Resizable>
@@ -734,6 +720,11 @@ export const SlideCanvas = ({
           onCropImage={(sIdx, imgIdx) => {
             if (onCropImage && slide?.customImages?.[imgIdx]) {
               onCropImage(sIdx, imgIdx, slide.customImages[imgIdx]);
+            }
+          }}
+          onEditVideo={(sIdx, imgIdx) => {
+            if (onEditVideo && slide?.customImages?.[imgIdx]) {
+              onEditVideo(sIdx, imgIdx, slide.customImages[imgIdx]);
             }
           }}
         />
