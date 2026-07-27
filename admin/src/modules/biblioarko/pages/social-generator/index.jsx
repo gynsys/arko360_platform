@@ -909,11 +909,16 @@ export default function SocialGenerator() {
         transformer.state.setImagePositions(prev => {
           const next = { ...prev };
           delete next[`${slideIndex}-${imgIndex}`];
+          let shiftedCount = 0;
           for (let i = imgIndex + 1; i < oldImgCount; i++) {
             if (next[`${slideIndex}-${i}`]) {
               next[`${slideIndex}-${i - 1}`] = next[`${slideIndex}-${i}`];
               delete next[`${slideIndex}-${i}`];
+              shiftedCount++;
             }
+          }
+          if (shiftedCount > 0) {
+            console.log(`✅ [Debug] Se desplazaron los datos de ${shiftedCount} elemento(s) para evitar fantasmas.`);
           }
           return next;
         });
