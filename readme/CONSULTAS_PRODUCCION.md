@@ -1,68 +1,118 @@
 # Consultas a la Base de Datos en Producción
 
-Esta bitácora documenta el proceso y los comandos necesarios para realizar consultas en vivo a la base de datos de producción (contenedor de Docker en el servidor remoto).
+Esta bitácora documenta el procedimiento estándar y los comandos necesarios para consultar, inspeccionar y re-evaluar proyectos guardados en la base de datos de producción (contenedor Docker en el servidor remoto).
 
-## Requisitos
-1. Acceso por SSH al servidor (IP `167.172.115.154`) a través del usuario `root` usando la llave local `id_ed25519`.
-2. El script envoltorio local `ssh_runner.py` que se encuentra en la raíz del proyecto, el cual facilita la ejecución de comandos.
+---
 
-## Proceso de Ejecución
-Para realizar una consulta, seguimos una metodología en dos pasos: primero copiamos un script local de Python hacia el contenedor de Docker que ejecuta el backend, y luego lo ejecutamos de forma remota.
+## 1. Requisitos
+1. **Llave SSH**: Acceso al servidor remoto (`167.172.115.154`) como usuario `root` usando `C:/Users/pablo/.ssh/id_ed25519`.
+2. **Script Envoltorio Local**: `ssh_runner.py` en la raíz del proyecto.
 
-### 1. El Script de Consulta (`query_db.py`)
-Puedes utilizar el script adjunto o crear uno nuevo. Un ejemplo estándar para consultar la tabla de cálculos de losa (`LosaCalculationRun`):
+---
+
+## 2. Metodología de Consulta
+
+Las consultas a la base de datos siguen un proceso en **3 pasos simples**:
+
+```powershell
+# Paso A: Subir el script de Python al host remoto
+python ssh_runner.py --upload readme/mi_consulta.py /var/www/arko360_platform/backend/mi_consulta.py
+
+# Paso B: Copiar el script del host al contenedor de backend Docker
+python ssh_runner.py "docker cp /var/www/arko360_platform/backend/mi_consulta.py arko360_platform-backend-1:/app/mi_consulta.py"
+
+# Paso C: Ejecutar la consulta dentro del contenedor Docker
+python ssh_runner.py "docker exec arko360_platform-backend-1 python /app/mi_consulta.py"
+```
+
+> **Nota sobre PowerShell (Windows):** Si deseas encadenar los comandos en una sola línea, utiliza `;` como separador en lugar de `&&`.
+
+---
+
+## 3. Plantillas de Consulta
+
+### Plantilla A: Consultar un Proyecto Específico por Nombre
+
+Usa `filter(LosaCalculationRun.nombre_proyecto.ilike("%NombreProyecto%"))` para buscar un proyecto en la tabla `LosaCalculationRun`:
 
 ```python
 import sys
 sys.path.append("/app")
 
+import json
 from app.db.arko_base import ArkoSessionLocal
 from app.db.models.calculadora import LosaCalculationRun
-import json
 
 db = ArkoSessionLocal()
-# Buscar todos los proyectos que coincidan con "flaco3"
-runs = db.query(LosaCalculationRun).filter(LosaCalculationRun.nombre_proyecto.ilike("%flaco3%")).all()
+nombre_busqueda = "Valle Cielo"
+runs = db.query(LosaCalculationRun).filter(
+    LosaCalculationRun.nombre_proyecto.ilike(f"%{nombre_busqueda}%")
+).order_by(LosaCalculationRun.id.desc()).all()
 
-for p in runs:
-    print(f"Run ID: {p.id}, Title: {p.nombre_proyecto}")
-    if p.inputs:
-        data = p.inputs
-        if isinstance(data, str):
-            data = json.loads(data)
-        
-        # Extraer parámetros relevantes (ej: columnas)
-        columns = data.get("columns", [])
-        if columns:
-            print("Machones encontrados:")
-            for c in columns:
-                print(c)
-        else:
-            print("No se encontraron machones.")
+print(f"Total registros encontrados para '{nombre_busqueda}': {len(runs)}")
+
+for r in runs:
+    print(f"\n--- Run ID: {r.id} | Proyecto: '{r.nombre_proyecto}' | Fecha: {r.created_at} ---")
+    
+    results = getattr(r, 'resultados', None)
+    if isinstance(results, str):
+        results = json.loads(results)
+
+    if isinstance(results, dict) and "bands" in results:
+        bands = results.get("bands", [])
+        print(f"Total muros/bandas: {len(bands)}")
+        for idx, b in enumerate(bands):
+            # Convertir kNm/m a kgf·m/m (factor 101.9716)
+            mx = b.get('Mx_design_kNm_m', 0) * 101.9716
+            my = b.get('My_design_kNm_m', 0) * 101.9716
+            asx = b.get('Asx_cm2_m', 0)
+            asy = b.get('Asy_cm2_m', 0)
+            print(f"  Muro M{idx+1} ({b.get('type')}): Mx = {mx:.2f} kgf·m/m | My = {my:.2f} kgf·m/m | Asx = {asx:.2f} | Asy = {asy:.2f}")
+
 db.close()
 ```
 
-### 2. Comandos de Despliegue
-Desde una terminal local en la raíz del repositorio, ejecuta los siguientes comandos usando `ssh_runner.py`:
+---
 
-**Paso A:** Sube el script al host remoto:
-```bash
-python ssh_runner.py --upload readme/query_db.py /var/www/arko360_platform/backend/query_db.py
+### Plantilla B: Re-evaluar Modelo Guardado con el Motor FEM (`analyze_slab`)
+
+Si deseas ejecutar el solucionador de elementos finitos directamente sobre los inputs guardados en la BD usando la API backend:
+
+```python
+import sys
+sys.path.append("/app")
+
+import json
+from app.db.arko_base import ArkoSessionLocal
+from app.db.models.calculadora import LosaCalculationRun
+from app.schemas.calculadora import SlabModelInput
+from app.api.v1.endpoints.calculadora import analyze_slab
+
+db = ArkoSessionLocal()
+run = db.query(LosaCalculationRun).filter(
+    LosaCalculationRun.nombre_proyecto.ilike("%Valle Cielo%")
+).order_by(LosaCalculationRun.id.desc()).first()
+
+if run and run.inputs:
+    payload = run.inputs
+    if isinstance(payload, str):
+        payload = json.loads(payload)
+
+    # Validar Pydantic schema y ejecutar analizador
+    input_model = SlabModelInput.model_validate(payload)
+    results = analyze_slab(input_model)
+
+    print(f"Resultados FEM para Run ID {run.id}:")
+    for idx, b in enumerate(results.get('bands', [])):
+        mx = b.get('Mx_design_kNm_m', 0) * 101.9716
+        my = b.get('My_design_kNm_m', 0) * 101.9716
+        print(f"  Muro M{idx+1}: Mx = {mx:.2f} kgf·m/m | My = {my:.2f} kgf·m/m")
+
+db.close()
 ```
 
-**Paso B:** Copia el script del host hacia el contenedor Docker (`arko360_platform-backend-1`):
-```bash
-python ssh_runner.py "docker cp /var/www/arko360_platform/backend/query_db.py arko360_platform-backend-1:/app/query_db.py"
-```
+---
 
-**Paso C:** Ejecuta el script dentro del contenedor:
-```bash
-python ssh_runner.py "docker exec arko360_platform-backend-1 python /app/query_db.py"
-```
-
-## Solución al problema de Carga de Machones (1000 kgf)
-Se detectó que en proyectos guardados antiguamente (como "losa flaco3"), el valor de la carga puntual del machón (`load_kgf`) quedó serializado estáticamente en la base de datos con el valor inicial de `1000 kgf`. 
-Al modificar la función de construcción del payload (revirtiendo el "Bug 4" de la auditoría externa), se **fuerza matemáticamente** el recálculo sobre la marcha usando la densidad del concreto:
-`load_kgf = ancho * largo * alto * 2500`
-
-De esta manera, el valor de 1000 kgf almacenado queda obsoleto y el servidor calculará la memoria de cálculo en base al volumen geométrico interactivo (ej: 0.15 * 0.15 * 2.7 * 2500 = 151.875 kgf), manteniéndose fiel a la física y a los cambios del usuario.
+## 4. Historial de Ajustes Relevantes
+- **Serialización de Machones (Carga Puntual)**: Las corridas antiguas almacenaban un valor por defecto de 1000 kgf en el JSON de inputs. El backend actual re-calcula las cargas puntuales dinámicamente según el volumen del machón ($V = \text{ancho} \times \text{largo} \times \text{alto} \times 2500\text{ kg/m}^3$).
+- **Conversión de Unidades de Momentos**: En la BD se guardan en $kN\cdot m/m$. Para visualizar en $kgf\cdot m/m$, multiplicar por `101.9716`.

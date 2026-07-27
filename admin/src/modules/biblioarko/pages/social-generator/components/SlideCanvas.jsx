@@ -134,7 +134,7 @@ export const SlideCanvas = ({
   useEffect(() => {
     if (isVideoMode && currentTime !== undefined) {
       slide?.customImages?.forEach((img, imgIdx) => {
-        if (img && img.startsWith('data:video')) {
+        if (img && (img.startsWith('data:video') || img.match(/\.(mp4|webm|mov|ogg)(\?.*)?$/i))) {
           const imgId = `${index}-${imgIdx}`;
           const pos = imagePositions[imgId] || {};
           const vStart = pos.startTime !== undefined ? pos.startTime : 0;
@@ -436,13 +436,13 @@ export const SlideCanvas = ({
             onClick={(e) => { e.stopPropagation(); isSelected && selectElement('image', imgId); }}
             onDoubleClick={(e) => {
               e.stopPropagation();
-              if (onCropImage && img && !img.startsWith('data:video')) {
+              if (onCropImage && img && !(img.startsWith('data:video') || img.match(/\.(mp4|webm|mov|ogg)(\?.*)?$/i))) {
                 onCropImage(index, imgIdx, img);
               }
             }}
           >
             <div data-export-id={`img-${imgId}`} className="w-full h-full relative overflow-hidden" style={{ borderRadius: imageBorderRadius }}>
-              {img && img.startsWith('data:video') ? (
+              {img && (img.startsWith('data:video') || img.match(/\.(mp4|webm|mov|ogg)(\?.*)?$/i)) ? (
                 <video
                   id={`video-${imgId}`}
                   src={img}
@@ -723,7 +723,7 @@ export const SlideCanvas = ({
             if (!selectedImageId) return false;
             const imgIdx = selectedImageId.split('-')[1];
             const img = slide?.customImages?.[imgIdx];
-            return img?.startsWith('data:video');
+            return img?.startsWith('data:video') || img?.match(/\.(mp4|webm|mov|ogg)(\?.*)?$/i);
           })()}
           imagePositions={imagePositions}
           updateImage={handlers.updateImage}
