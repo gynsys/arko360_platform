@@ -484,18 +484,22 @@ export const useVideoExport = (
           if (v.vid.videoWidth && v.vid.videoHeight) {
             const containerRatio = dSizeX / dSizeY;
             const vidRatio = v.vid.videoWidth / v.vid.videoHeight;
-            let srcX = 0, srcY = 0;
-            let srcW = v.vid.videoWidth;
-            let srcH = v.vid.videoHeight;
+            let drawW = dSizeX;
+            let drawH = dSizeY;
+            let offsetX = 0;
+            let offsetY = 0;
 
             if (vidRatio > containerRatio) {
-              srcW = v.vid.videoHeight * containerRatio;
-              srcX = (v.vid.videoWidth - srcW) / 2;
+              // Video aspect ratio is wider than container. Width is 100%, height is smaller (object-contain logic)
+              drawH = dSizeX / vidRatio;
+              offsetY = (dSizeY - drawH) / 2;
             } else {
-              srcH = v.vid.videoWidth / containerRatio;
-              srcY = (v.vid.videoHeight - srcH) / 2;
+              // Video aspect ratio is taller than container. Height is 100%, width is smaller (object-contain logic)
+              drawW = dSizeY * vidRatio;
+              offsetX = (dSizeX - drawW) / 2;
             }
-            ctx.drawImage(v.vid, srcX, srcY, srcW, srcH, 0, 0, dSizeX, dSizeY);
+            
+            ctx.drawImage(v.vid, 0, 0, v.vid.videoWidth, v.vid.videoHeight, offsetX, offsetY, drawW, drawH);
           }
           ctx.restore();
         });
@@ -553,6 +557,7 @@ export const useVideoExport = (
           return; 
         }
 
+        let startedMediaForSlide = 0;
         startSlideMedia(0);
         const startTime = performance.now();
 
@@ -595,16 +600,21 @@ export const useVideoExport = (
             ]?.canvas || null;
 
             slideIdx = currentSlideIdx;
-
+            // Solo iniciar media del nuevo slide si NO estamos en transición
             const slideElapsed = videoTime - slideStartTime;
             if (slideIdx < capturedFrames.length && slideElapsed >= transitionDuration) {
-              startSlideMedia(slideIdx);
+              if (startedMediaForSlide !== slideIdx) {
+                startSlideMedia(slideIdx);
+                startedMediaForSlide = slideIdx;
+              }
             }
           }
 
           const slideElapsed = videoTime - slideStartTime;
-          if (slideIdx > 0 && slideElapsed >= transitionDuration && slideElapsed < transitionDuration + 0.05) {
+          // Si estamos en transición, iniciar media del nuevo slide al finalizar la misma
+          if (slideIdx > 0 && slideElapsed >= transitionDuration && startedMediaForSlide !== slideIdx) {
             startSlideMedia(slideIdx);
+            startedMediaForSlide = slideIdx;
           }
 
           const slideDur = slideDurations[slideIdx];
