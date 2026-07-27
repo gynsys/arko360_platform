@@ -99,6 +99,7 @@ export default function SocialGenerator() {
   // --- Refs ---
   const editorWrapperRef = useRef(null);
   const mobileEditorWrapperRef = useRef(null);
+  const imagePositionsRef = useRef({});
 
   // --- External Stores ---
   const showToast = (msg, type) => type === 'error' ? toast.error(msg) : toast.success(msg);
@@ -191,7 +192,7 @@ export default function SocialGenerator() {
             if (slide.customImages) {
               slide.customImages.forEach((img, imgIdx) => {
                 const imgId = `${currentVideoSlide}-${imgIdx}`;
-                const pos = transformer.state?.imagePositions?.[imgId] || {};
+                const pos = imagePositionsRef.current?.[imgId] || {};
                 const endT = pos.endTime !== undefined ? pos.endTime : slideDuration;
                 if (endT > maxVidDur) maxVidDur = endT;
               });
@@ -235,7 +236,7 @@ export default function SocialGenerator() {
       if (globalAudioRef?.current && !globalAudioRef.current.paused) globalAudioRef.current.pause();
     }
     return () => clearInterval(interval);
-  }, [isPlaying, activeTab, slideDuration, currentVideoSlide, generatedContent, audioRef, globalAudioRef, globalAudio, transformer.state.imagePositions]);
+  }, [isPlaying, activeTab, slideDuration, currentVideoSlide, generatedContent, audioRef, globalAudioRef, globalAudio]);
 
   const handleUpdateTiming = (trackId, start, end) => {
     if (!generatedContent) return;
@@ -295,6 +296,11 @@ export default function SocialGenerator() {
     setDoctorNamePos: designer.design.setDoctorNamePos,
     setDividerPos: designer.design.setDividerPos
   });
+
+  // Keep imagePositionsRef in sync so the play interval always reads the latest values
+  useEffect(() => {
+    imagePositionsRef.current = transformer.state.imagePositions;
+  }, [transformer.state.imagePositions]);
 
   const { isExporting, exportProgress, handleExportVideo, exportStatus } = useVideoExport(
     generatedContent, videoStyles, slideDuration, transitionType, transitionDuration, selectedPost, audioRef, globalAudioRef, getActiveAudioSrc, showToast,
