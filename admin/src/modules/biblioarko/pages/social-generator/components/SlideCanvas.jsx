@@ -450,7 +450,7 @@ export const SlideCanvas = ({
                   src={img}
                   muted
                   playsInline
-                  className="w-full h-full object-cover pointer-events-none"
+                  className="w-full h-full object-contain pointer-events-none"
                   style={{ borderRadius: imageBorderRadius }}
                   onLoadedMetadata={(e) => {
                     if (pos.endTime === undefined && transform.setImagePositions) {

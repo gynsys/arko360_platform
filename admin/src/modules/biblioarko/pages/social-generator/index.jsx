@@ -235,7 +235,7 @@ export default function SocialGenerator() {
       if (globalAudioRef?.current && !globalAudioRef.current.paused) globalAudioRef.current.pause();
     }
     return () => clearInterval(interval);
-  }, [isPlaying, activeTab, slideDuration, currentVideoSlide, generatedContent, audioRef, globalAudioRef, globalAudio]);
+  }, [isPlaying, activeTab, slideDuration, currentVideoSlide, generatedContent, audioRef, globalAudioRef, globalAudio, transformer.state.imagePositions]);
 
   const handleUpdateTiming = (trackId, start, end) => {
     if (!generatedContent) return;
