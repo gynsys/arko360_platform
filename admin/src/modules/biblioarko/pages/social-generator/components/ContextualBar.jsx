@@ -132,8 +132,8 @@ export const ContextualBar = ({
                     const currentSize = Math.round((el.height || 40) * 0.8);
                     const newSize = Math.max(8, currentSize - 1);
                     const newHeight = newSize / 0.8;
-                    const ratio = newHeight / el.height;
-                    updateElement(parseInt(slideIdx), elId, { height: newHeight, width: el.width * ratio });
+                    const ratio = newHeight / (el.height || 40);
+                    updateElement(parseInt(slideIdx), elId, { height: newHeight, width: (el.width || 150) * ratio });
                   }}
                   className="w-5 h-5 flex items-center justify-center text-gray-500 font-black text-sm"
                 >−</button>
@@ -144,8 +144,8 @@ export const ContextualBar = ({
                     const currentSize = Math.round((el.height || 40) * 0.8);
                     const newSize = Math.min(120, currentSize + 1);
                     const newHeight = newSize / 0.8;
-                    const ratio = newHeight / el.height;
-                    updateElement(parseInt(slideIdx), elId, { height: newHeight, width: el.width * ratio });
+                    const ratio = newHeight / (el.height || 40);
+                    updateElement(parseInt(slideIdx), elId, { height: newHeight, width: (el.width || 150) * ratio });
                   }}
                   className="w-5 h-5 flex items-center justify-center text-gray-500 font-black text-sm"
                 >+</button>
@@ -285,7 +285,7 @@ export const ContextualBar = ({
                 const newSize = Math.min(140, currentSize + 2);
                 const newHeight = newSize / 0.8;
                 const ratio = newHeight / (el?.height || 40);
-                updateElement(parseInt(slideIdx), elId, { height: newHeight, width: (el?.width || 200) * ratio });
+                updateElement(parseInt(slideIdx), elId, { height: newHeight, width: (el?.width || 150) * ratio });
               }}
               className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl font-black text-sm shadow-sm hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer"
               title="Aumentar Tamaño"
@@ -297,7 +297,7 @@ export const ContextualBar = ({
                 const newSize = Math.max(8, currentSize - 2);
                 const newHeight = newSize / 0.8;
                 const ratio = newHeight / (el?.height || 40);
-                updateElement(parseInt(slideIdx), elId, { height: newHeight, width: (el?.width || 200) * ratio });
+                updateElement(parseInt(slideIdx), elId, { height: newHeight, width: (el?.width || 150) * ratio });
               }}
               className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl font-black text-sm shadow-sm hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer"
               title="Reducir Tamaño"

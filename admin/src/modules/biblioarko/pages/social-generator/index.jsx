@@ -836,6 +836,17 @@ export default function SocialGenerator() {
     setGeneratedContent({ ...generatedContent, [slidesProp]: newSlides });
   };
 
+  const handleDuplicateMainContent = (index) => {
+    const slidesProp = activeTab === 'video' ? 'video_slides' : 'slides';
+    const arr = generatedContent[slidesProp];
+    const slide = arr[index];
+    const combinedText = [slide?.title, slide?.content || slide?.text].filter(Boolean).join('<br/>');
+    if (combinedText) {
+      designer.canvas.addExtraElement(index, 'text', combinedText, designer.design.fontFamily);
+      showToast('Texto duplicado correctamente', 'success');
+    }
+  };
+
   // Auto-guarda al borrar un elemento para que no vuelva a aparecer al reabrir el archivo
   const handleRemoveElement = async (slideIndex, elementId) => {
     // 1. Calcular el nuevo estado ANTES del borrado (React state aún no actualizó)
@@ -1335,6 +1346,7 @@ export default function SocialGenerator() {
                             watermark={watermarkImage} onEdit={setEditingIndex}
                             onPreview={setPreviewIndex} onRemove={handleRemoveSlide} onCopy={handleCopySlide}
                             onClearMainContent={handleClearMainContent}
+                            onDuplicateMainContent={handleDuplicateMainContent}
                             onAddImage={(e) => activeTab === 'video' ? handleAddImageToVideoSlide(designer.canvas.currentSlidePage, e) : handleAddImage(designer.canvas.currentSlidePage, e)}
                             onRemoveImage={handleRemoveImage}
                             onCropImage={handleOpenCropImage}

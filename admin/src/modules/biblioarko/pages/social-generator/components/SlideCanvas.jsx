@@ -100,6 +100,7 @@ export const SlideCanvas = ({
   onCopy,
   onRemove,
   onClearMainContent,
+  onDuplicateMainContent,
   onAddImage,
   onRemoveImage,
   onCropImage,
@@ -297,15 +298,26 @@ export const SlideCanvas = ({
               onMouseDown={(e) => handleTransformStart(e, index, 'rotate', 'content', index, containerRef.current, { x: 50, y: 60, rotation: contentRotations[index] || 0 })}
               onTouchStart={(e) => handleTransformStart(e, index, 'rotate', 'content', index, containerRef.current, { x: 50, y: 60, rotation: contentRotations[index] || 0 })}><FiRefreshCw size={12}/></div>
             
-            <div className="absolute -top-4 -right-4 w-7 h-7 bg-red-50 rounded-full shadow-lg border-2 border-red-500 flex items-center justify-center cursor-pointer text-red-600 z-[999] hover:scale-110 hover:bg-red-500 hover:text-white transition-all" 
-              onMouseDown={(e) => e.stopPropagation()} 
-              onClick={(e) => {
-                e.stopPropagation();
-                if (typeof onClearMainContent === 'function') {
-                  onClearMainContent(index);
-                }
-              }}
-              title="Eliminar Texto Principal"><FiTrash2 size={12}/></div>
+            <div className="absolute -top-4 -right-4 flex flex-col gap-2 z-[999]">
+              <div className="w-7 h-7 bg-red-50 rounded-full shadow-lg border-2 border-red-500 flex items-center justify-center cursor-pointer text-red-600 hover:scale-110 hover:bg-red-500 hover:text-white transition-all" 
+                onMouseDown={(e) => e.stopPropagation()} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (typeof onClearMainContent === 'function') {
+                    onClearMainContent(index);
+                  }
+                }}
+                title="Eliminar Texto Principal"><FiTrash2 size={12}/></div>
+              <div className="w-7 h-7 bg-blue-50 rounded-full shadow-lg border-2 border-blue-500 flex items-center justify-center cursor-pointer text-blue-600 hover:scale-110 hover:bg-blue-500 hover:text-white transition-all" 
+                onMouseDown={(e) => e.stopPropagation()} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (typeof onDuplicateMainContent === 'function') {
+                    onDuplicateMainContent(index);
+                  }
+                }}
+                title="Duplicar como elemento extra"><FiCopy size={12}/></div>
+            </div>
               
             <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-indigo-500 rounded-full border-2 border-white cursor-e-resize z-[999] shadow-md hover:scale-125 transition-transform"
               title="Ensanchar cajón"
@@ -541,6 +553,7 @@ export const SlideCanvas = ({
                 }
               }}
               onClick={(e) => { e.stopPropagation(); isSelected && selectElement('extra', elId); }}
+              onDoubleClick={(e) => e.stopPropagation()}
             >
             {el.type === 'text' ? (
               <div 
