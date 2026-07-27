@@ -944,29 +944,6 @@ export default function SocialGenerator() {
           
           const isVideo = file.type.startsWith('video/');
           if (isVideo) {
-            // 1. Detect the real duration of the uploaded video
-            let videoDuration = 0;
-            try {
-              videoDuration = await new Promise((resolve) => {
-                const tempVid = document.createElement('video');
-                tempVid.preload = 'metadata';
-                tempVid.muted = true;
-                const blobUrl = URL.createObjectURL(file);
-                const timeout = setTimeout(() => { URL.revokeObjectURL(blobUrl); resolve(0); }, 5000);
-                tempVid.onloadedmetadata = () => {
-                  clearTimeout(timeout);
-                  const dur = tempVid.duration && isFinite(tempVid.duration) ? tempVid.duration : 0;
-                  URL.revokeObjectURL(blobUrl);
-                  resolve(dur);
-                };
-                tempVid.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(blobUrl); resolve(0); };
-                tempVid.src = blobUrl;
-              });
-            } catch (_) {
-              videoDuration = 0;
-            }
-
-            // 2. Calculate where existing content ends (maxVidDur)
             const slide = newSlides[index];
             let maxVidDur = 0;
             const tEnd = slide?.titleEndTime !== undefined ? slide.titleEndTime : slideDuration;
@@ -987,17 +964,13 @@ export default function SocialGenerator() {
               });
             }
             
-            // 3. Set startTime AND endTime based on real video duration
-            const videoStartTime = maxVidDur;
-            const videoEndTime = videoDuration > 0 ? maxVidDur + videoDuration : maxVidDur + slideDuration;
             const newImgIdx = newSlides[index].customImages.length;
             if (transformer.state.setImagePositions) {
               transformer.state.setImagePositions(prev => ({
                 ...prev,
                 [`${index}-${newImgIdx}`]: {
-                  ...(prev[`${index}-${newImgIdx}`] || { x: 50, y: 70 }),
-                  startTime: videoStartTime,
-                  endTime: videoEndTime
+                  x: 50, y: 70, scale: 1, rot: 0, opacity: 1,
+                  startTime: maxVidDur
                 }
               }));
             }

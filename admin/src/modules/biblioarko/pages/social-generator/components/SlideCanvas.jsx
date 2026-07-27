@@ -157,9 +157,10 @@ export const SlideCanvas = ({
                   if (vidNode.paused) {
                     vidNode.currentTime = targetTime;
                     vidNode.play().catch(e => console.log('video play error', e));
-                  } else if (Math.abs(vidNode.currentTime - targetTime) > 0.5) {
-                    vidNode.currentTime = targetTime;
                   }
+                  // Se removió la sincronización agresiva (> 0.5) porque setInterval se desincroniza 
+                  // del reloj físico del navegador y causa tirones (stuttering). El navegador mantendrá 
+                  // la reproducción fluida por sí solo.
                 } else {
                   if (!vidNode.paused) vidNode.pause();
                   vidNode.currentTime = targetTime;
