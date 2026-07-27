@@ -164,13 +164,23 @@ export const SlideCanvas = ({
                   // la reproducción fluida por sí solo.
                 } else {
                   if (!vidNode.paused) vidNode.pause();
-                  vidNode.currentTime = targetTime;
+                  if (Math.abs(vidNode.currentTime - targetTime) > 0.1) {
+                    vidNode.currentTime = targetTime;
+                  }
                 }
               } else {
                 if (!vidNode.paused) vidNode.pause();
+                // Rewind if invisible
+                if (Math.abs(vidNode.currentTime - trimStart) > 0.1) {
+                  vidNode.currentTime = trimStart;
+                }
               }
             } else {
               if (!vidNode.paused) vidNode.pause();
+              // Rewind if invisible
+              if (Math.abs(vidNode.currentTime - trimStart) > 0.1) {
+                vidNode.currentTime = trimStart;
+              }
             }
           }
         }
