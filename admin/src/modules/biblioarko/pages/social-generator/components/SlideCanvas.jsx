@@ -127,6 +127,7 @@ export const SlideCanvas = ({
   } = canvas;
 
   const containerRef = useRef(null);
+  const videoRefs = useRef({});
   const isSelected = !isPreview && !isExport && (canvas.currentSlidePage === index || isVideoMode);
 
   const { handleDragStart, handleTransformStart } = handlers;
@@ -144,7 +145,7 @@ export const SlideCanvas = ({
           const trimStart = pos.trimStart || 0;
           const trimEnd = pos.trimEnd !== undefined ? pos.trimEnd : 9999;
           
-          const vidNode = document.getElementById(`video-${imgId}`);
+          const vidNode = videoRefs.current[imgId];
           if (vidNode) {
             vidNode.playbackRate = speed;
             
@@ -445,6 +446,7 @@ export const SlideCanvas = ({
               {img && (img.startsWith('data:video') || img.match(/\.(mp4|webm|mov|ogg)(\?.*)?$/i)) ? (
                 <video
                   id={`video-${imgId}`}
+                  ref={(el) => videoRefs.current[imgId] = el}
                   src={img}
                   muted
                   playsInline
