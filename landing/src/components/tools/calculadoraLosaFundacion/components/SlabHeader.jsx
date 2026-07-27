@@ -23,22 +23,24 @@ export function SlabHeader({
   setCurrentUser
 }) {
   const btnStyle = {
-    height: '30px',
+    height: '28px',
     padding: '0 10px',
-    fontSize: '12.5px',
+    fontSize: '12px',
     fontWeight: '600',
     display: 'inline-flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: '5px',
     whiteSpace: 'nowrap',
     flexShrink: 0,
     boxSizing: 'border-box',
     borderRadius: '5px',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    lineHeight: '1'
   };
 
   return (
-    <div className="calc-header" style={{ width: '100%', height: '44px', padding: '0 12px', display: 'flex', alignItems: 'center', background: '#1A6BB5', boxSizing: 'border-box', overflowX: 'auto' }}>
+    <div className="calc-header" style={{ width: '100%', minHeight: '44px', height: '44px', padding: '0 12px', display: 'flex', alignItems: 'center', background: '#1A6BB5', boxSizing: 'border-box', overflowX: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', flexWrap: 'nowrap' }}>
         {onBack && (
           <button 
@@ -65,11 +67,11 @@ export function SlabHeader({
             border: 'none',
             color: '#fff',
             fontWeight: '700',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
           }}
         >
           {loading
-            ? <><span style={{display:'inline-block', width:'12px', height:'12px', border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.8s linear infinite'}} /> Run<style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style></>
+            ? <><span style={{display:'inline-block', width:'11px', height:'11px', border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.8s linear infinite'}} /> Run<style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style></>
             : <><FaPlay style={{fontSize:'10px'}} /> Run</>
           }
         </button>
@@ -84,7 +86,7 @@ export function SlabHeader({
               background: '#0288d1',
               border: '1px solid rgba(255,255,255,0.3)',
               color: '#fff',
-              boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
             }}
           >
             <FaChartBar style={{fontSize:'11px'}} /> Resultados
@@ -98,13 +100,13 @@ export function SlabHeader({
           placeholder="Nombre del Proyecto"
           className="project-name-input"
           style={{
-            height: '30px',
+            height: '28px',
             padding: '0 10px',
             borderRadius: '5px',
             border: '1px solid rgba(255,255,255,0.35)',
             background: 'rgba(255,255,255,0.15)',
             color: '#fff',
-            fontSize: '12.5px',
+            fontSize: '12px',
             width: '160px',
             outline: 'none',
             boxSizing: 'border-box',
@@ -139,7 +141,7 @@ export function SlabHeader({
           <FaSave style={{ fontSize: '11px' }} /> Guardar como
         </button>
         
-        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.25)', margin: '0 4px', flexShrink: 0 }} />
+        <div style={{ width: '1px', height: '18px', background: 'rgba(255,255,255,0.25)', margin: '0 4px', flexShrink: 0 }} />
         
         {currentUser ? (
           <button onClick={() => {

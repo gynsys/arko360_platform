@@ -27,8 +27,8 @@
 
 .toolbar-btn {
   padding: 0 10px;
-  height: 30px;
-  font-size: 12.5px;
+  height: 28px;
+  font-size: 12px;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
@@ -37,10 +37,12 @@
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   white-space: nowrap;
   box-sizing: border-box;
   flex-shrink: 0;
+  line-height: 1;
   transition: all 0.2s ease;
 }
 
