@@ -46,3 +46,8 @@ Para combatir el efecto "caja negra", el usuario solicitó máxima exposición d
   - Se añadieron herramientas de dibujo dedicadas con trazado codificado por color (Marrón para Muro de Contención, Verde para Viga de Apoyo).
   - Integración paramétrica en tiempo real: Se extendió el modal de "Paredes" para permitir la entrada en caliente de variables geotécnicas específicas por elemento, tales como "Altura de Tierra" y "Profundidad de Viga".
   - Se conectó el Factor de Seguridad al Deslizamiento al panel visual de resultados ACI 318 de la losa, notificando inmediatamente al diseñador si el diseño es inestable.
+
+## 7. Refactorización Modular del Frontend (5 Fases)
+- **Motivación**: El archivo principal `CalculadoraLosaFundacion.jsx` alcanzó 4,463 líneas monolíticas.
+- **Solución**: Se implementó una refactorización integral en 5 fases reduciendo el archivo principal a 320 líneas (~93% de reducción) y desacoplando el código en 24 módulos independientes (hooks, utilidades, exportadores, lienzo SVG y modales).
+- **Documentación Completa**: Consultar la [Bitácora de Refactorización de Losas](./BITACORA_REFACTORIZACION_LOSA.md) para el desglose detallado por fases, mapa de componentes y custom hooks.
