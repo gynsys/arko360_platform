@@ -938,6 +938,29 @@ export default function SocialGenerator() {
           
           const isVideo = file.type.startsWith('video/');
           if (isVideo) {
+            // 1. Detect the real duration of the uploaded video
+            let videoDuration = 0;
+            try {
+              videoDuration = await new Promise((resolve) => {
+                const tempVid = document.createElement('video');
+                tempVid.preload = 'metadata';
+                tempVid.muted = true;
+                const blobUrl = URL.createObjectURL(file);
+                const timeout = setTimeout(() => { URL.revokeObjectURL(blobUrl); resolve(0); }, 5000);
+                tempVid.onloadedmetadata = () => {
+                  clearTimeout(timeout);
+                  const dur = tempVid.duration && isFinite(tempVid.duration) ? tempVid.duration : 0;
+                  URL.revokeObjectURL(blobUrl);
+                  resolve(dur);
+                };
+                tempVid.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(blobUrl); resolve(0); };
+                tempVid.src = blobUrl;
+              });
+            } catch (_) {
+              videoDuration = 0;
+            }
+
+            // 2. Calculate where existing content ends (maxVidDur)
             const slide = newSlides[index];
             let maxVidDur = 0;
             const tEnd = slide?.titleEndTime !== undefined ? slide.titleEndTime : slideDuration;
@@ -958,13 +981,17 @@ export default function SocialGenerator() {
               });
             }
             
+            // 3. Set startTime AND endTime based on real video duration
+            const videoStartTime = maxVidDur;
+            const videoEndTime = videoDuration > 0 ? maxVidDur + videoDuration : maxVidDur + slideDuration;
             const newImgIdx = newSlides[index].customImages.length;
             if (transformer.state.setImagePositions) {
               transformer.state.setImagePositions(prev => ({
                 ...prev,
                 [`${index}-${newImgIdx}`]: {
                   ...(prev[`${index}-${newImgIdx}`] || { x: 50, y: 70 }),
-                  startTime: maxVidDur
+                  startTime: videoStartTime,
+                  endTime: videoEndTime
                 }
               }));
             }
@@ -984,7 +1011,7 @@ export default function SocialGenerator() {
     const imgId = `${slideIndex}-${imgIndex}`;
     const pos = transformer?.state?.imagePositions?.[imgId] || {};
     
-    setPendingVideoTarget({ 
+    const targetBase = { 
       index: slideIndex, 
       isVideoSlide: activeTab === 'video', 
       imgIndex: imgIndex,
@@ -993,7 +1020,7 @@ export default function SocialGenerator() {
         trimEnd: pos.trimEnd,
         speed: pos.speed || 1
       }
-    });
+    };
 
     if (dataUrl.startsWith('data:')) {
       // Legacy base64 support (for older projects already saved)
@@ -1006,11 +1033,12 @@ export default function SocialGenerator() {
         u8arr[n] = bstr.charCodeAt(n);
       }
       const file = new File([u8arr], 'video.mp4', { type: mime });
+      setPendingVideoTarget(targetBase);
       setPendingVideoFile(file);
     } else {
-      // It's an uploaded URL, pass the URL directly
-      const fullUrl = getImageUrl(dataUrl);
-      setPendingVideoTarget(prev => ({ ...prev, url: fullUrl }));
+      // It's an uploaded URL — set everything atomically in one call
+      setPendingVideoFile(null);
+      setPendingVideoTarget({ ...targetBase, url: dataUrl });
     }
   };
 
