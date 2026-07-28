@@ -1,0 +1,95 @@
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean, Text
+from sqlalchemy.orm import relationship
+from datetime import datetime
+from app.db.base import Base
+import uuid
+
+def generate_uuid():
+    return str(uuid.uuid4())
+
+class Budget(Base):
+    __tablename__ = "budgets"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    client_name = Column(String, nullable=True)
+    
+    # Datos Globales del Presupuesto
+    currency = Column(String, default="USD") # USD o BS
+    exchange_rate = Column(Float, default=1.0) # Tasa de cambio (e.g. 36.5)
+    fcas_percent = Column(Float, default=417.0) # FCAS global del presupuesto
+    
+    # Fechas
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    items = relationship("BudgetItem", back_populates="budget", cascade="all, delete-orphan")
+
+
+class BudgetItem(Base):
+    __tablename__ = "budget_items"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    budget_id = Column(String, ForeignKey("budgets.id", ondelete="CASCADE"), nullable=False)
+    
+    # Referencia a la base maestra Cost360
+    cod_par = Column(String, nullable=False) # Codigo original (e.g. E0101)
+    cov_par = Column(String, nullable=True) # Codigo COVENIN
+    
+    # Datos específicos del item en este presupuesto
+    description = Column(Text, nullable=False)
+    unit = Column(String, nullable=False)
+    quantity = Column(Float, default=0.0)
+    performance = Column(Float, default=1.0) # Rendimiento (Rend)
+    
+    budget = relationship("Budget", back_populates="items")
+    
+    materials = relationship("BudgetAPUMaterial", back_populates="item", cascade="all, delete-orphan")
+    equipments = relationship("BudgetAPUEquipment", back_populates="item", cascade="all, delete-orphan")
+    labors = relationship("BudgetAPULabor", back_populates="item", cascade="all, delete-orphan")
+
+
+class BudgetAPUMaterial(Base):
+    __tablename__ = "budget_apu_materials"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    budget_item_id = Column(String, ForeignKey("budget_items.id", ondelete="CASCADE"), nullable=False)
+    
+    codigo = Column(String, nullable=False)
+    descripcion = Column(Text, nullable=False)
+    unidad = Column(String, nullable=False)
+    precio_unitario = Column(Float, nullable=False) # Copiado en el momento, pero puede ser override
+    cantidad = Column(Float, nullable=False) # Cantidad de insumo por unidad de partida
+    
+    item = relationship("BudgetItem", back_populates="materials")
+
+
+class BudgetAPUEquipment(Base):
+    __tablename__ = "budget_apu_equipments"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    budget_item_id = Column(String, ForeignKey("budget_items.id", ondelete="CASCADE"), nullable=False)
+    
+    codigo = Column(String, nullable=False)
+    descripcion = Column(Text, nullable=False)
+    unidad = Column(String, nullable=False) # Ej: Día, Hr
+    precio_unitario = Column(Float, nullable=False) # Costo o Depreciación (CosDia)
+    cantidad = Column(Float, nullable=False)
+    
+    item = relationship("BudgetItem", back_populates="equipments")
+
+
+class BudgetAPULabor(Base):
+    __tablename__ = "budget_apu_labors"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    budget_item_id = Column(String, ForeignKey("budget_items.id", ondelete="CASCADE"), nullable=False)
+    
+    codigo = Column(String, nullable=False)
+    descripcion = Column(Text, nullable=False)
+    cantidad = Column(Float, nullable=False)
+    jornal = Column(Float, nullable=False)
+    bono = Column(Float, nullable=False)
+    
+    item = relationship("BudgetItem", back_populates="labors")
