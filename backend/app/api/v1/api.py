@@ -11,6 +11,7 @@ from app.api.v1.endpoints import contact
 from app.api.v1.endpoints import leads
 from app.api.v1.endpoints import uploads
 from app.blog.router import router as blog_router
+from app.api.v1.endpoints import budgets
 
 api_router = APIRouter()
 
@@ -20,6 +21,7 @@ from app.api.v1.endpoints import cost360
 
 # Arko 360 Endpoints
 api_router.include_router(cost360.router, prefix="/cost360", tags=["cost360"])
+api_router.include_router(budgets.router, prefix="/budgets", tags=["budgets"])
 api_router.include_router(materials.router, prefix="/materials", tags=["materials"])
 api_router.include_router(leads.router, prefix="/leads", tags=["leads"])
 api_router.include_router(contact.router, prefix="/arko360/contact", tags=["contact"])
