@@ -74,15 +74,21 @@ def get_apu(item_code: str, db: Session = Depends(get_db)):
     for rel, mo in mo_results:
         jornal = mo.Jornal if mo.Jornal is not None else 0.0
         bono = mo.Bono if mo.Bono is not None else 0.0
+        tot_jornal = rel.CanIns * jornal
+        tot_bono = rel.CanIns * bono
         precio = jornal + bono
-        subtotal = rel.CanIns * precio
+        subtotal = tot_jornal + tot_bono
         mano_obra.append(APUComponent(
             codigo=mo.CodMan,
             descripcion=mo.Descri,
             unidad="Día",
             cantidad=rel.CanIns,
             precio_unitario=round(precio, 2),
-            subtotal=round(subtotal, 2)
+            subtotal=round(subtotal, 2),
+            jornal=jornal,
+            bono=bono,
+            tot_jornal=round(tot_jornal, 2),
+            tot_bono=round(tot_bono, 2)
         ))
 
     total_directo = sum(c.subtotal for c in materiales) + sum(c.subtotal for c in equipos) + sum(c.subtotal for c in mano_obra)

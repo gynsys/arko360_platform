@@ -19,6 +19,10 @@ class APUComponent(BaseModel):
     cantidad: float
     precio_unitario: float
     subtotal: float
+    jornal: Optional[float] = None
+    bono: Optional[float] = None
+    tot_jornal: Optional[float] = None
+    tot_bono: Optional[float] = None
 
 class APUResponse(BaseModel):
     partida: CostItemBase
