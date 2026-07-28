@@ -11,6 +11,9 @@ import BlogManagementPage from './pages/admin/BlogManagementPage.jsx';
 import SocialGeneratorPage from './modules/biblioarko/pages/social-generator';
 import ProfilePage from './pages/admin/ProfilePage.jsx';
 import MaterialsPage from './pages/admin/MaterialsPage.jsx';
+import BudgetHomePage from './pages/admin/BudgetHomePage.jsx';
+import BudgetWorksheetPage from './pages/admin/BudgetWorksheetPage.jsx';
+import BudgetAPUEditorPage from './pages/admin/BudgetAPUEditorPage.jsx';
 import Cost360Dashboard from './modules/cost360/pages/Cost360Dashboard.jsx';
 import APUViewer from './modules/cost360/pages/APUViewer.jsx';
 import { API_URL } from './services/api';
@@ -102,6 +105,32 @@ function App() {
               element={
                 <ProtectedRoute>
                   <APUViewer />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* RUTAS DE PRESUPUESTOS */}
+            <Route
+              path="/admin/budgets"
+              element={
+                <ProtectedRoute>
+                  <BudgetHomePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/budgets/:id"
+              element={
+                <ProtectedRoute>
+                  <BudgetWorksheetPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/budgets/:id/item/:itemId"
+              element={
+                <ProtectedRoute>
+                  <BudgetAPUEditorPage />
                 </ProtectedRoute>
               }
             />
