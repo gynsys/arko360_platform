@@ -11,6 +11,8 @@ import BlogManagementPage from './pages/admin/BlogManagementPage.jsx';
 import SocialGeneratorPage from './modules/biblioarko/pages/social-generator';
 import ProfilePage from './pages/admin/ProfilePage.jsx';
 import MaterialsPage from './pages/admin/MaterialsPage.jsx';
+import Cost360Dashboard from './modules/cost360/pages/Cost360Dashboard.jsx';
+import APUViewer from './modules/cost360/pages/APUViewer.jsx';
 import { API_URL } from './services/api';
 import { Toaster } from 'react-hot-toast';
 
@@ -83,7 +85,26 @@ function App() {
               <Route path="social-generator" element={<SocialGeneratorPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="materials" element={<MaterialsPage />} />
+              <Route path="materials" element={<MaterialsPage />} />
             </Route>
+            
+            {/* Rutas standalone protegidas */}
+            <Route
+              path="/admin/cost360"
+              element={
+                <ProtectedRoute>
+                  <Cost360Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/cost360/apu/:id"
+              element={
+                <ProtectedRoute>
+                  <APUViewer />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Rutas para sitios clonados usando el slug */}
             <Route path="/:slug/login" element={<Login />} />
@@ -102,6 +123,23 @@ function App() {
               <Route path="profile" element={<ProfilePage />} />
               <Route path="materials" element={<MaterialsPage />} />
             </Route>
+
+            <Route
+              path="/:slug/admin/cost360"
+              element={
+                <ProtectedRoute>
+                  <Cost360Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/:slug/admin/cost360/apu/:id"
+              element={
+                <ProtectedRoute>
+                  <APUViewer />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </BrowserRouter>
       </SiteConfigContext.Provider>
