@@ -11,6 +11,7 @@ const Cost360Dashboard = () => {
   const [search, setSearch] = useState('');
   const [chapter, setChapter] = useState('');
   const [skip, setSkip] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const LIMIT = 50;
   const navigate = useNavigate();
@@ -19,13 +20,14 @@ const Cost360Dashboard = () => {
   const fetchPartidas = async (searchQuery = '', chapterQuery = '', currentSkip = 0, append = false) => {
     setLoading(true);
     try {
-      const data = await cost360Service.fetchItems(currentSkip, LIMIT, searchQuery, chapterQuery);
+      const response = await cost360Service.fetchItems(currentSkip, LIMIT, searchQuery, chapterQuery);
       if (append) {
-        setItems(prev => [...prev, ...data]);
+        setItems(prev => [...prev, ...response.items]);
       } else {
-        setItems(data);
+        setItems(response.items);
       }
-      setHasMore(data.length === LIMIT);
+      setTotalItems(response.total);
+      setHasMore(response.items.length === LIMIT && (currentSkip + LIMIT) < response.total);
     } catch (error) {
       toast.error('Error al cargar la base de datos de Cost360');
     } finally {
@@ -117,6 +119,13 @@ const Cost360Dashboard = () => {
       </form>
 
       {/* Results Grid */}
+      <div className="mb-4 text-gray-500 font-medium">
+        {totalItems > 0 && (
+          <span>
+            {new Intl.NumberFormat('es-VE').format(totalItems)} {totalItems === 1 ? 'coincidencia' : 'coincidencias'} en total
+          </span>
+        )}
+      </div>
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
         {items.length > 0 ? (
           <ul className="divide-y divide-gray-50">

@@ -80,10 +80,17 @@ def run_etl() -> None:
                 quotechar='"',
             )
 
-            # Alias CosDia desde CostEq si falta en equipment
-            if table == "cost360_equipment":
-                if "CosDia" not in df.columns and "CostEq" in df.columns:
-                    df["CosDia"] = df["CostEq"]
+            # Reglas especiales por tabla
+            if table == "cost360_labor":
+                # Renombrar Salari -> Jornal para que coincida con el modelo
+                if "Salari" in df.columns:
+                    df = df.rename(columns={"Salari": "Jornal"})
+            elif table == "cost360_equipment":
+                # Calcular CosDia = CosEqu * Deprec ya que CosDia viene vacio en el CSV
+                if "CosEqu" in df.columns and "Deprec" in df.columns:
+                    df["CosEqu"] = df["CosEqu"].astype(str).str.replace(",", ".", regex=False).pipe(pd.to_numeric, errors="coerce").fillna(0.0)
+                    df["Deprec"] = df["Deprec"].astype(str).str.replace(",", ".", regex=False).pipe(pd.to_numeric, errors="coerce").fillna(0.0)
+                    df["CosDia"] = df["CosEqu"] * df["Deprec"]
 
             # Filtrar SOLO columnas del modelo — descartar extras del CSV
             available = [c for c in keep_cols if c in df.columns]

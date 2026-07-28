@@ -12,6 +12,10 @@ class CostItemBase(BaseModel):
     class Config:
         from_attributes = True
 
+class CostItemListResponse(BaseModel):
+    total: int
+    items: List[CostItemBase]
+
 class APUComponent(BaseModel):
     codigo: str
     descripcion: str

@@ -7,11 +7,11 @@ from app.db.models.cost360 import (
     CostItem, CostMaterial, CostEquipment, CostLabor,
     CostAPUMaterial, CostAPUEquipment, CostAPULabor
 )
-from app.schemas.cost360 import CostItemBase, APUResponse, APUComponent
+from app.schemas.cost360 import CostItemBase, APUResponse, APUComponent, CostItemListResponse
 
 router = APIRouter()
 
-@router.get("/items", response_model=List[CostItemBase])
+@router.get("/items", response_model=CostItemListResponse)
 def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(CostItem)
     if search:
@@ -25,7 +25,10 @@ def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chap
     if chapter:
         query = query.filter(CostItem.CodPar.startswith(chapter))
     
-    return query.order_by(CostItem.CodPar).offset(skip).limit(limit).all()
+    total = query.count()
+    items = query.order_by(CostItem.CodPar).offset(skip).limit(limit).all()
+    
+    return {"total": total, "items": items}
 
 @router.get("/items/{item_code}/apu", response_model=APUResponse)
 def get_apu(item_code: str, db: Session = Depends(get_db)):

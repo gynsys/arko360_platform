@@ -1,3 +1,1 @@
-SELECT "CodPar", "CovPar" FROM cost360_items WHERE "CovPar" IS NOT NULL LIMIT 5;
-SELECT count(*) FROM cost360_apu_labor;
-SELECT * FROM cost360_apu_labor LIMIT 5;
+SELECT "CodEqu", "Descri", "CosDia" FROM cost360_equipment WHERE "CodEqu" IN ('ALB002', 'ALB081', 'COP299', 'LIM005');
