@@ -5,6 +5,7 @@ class CostItem(Base):
     __tablename__ = "cost360_items"
     CodPar = Column(String, primary_key=True, index=True)
     Descri = Column(String)
+    CovPar = Column(String)  # Codigo COVENIN
     UniPar = Column(String)
     PreUni = Column(Float)
     RenPar = Column(Float)
@@ -20,7 +21,7 @@ class CostLabor(Base):
     __tablename__ = "cost360_labor"
     CodMan = Column(String, primary_key=True, index=True)
     Descri = Column(String)
-    Jornal = Column(Float)
+    Jornal = Column(Float)  # Salario base (mapeado desde 'Salari' en CSV)
     Bono = Column(Float)
 
 class CostEquipment(Base):

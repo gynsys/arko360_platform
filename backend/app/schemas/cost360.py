@@ -1,12 +1,13 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class CostItemBase(BaseModel):
     CodPar: str
-    Descri: str
-    UniPar: str
-    PreUni: float
-    RenPar: float
+    Descri: Optional[str] = None
+    CovPar: Optional[str] = None  # Codigo COVENIN
+    UniPar: Optional[str] = None
+    PreUni: Optional[float] = None
+    RenPar: Optional[float] = None
 
     class Config:
         from_attributes = True
