@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 // Get the base API URL from environment variables, fallback to generic
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.arko360.net';
+const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 const cost360ApiClient = axios.create({
-  baseURL: `${API_URL}/api/v1/cost360`,
+  baseURL: `${API_URL}/cost360`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -15,12 +15,16 @@ const cost360ApiClient = axios.create({
  * @param {number} skip - Offset for pagination
  * @param {number} limit - Limit of items to fetch
  * @param {string} search - Search keyword
+ * @param {string} chapter - Chapter prefix filter (e.g., 'E', 'I')
  * @returns {Promise<Array>} List of items
  */
-export const fetchItems = async (skip = 0, limit = 50, search = '') => {
+export const fetchItems = async (skip = 0, limit = 50, search = '', chapter = '') => {
   const params = { skip, limit };
   if (search) {
     params.search = search;
+  }
+  if (chapter) {
+    params.chapter = chapter;
   }
   const response = await cost360ApiClient.get('/items', { params });
   return response.data;

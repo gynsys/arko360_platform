@@ -1,0 +1,77 @@
+# Documentación Módulo Cost360
+
+## 1. Visión General
+**Cost360** es el módulo de estimación de costos y Análisis de Precio Unitario (APU) integrado en la plataforma Arko360. Permite a los ingenieros y arquitectos acceder a una extensa base de datos de partidas constructivas (Extraída de Lulowin/Access) y calcular presupuestos precisos.
+
+## 2. Base de Datos (PostgreSQL)
+
+La base de datos se pobla inicialmente mediante un script ETL (Extract, Transform, Load) desarrollado en Node.js, que extrae la información de una base de datos local (Access) y la sube a nuestro contenedor PostgreSQL en producción. 
+
+Las tablas se estructuraron de manera relacional para facilitar el análisis de precios unitarios (APU). El esquema final dentro de la base de datos `arko360` (esquema `public`) es el siguiente:
+
+### Tablas Principales (Recursos y Partidas)
+*   **`cost360_items` (Partidas):** Almacena el encabezado y resumen de cada partida constructiva.
+    *   `CodPar` (PK, VARCHAR) - Código único de la partida (Ej. E.311.100.000).
+    *   `Descri` (VARCHAR) - Descripción detallada.
+    *   `UniPar` (VARCHAR) - Unidad de medida (m2, m3, kg, etc).
+    *   `PreUni` (DOUBLE) - Precio Unitario Total.
+    *   `RenPar` (DOUBLE) - Rendimiento de la partida.
+*   **`cost360_materials` (Materiales):** Catálogo de materiales.
+    *   `CodMat` (PK, VARCHAR)
+    *   `Descri` (VARCHAR)
+    *   `UniMat` (VARCHAR)
+    *   `CosMat` (DOUBLE) - Costo unitario.
+*   **`cost360_equipment` (Equipos):** Catálogo de maquinaria y equipos.
+    *   `CodEqu` (PK, VARCHAR)
+    *   `Descri` (VARCHAR)
+    *   `CosDia` (DOUBLE) - Costo por día o alquiler.
+*   **`cost360_labor` (Mano de Obra):** Catálogo de personal.
+    *   `CodMan` (PK, VARCHAR)
+    *   `Descri` (VARCHAR)
+    *   `Jornal` (DOUBLE) - Costo del jornal diario.
+    *   `Bono` (DOUBLE) - Bonos adicionales.
+
+### Tablas Relacionales (El Análisis de Precio Unitario - APU)
+Para establecer qué recursos componen cada partida, existen tres tablas pivote:
+*   **`cost360_apu_materials`**:
+    *   `CodPar` (FK -> cost360_items)
+    *   `CodIns` (FK -> cost360_materials)
+    *   `CanIns` (DOUBLE) - Cantidad del insumo necesaria.
+    *   `Desper` (DOUBLE) - % de Desperdicio.
+*   **`cost360_apu_equipment`**:
+    *   `CodPar` (FK) / `CodIns` (FK) / `CanIns` (DOUBLE)
+*   **`cost360_apu_labor`**:
+    *   `CodPar` (FK) / `CodIns` (FK) / `CanIns` (DOUBLE)
+
+## 3. Integración en el Frontend
+*   **Tecnología**: React, Vite, Tailwind CSS.
+*   **Acceso**: Se añadió un botón "Cost360" en el menú público (Landing Page) junto a ARKO3D.
+*   **Diseño**: Se implementó una interfaz *Full-Screen* (Stand-alone), libre de sidebars y footers genéricos para maximizar el espacio de trabajo. Se integró el logo de Arko360 en la parte superior izquierda.
+*   **Vistas**:
+    *   `Cost360Dashboard.jsx`: Buscador y listado general de partidas (`/admin/cost360`).
+    *   `APUViewer.jsx`: Desglose detallado del APU de una partida seleccionada (`/admin/cost360/apu/:id`).
+
+## 4. Backend (API FastAPI)
+*El backend se desarrolló bajo un patrón modular en `backend/app/cost360`.*
+*   **Modelos**: SQLAlchemy mapeando las 7 tablas del ETL (con `relationships` para hacer *Eager Loading* de los APUs completos).
+*   **Endpoints**:
+    *   `GET /api/v1/cost360/items`: Busca y lista las partidas (soporta paginación y filtrado por nombre/código).
+    *   `GET /api/v1/cost360/items/{id}`: Trae una partida y todos sus materiales, equipos y mano de obra anidados.
+
+---
+
+## 5. Roadmap a Futuro (Cost360 V2)
+
+### Corto Plazo (1-2 Semanas)
+- [ ] **Exportación a Excel/PDF:** Permitir que los ingenieros descarguen el APU de una partida formateado listo para presentarse en licitaciones.
+- [ ] **Actualización Masiva de Precios:** (Desde Panel Admin) Opción para aplicar factor de inflación a materiales y mano de obra sin necesidad de re-correr el ETL completo.
+- [ ] **Caché en Redis:** Cachear las respuestas de la tabla de Partidas para acelerar la carga del dashboard cuando hay múltiples usuarios concurrentes.
+
+### Mediano Plazo (1 Mes)
+- [ ] **Armado de Presupuestos:** Funcionalidad para que el usuario pueda "Añadir partida al carrito/presupuesto", indicando metrajes (cantidades de obra), generando un Presupuesto Total.
+- [ ] **Modificación "On-The-Fly" (Modo Simulador):** Permitir al usuario duplicar una partida y alterar el rendimiento o los costos de los materiales temporalmente para analizar escenarios.
+- [ ] **Integración con ARKO3D:** Conectar los cómputos métricos obtenidos del modelo 3D (ej. volumen de concreto de la losa) y enviarlos directamente al módulo Cost360 para obtener el presupuesto estructural automático.
+
+### Largo Plazo (3+ Meses)
+- [ ] **Análisis de Dispersión de Precios:** IA predictiva que analice las fluctuaciones históricas de precios de materiales (acero, cemento) y genere alertas o pronósticos.
+- [ ] **Multitenancy Completo:** Cada tenant (empresa de construcción) puede subir su propia base de datos Lulowin personalizada para Cost360, aislada de la pública.

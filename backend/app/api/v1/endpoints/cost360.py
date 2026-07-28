@@ -12,14 +12,17 @@ from app.schemas.cost360 import CostItemBase, APUResponse, APUComponent
 router = APIRouter()
 
 @router.get("/items", response_model=List[CostItemBase])
-def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, db: Session = Depends(get_db)):
+def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(CostItem)
     if search:
         query = query.filter(
             (CostItem.Descri.ilike(f"%{search}%")) | 
             (CostItem.CodPar.ilike(f"%{search}%"))
         )
-    return query.offset(skip).limit(limit).all()
+    if chapter:
+        query = query.filter(CostItem.CodPar.startswith(chapter))
+    
+    return query.order_by(CostItem.CodPar).offset(skip).limit(limit).all()
 
 @router.get("/items/{item_code}/apu", response_model=APUResponse)
 def get_apu(item_code: str, db: Session = Depends(get_db)):

@@ -9,14 +9,23 @@ const Cost360Dashboard = () => {
   const [items, setItems] = null || useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [chapter, setChapter] = useState('');
+  const [skip, setSkip] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 50;
   const navigate = useNavigate();
   const { config } = useContext(SiteConfigContext);
 
-  const fetchPartidas = async (searchQuery = '') => {
+  const fetchPartidas = async (searchQuery = '', chapterQuery = '', currentSkip = 0, append = false) => {
     setLoading(true);
     try {
-      const data = await cost360Service.fetchItems(0, 50, searchQuery);
-      setItems(data);
+      const data = await cost360Service.fetchItems(currentSkip, LIMIT, searchQuery, chapterQuery);
+      if (append) {
+        setItems(prev => [...prev, ...data]);
+      } else {
+        setItems(data);
+      }
+      setHasMore(data.length === LIMIT);
     } catch (error) {
       toast.error('Error al cargar la base de datos de Cost360');
     } finally {
@@ -25,12 +34,20 @@ const Cost360Dashboard = () => {
   };
 
   useEffect(() => {
-    fetchPartidas();
-  }, []);
+    setSkip(0);
+    fetchPartidas(search, chapter, 0, false);
+  }, [chapter]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchPartidas(search);
+    setSkip(0);
+    fetchPartidas(search, chapter, 0, false);
+  };
+
+  const handleLoadMore = () => {
+    const newSkip = skip + LIMIT;
+    setSkip(newSkip);
+    fetchPartidas(search, chapter, newSkip, true);
   };
 
   return (
@@ -60,9 +77,9 @@ const Cost360Dashboard = () => {
           <p className="text-gray-500">Base de Datos de Partidas y Análisis de Precio Unitario</p>
         </div>
 
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="relative mb-8">
-        <div className="relative">
+      {/* Search Bar & Filters */}
+      <form onSubmit={handleSearch} className="mb-8 flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <FiSearch className="text-gray-400 text-lg" />
           </div>
@@ -73,22 +90,35 @@ const Cost360Dashboard = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <button 
-            type="submit"
-            className="absolute inset-y-2 right-2 bg-blue-600 text-white px-6 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-          >
-            Buscar
-          </button>
         </div>
+        
+        <div className="sm:w-64">
+          <select
+            value={chapter}
+            onChange={(e) => setChapter(e.target.value)}
+            className="block w-full px-4 py-4 border border-gray-200 rounded-xl leading-5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm shadow-sm transition-all duration-200 appearance-none"
+            style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
+          >
+            <option value="">Todas las Categorías</option>
+            <option value="E">Edificaciones (E)</option>
+            <option value="I">Instalaciones (I)</option>
+            <option value="V">Vialidad (V)</option>
+            <option value="U">Urbanismo (U)</option>
+            <option value="M">Mantenimiento (M)</option>
+          </select>
+        </div>
+
+        <button 
+          type="submit"
+          className="bg-blue-600 text-white px-8 py-4 rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+        >
+          Filtrar
+        </button>
       </form>
 
       {/* Results Grid */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : items.length > 0 ? (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+        {items.length > 0 ? (
           <ul className="divide-y divide-gray-50">
             {items.map((item) => (
               <li 
@@ -116,12 +146,30 @@ const Cost360Dashboard = () => {
               </li>
             ))}
           </ul>
-        ) : (
+        ) : !loading ? (
           <div className="py-20 text-center">
             <p className="text-gray-500">No se encontraron partidas con ese criterio de búsqueda.</p>
           </div>
+        ) : null}
+        
+        {loading && (
+          <div className="flex justify-center items-center py-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
         )}
       </div>
+
+      {/* Load More Button */}
+      {hasMore && !loading && items.length > 0 && (
+        <div className="flex justify-center pb-12">
+          <button
+            onClick={handleLoadMore}
+            className="bg-white text-blue-600 border border-blue-200 px-8 py-3 rounded-full hover:bg-blue-50 transition-colors font-medium text-sm shadow-sm flex items-center gap-2"
+          >
+            Cargar Más Partidas
+          </button>
+        </div>
+      )}
     </div>
     </div>
   );
