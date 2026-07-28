@@ -1,0 +1,1 @@
+SELECT "CodPar", "CovPar", "Descri" FROM cost360_items WHERE "CovPar" LIKE '%028200102%' OR "Descri" ILIKE '%TRANSPORTE DE MAQUINARIA PESADA%';

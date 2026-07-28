@@ -15,10 +15,13 @@ router = APIRouter()
 def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(CostItem)
     if search:
-        query = query.filter(
-            (CostItem.Descri.ilike(f"%{search}%")) | 
-            (CostItem.CodPar.ilike(f"%{search}%"))
-        )
+        words = search.split()
+        for word in words:
+            query = query.filter(
+                (CostItem.Descri.ilike(f"%{word}%")) | 
+                (CostItem.CodPar.ilike(f"%{word}%")) |
+                (CostItem.CovPar.ilike(f"%{word}%"))
+            )
     if chapter:
         query = query.filter(CostItem.CodPar.startswith(chapter))
     
