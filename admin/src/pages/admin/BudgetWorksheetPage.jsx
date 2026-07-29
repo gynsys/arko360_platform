@@ -163,6 +163,7 @@ export default function BudgetWorksheetPage() {
     return (
       <div className="flex items-center justify-center min-h-screen text-slate-400">
         <Loader className="animate-spin" size={32} />
+      </div>
     );
   }
 
