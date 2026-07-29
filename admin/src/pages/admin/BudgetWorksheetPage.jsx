@@ -17,12 +17,18 @@ export default function BudgetWorksheetPage() {
   
   // Settings Panel
   const [showSettings, setShowSettings] = useState(false);
+  const [configTab, setConfigTab] = useState('general'); // 'general' or 'params'
   const [settings, setSettings] = useState({
     currency: 'USD',
     exchange_rate: 1.0,
     fcas_percent: 417.0,
     admin_percent: 15.0,
-    profit_percent: 10.0
+    profit_percent: 10.0,
+    iva_percent: 16.0,
+    company_name: '',
+    company_rif: '',
+    client_name: '',
+    project_name: ''
   });
 
   // Search DB Modal
@@ -41,11 +47,16 @@ export default function BudgetWorksheetPage() {
       const data = await budgetService.getById(id);
       setBudget(data);
       setSettings({
-        currency: data.currency,
-        exchange_rate: data.exchange_rate,
-        fcas_percent: data.fcas_percent,
+        currency: data.currency || 'USD',
+        exchange_rate: data.exchange_rate || 1.0,
+        fcas_percent: data.fcas_percent || 417.0,
         admin_percent: data.admin_percent ?? 15.0,
-        profit_percent: data.profit_percent ?? 10.0
+        profit_percent: data.profit_percent ?? 10.0,
+        iva_percent: data.iva_percent ?? 16.0,
+        company_name: data.company_name || '',
+        company_rif: data.company_rif || '',
+        client_name: data.client_name || '',
+        project_name: data.project_name || ''
       });
     } catch (error) {
       console.error(error);
@@ -139,7 +150,10 @@ export default function BudgetWorksheetPage() {
   };
 
   const calculateBudgetTotal = () => {
-    return budget?.items.reduce((sum, item) => sum + (calculatePU(item) * item.quantity), 0) || 0;
+    const subtotalPresupuesto = budget?.items?.reduce((sum, item) => sum + (calculatePU(item) * item.quantity), 0) || 0;
+    const ivaAmount = subtotalPresupuesto * ((budget?.iva_percent ?? 16.0) / 100);
+    const totalGeneral = subtotalPresupuesto + ivaAmount;
+    return { subtotalPresupuesto, ivaAmount, totalGeneral };
   };
 
   const handleQuantityChange = (itemId, newQuantity) => {
@@ -168,6 +182,7 @@ export default function BudgetWorksheetPage() {
   }
 
   const headerPortalTarget = document.getElementById('header-actions-portal');
+  const { subtotalPresupuesto, ivaAmount, totalGeneral } = calculateBudgetTotal();
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen">
@@ -220,8 +235,67 @@ export default function BudgetWorksheetPage() {
               </button>
             </div>
             
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex border-b border-slate-200 px-6 pt-4 bg-slate-50/50">
+              <button
+                className={`pb-3 px-4 font-medium text-sm transition-colors border-b-2 ${configTab === 'general' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                onClick={() => setConfigTab('general')}
+              >
+                Datos Generales
+              </button>
+              <button
+                className={`pb-3 px-4 font-medium text-sm transition-colors border-b-2 ${configTab === 'params' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                onClick={() => setConfigTab('params')}
+              >
+                Parámetros de Cálculo
+              </button>
+            </div>
+
+            <div className="p-6 h-[400px] overflow-y-auto">
+              {configTab === 'general' ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1.5">Nombre de la Obra / Proyecto</label>
+                    <input 
+                      type="text" 
+                      value={settings.project_name}
+                      onChange={e => setSettings({...settings, project_name: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                      placeholder="Ej. Construcción de Muro Perimetral"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1.5">Empresa</label>
+                      <input 
+                        type="text" 
+                        value={settings.company_name}
+                        onChange={e => setSettings({...settings, company_name: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1.5">RIF de la Empresa</label>
+                      <input 
+                        type="text" 
+                        value={settings.company_rif}
+                        onChange={e => setSettings({...settings, company_rif: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1.5">Contratante / Cliente</label>
+                    <input 
+                      type="text" 
+                      value={settings.client_name}
+                      onChange={e => setSettings({...settings, client_name: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
                     <DollarSign size={14}/> Moneda Base
@@ -285,10 +359,23 @@ export default function BudgetWorksheetPage() {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                    <Percent size={14}/> I.V.A (%)
+                  </label>
+                  <input 
+                    type="number" 
+                    step="1"
+                    value={settings.iva_percent}
+                    onChange={e => setSettings({...settings, iva_percent: parseFloat(e.target.value) || 0})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  />
+                </div>
               </div>
             </div>
-
-            <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+          )}
+          
+          <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
               <button 
                 onClick={() => setShowSettings(false)}
                 className="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-200 rounded-xl transition-colors text-sm"
@@ -325,7 +412,7 @@ export default function BudgetWorksheetPage() {
             <tbody className="divide-y divide-slate-100">
               {budget.items.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="p-12 text-center text-slate-500">
+                  <td colSpan="8" className="p-12 text-center text-slate-500">
                     <Layers className="mx-auto mb-3 text-slate-300" size={32} />
                     <p>No hay partidas en este presupuesto.</p>
                     <button 
@@ -385,21 +472,34 @@ export default function BudgetWorksheetPage() {
                 ))
               )}
             </tbody>
-            {budget.items.length > 0 && (
-              <tfoot>
-                <tr className="bg-slate-50 border-t-2 border-slate-200">
-                  <td colSpan="6" className="p-5 text-right font-bold text-slate-700 text-sm tracking-wide">
-                    TOTAL PRESUPUESTO ({budget.currency}):
-                  </td>
-                  <td className="p-5 text-right font-black text-blue-700 text-lg">
-                    {calculateBudgetTotal().toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            )}
           </table>
         </div>
+        
+        {/* FOOTER TOTAL */}
+        {budget.items?.length > 0 && (
+          <div className="mt-8 flex flex-col items-end gap-2 p-6">
+            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 min-w-[300px]">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-slate-500 font-medium text-sm">SUBTOTAL</span>
+                <span className="text-lg font-semibold text-slate-700">
+                  {subtotalPresupuesto.toLocaleString('es-VE', {minimumFractionDigits: 2})}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-200">
+                <span className="text-slate-500 font-medium text-sm">I.V.A. ({budget.iva_percent ?? 16}%)</span>
+                <span className="text-lg font-semibold text-slate-700">
+                  {ivaAmount.toLocaleString('es-VE', {minimumFractionDigits: 2})}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-800 font-bold text-sm">TOTAL PRESUPUESTO ({budget.currency})</span>
+                <span className="text-2xl font-bold text-blue-700">
+                  {totalGeneral.toLocaleString('es-VE', {minimumFractionDigits: 2})}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* SEARCH MODAL */}

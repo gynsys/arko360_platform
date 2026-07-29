@@ -15,12 +15,18 @@ class Budget(Base):
     description = Column(Text, nullable=True)
     client_name = Column(String, nullable=True)
     
-    # Datos Globales del Presupuesto
+    # Datos Generales del Presupuesto
     currency = Column(String, default="USD") # USD o BS
     exchange_rate = Column(Float, default=1.0) # Tasa de cambio (e.g. 36.5)
     fcas_percent = Column(Float, default=417.0) # FCAS global del presupuesto
     admin_percent = Column(Float, default=15.0) # % de Administración
     profit_percent = Column(Float, default=10.0) # % de Utilidad e Imprevistos
+    iva_percent = Column(Float, default=16.0) # % de I.V.A.
+    
+    # Datos de la Empresa y Obra
+    company_name = Column(String, nullable=True)
+    company_rif = Column(String, nullable=True)
+    project_name = Column(Text, nullable=True)
     
     # Fechas
     created_at = Column(DateTime, default=datetime.utcnow)
