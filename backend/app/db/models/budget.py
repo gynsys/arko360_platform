@@ -19,6 +19,8 @@ class Budget(Base):
     currency = Column(String, default="USD") # USD o BS
     exchange_rate = Column(Float, default=1.0) # Tasa de cambio (e.g. 36.5)
     fcas_percent = Column(Float, default=417.0) # FCAS global del presupuesto
+    admin_percent = Column(Float, default=15.0) # % de Administración
+    profit_percent = Column(Float, default=10.0) # % de Utilidad e Imprevistos
     
     # Fechas
     created_at = Column(DateTime, default=datetime.utcnow)

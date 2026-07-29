@@ -83,6 +83,8 @@ class BudgetBase(BaseModel):
     currency: str = "USD"
     exchange_rate: float = 1.0
     fcas_percent: float = 417.0
+    admin_percent: float = 15.0
+    profit_percent: float = 10.0
 
 class BudgetCreate(BudgetBase):
     pass
@@ -91,9 +93,11 @@ class BudgetUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     client_name: Optional[str] = None
-    currency: Optional[str] = None
-    exchange_rate: Optional[float] = None
-    fcas_percent: Optional[float] = None
+    currency: Optional[str] = "USD"
+    exchange_rate: Optional[float] = 1.0
+    fcas_percent: Optional[float] = 417.0
+    admin_percent: Optional[float] = 15.0
+    profit_percent: Optional[float] = 10.0
 
 class Budget(BudgetBase):
     id: str

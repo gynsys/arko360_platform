@@ -19,7 +19,9 @@ export default function BudgetWorksheetPage() {
   const [settings, setSettings] = useState({
     currency: 'USD',
     exchange_rate: 1.0,
-    fcas_percent: 417.0
+    fcas_percent: 417.0,
+    admin_percent: 15.0,
+    profit_percent: 10.0
   });
 
   // Search DB Modal
@@ -40,7 +42,9 @@ export default function BudgetWorksheetPage() {
       setSettings({
         currency: data.currency,
         exchange_rate: data.exchange_rate,
-        fcas_percent: data.fcas_percent
+        fcas_percent: data.fcas_percent,
+        admin_percent: data.admin_percent ?? 15.0,
+        profit_percent: data.profit_percent ?? 10.0
       });
     } catch (error) {
       console.error(error);
@@ -126,12 +130,15 @@ export default function BudgetWorksheetPage() {
       labCost = labCost * (1 + (budget.fcas_percent / 100));
     }
     
-    // Add Administrative and Profit overheads (e.g. 15% Admin, 10% Profit)
-    // We can hardcode overheads for now since it's just visual prototype
+    // Add Administrative and Profit overheads from budget config
     const subtotal = matCost + eqCost + labCost;
-    const admin = subtotal * 0.15;
-    const util = subtotal * 0.10;
+    const admin = subtotal * (budget.admin_percent / 100);
+    const util = subtotal * (budget.profit_percent / 100);
     return subtotal + admin + util;
+  };
+
+  const calculateBudgetTotal = () => {
+    return budget?.items.reduce((sum, item) => sum + (calculatePU(item) * item.quantity), 0) || 0;
   };
 
   const handleQuantityChange = (itemId, newQuantity) => {
@@ -247,6 +254,32 @@ export default function BudgetWorksheetPage() {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                    <Percent size={14}/> Administración (%)
+                  </label>
+                  <input 
+                    type="number" 
+                    step="1"
+                    value={settings.admin_percent}
+                    onChange={e => setSettings({...settings, admin_percent: parseFloat(e.target.value) || 0})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                    <Percent size={14}/> Utilidad (%)
+                  </label>
+                  <input 
+                    type="number" 
+                    step="1"
+                    value={settings.profit_percent}
+                    onChange={e => setSettings({...settings, profit_percent: parseFloat(e.target.value) || 0})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
@@ -280,6 +313,7 @@ export default function BudgetWorksheetPage() {
                 <th className="p-4 w-28 text-right">Cantidad</th>
                 <th className="p-4 w-32 text-right">Precio Unit.</th>
                 <th className="p-4 w-32 text-right">Total</th>
+                <th className="p-4 w-20 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -300,8 +334,7 @@ export default function BudgetWorksheetPage() {
                 budget.items.map((item, idx) => (
                   <tr 
                     key={item.id} 
-                    className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
-                    onClick={() => navigate(`/budgets/${budget.id}/item/${item.id}`)}
+                    className="hover:bg-blue-50/50 transition-colors group"
                   >
                     <td className="p-4 text-center text-slate-400 font-medium text-sm">{idx + 1}</td>
                     <td className="p-4 text-sm font-mono text-slate-600">{item.cov_par || item.cod_par}</td>
@@ -333,10 +366,32 @@ export default function BudgetWorksheetPage() {
                     <td className="p-4 text-right text-sm font-bold text-slate-900">
                       {(calculatePU(item) * item.quantity).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
+                    <td className="p-4 text-center">
+                      <button 
+                        onClick={() => navigate(`/budgets/${budget.id}/item/${item.id}`)}
+                        className="bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 p-2 rounded-lg transition-colors flex items-center justify-center mx-auto tooltip"
+                        title="Editar APU"
+                      >
+                        <Settings size={18} />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
+            {budget.items.length > 0 && (
+              <tfoot>
+                <tr className="bg-slate-50 border-t-2 border-slate-200">
+                  <td colSpan="6" className="p-5 text-right font-bold text-slate-700 text-sm tracking-wide">
+                    TOTAL PRESUPUESTO ({budget.currency}):
+                  </td>
+                  <td className="p-5 text-right font-black text-blue-700 text-lg">
+                    {calculateBudgetTotal().toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>

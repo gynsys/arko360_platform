@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader, Package, Wrench, Users, Percent, Search } from 'lucide-react';
+import { ArrowLeft, Loader, Package, Wrench, Users, Calculator } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 
@@ -10,9 +10,6 @@ export default function BudgetAPUEditorPage() {
   const [budget, setBudget] = useState(null);
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Tabs
-  const [activeTab, setActiveTab] = useState('materiales');
 
   useEffect(() => {
     loadData();
@@ -38,27 +35,44 @@ export default function BudgetAPUEditorPage() {
     }
   };
 
+  const handlePerformanceChange = async (newPerf) => {
+    const val = parseFloat(newPerf) || 1;
+    setItem(prev => ({ ...prev, performance: val }));
+    try {
+      await budgetService.updateItem(id, itemId, { performance: val });
+    } catch (error) {
+      toast.error('Error actualizando rendimiento');
+    }
+  };
+
+  // For Maprex Style Calculations
   const calculateMaterialTotal = () => {
     return item?.materials?.reduce((sum, mat) => sum + (mat.cantidad * mat.precio_unitario), 0) || 0;
   };
 
-  const calculateEquipmentTotal = () => {
+  const calculateEquipmentTotalDay = () => {
     return item?.equipments?.reduce((sum, eq) => sum + (eq.cantidad * eq.precio_unitario), 0) || 0;
   };
 
-  const calculateLaborTotal = () => {
-    const fcasFactor = 1 + (budget?.fcas_percent / 100);
+  const calculateLaborTotalDay = () => {
+    const fcasFactor = 1 + ((budget?.fcas_percent || 417) / 100);
     return item?.labors?.reduce((sum, lab) => {
       const costoDiario = (lab.jornal * fcasFactor) + lab.bono;
       return sum + (lab.cantidad * costoDiario);
     }, 0) || 0;
   };
 
-  const calculateUnitCost = () => {
-    const mat = calculateMaterialTotal();
-    const eq = calculateEquipmentTotal();
-    const lab = calculateLaborTotal();
-    return mat + eq + lab;
+  const calculateCostosDirectos = () => {
+    const matTotal = calculateMaterialTotal();
+    const eqTotal = calculateEquipmentTotalDay() / (item?.performance || 1);
+    const labTotal = calculateLaborTotalDay() / (item?.performance || 1);
+    
+    return {
+      materiales: matTotal,
+      equipos: eqTotal,
+      manoObra: labTotal,
+      subtotalA: matTotal + eqTotal + labTotal
+    };
   };
 
   if (loading || !item || !budget) {
@@ -69,252 +83,327 @@ export default function BudgetAPUEditorPage() {
     );
   }
 
+  const costos = calculateCostosDirectos();
+  const adminPercent = budget.admin_percent ?? 15.0;
+  const utilPercent = budget.profit_percent ?? 10.0;
+  
+  const adminCost = costos.subtotalA * (adminPercent / 100);
+  const subtotalB = costos.subtotalA + adminCost;
+  const utilCost = subtotalB * (utilPercent / 100);
+  const unitPrice = subtotalB + utilCost;
+
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen">
-      {/* HEADER */}
-      <div className="flex items-start gap-4 mb-8">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto min-h-screen pb-20">
+      {/* TOOLBAR */}
+      <div className="flex items-center gap-4 mb-4">
         <button 
           onClick={() => navigate(`/budgets/${id}`)}
-          className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shrink-0 mt-1"
+          className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shrink-0"
         >
           <ArrowLeft size={20} className="text-slate-600" />
         </button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-1">
-            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono font-bold tracking-wider">
+        <div>
+          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+            <Calculator size={16} /> ANÁLISIS DE PRECIO UNITARIO
+          </h2>
+        </div>
+      </div>
+
+      {/* MAPREX STYLE TOP HEADER */}
+      <div className="bg-white border-2 border-slate-200 rounded-xl shadow-sm mb-6 overflow-hidden">
+        {/* Info row */}
+        <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-1">
+            <span className="block text-xs font-bold text-slate-400 uppercase">Referencia / Código</span>
+            <span className="text-sm font-mono font-bold text-slate-800 bg-slate-200 px-2 py-0.5 rounded">
               {item.cov_par || item.cod_par}
             </span>
-            <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-bold tracking-wider">
-              UND: {item.unit}
-            </span>
-            <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-xs font-bold tracking-wider flex items-center gap-1">
-              <Percent size={12}/> REND: {item.performance}
+          </div>
+          <div className="md:col-span-3">
+            <span className="block text-xs font-bold text-slate-400 uppercase">Descripción</span>
+            <span className="text-sm font-medium text-slate-800 leading-tight">
+              {item.description}
             </span>
           </div>
-          <h1 className="text-xl font-bold text-slate-800 leading-tight">
-            {item.description}
-          </h1>
         </div>
+
+        {/* Stats row */}
+        <div className="flex flex-wrap border-b border-slate-200 bg-white">
+          <div className="flex-1 p-3 border-r border-slate-100 min-w-[120px]">
+            <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Unidad</span>
+            <span className="text-sm font-bold text-slate-700">{item.unit}</span>
+          </div>
+          <div className="flex-1 p-3 border-r border-slate-100 min-w-[120px]">
+            <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Cantidad</span>
+            <span className="text-sm font-bold text-slate-700">{item.quantity}</span>
+          </div>
+          <div className="flex-1 p-3 border-r border-slate-100 min-w-[150px] bg-amber-50/30">
+            <span className="block text-xs font-bold text-amber-700/70 uppercase mb-1">Rendimiento</span>
+            <input 
+              type="number" 
+              className="w-full bg-amber-100/50 border-b-2 border-amber-300 focus:border-amber-500 focus:outline-none focus:bg-amber-100 px-1 font-bold text-amber-900 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={item.performance}
+              onChange={e => setItem({...item, performance: e.target.value})}
+              onBlur={e => handlePerformanceChange(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') e.target.blur();
+              }}
+            />
+          </div>
+          <div className="flex-1 p-3 min-w-[150px] bg-blue-50/50">
+            <span className="block text-xs font-bold text-blue-500 uppercase mb-1">Precio Unitario ({budget.currency})</span>
+            <span className="text-lg font-black text-blue-700">
+              {unitPrice.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTIONS */}
+      <div className="space-y-6">
         
-        {/* SUMMARY CARD */}
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white shrink-0 min-w-[200px] shadow-xl shadow-slate-900/20">
-          <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">Costo Unitario</p>
-          <div className="text-2xl font-bold flex items-baseline gap-1">
-            <span className="text-sm text-slate-400 font-normal">{budget.currency}</span>
-            {calculateUnitCost().toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+        {/* 1. MATERIALES */}
+        <div className="bg-white border border-slate-300 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-300 flex items-center gap-2">
+            <Package className="text-orange-600" size={18} />
+            <h3 className="font-bold text-orange-800 text-sm tracking-wide">1. MATERIALES ( {item.materials?.length || 0} )</h3>
           </div>
-        </div>
-      </div>
-
-      {/* TABS */}
-      <div className="flex gap-2 mb-6 border-b border-slate-200 pb-px">
-        <button 
-          onClick={() => setActiveTab('materiales')}
-          className={`flex items-center gap-2 px-5 py-3 border-b-2 font-medium text-sm transition-colors ${activeTab === 'materiales' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-        >
-          <Package size={16} /> Materiales
-          <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-xs">{item.materials.length}</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab('equipos')}
-          className={`flex items-center gap-2 px-5 py-3 border-b-2 font-medium text-sm transition-colors ${activeTab === 'equipos' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-        >
-          <Wrench size={16} /> Equipos
-          <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-xs">{item.equipments.length}</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab('mano_obra')}
-          className={`flex items-center gap-2 px-5 py-3 border-b-2 font-medium text-sm transition-colors ${activeTab === 'mano_obra' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-        >
-          <Users size={16} /> Mano de Obra
-          <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-xs">{item.labors.length}</span>
-        </button>
-      </div>
-
-      {/* CONTENT AREA */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden min-h-[400px]">
-        {/* MATERIALES */}
-        {activeTab === 'materiales' && (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                <th className="p-4 w-32">Código</th>
-                <th className="p-4">Descripción</th>
-                <th className="p-4 w-20 text-center">Und</th>
-                <th className="p-4 w-28 text-right">Cantidad</th>
-                <th className="p-4 w-32 text-right">Precio ({budget.currency})</th>
-                <th className="p-4 w-32 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {item.materials.map(mat => (
-                <tr key={mat.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4 text-sm font-mono text-slate-500">{mat.codigo}</td>
-                  <td className="p-4 text-sm text-slate-800">{mat.descripcion}</td>
-                  <td className="p-4 text-center text-sm font-medium text-slate-500">{mat.unidad}</td>
-                  <td className="p-4 text-right">
-                    <input 
-                      type="number" 
-                      className="w-full text-right bg-transparent border-b border-dashed border-slate-300 hover:border-blue-400 focus:border-blue-500 focus:outline-none focus:bg-blue-50 py-1 transition-all"
-                      value={mat.cantidad}
-                      onChange={() => {}}
-                    />
-                  </td>
-                  <td className="p-4 text-right">
-                    <input 
-                      type="number" 
-                      className="w-full text-right bg-transparent border-b border-dashed border-slate-300 hover:border-blue-400 focus:border-blue-500 focus:outline-none focus:bg-blue-50 py-1 transition-all"
-                      value={mat.precio_unitario}
-                      onChange={() => {}}
-                    />
-                  </td>
-                  <td className="p-4 text-right text-sm font-bold text-slate-700">
-                    {(mat.cantidad * mat.precio_unitario).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-white border-b border-slate-200 text-xs font-bold text-slate-600">
+                  <th className="p-2 w-24 border-r border-slate-200">Ref. / Código</th>
+                  <th className="p-2 border-r border-slate-200">Descripción</th>
+                  <th className="p-2 w-16 text-center border-r border-slate-200">Und.</th>
+                  <th className="p-2 w-24 text-right border-r border-slate-200">Cant.</th>
+                  <th className="p-2 w-32 text-right border-r border-slate-200">Precio</th>
+                  <th className="p-2 w-32 text-right">Total</th>
                 </tr>
-              ))}
-              {item.materials.length === 0 && (
-                <tr><td colSpan="6" className="p-8 text-center text-slate-400">No hay materiales asociados</td></tr>
-              )}
-            </tbody>
-            {item.materials.length > 0 && (
-              <tfoot>
-                <tr className="bg-slate-50 border-t-2 border-slate-200">
-                  <td colSpan="5" className="p-4 text-right font-bold text-slate-600 text-sm">TOTAL MATERIALES:</td>
-                  <td className="p-4 text-right font-bold text-blue-600 text-sm">
-                    {calculateMaterialTotal().toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
-                  </td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        )}
-
-        {/* EQUIPOS */}
-        {activeTab === 'equipos' && (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                <th className="p-4 w-32">Código</th>
-                <th className="p-4">Descripción</th>
-                <th className="p-4 w-28 text-right">Cantidad</th>
-                <th className="p-4 w-32 text-right">Tarifa Diaria</th>
-                <th className="p-4 w-32 text-right">Total / Día</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {item.equipments.map(eq => (
-                <tr key={eq.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4 text-sm font-mono text-slate-500">{eq.codigo}</td>
-                  <td className="p-4 text-sm text-slate-800">{eq.descripcion}</td>
-                  <td className="p-4 text-right">
-                    <input 
-                      type="number" 
-                      className="w-full text-right bg-transparent border-b border-dashed border-slate-300 hover:border-indigo-400 focus:border-indigo-500 focus:outline-none focus:bg-indigo-50 py-1 transition-all"
-                      value={eq.cantidad}
-                      onChange={() => {}}
-                    />
-                  </td>
-                  <td className="p-4 text-right">
-                    <input 
-                      type="number" 
-                      className="w-full text-right bg-transparent border-b border-dashed border-slate-300 hover:border-indigo-400 focus:border-indigo-500 focus:outline-none focus:bg-indigo-50 py-1 transition-all"
-                      value={eq.precio_unitario}
-                      onChange={() => {}}
-                    />
-                  </td>
-                  <td className="p-4 text-right text-sm font-bold text-slate-700">
-                    {(eq.cantidad * eq.precio_unitario).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
-                  </td>
-                </tr>
-              ))}
-              {item.equipments.length === 0 && (
-                <tr><td colSpan="5" className="p-8 text-center text-slate-400">No hay equipos asociados</td></tr>
-              )}
-            </tbody>
-            {item.equipments.length > 0 && (
-              <tfoot>
-                <tr className="bg-slate-50 border-t-2 border-slate-200">
-                  <td colSpan="4" className="p-4 text-right font-bold text-slate-600 text-sm">COSTO EQUIPOS POR DÍA:</td>
-                  <td className="p-4 text-right font-bold text-indigo-600 text-sm">
-                    {calculateEquipmentTotal().toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
-                  </td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        )}
-
-        {/* MANO DE OBRA */}
-        {activeTab === 'mano_obra' && (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                <th className="p-4 w-32">Código</th>
-                <th className="p-4">Descripción</th>
-                <th className="p-4 w-28 text-right">Cantidad</th>
-                <th className="p-4 w-28 text-right">Jornal</th>
-                <th className="p-4 w-28 text-right">Bono</th>
-                <th className="p-4 w-32 text-right">Total Diario</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {item.labors.map(lab => {
-                const fcasFactor = 1 + (budget.fcas_percent / 100);
-                const costoDiario = (lab.jornal * fcasFactor) + lab.bono;
-                const totalDiario = lab.cantidad * costoDiario;
-                return (
-                  <tr key={lab.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-4 text-sm font-mono text-slate-500">{lab.codigo}</td>
-                    <td className="p-4 text-sm text-slate-800">{lab.descripcion}</td>
-                    <td className="p-4 text-right">
+              </thead>
+              <tbody>
+                {item.materials?.map(mat => (
+                  <tr key={mat.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="p-2 border-r border-slate-200 font-mono text-xs">{mat.codigo}</td>
+                    <td className="p-2 border-r border-slate-200 text-xs">{mat.descripcion}</td>
+                    <td className="p-2 text-center border-r border-slate-200 text-xs">{mat.unidad}</td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
                       <input 
                         type="number" 
-                        className="w-full text-right bg-transparent border-b border-dashed border-slate-300 hover:border-teal-400 focus:border-teal-500 focus:outline-none focus:bg-teal-50 py-1 transition-all"
-                        value={lab.cantidad}
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={mat.cantidad}
                         onChange={() => {}}
                       />
                     </td>
-                    <td className="p-4 text-right">
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
                       <input 
                         type="number" 
-                        className="w-full text-right bg-transparent border-b border-dashed border-slate-300 hover:border-teal-400 focus:border-teal-500 focus:outline-none focus:bg-teal-50 py-1 transition-all"
-                        value={lab.jornal}
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={mat.precio_unitario}
                         onChange={() => {}}
                       />
                     </td>
-                    <td className="p-4 text-right">
-                      <input 
-                        type="number" 
-                        className="w-full text-right bg-transparent border-b border-dashed border-slate-300 hover:border-teal-400 focus:border-teal-500 focus:outline-none focus:bg-teal-50 py-1 transition-all"
-                        value={lab.bono}
-                        onChange={() => {}}
-                      />
-                    </td>
-                    <td className="p-4 text-right text-sm font-bold text-slate-700">
-                      {totalDiario.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
+                      {(mat.cantidad * mat.precio_unitario).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                     </td>
                   </tr>
-                );
-              })}
-              {item.labors.length === 0 && (
-                <tr><td colSpan="6" className="p-8 text-center text-slate-400">No hay mano de obra asociada</td></tr>
-              )}
-            </tbody>
-            {item.labors.length > 0 && (
-              <tfoot>
-                <tr className="bg-slate-50 border-t-2 border-slate-200">
-                  <td colSpan="5" className="p-4 text-right font-bold text-slate-600 text-sm">
-                    COSTO MANO DE OBRA POR DÍA (Inc. FCAS {budget.fcas_percent}%):
-                  </td>
-                  <td className="p-4 text-right font-bold text-teal-600 text-sm">
-                    {calculateLaborTotal().toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
+                ))}
+                {(!item.materials || item.materials.length === 0) && (
+                  <tr><td colSpan="6" className="p-4 text-center text-slate-400 text-xs">Sin materiales</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 px-4 py-2 border-t border-slate-300 flex justify-end items-center gap-4">
+            <span className="text-xs font-bold text-slate-600 uppercase">Total Materiales:</span>
+            <span className="text-sm font-black text-slate-800 bg-white border border-slate-300 px-3 py-1 rounded min-w-[120px] text-right">
+              {calculateMaterialTotal().toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+            </span>
+          </div>
+        </div>
+
+        {/* 2. EQUIPOS */}
+        <div className="bg-white border border-slate-300 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-300 flex items-center gap-2">
+            <Wrench className="text-indigo-600" size={18} />
+            <h3 className="font-bold text-indigo-800 text-sm tracking-wide">2. EQUIPOS ( {item.equipments?.length || 0} )</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-white border-b border-slate-200 text-xs font-bold text-slate-600">
+                  <th className="p-2 w-24 border-r border-slate-200">Ref. / Código</th>
+                  <th className="p-2 border-r border-slate-200">Descripción</th>
+                  <th className="p-2 w-24 text-right border-r border-slate-200">Cant.</th>
+                  <th className="p-2 w-32 text-right border-r border-slate-200">Tarifa Día</th>
+                  <th className="p-2 w-32 text-right">Total Día</th>
+                </tr>
+              </thead>
+              <tbody>
+                {item.equipments?.map(eq => (
+                  <tr key={eq.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="p-2 border-r border-slate-200 font-mono text-xs">{eq.codigo}</td>
+                    <td className="p-2 border-r border-slate-200 text-xs">{eq.descripcion}</td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={eq.cantidad}
+                        onChange={() => {}}
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={eq.precio_unitario}
+                        onChange={() => {}}
+                      />
+                    </td>
+                    <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
+                      {(eq.cantidad * eq.precio_unitario).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                  </tr>
+                ))}
+                {(!item.equipments || item.equipments.length === 0) && (
+                  <tr><td colSpan="5" className="p-4 text-center text-slate-400 text-xs">Sin equipos</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 px-4 py-2 border-t border-slate-300 flex justify-end items-center gap-4">
+            <span className="text-xs font-bold text-slate-600 uppercase">Total Equipos (Día):</span>
+            <span className="text-sm font-black text-slate-800 bg-white border border-slate-300 px-3 py-1 rounded min-w-[120px] text-right">
+              {calculateEquipmentTotalDay().toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+            </span>
+          </div>
+        </div>
+
+        {/* 3. MANO DE OBRA */}
+        <div className="bg-white border border-slate-300 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-300 flex items-center gap-2">
+            <Users className="text-teal-600" size={18} />
+            <h3 className="font-bold text-teal-800 text-sm tracking-wide">3. MANO DE OBRA ( {item.labors?.length || 0} )</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-white border-b border-slate-200 text-xs font-bold text-slate-600">
+                  <th className="p-2 w-24 border-r border-slate-200">Ref. / Código</th>
+                  <th className="p-2 border-r border-slate-200">Descripción</th>
+                  <th className="p-2 w-20 text-right border-r border-slate-200">Cant.</th>
+                  <th className="p-2 w-28 text-right border-r border-slate-200">Jornal</th>
+                  <th className="p-2 w-28 text-right border-r border-slate-200">Bono</th>
+                  <th className="p-2 w-32 text-right">Total Día (c/ FCAS)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {item.labors?.map(lab => {
+                  const fcasFactor = 1 + ((budget?.fcas_percent || 417) / 100);
+                  const costoDiario = (lab.jornal * fcasFactor) + lab.bono;
+                  const totalDiario = lab.cantidad * costoDiario;
+                  return (
+                    <tr key={lab.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="p-2 border-r border-slate-200 font-mono text-xs">{lab.codigo}</td>
+                      <td className="p-2 border-r border-slate-200 text-xs">{lab.descripcion}</td>
+                      <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                        <input 
+                          type="number" 
+                          className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          value={lab.cantidad}
+                          onChange={() => {}}
+                        />
+                      </td>
+                      <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                        <input 
+                          type="number" 
+                          className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          value={lab.jornal}
+                          onChange={() => {}}
+                        />
+                      </td>
+                      <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                        <input 
+                          type="number" 
+                          className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          value={lab.bono}
+                          onChange={() => {}}
+                        />
+                      </td>
+                      <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
+                        {totalDiario.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                      </td>
+                    </tr>
+                  )
+                })}
+                {(!item.labors || item.labors.length === 0) && (
+                  <tr><td colSpan="6" className="p-4 text-center text-slate-400 text-xs">Sin mano de obra</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 px-4 py-2 border-t border-slate-300 flex justify-between items-center gap-4">
+            <span className="text-xs font-bold text-slate-400">FCAS Aplicado: {budget.fcas_percent}%</span>
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-bold text-slate-600 uppercase">Total Mano de Obra (Día):</span>
+              <span className="text-sm font-black text-slate-800 bg-white border border-slate-300 px-3 py-1 rounded min-w-[120px] text-right">
+                {calculateLaborTotalDay().toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM SUMMARY BLOCK (Maprex Style) */}
+        <div className="flex justify-end mt-8">
+          <div className="w-full md:w-[450px] bg-slate-50 border border-slate-300 shadow-md p-1">
+            <table className="w-full text-xs font-bold text-slate-700 border-collapse">
+              <tbody>
+                <tr>
+                  <td className="p-2 text-right border-b border-slate-200">COSTO DIRECTO SUBTOTAL A:</td>
+                  <td className="p-2 w-32 text-right border-b border-slate-200 bg-white">
+                    {costos.subtotalA.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                   </td>
                 </tr>
-              </tfoot>
-            )}
-          </table>
-        )}
+                <tr>
+                  <td className="p-2 text-right border-b border-slate-200 flex items-center justify-end gap-2">
+                    <span className="bg-amber-100 text-amber-800 px-1 border border-amber-300 rounded">% {adminPercent}</span>
+                    ADMINISTRACIÓN Y GASTOS GENERALES:
+                  </td>
+                  <td className="p-2 w-32 text-right border-b border-slate-200 bg-white text-slate-500">
+                    {adminCost.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-2 text-right border-b border-slate-200">SUBTOTAL B:</td>
+                  <td className="p-2 w-32 text-right border-b border-slate-200 bg-white">
+                    {subtotalB.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-2 text-right border-b border-slate-200 flex items-center justify-end gap-2">
+                    <span className="bg-amber-100 text-amber-800 px-1 border border-amber-300 rounded">% {utilPercent}</span>
+                    UTILIDAD E IMPREVISTOS:
+                  </td>
+                  <td className="p-2 w-32 text-right border-b border-slate-200 bg-white text-slate-500">
+                    {utilCost.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-2 text-right border-b border-slate-200">SUBTOTAL C (Precio sin I.V.A):</td>
+                  <td className="p-2 w-32 text-right border-b border-slate-200 bg-white">
+                    {unitPrice.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                  </td>
+                </tr>
+                <tr className="bg-blue-50">
+                  <td className="p-3 text-right text-blue-800 text-sm">PRECIO UNITARIO ({budget.currency}):</td>
+                  <td className="p-3 w-32 text-right bg-white text-blue-800 font-black text-sm border border-blue-200">
+                    {unitPrice.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
   );
