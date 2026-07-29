@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Settings, Plus, Search, Layers, FileText, 
-  DollarSign, Hash, Percent, Loader
+  DollarSign, Hash, Percent, Loader, X
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 import { API_URL } from '../../services/api';
 
@@ -43,7 +44,7 @@ export default function BudgetWorksheetPage() {
       });
     } catch (error) {
       console.error(error);
-      alert('Error cargando el presupuesto');
+      toast.error('Error cargando el presupuesto');
       navigate('/budgets');
     } finally {
       setLoading(false);
@@ -54,9 +55,10 @@ export default function BudgetWorksheetPage() {
     try {
       await budgetService.update(id, settings);
       setBudget(prev => ({ ...prev, ...settings }));
+      toast.success('Configuración guardada exitosamente');
       setShowSettings(false);
     } catch (error) {
-      alert('Error guardando configuración');
+      toast.error('Error guardando configuración');
     }
   };
 
@@ -99,8 +101,9 @@ export default function BudgetWorksheetPage() {
       setSearchQuery('');
       setSearchResults([]);
       loadBudget(); // Reload to get new items
+      toast.success('Partida agregada al presupuesto');
     } catch (error) {
-      alert('Error agregando partida');
+      toast.error('Error agregando partida');
     }
   };
 
@@ -144,58 +147,78 @@ export default function BudgetWorksheetPage() {
         </div>
       </div>
 
-      {/* SETTINGS PANEL (Collapsible) */}
+      {/* SETTINGS MODAL */}
       {showSettings && (
-        <div className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl p-6 mb-8 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Settings size={16} className="text-blue-500"/> Parámetros del Proyecto
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <DollarSign size={14}/> Moneda Base
-              </label>
-              <select 
-                value={settings.currency}
-                onChange={e => setSettings({...settings, currency: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <Settings className="text-blue-500" /> Configuración del Presupuesto
+              </h2>
+              <button 
+                onClick={() => setShowSettings(false)}
+                className="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 p-2 rounded-full transition-colors"
               >
-                <option value="USD">Dólares (USD)</option>
-                <option value="BS">Bolívares (BS)</option>
-              </select>
+                <X size={20} />
+              </button>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <Hash size={14}/> Tasa de Cambio (BS/USD)
-              </label>
-              <input 
-                type="number" 
-                step="0.01"
-                value={settings.exchange_rate}
-                onChange={e => setSettings({...settings, exchange_rate: parseFloat(e.target.value)})}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              />
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                    <DollarSign size={14}/> Moneda Base
+                  </label>
+                  <select 
+                    value={settings.currency}
+                    onChange={e => setSettings({...settings, currency: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  >
+                    <option value="USD">Dólares (USD)</option>
+                    <option value="BS">Bolívares (BS)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                    <Hash size={14}/> Tasa de Cambio (BS/USD)
+                  </label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={settings.exchange_rate}
+                    onChange={e => setSettings({...settings, exchange_rate: parseFloat(e.target.value)})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                    <Percent size={14}/> FCAS Global (%)
+                  </label>
+                  <input 
+                    type="number" 
+                    step="1"
+                    value={settings.fcas_percent}
+                    onChange={e => setSettings({...settings, fcas_percent: parseFloat(e.target.value)})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <Percent size={14}/> FCAS Global (%)
-              </label>
-              <input 
-                type="number" 
-                step="1"
-                value={settings.fcas_percent}
-                onChange={e => setSettings({...settings, fcas_percent: parseFloat(e.target.value)})}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              />
+
+            <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+              <button 
+                onClick={() => setShowSettings(false)}
+                className="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-200 rounded-xl transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveSettings}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-lg shadow-blue-500/30"
+              >
+                Guardar Configuración
+              </button>
             </div>
-          </div>
-          <div className="mt-5 flex justify-end">
-            <button 
-              onClick={handleSaveSettings}
-              className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              Guardar Cambios
-            </button>
           </div>
         </div>
       )}
@@ -283,7 +306,7 @@ export default function BudgetWorksheetPage() {
                 onClick={() => setShowSearchModal(false)}
                 className="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 p-2 rounded-full transition-colors"
               >
-                ✕
+                <X size={20} />
               </button>
             </div>
             

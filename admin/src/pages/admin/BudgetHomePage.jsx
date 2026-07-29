@@ -4,6 +4,7 @@ import {
   Folder, Plus, FileText, Trash2, Edit3, Copy, Search, 
   MoreVertical, Clock, DollarSign, Loader
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 
 export default function BudgetHomePage() {
@@ -41,7 +42,7 @@ export default function BudgetHomePage() {
       navigate(`/budgets/${newBudget.id}`);
     } catch (error) {
       console.error(error);
-      alert('Error creando presupuesto');
+      toast.error('Error creando presupuesto');
     }
   };
 
@@ -53,7 +54,7 @@ export default function BudgetHomePage() {
       setBudgets(budgets.filter(b => b.id !== id));
     } catch (error) {
       console.error(error);
-      alert('Error al eliminar');
+      toast.error('Error al eliminar');
     }
   };
 

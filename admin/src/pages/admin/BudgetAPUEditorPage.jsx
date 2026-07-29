@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader, Package, Wrench, Users, Percent, Search } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 
 export default function BudgetAPUEditorPage() {
@@ -25,13 +26,13 @@ export default function BudgetAPUEditorPage() {
       
       const foundItem = budgetData.items.find(i => i.id === itemId);
       if (!foundItem) {
-        alert('Partida no encontrada en este presupuesto');
+        toast.error('Partida no encontrada en este presupuesto');
         navigate(`/budgets/${id}`);
       }
       setItem(foundItem);
     } catch (error) {
       console.error(error);
-      alert('Error cargando APU');
+      toast.error('Error cargando APU');
     } finally {
       setLoading(false);
     }
