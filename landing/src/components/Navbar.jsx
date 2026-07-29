@@ -197,7 +197,7 @@ export default function Navbar() {
               )}
               <li>
                 <a 
-                  href="https://admin.arko360.net/admin/cost360" 
+                  href="https://admin.arko360.net/cost360" 
                   style={{ color: '#3498db', fontWeight: 'bold' }}
                 >
                   Cost360
