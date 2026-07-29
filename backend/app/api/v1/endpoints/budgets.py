@@ -69,33 +69,33 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
         for mat in cost_item.apu_materials:
             db_mat = BudgetAPUMaterial(
                 budget_item_id=db_item.id,
-                codigo=mat.CodMat,
+                codigo=mat.CodIns,
                 descripcion=mat.material.Descri if mat.material else "",
-                unidad=mat.material.Unidad if mat.material else "",
-                precio_unitario=mat.material.Precio if mat.material else 0.0,
-                cantidad=mat.Cant
+                unidad=mat.material.UniMat if mat.material else "",
+                precio_unitario=mat.material.CosMat if mat.material else 0.0,
+                cantidad=mat.CanIns
             )
             db.add(db_mat)
             
         for eq in cost_item.apu_equipments:
             db_eq = BudgetAPUEquipment(
                 budget_item_id=db_item.id,
-                codigo=eq.CodEqu,
+                codigo=eq.CodIns,
                 descripcion=eq.equipment.Descri if eq.equipment else "",
                 unidad="Día",
                 precio_unitario=eq.equipment.CosDia if eq.equipment else 0.0,
-                cantidad=eq.Cant
+                cantidad=eq.CanIns
             )
             db.add(db_eq)
             
         for lab in cost_item.apu_labors:
             db_lab = BudgetAPULabor(
                 budget_item_id=db_item.id,
-                codigo=lab.CodObr,
+                codigo=lab.CodIns,
                 descripcion=lab.labor.Descri if lab.labor else "",
                 jornal=lab.labor.Jornal if lab.labor else 0.0,
                 bono=lab.labor.Bono if lab.labor else 0.0,
-                cantidad=lab.Cant
+                cantidad=lab.CanIns
             )
             db.add(db_lab)
             

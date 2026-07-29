@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Float, ForeignKey
+from sqlalchemy.orm import relationship
 from app.db.base import Base
 
 class CostItem(Base):
@@ -9,6 +10,10 @@ class CostItem(Base):
     UniPar = Column(String)
     PreUni = Column(Float)
     RenPar = Column(Float)
+    
+    apu_materials = relationship("CostAPUMaterial", back_populates="item")
+    apu_labors = relationship("CostAPULabor", back_populates="item")
+    apu_equipments = relationship("CostAPUEquipment", back_populates="item")
 
 class CostMaterial(Base):
     __tablename__ = "cost360_materials"
@@ -36,6 +41,9 @@ class CostAPUMaterial(Base):
     CodIns = Column(String, ForeignKey("cost360_materials.CodMat"), primary_key=True)
     CanIns = Column(Float)
     Desper = Column(Float)
+    
+    item = relationship("CostItem", back_populates="apu_materials")
+    material = relationship("CostMaterial")
 
 class CostAPULabor(Base):
     __tablename__ = "cost360_apu_labor"
@@ -43,8 +51,14 @@ class CostAPULabor(Base):
     CodIns = Column(String, ForeignKey("cost360_labor.CodMan"), primary_key=True)
     CanIns = Column(Float)
 
+    item = relationship("CostItem", back_populates="apu_labors")
+    labor = relationship("CostLabor")
+
 class CostAPUEquipment(Base):
     __tablename__ = "cost360_apu_equipment"
     CodPar = Column(String, ForeignKey("cost360_items.CodPar"), primary_key=True)
     CodIns = Column(String, ForeignKey("cost360_equipment.CodEqu"), primary_key=True)
     CanIns = Column(Float)
+
+    item = relationship("CostItem", back_populates="apu_equipments")
+    equipment = relationship("CostEquipment")
