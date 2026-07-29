@@ -134,15 +134,21 @@ export default function BudgetWorksheetPage() {
     return subtotal + admin + util;
   };
 
-  const handleQuantityChange = async (itemId, newQuantity) => {
+  const handleQuantityChange = (itemId, newQuantity) => {
     // Optimistic UI update
     setBudget(prev => ({
       ...prev,
       items: prev.items.map(i => i.id === itemId ? { ...i, quantity: parseFloat(newQuantity) || 0 } : i)
     }));
-    
-    // Real app would have a debounced API call here:
-    // await budgetService.updateItem(budget.id, itemId, { quantity: newQuantity });
+  };
+
+  const saveQuantity = async (itemId, newQuantity) => {
+    try {
+      await budgetService.updateItem(budget.id, itemId, { quantity: parseFloat(newQuantity) || 0 });
+    } catch (error) {
+      console.error(error);
+      toast.error('Error guardando la cantidad');
+    }
   };
 
   if (loading || !budget) {
@@ -313,6 +319,7 @@ export default function BudgetWorksheetPage() {
                         className="w-24 text-right bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={item.quantity}
                         onChange={e => handleQuantityChange(item.id, e.target.value)}
+                        onBlur={e => saveQuantity(item.id, e.target.value)}
                         onKeyDown={e => {
                           if (e.key === 'Enter') {
                             e.target.blur();

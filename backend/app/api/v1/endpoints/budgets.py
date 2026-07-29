@@ -4,7 +4,7 @@ from typing import List
 from app.db.base import get_db
 from app.db.models.budget import Budget, BudgetItem, BudgetAPUMaterial, BudgetAPUEquipment, BudgetAPULabor
 from app.db.models.cost360 import CostItem, CostAPUMaterial, CostAPUEquipment, CostAPULabor
-from app.schemas.budget import Budget as BudgetSchema, BudgetCreate, BudgetUpdate, BudgetSummary, BudgetItemCreate, BudgetItem as BudgetItemSchema
+from app.schemas.budget import Budget as BudgetSchema, BudgetCreate, BudgetUpdate, BudgetSummary, BudgetItemCreate, BudgetItem as BudgetItemSchema, BudgetItemUpdate
 
 router = APIRouter()
 
@@ -102,4 +102,18 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
         db.commit()
         db.refresh(db_item)
         
+    return db_item
+
+@router.put("/{budget_id}/items/{item_id}", response_model=BudgetItemSchema)
+def update_item_in_budget(budget_id: str, item_id: str, item_in: BudgetItemUpdate, db: Session = Depends(get_db)):
+    db_item = db.query(BudgetItem).filter(BudgetItem.id == item_id, BudgetItem.budget_id == budget_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    update_data = item_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_item, field, value)
+        
+    db.commit()
+    db.refresh(db_item)
     return db_item

@@ -24,6 +24,11 @@ export const budgetService = {
     return response.json();
   },
 
+  updateItem: async (budgetId, itemId, data) => {
+    const response = await api.put(`/budgets/${budgetId}/items/${itemId}`, data);
+    return response.data;
+  },
+
   update: async (id, data) => {
     const response = await fetch(`${API_URL}/budgets/${id}`, {
       method: 'PUT',
