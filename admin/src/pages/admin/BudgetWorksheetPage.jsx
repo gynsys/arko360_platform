@@ -268,15 +268,9 @@ export default function BudgetWorksheetPage() {
                     </td>
                     <td className="p-4 text-center text-sm font-medium text-slate-500">{item.unit}</td>
                     <td className="p-4 text-right">
-                      <input 
-                        type="number"
-                        className="w-20 text-right bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors"
-                        value={item.quantity}
-                        onClick={e => e.stopPropagation()}
-                        onChange={e => {
-                          // Handle local state update and debounced API call in real app
-                        }}
-                      />
+                      <div className="text-sm text-slate-700">
+                        {item.quantity}
+                      </div>
                     </td>
                     <td className="p-4 text-right text-sm font-medium text-slate-700">
                       {/* En el futuro aquí se calcula el precio APU real */}

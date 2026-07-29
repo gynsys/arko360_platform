@@ -11,6 +11,7 @@ export default function BudgetHomePage() {
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newBudgetName, setNewBudgetName] = useState('');
   const navigate = useNavigate();
@@ -46,15 +47,21 @@ export default function BudgetHomePage() {
     }
   };
 
-  const handleDelete = async (id, e) => {
-    e.stopPropagation();
-    if (!window.confirm('¿Seguro que deseas eliminar este presupuesto?')) return;
+  const confirmDelete = (id) => {
+    setDeletingId(id);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingId) return;
     try {
-      await budgetService.delete(id);
-      setBudgets(budgets.filter(b => b.id !== id));
+      await budgetService.delete(deletingId);
+      setBudgets(budgets.filter(b => b.id !== deletingId));
+      toast.success('Presupuesto eliminado');
+      setDeletingId(null);
     } catch (error) {
       console.error(error);
       toast.error('Error al eliminar');
+      setDeletingId(null);
     }
   };
 
@@ -130,7 +137,7 @@ export default function BudgetHomePage() {
                 {/* Actions Dropdown (Simple for now) */}
                 <div className="flex gap-2">
                   <button 
-                    onClick={(e) => handleDelete(budget.id, e)}
+                    onClick={(e) => { e.stopPropagation(); confirmDelete(budget.id); }}
                     className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     title="Eliminar"
                   >
@@ -194,6 +201,32 @@ export default function BudgetHomePage() {
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      {deletingId && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <h2 className="text-lg font-bold text-slate-800 mb-2">Eliminar Presupuesto</h2>
+              <p className="text-sm text-slate-600 mb-6">¿Estás seguro que deseas eliminar este presupuesto de forma permanente?</p>
+              <div className="flex justify-end gap-3">
+                <button 
+                  onClick={() => setDeletingId(null)}
+                  className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors text-sm"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleDelete}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-red-500/30"
+                >
+                  Sí, eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
