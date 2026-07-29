@@ -59,7 +59,10 @@ export default function AppLayout() {
             </div>
 
             {/* Right side controls */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
+              {/* Portal Target for Page-Specific Actions */}
+              <div id="header-actions-portal" className="flex items-center"></div>
+
               {isAuthenticated ? (
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium text-slate-700 hidden sm:block">

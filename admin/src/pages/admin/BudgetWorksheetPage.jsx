@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { 
   ArrowLeft, Settings, Plus, Search, Layers, FileText, 
   DollarSign, Hash, Percent, Loader, X
@@ -162,9 +163,10 @@ export default function BudgetWorksheetPage() {
     return (
       <div className="flex items-center justify-center min-h-screen text-slate-400">
         <Loader className="animate-spin" size={32} />
-      </div>
     );
   }
+
+  const headerPortalTarget = document.getElementById('header-actions-portal');
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen">
@@ -183,13 +185,16 @@ export default function BudgetWorksheetPage() {
           </div>
         </div>
         <div className="flex gap-3">
-          <button 
-            onClick={() => setShowSettings(!showSettings)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium shadow-sm text-sm"
-          >
-            <Settings size={16} /> Configuración Global
-          </button>
-          <button 
+          {headerPortalTarget && createPortal(
+            <button 
+              onClick={() => setShowSettings(!showSettings)}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium shadow-sm text-sm mx-2"
+            >
+              <Settings size={16} /> Configuración Global
+            </button>,
+            headerPortalTarget
+          )}
+          <button  
             onClick={handleOpenSearchModal}
             className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/30 transition-all active:scale-95 text-sm"
           >
