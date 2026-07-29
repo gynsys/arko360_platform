@@ -25,8 +25,13 @@ export const budgetService = {
   },
 
   updateItem: async (budgetId, itemId, data) => {
-    const response = await api.put(`/budgets/${budgetId}/items/${itemId}`, data);
-    return response.data;
+    const response = await fetch(`${API_URL}/budgets/${budgetId}/items/${itemId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('Error al actualizar item');
+    return response.json();
   },
 
   update: async (id, data) => {
