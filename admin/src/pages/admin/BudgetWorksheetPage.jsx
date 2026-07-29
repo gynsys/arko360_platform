@@ -89,11 +89,11 @@ export default function BudgetWorksheetPage() {
     try {
       await budgetService.addItem(id, {
         cod_par: item.CodPar,
-        cov_par: item.CodCovenin,
+        cov_par: item.CovPar || '',
         description: item.Descri,
-        unit: item.Unidad,
+        unit: item.UniPar || 'UND',
         quantity: 1.0,
-        performance: item.Rend || 1.0
+        performance: item.RenPar || 1.0
       });
       setShowSearchModal(false);
       setSearchQuery('');
@@ -322,10 +322,10 @@ export default function BudgetWorksheetPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                            {item.CodCovenin || item.CodPar}
+                            {item.CovPar || item.CodPar}
                           </span>
                           <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                            UND: {item.Unidad}
+                            UND: {item.UniPar}
                           </span>
                         </div>
                         <p className="text-sm text-slate-800 line-clamp-2 leading-relaxed">
