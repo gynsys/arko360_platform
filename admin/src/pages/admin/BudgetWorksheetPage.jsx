@@ -107,6 +107,44 @@ export default function BudgetWorksheetPage() {
     }
   };
 
+  const calculatePU = (item) => {
+    let matCost = 0;
+    if (item.materials) {
+      item.materials.forEach(m => matCost += m.cantidad * m.precio_unitario);
+    }
+    let eqCost = 0;
+    if (item.equipments) {
+      item.equipments.forEach(e => eqCost += (e.cantidad * e.precio_unitario) / (item.performance || 1));
+    }
+    let labCost = 0;
+    if (item.labors) {
+      item.labors.forEach(l => {
+        const daily = (l.jornal + l.bono) * l.cantidad;
+        labCost += daily / (item.performance || 1);
+      });
+      // Apply FCAS from budget config
+      labCost = labCost * (1 + (budget.fcas_percent / 100));
+    }
+    
+    // Add Administrative and Profit overheads (e.g. 15% Admin, 10% Profit)
+    // We can hardcode overheads for now since it's just visual prototype
+    const subtotal = matCost + eqCost + labCost;
+    const admin = subtotal * 0.15;
+    const util = subtotal * 0.10;
+    return subtotal + admin + util;
+  };
+
+  const handleQuantityChange = async (itemId, newQuantity) => {
+    // Optimistic UI update
+    setBudget(prev => ({
+      ...prev,
+      items: prev.items.map(i => i.id === itemId ? { ...i, quantity: parseFloat(newQuantity) || 0 } : i)
+    }));
+    
+    // Real app would have a debounced API call here:
+    // await budgetService.updateItem(budget.id, itemId, { quantity: newQuantity });
+  };
+
   if (loading || !budget) {
     return (
       <div className="flex items-center justify-center min-h-screen text-slate-400">
@@ -267,18 +305,21 @@ export default function BudgetWorksheetPage() {
                       </div>
                     </td>
                     <td className="p-4 text-center text-sm font-medium text-slate-500">{item.unit}</td>
-                    <td className="p-4 text-right">
-                      <div className="text-sm text-slate-700">
-                        {item.quantity}
-                      </div>
+                    <td className="p-4 text-right" onClick={e => e.stopPropagation()}>
+                      <input 
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="w-24 text-right bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors"
+                        value={item.quantity}
+                        onChange={e => handleQuantityChange(item.id, e.target.value)}
+                      />
                     </td>
                     <td className="p-4 text-right text-sm font-medium text-slate-700">
-                      {/* En el futuro aquí se calcula el precio APU real */}
-                      0.00
+                      {calculatePU(item).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="p-4 text-right text-sm font-bold text-slate-800">
-                      {/* Cantidad * Precio */}
-                      0.00
+                    <td className="p-4 text-right text-sm font-bold text-slate-900">
+                      {(calculatePU(item) * item.quantity).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                   </tr>
                 ))
