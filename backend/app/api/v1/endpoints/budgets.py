@@ -72,8 +72,8 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
                 codigo=mat.CodIns,
                 descripcion=mat.material.Descri if mat.material else "",
                 unidad=mat.material.UniMat if mat.material else "",
-                precio_unitario=mat.material.CosMat if mat.material else 0.0,
-                cantidad=mat.CanIns
+                precio_unitario=(mat.material.CosMat if (mat.material and mat.material.CosMat is not None) else 0.0),
+                cantidad=mat.CanIns or 0.0
             )
             db.add(db_mat)
             
@@ -83,8 +83,8 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
                 codigo=eq.CodIns,
                 descripcion=eq.equipment.Descri if eq.equipment else "",
                 unidad="Día",
-                precio_unitario=eq.equipment.CosDia if eq.equipment else 0.0,
-                cantidad=eq.CanIns
+                precio_unitario=(eq.equipment.CosDia if (eq.equipment and eq.equipment.CosDia is not None) else 0.0),
+                cantidad=eq.CanIns or 0.0
             )
             db.add(db_eq)
             
@@ -93,9 +93,9 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
                 budget_item_id=db_item.id,
                 codigo=lab.CodIns,
                 descripcion=lab.labor.Descri if lab.labor else "",
-                jornal=lab.labor.Jornal if lab.labor else 0.0,
-                bono=lab.labor.Bono if lab.labor else 0.0,
-                cantidad=lab.CanIns
+                jornal=(lab.labor.Jornal if (lab.labor and lab.labor.Jornal is not None) else 0.0),
+                bono=(lab.labor.Bono if (lab.labor and lab.labor.Bono is not None) else 0.0),
+                cantidad=lab.CanIns or 0.0
             )
             db.add(db_lab)
             
