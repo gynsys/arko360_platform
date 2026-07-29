@@ -310,9 +310,14 @@ export default function BudgetWorksheetPage() {
                         type="number"
                         min="0"
                         step="0.01"
-                        className="w-24 text-right bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors"
+                        className="w-24 text-right bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={item.quantity}
                         onChange={e => handleQuantityChange(item.id, e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.target.blur();
+                          }
+                        }}
                       />
                     </td>
                     <td className="p-4 text-right text-sm font-medium text-slate-700">
