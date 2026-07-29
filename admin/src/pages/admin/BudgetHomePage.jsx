@@ -38,7 +38,7 @@ export default function BudgetHomePage() {
       const newBudget = await budgetService.create({ name: newBudgetName });
       setIsModalOpen(false);
       setNewBudgetName('');
-      navigate(`/admin/budgets/${newBudget.id}`);
+      navigate(`/budgets/${newBudget.id}`);
     } catch (error) {
       console.error(error);
       alert('Error creando presupuesto');
@@ -115,7 +115,7 @@ export default function BudgetHomePage() {
           {filteredBudgets.map(budget => (
             <div 
               key={budget.id}
-              onClick={() => navigate(`/admin/budgets/${budget.id}`)}
+              onClick={() => navigate(`/budgets/${budget.id}`)}
               className="group bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/5 transition-all cursor-pointer relative overflow-hidden"
             >
               {/* Decorative top gradient */}

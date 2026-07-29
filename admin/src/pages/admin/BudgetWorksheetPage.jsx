@@ -44,7 +44,7 @@ export default function BudgetWorksheetPage() {
     } catch (error) {
       console.error(error);
       alert('Error cargando el presupuesto');
-      navigate('/admin/budgets');
+      navigate('/budgets');
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ export default function BudgetWorksheetPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => navigate('/admin/budgets')}
+            onClick={() => navigate('/budgets')}
             className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
           >
             <ArrowLeft size={20} className="text-slate-600" />
@@ -234,7 +234,7 @@ export default function BudgetWorksheetPage() {
                   <tr 
                     key={item.id} 
                     className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
-                    onClick={() => navigate(`/admin/budgets/${budget.id}/item/${item.id}`)}
+                    onClick={() => navigate(`/budgets/${budget.id}/item/${item.id}`)}
                   >
                     <td className="p-4 text-center text-slate-400 font-medium text-sm">{idx + 1}</td>
                     <td className="p-4 text-sm font-mono text-slate-600">{item.cov_par || item.cod_par}</td>

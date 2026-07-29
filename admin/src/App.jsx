@@ -16,6 +16,7 @@ import BudgetWorksheetPage from './pages/admin/BudgetWorksheetPage.jsx';
 import BudgetAPUEditorPage from './pages/admin/BudgetAPUEditorPage.jsx';
 import Cost360Dashboard from './modules/cost360/pages/Cost360Dashboard.jsx';
 import APUViewer from './modules/cost360/pages/APUViewer.jsx';
+import AppLayout from './components/layout/AppLayout.jsx';
 import { API_URL } from './services/api';
 import { Toaster } from 'react-hot-toast';
 
@@ -88,52 +89,20 @@ function App() {
               <Route path="social-generator" element={<SocialGeneratorPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="materials" element={<MaterialsPage />} />
-              <Route path="materials" element={<MaterialsPage />} />
             </Route>
             
-            {/* Rutas standalone protegidas */}
-            <Route
-              path="/admin/cost360"
-              element={
-                <ProtectedRoute>
-                  <Cost360Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/cost360/apu/:id"
-              element={
-                <ProtectedRoute>
-                  <APUViewer />
-                </ProtectedRoute>
-              }
-            />
+            {/* RUTAS PUBLICAS Y DE INGENIERIA (APP) */}
+            <Route path="/cost360" element={<AppLayout />}>
+              <Route index element={<Cost360Dashboard />} />
+              <Route path="apu/:id" element={<APUViewer />} />
+            </Route>
 
-            {/* RUTAS DE PRESUPUESTOS */}
-            <Route
-              path="/admin/budgets"
-              element={
-                <ProtectedRoute>
-                  <BudgetHomePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/budgets/:id"
-              element={
-                <ProtectedRoute>
-                  <BudgetWorksheetPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/budgets/:id/item/:itemId"
-              element={
-                <ProtectedRoute>
-                  <BudgetAPUEditorPage />
-                </ProtectedRoute>
-              }
-            />
+            {/* RUTAS DE PRESUPUESTOS (APP - Protegidas) */}
+            <Route path="/budgets" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route index element={<BudgetHomePage />} />
+              <Route path=":id" element={<BudgetWorksheetPage />} />
+              <Route path=":id/item/:itemId" element={<BudgetAPUEditorPage />} />
+            </Route>
 
             {/* Rutas para sitios clonados usando el slug */}
             <Route path="/:slug/login" element={<Login />} />

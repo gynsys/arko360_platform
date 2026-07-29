@@ -26,7 +26,7 @@ export default function BudgetAPUEditorPage() {
       const foundItem = budgetData.items.find(i => i.id === itemId);
       if (!foundItem) {
         alert('Partida no encontrada en este presupuesto');
-        navigate(`/admin/budgets/${id}`);
+        navigate(`/budgets/${id}`);
       }
       setItem(foundItem);
     } catch (error) {
@@ -73,7 +73,7 @@ export default function BudgetAPUEditorPage() {
       {/* HEADER */}
       <div className="flex items-start gap-4 mb-8">
         <button 
-          onClick={() => navigate(`/admin/budgets/${id}`)}
+          onClick={() => navigate(`/budgets/${id}`)}
           className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shrink-0 mt-1"
         >
           <ArrowLeft size={20} className="text-slate-600" />
