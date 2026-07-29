@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.base import get_db
-from app.db.models.budget import Budget, BudgetItem, BudgetAPUMaterial, BudgetAPUEquipment, BudgetAPULabor
+from app.db.models.budget import Budget, BudgetItem, BudgetAPUMaterial as DBMaterial, BudgetAPUEquipment as DBEquipment, BudgetAPULabor as DBLabor
 from app.db.models.cost360 import CostItem, CostAPUMaterial, CostAPUEquipment, CostAPULabor
-from app.schemas.budget import Budget as BudgetSchema, BudgetCreate, BudgetUpdate, BudgetSummary, BudgetItemCreate, BudgetItem as BudgetItemSchema, BudgetItemUpdate
+from app.schemas.budget import Budget as BudgetSchema, BudgetCreate, BudgetUpdate, BudgetSummary, BudgetItemCreate, BudgetItem as BudgetItemSchema, BudgetItemUpdate, BudgetAPUMaterialBase, BudgetAPUMaterial, BudgetAPUEquipmentBase, BudgetAPUEquipment, BudgetAPULaborBase, BudgetAPULabor
 
 router = APIRouter()
 
@@ -67,7 +67,7 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
     cost_item = db.query(CostItem).filter(CostItem.CodPar == item_in.cod_par).first()
     if cost_item:
         for mat in cost_item.apu_materials:
-            db_mat = BudgetAPUMaterial(
+            db_mat = DBMaterial(
                 budget_item_id=db_item.id,
                 codigo=mat.CodIns,
                 descripcion=mat.material.Descri if mat.material else "",
@@ -78,7 +78,7 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
             db.add(db_mat)
             
         for eq in cost_item.apu_equipments:
-            db_eq = BudgetAPUEquipment(
+            db_eq = DBEquipment(
                 budget_item_id=db_item.id,
                 codigo=eq.CodIns,
                 descripcion=eq.equipment.Descri if eq.equipment else "",
@@ -89,7 +89,7 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
             db.add(db_eq)
             
         for lab in cost_item.apu_labors:
-            db_lab = BudgetAPULabor(
+            db_lab = DBLabor(
                 budget_item_id=db_item.id,
                 codigo=lab.CodIns,
                 descripcion=lab.labor.Descri if lab.labor else "",
@@ -106,14 +106,62 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
 
 @router.put("/{budget_id}/items/{item_id}", response_model=BudgetItemSchema)
 def update_item_in_budget(budget_id: str, item_id: str, item_in: BudgetItemUpdate, db: Session = Depends(get_db)):
+    db_budget = db.query(Budget).filter(Budget.id == budget_id).first()
+    if not db_budget:
+        raise HTTPException(status_code=404, detail="Budget not found")
+        
     db_item = db.query(BudgetItem).filter(BudgetItem.id == item_id, BudgetItem.budget_id == budget_id).first()
     if not db_item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    
-    update_data = item_in.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(db_item, field, value)
+        raise HTTPException(status_code=404, detail="Item not found in budget")
+        
+    for key, value in item_in.dict(exclude_unset=True).items():
+        setattr(db_item, key, value)
         
     db.commit()
     db.refresh(db_item)
     return db_item
+
+@router.post("/{budget_id}/items/{item_id}/materials", response_model=BudgetAPUMaterial)
+def add_material_to_item(budget_id: str, item_id: str, material_in: BudgetAPUMaterialBase, db: Session = Depends(get_db)):
+    db_item = db.query(BudgetItem).filter(BudgetItem.id == item_id, BudgetItem.budget_id == budget_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
+    db_material = DBMaterial(
+        budget_item_id=item_id,
+        **material_in.dict()
+    )
+    db.add(db_material)
+    db.commit()
+    db.refresh(db_material)
+    return db_material
+
+@router.post("/{budget_id}/items/{item_id}/equipments", response_model=BudgetAPUEquipment)
+def add_equipment_to_item(budget_id: str, item_id: str, equipment_in: BudgetAPUEquipmentBase, db: Session = Depends(get_db)):
+    db_item = db.query(BudgetItem).filter(BudgetItem.id == item_id, BudgetItem.budget_id == budget_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
+    db_equipment = DBEquipment(
+        budget_item_id=item_id,
+        **equipment_in.dict()
+    )
+    db.add(db_equipment)
+    db.commit()
+    db.refresh(db_equipment)
+    return db_equipment
+
+@router.post("/{budget_id}/items/{item_id}/labors", response_model=BudgetAPULabor)
+def add_labor_to_item(budget_id: str, item_id: str, labor_in: BudgetAPULaborBase, db: Session = Depends(get_db)):
+    db_item = db.query(BudgetItem).filter(BudgetItem.id == item_id, BudgetItem.budget_id == budget_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
+    db_labor = DBLabor(
+        budget_item_id=item_id,
+        **labor_in.dict()
+    )
+    db.add(db_labor)
+    db.commit()
+    db.refresh(db_labor)
+    return db_labor

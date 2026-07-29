@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader, Package, Wrench, Users, Calculator } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
+import ComponentSearchModal from '../../components/ComponentSearchModal';
 
 export default function BudgetAPUEditorPage() {
   const { id, itemId } = useParams();
@@ -10,6 +11,8 @@ export default function BudgetAPUEditorPage() {
   const [budget, setBudget] = useState(null);
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  const [searchModal, setSearchModal] = useState({ isOpen: false, type: '', title: '' });
 
   useEffect(() => {
     loadData();
@@ -42,6 +45,20 @@ export default function BudgetAPUEditorPage() {
       await budgetService.updateItem(id, itemId, { performance: val });
     } catch (error) {
       toast.error('Error actualizando rendimiento');
+    }
+  };
+
+  const handleAddComponent = async (componentData) => {
+    try {
+      setLoading(true);
+      await budgetService.addComponent(id, itemId, searchModal.type, componentData);
+      toast.success('Agregado con éxito');
+      setSearchModal({ isOpen: false, type: '', title: '' });
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al agregar el insumo');
+      setLoading(false); // only needed if error, otherwise loadData sets it
     }
   };
 
@@ -163,10 +180,18 @@ export default function BudgetAPUEditorPage() {
       <div className="space-y-6">
         
         {/* 1. MATERIALES */}
-        <div className="bg-white border border-slate-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-slate-100 px-4 py-2 border-b border-slate-300 flex items-center gap-2">
-            <Package className="text-orange-600" size={18} />
-            <h3 className="font-bold text-orange-800 text-sm tracking-wide">1. MATERIALES ( {item.materials?.length || 0} )</h3>
+        <div className="bg-white border border-slate-400 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Package className="text-orange-600" size={18} />
+              <h3 className="font-bold text-orange-800 text-sm tracking-wide">1. MATERIALES ( {item.materials?.length || 0} )</h3>
+            </div>
+            <button 
+              onClick={() => setSearchModal({ isOpen: true, type: 'materials', title: 'Agregar Material' })}
+              className="flex items-center gap-1 bg-white border border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <Plus size={14} /> Agregar
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
@@ -222,10 +247,18 @@ export default function BudgetAPUEditorPage() {
         </div>
 
         {/* 2. EQUIPOS */}
-        <div className="bg-white border border-slate-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-slate-100 px-4 py-2 border-b border-slate-300 flex items-center gap-2">
-            <Wrench className="text-indigo-600" size={18} />
-            <h3 className="font-bold text-indigo-800 text-sm tracking-wide">2. EQUIPOS ( {item.equipments?.length || 0} )</h3>
+        <div className="bg-white border border-slate-400 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Wrench className="text-indigo-600" size={18} />
+              <h3 className="font-bold text-indigo-800 text-sm tracking-wide">2. EQUIPOS ( {item.equipments?.length || 0} )</h3>
+            </div>
+            <button 
+              onClick={() => setSearchModal({ isOpen: true, type: 'equipments', title: 'Agregar Equipo' })}
+              className="flex items-center gap-1 bg-white border border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <Plus size={14} /> Agregar
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
@@ -279,10 +312,18 @@ export default function BudgetAPUEditorPage() {
         </div>
 
         {/* 3. MANO DE OBRA */}
-        <div className="bg-white border border-slate-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-slate-100 px-4 py-2 border-b border-slate-300 flex items-center gap-2">
-            <Users className="text-teal-600" size={18} />
-            <h3 className="font-bold text-teal-800 text-sm tracking-wide">3. MANO DE OBRA ( {item.labors?.length || 0} )</h3>
+        <div className="bg-white border border-slate-400 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Users className="text-teal-600" size={18} />
+              <h3 className="font-bold text-teal-800 text-sm tracking-wide">3. MANO DE OBRA ( {item.labors?.length || 0} )</h3>
+            </div>
+            <button 
+              onClick={() => setSearchModal({ isOpen: true, type: 'labors', title: 'Agregar Personal' })}
+              className="flex items-center gap-1 bg-white border border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <Plus size={14} /> Agregar
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
@@ -290,7 +331,7 @@ export default function BudgetAPUEditorPage() {
                 <tr className="bg-white border-b border-slate-200 text-xs font-bold text-slate-600">
                   <th className="p-2 w-24 border-r border-slate-200">Ref. / Código</th>
                   <th className="p-2 border-r border-slate-200">Descripción</th>
-                  <th className="p-2 w-20 text-right border-r border-slate-200">Cant.</th>
+                  <th className="p-2 w-24 text-right border-r border-slate-200">Cuadrilla</th>
                   <th className="p-2 w-28 text-right border-r border-slate-200">Jornal</th>
                   <th className="p-2 w-28 text-right border-r border-slate-200">Bono</th>
                   <th className="p-2 w-32 text-right">Total Día (c/ FCAS)</th>
@@ -405,6 +446,15 @@ export default function BudgetAPUEditorPage() {
         </div>
 
       </div>
+
+      {/* Component Search Modal */}
+      <ComponentSearchModal 
+        isOpen={searchModal.isOpen} 
+        type={searchModal.type} 
+        title={searchModal.title}
+        onClose={() => setSearchModal({ isOpen: false, type: '', title: '' })}
+        onAdd={handleAddComponent}
+      />
     </div>
   );
 }

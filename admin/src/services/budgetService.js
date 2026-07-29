@@ -8,6 +8,30 @@ export const budgetService = {
     return response.json();
   },
 
+  generateAPUReport: async (id) => {
+    const response = await fetch(`${API_URL}/budgets/${id}/report`);
+    if (!response.ok) throw new Error('Error al generar reporte');
+    return response.blob();
+  },
+
+  searchComponents: async (type, query) => {
+    // type is 'materials', 'equipments', or 'labors'
+    const response = await fetch(`${API_URL}/cost360/${type}?search=${encodeURIComponent(query)}`);
+    if (!response.ok) throw new Error(`Error al buscar ${type}`);
+    return response.json();
+  },
+
+  addComponent: async (budgetId, itemId, type, data) => {
+    // type is 'materials', 'equipments', or 'labors'
+    const response = await fetch(`${API_URL}/budgets/${budgetId}/items/${itemId}/${type}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(`Error al agregar componente`);
+    return response.json();
+  },
+
   getById: async (id) => {
     const response = await fetch(`${API_URL}/budgets/${id}`);
     if (!response.ok) throw new Error('Error al cargar el presupuesto');
