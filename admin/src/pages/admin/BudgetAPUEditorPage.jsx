@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader, Package, Wrench, Users, Calculator } from 'lucide-react';
+import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 import ComponentSearchModal from '../../components/ComponentSearchModal';
