@@ -374,6 +374,7 @@ export default function BudgetWorksheetPage() {
               </div>
             </div>
           )}
+          </div>
           
           <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
               <button 
