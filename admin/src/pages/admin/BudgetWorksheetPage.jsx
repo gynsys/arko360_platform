@@ -61,18 +61,27 @@ export default function BudgetWorksheetPage() {
   };
 
   const searchDatabase = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
+    if (e) e.preventDefault();
     try {
       setSearching(true);
-      // Asumiendo que la API de cost360 está en la ruta general
-      const res = await fetch(`${API_URL}/cost360/items?search=${encodeURIComponent(searchQuery)}&limit=20`);
+      const url = searchQuery.trim() 
+        ? `${API_URL}/cost360/items?search=${encodeURIComponent(searchQuery.trim())}&limit=30`
+        : `${API_URL}/cost360/items?limit=30`;
+      
+      const res = await fetch(url);
       const data = await res.json();
-      setSearchResults(data.data || []);
+      setSearchResults(data.items || []);
     } catch (error) {
       console.error(error);
     } finally {
       setSearching(false);
+    }
+  };
+
+  const handleOpenSearchModal = () => {
+    setShowSearchModal(true);
+    if (searchResults.length === 0) {
+      searchDatabase();
     }
   };
 
@@ -127,7 +136,7 @@ export default function BudgetWorksheetPage() {
             <Settings size={16} /> Configuración Global
           </button>
           <button 
-            onClick={() => setShowSearchModal(true)}
+            onClick={handleOpenSearchModal}
             className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/30 transition-all active:scale-95 text-sm"
           >
             <Plus size={16} /> Agregar Partida
@@ -213,7 +222,7 @@ export default function BudgetWorksheetPage() {
                     <Layers className="mx-auto mb-3 text-slate-300" size={32} />
                     <p>No hay partidas en este presupuesto.</p>
                     <button 
-                      onClick={() => setShowSearchModal(true)}
+                      onClick={handleOpenSearchModal}
                       className="mt-4 text-blue-600 font-medium hover:underline"
                     >
                       Buscar e incluir la primera partida
@@ -301,7 +310,7 @@ export default function BudgetWorksheetPage() {
             <div className="overflow-y-auto p-2 bg-slate-50 flex-1">
               {searchResults.length === 0 && !searching ? (
                 <div className="text-center py-12 text-slate-400">
-                  Realiza una búsqueda para encontrar partidas en la base de datos Maestra.
+                  No se encontraron partidas.
                 </div>
               ) : (
                 <div className="space-y-2 p-4">
