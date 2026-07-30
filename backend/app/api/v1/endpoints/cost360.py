@@ -109,3 +109,36 @@ def get_apu(item_code: str, db: Session = Depends(get_db)):
         mano_obra=mano_obra,
         total_directo=round(total_directo, 2)
     )
+
+@router.get("/materials")
+def search_materials(search: str = "", db: Session = Depends(get_db)):
+    query = db.query(CostMaterial)
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            CostMaterial.CodMat.ilike(search_term) | 
+            CostMaterial.Descri.ilike(search_term)
+        )
+    return query.limit(50).all()
+
+@router.get("/equipments")
+def search_equipments(search: str = "", db: Session = Depends(get_db)):
+    query = db.query(CostEquipment)
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            CostEquipment.CodEqu.ilike(search_term) | 
+            CostEquipment.Descri.ilike(search_term)
+        )
+    return query.limit(50).all()
+
+@router.get("/labors")
+def search_labors(search: str = "", db: Session = Depends(get_db)):
+    query = db.query(CostLabor)
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            CostLabor.CodMan.ilike(search_term) | 
+            CostLabor.Descri.ilike(search_term)
+        )
+    return query.limit(50).all()
