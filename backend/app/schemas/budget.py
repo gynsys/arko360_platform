@@ -56,6 +56,8 @@ class BudgetItemBase(BaseModel):
     unit: str
     quantity: float = 0.0
     performance: float = 1.0
+    order: int = 0
+    is_chapter: bool = False
 
 class BudgetItemCreate(BudgetItemBase):
     pass
@@ -63,6 +65,8 @@ class BudgetItemCreate(BudgetItemBase):
 class BudgetItemUpdate(BaseModel):
     quantity: Optional[float] = None
     performance: Optional[float] = None
+    order: Optional[int] = None
+    is_chapter: Optional[bool] = None
 
 class BudgetItem(BudgetItemBase):
     id: str

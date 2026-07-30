@@ -30,6 +30,10 @@ def run_etl():
                 # Read using python engine to handle complex quotes, skipping bad lines
                 df = pd.read_csv(csv_file, dtype=str, on_bad_lines='skip', engine='python', encoding='utf-8')
                 
+                # Clean column names (specifically for Labor where wage is Salari)
+                if 'Salari' in df.columns:
+                    df.rename(columns={'Salari': 'Jornal'}, inplace=True)
+                
                 # Cleanup numbers
                 for col in df.columns:
                     if col in ['CosMat', 'PreUni', 'RenPar', 'CanPar', 'Cantid', 'Costo', 'Jornal', 'Bono', 'CostEq', 'CanIns']:

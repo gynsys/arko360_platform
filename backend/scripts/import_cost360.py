@@ -12,7 +12,7 @@ from app.db.models.cost360 import (
 )
 
 # This assumes the CSV files are in the 'cost360' directory at the root of the project
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV_DIR = os.path.join(BASE_DIR, 'cost360')
 
 def get_csv_path(filename):
@@ -24,6 +24,9 @@ def run_etl():
     
     tables_to_import = {
         'ObraMano': CostLabor.__tablename__,
+        'ObraMate': CostMaterial.__tablename__,
+        'ObraEqui': CostEquipment.__tablename__,
+        'ObraPart': CostItem.__tablename__,
     }
     
     for lulo_table, new_table in tables_to_import.items():

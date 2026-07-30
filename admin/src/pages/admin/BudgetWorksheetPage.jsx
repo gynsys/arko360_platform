@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { 
   ArrowLeft, Settings, Plus, Search, Layers, FileText, 
-  DollarSign, Hash, Percent, Loader, X
+  DollarSign, Hash, Percent, Loader, X, Trash2, ArrowUp, ArrowDown, FolderPlus
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
@@ -39,6 +39,9 @@ export default function BudgetWorksheetPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+
+  // Row selection & Reordering
+  const [selectedItemId, setSelectedItemId] = useState(null);
 
   useEffect(() => {
     loadBudget();
@@ -111,13 +114,21 @@ export default function BudgetWorksheetPage() {
 
   const handleAddItem = async (item) => {
     try {
+      let targetOrder = 0;
+      if (selectedItemId && budget?.items) {
+        const selected = budget.items.find(i => i.id === selectedItemId);
+        if (selected) targetOrder = selected.order + 1;
+      }
+      
       await budgetService.addItem(id, {
         cod_par: item.CodPar,
         cov_par: item.CovPar || '',
         description: item.Descri,
         unit: item.UniPar || 'UND',
         quantity: 1.0,
-        performance: item.RenPar || 1.0
+        performance: item.RenPar || 1.0,
+        order: targetOrder,
+        is_chapter: false
       });
       setShowSearchModal(false);
       setSearchQuery('');
@@ -126,6 +137,68 @@ export default function BudgetWorksheetPage() {
       toast.success('Partida agregada al presupuesto');
     } catch (error) {
       toast.error('Error agregando partida');
+    }
+  };
+
+  const handleAddChapter = async () => {
+    const chapterName = window.prompt("Ingrese el nombre del capítulo:");
+    if (!chapterName || !chapterName.trim()) return;
+    
+    try {
+      let targetOrder = 0;
+      if (selectedItemId && budget?.items) {
+        const selected = budget.items.find(i => i.id === selectedItemId);
+        if (selected) targetOrder = selected.order + 1;
+      }
+      
+      await budgetService.addItem(id, {
+        cod_par: "CAP",
+        cov_par: "",
+        description: chapterName.trim().toUpperCase(),
+        unit: "",
+        quantity: 0.0,
+        performance: 1.0,
+        order: targetOrder,
+        is_chapter: true
+      });
+      loadBudget();
+      toast.success('Capítulo agregado');
+    } catch (error) {
+      toast.error('Error agregando capítulo');
+    }
+  };
+
+  const handleDeleteItem = async (itemId) => {
+    if (!window.confirm("¿Seguro que desea eliminar esta fila del presupuesto?")) return;
+    try {
+      await budgetService.deleteItem(id, itemId);
+      setBudget(prev => ({ ...prev, items: prev.items.filter(i => i.id !== itemId) }));
+      toast.success('Eliminada correctamente');
+    } catch (error) {
+      toast.error('Error eliminando la fila');
+    }
+  };
+
+  const handleMove = async (index, direction) => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === budget.items.length - 1) return;
+    
+    const newItems = [...budget.items];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    // Swap in array
+    [newItems[index], newItems[targetIndex]] = [newItems[targetIndex], newItems[index]];
+    
+    // Update state immediately for UX
+    setBudget(prev => ({ ...prev, items: newItems }));
+    
+    try {
+      // Send the new ordered IDs to backend
+      const itemIds = newItems.map(i => i.id);
+      await budgetService.reorderItems(id, itemIds);
+    } catch (error) {
+      toast.error('Error reordenando las partidas');
+      loadBudget(); // Revert on failure
     }
   };
 
@@ -223,6 +296,12 @@ export default function BudgetWorksheetPage() {
             </button>,
             headerPortalTarget
           )}
+          <button  
+            onClick={handleAddChapter}
+            className="flex items-center gap-2 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-4 py-2 rounded-xl font-medium shadow-sm transition-all text-sm"
+          >
+            <FolderPlus size={16} /> Agregar Capítulo
+          </button>
           <button  
             onClick={handleOpenSearchModal}
             className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/30 transition-all active:scale-95 text-sm"
@@ -470,7 +549,7 @@ export default function BudgetWorksheetPage() {
                 <th className="p-4 w-28 text-right">Cantidad</th>
                 <th className="p-4 w-32 text-right">Precio Unit.</th>
                 <th className="p-4 w-32 text-right">Total</th>
-                <th className="p-4 w-20 text-center">Acciones</th>
+                <th className="p-4 w-32 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -488,52 +567,92 @@ export default function BudgetWorksheetPage() {
                   </td>
                 </tr>
               ) : (
-                budget.items.map((item, idx) => (
-                  <tr 
-                    key={item.id} 
-                    className="hover:bg-blue-50/50 transition-colors group"
-                  >
-                    <td className="p-4 text-center text-slate-400 font-medium text-sm">{idx + 1}</td>
-                    <td className="p-4 text-sm font-mono text-slate-600">{item.cov_par || item.cod_par}</td>
-                    <td className="p-4 text-sm text-slate-800">
-                      <div className="line-clamp-2 leading-relaxed" title={item.description}>
-                        {item.description}
-                      </div>
-                    </td>
-                    <td className="p-4 text-center text-sm font-medium text-slate-500">{item.unit}</td>
-                    <td className="p-4 text-right" onClick={e => e.stopPropagation()}>
-                      <input 
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="w-24 text-right bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        value={item.quantity}
-                        onChange={e => handleQuantityChange(item.id, e.target.value)}
-                        onBlur={e => saveQuantity(item.id, e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            e.target.blur();
-                          }
-                        }}
-                      />
-                    </td>
-                    <td className="p-4 text-right text-sm font-medium text-slate-700">
-                      {calculatePU(item).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="p-4 text-right text-sm font-bold text-slate-900">
-                      {(calculatePU(item) * item.quantity).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="p-4 text-center">
-                      <button 
-                        onClick={() => navigate(`/budgets/${budget.id}/item/${item.id}`)}
-                        className="bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 p-2 rounded-lg transition-colors flex items-center justify-center mx-auto tooltip"
-                        title="Editar APU"
+                budget.items.map((item, idx) => {
+                  const isSelected = selectedItemId === item.id;
+                  
+                  if (item.is_chapter) {
+                    return (
+                      <tr 
+                        key={item.id} 
+                        onClick={() => setSelectedItemId(isSelected ? null : item.id)}
+                        className={`hover:bg-slate-100 transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50/50 ring-inset ring-2 ring-blue-500/50' : 'bg-slate-100/50'}`}
                       >
-                        <Settings size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                        <td className="p-4 text-center font-bold text-slate-800">{idx + 1}</td>
+                        <td colSpan="6" className="p-4 text-sm font-bold text-slate-900 tracking-wide uppercase">
+                          {item.description}
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={(e) => { e.stopPropagation(); handleMove(idx, 'up'); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-colors" title="Subir">
+                              <ArrowUp size={16} />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleMove(idx, 'down'); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-colors" title="Bajar">
+                              <ArrowDown size={16} />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-colors" title="Eliminar">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return (
+                    <tr 
+                      key={item.id} 
+                      onClick={() => setSelectedItemId(isSelected ? null : item.id)}
+                      className={`hover:bg-blue-50/50 transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50 ring-inset ring-2 ring-blue-400' : ''}`}
+                    >
+                      <td className="p-4 text-center text-slate-400 font-medium text-sm">{idx + 1}</td>
+                      <td className="p-4 text-sm font-mono text-slate-600">{item.cov_par || item.cod_par}</td>
+                      <td className="p-4 text-sm text-slate-800">
+                        <div className="line-clamp-2 leading-relaxed" title={item.description}>
+                          {item.description}
+                        </div>
+                      </td>
+                      <td className="p-4 text-center text-sm font-medium text-slate-500">{item.unit}</td>
+                      <td className="p-4 text-right" onClick={e => e.stopPropagation()}>
+                        <input 
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="w-24 text-right bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          value={item.quantity}
+                          onChange={e => handleQuantityChange(item.id, e.target.value)}
+                          onBlur={e => saveQuantity(item.id, e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.target.blur();
+                            }
+                          }}
+                        />
+                      </td>
+                      <td className="p-4 text-right text-sm font-medium text-slate-700">
+                        {calculatePU(item).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="p-4 text-right text-sm font-bold text-slate-900">
+                        {(calculatePU(item) * item.quantity).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={(e) => { e.stopPropagation(); handleMove(idx, 'up'); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-colors" title="Subir">
+                            <ArrowUp size={16} />
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); handleMove(idx, 'down'); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-colors" title="Bajar">
+                            <ArrowDown size={16} />
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); navigate(`/budgets/${budget.id}/item/${item.id}`); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-colors" title="Editar APU">
+                            <Settings size={16} />
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-colors" title="Eliminar">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

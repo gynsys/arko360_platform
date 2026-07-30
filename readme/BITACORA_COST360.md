@@ -60,11 +60,45 @@ Para establecer qué recursos componen cada partida, existen tres tablas pivote:
 
 ---
 
+## 5. Mantenimiento y Prevención de Errores (Proceso ETL)
+
+Para actualizar los precios de la base de datos de producción con una nueva exportación desde Lulowin/Access, es indispensable seguir el proceso estructurado que hemos implementado y documentado aquí para evitar inconsistencias:
+
+### 5.1 Extracción de CSVs
+1. **Separador de Decimales**: Los archivos exportados (como `base_mayo.mdb`) suelen traer precios con comas (ej. `2,55`). El script de migración en Python ya está parcheado para limpiar estos datos usando `str.replace(',', '.')`, pero es importante asegurarse de que el archivo CSV original utilice codificación `UTF-8` para evitar corrupción en caracteres especiales.
+2. **Tablas Mínimas Requeridas**: Se deben tener al menos los siguientes 4 archivos en la carpeta `cost360/`:
+   - `Export2024_ObraMano.csv` (Mano de obra, donde la columna `Salari` se mapea a `Jornal`).
+   - `Export2024_ObraMate.csv` (Materiales).
+   - `Export2024_ObraEqui.csv` (Equipos, mapea `CostEq` a `CosDia`).
+   - `Export2024_ObraPart.csv` (Partidas).
+
+### 5.2 Despliegue en el VPS (run_import.py)
+**NUNCA** se deben intentar migrar los datos a producción conectándose a la base de datos remotamente desde el entorno local, ya que PostgreSQL tiene bloqueado el acceso externo por seguridad y por velocidad de transferencia. En su lugar, usa el script `run_import.py`:
+
+```bash
+# Estando en el directorio principal del proyecto
+python run_import.py
+```
+**¿Qué hace este script?**
+1. Instala dependencias (`pandas`) dinámicamente dentro del contenedor backend en producción.
+2. Copia los scripts y los 4 archivos CSV al directorio temporal `/tmp` del servidor y luego los inyecta dentro del contenedor de Docker en `/app/cost360/`.
+3. Ejecuta el archivo `backend/scripts/import_cost360.py` directamente dentro del contenedor, insertando todas las filas de forma nativa e instantánea a PostgreSQL. Si modificas un solo CSV localmente pero no actualizas los demás, ocurrirá una desincronización de precios. **Siempre deben actualizarse las 4 tablas en conjunto.**
+
+### 5.3 Configuración Global de Inflación
+Para flexibilizar la variación de precios sin tener que re-correr el ETL completo desde Lulowin cada día, hemos agregado en el backend (modelo `Budget`) tres índices dinámicos:
+- `material_inflation`
+- `labor_inflation`
+- `equipment_inflation`
+
+Estos parámetros se configuran desde la pestaña de Configuración (engranaje) en la hoja del Presupuesto, y su cálculo se aplica de forma matemática a nivel del frontend (`calculatePU`) multiplicando el costo base individual por el porcentaje de inflación.
+
+---
+
 ## 5. Roadmap a Futuro (Cost360 V2)
 
 ### Corto Plazo (1-2 Semanas)
 - [ ] **Exportación a Excel/PDF:** Permitir que los ingenieros descarguen el APU de una partida formateado listo para presentarse en licitaciones.
-- [ ] **Actualización Masiva de Precios:** (Desde Panel Admin) Opción para aplicar factor de inflación a materiales y mano de obra sin necesidad de re-correr el ETL completo.
+- [x] **Actualización Masiva de Precios:** (Desde Panel Admin) Opción para aplicar factor de inflación a materiales y mano de obra sin necesidad de re-correr el ETL completo. (Completado: `material_inflation`, `labor_inflation`, `equipment_inflation`).
 - [ ] **Caché en Redis:** Cachear las respuestas de la tabla de Partidas para acelerar la carga del dashboard cuando hay múltiples usuarios concurrentes.
 
 ### Mediano Plazo (1 Mes)

@@ -58,6 +58,24 @@ export const budgetService = {
     return response.json();
   },
 
+  deleteItem: async (budgetId, itemId) => {
+    const response = await fetch(`${API_URL}/budgets/${budgetId}/items/${itemId}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error('Error al eliminar partida');
+    return response.json();
+  },
+
+  reorderItems: async (budgetId, itemIds) => {
+    const response = await fetch(`${API_URL}/budgets/${budgetId}/items/reorder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(itemIds)
+    });
+    if (!response.ok) throw new Error('Error al reordenar partidas');
+    return response.json();
+  },
+
   update: async (id, data) => {
     const response = await fetch(`${API_URL}/budgets/${id}`, {
       method: 'PUT',

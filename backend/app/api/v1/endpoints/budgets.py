@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
 from app.db.base import get_db
 from app.db.models.budget import Budget, BudgetItem, BudgetAPUMaterial as DBMaterial, BudgetAPUEquipment as DBEquipment, BudgetAPULabor as DBLabor
@@ -56,12 +57,28 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
     budget = db.query(Budget).filter(Budget.id == budget_id).first()
     if not budget:
         raise HTTPException(status_code=404, detail="Budget not found")
+        
+    target_order = item_in.order
+    if target_order <= 0:
+        max_order = db.query(func.max(BudgetItem.order)).filter(BudgetItem.budget_id == budget_id).scalar() or 0
+        target_order = max_order + 1
+    else:
+        db.query(BudgetItem).filter(
+            BudgetItem.budget_id == budget_id,
+            BudgetItem.order >= target_order
+        ).update({BudgetItem.order: BudgetItem.order + 1})
     
     # 1. Crear el BudgetItem
-    db_item = BudgetItem(**item_in.model_dump(), budget_id=budget_id)
+    item_data = item_in.model_dump()
+    item_data["order"] = target_order
+    db_item = BudgetItem(**item_data, budget_id=budget_id)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
+    
+    # If it is a chapter, skip APU copying
+    if item_in.is_chapter:
+        return db_item
     
     # 2. Copiar el APU de Cost360 hacia el BudgetAPU
     cost_item = db.query(CostItem).filter(CostItem.CodPar == item_in.cod_par).first()
@@ -105,6 +122,30 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
         db.refresh(db_item)
         
     return db_item
+
+@router.delete("/{budget_id}/items/{item_id}")
+def delete_item_from_budget(budget_id: str, item_id: str, db: Session = Depends(get_db)):
+    item = db.query(BudgetItem).filter(BudgetItem.id == item_id, BudgetItem.budget_id == budget_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    db.delete(item)
+    db.commit()
+    return {"ok": True}
+
+@router.post("/{budget_id}/items/reorder")
+def reorder_budget_items(budget_id: str, item_ids: List[str], db: Session = Depends(get_db)):
+    budget = db.query(Budget).filter(Budget.id == budget_id).first()
+    if not budget:
+        raise HTTPException(status_code=404, detail="Budget not found")
+        
+    for index, item_id in enumerate(item_ids):
+        db.query(BudgetItem).filter(
+            BudgetItem.id == item_id, 
+            BudgetItem.budget_id == budget_id
+        ).update({BudgetItem.order: index + 1})
+        
+    db.commit()
+    return {"ok": True}
 
 @router.put("/{budget_id}/items/{item_id}", response_model=BudgetItemSchema)
 def update_item_in_budget(budget_id: str, item_id: str, item_in: BudgetItemUpdate, db: Session = Depends(get_db)):

@@ -38,7 +38,7 @@ class Budget(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    items = relationship("BudgetItem", back_populates="budget", cascade="all, delete-orphan")
+    items = relationship("BudgetItem", back_populates="budget", cascade="all, delete-orphan", order_by="BudgetItem.order")
 
 
 class BudgetItem(Base):
@@ -56,6 +56,10 @@ class BudgetItem(Base):
     unit = Column(String, nullable=False)
     quantity = Column(Float, default=0.0)
     performance = Column(Float, default=1.0) # Rendimiento (Rend)
+    
+    # Orden y Estructura
+    order = Column(Integer, default=0, nullable=False)
+    is_chapter = Column(Boolean, default=False, nullable=False)
     
     budget = relationship("Budget", back_populates="items")
     
