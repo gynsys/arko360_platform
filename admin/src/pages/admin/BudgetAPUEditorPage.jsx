@@ -76,7 +76,7 @@ export default function BudgetAPUEditorPage() {
   };
 
   const calculateLaborTotalBonoDay = () => {
-    return item?.labors?.reduce((sum, lab) => sum + (lab.cantidad * lab.bono), 0) || 0;
+    return item?.labors?.reduce((sum, lab) => sum + (lab.cantidad * (budget?.labor_bonus || 0)), 0) || 0;
   };
 
   const calculateLaborTotalDay = () => {
@@ -368,7 +368,7 @@ export default function BudgetAPUEditorPage() {
               <tbody>
                 {item.labors?.map(lab => {
                   const totalJornal = lab.cantidad * lab.jornal;
-                  const totalBono = lab.cantidad * lab.bono;
+                  const totalBono = lab.cantidad * (budget?.labor_bonus || 0);
                   return (
                     <tr key={lab.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="p-2 border-r border-slate-200 font-mono text-xs">{lab.codigo}</td>
@@ -393,7 +393,7 @@ export default function BudgetAPUEditorPage() {
                         <input 
                           type="number" 
                           className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          value={lab.bono}
+                          value={budget?.labor_bonus || 0}
                           onChange={() => {}}
                         />
                       </td>

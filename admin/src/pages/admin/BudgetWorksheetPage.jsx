@@ -135,7 +135,7 @@ export default function BudgetWorksheetPage() {
     let labCost = 0;
     if (item.labors) {
       item.labors.forEach(l => {
-        const daily = (l.jornal + l.bono) * l.cantidad;
+        const daily = (l.jornal + (budget?.labor_bonus || 0)) * l.cantidad;
         labCost += daily / (item.performance || 1);
       });
       // Apply FCAS from budget config
@@ -259,7 +259,7 @@ export default function BudgetWorksheetPage() {
                       type="text" 
                       value={settings.project_name}
                       onChange={e => setSettings({...settings, project_name: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                      className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                       placeholder="Ej. Construcción de Muro Perimetral"
                     />
                   </div>
@@ -270,7 +270,7 @@ export default function BudgetWorksheetPage() {
                         type="text" 
                         value={settings.company_name}
                         onChange={e => setSettings({...settings, company_name: e.target.value})}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                        className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                       />
                     </div>
                     <div>
@@ -279,7 +279,7 @@ export default function BudgetWorksheetPage() {
                         type="text" 
                         value={settings.company_rif}
                         onChange={e => setSettings({...settings, company_rif: e.target.value})}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                        className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                       />
                     </div>
                   </div>
@@ -289,7 +289,7 @@ export default function BudgetWorksheetPage() {
                       type="text" 
                       value={settings.client_name}
                       onChange={e => setSettings({...settings, client_name: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                      className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -303,7 +303,7 @@ export default function BudgetWorksheetPage() {
                   <select 
                     value={settings.currency}
                     onChange={e => setSettings({...settings, currency: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                    className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   >
                     <option value="USD">Dólares (USD)</option>
                     <option value="BS">Bolívares (BS)</option>
@@ -318,7 +318,7 @@ export default function BudgetWorksheetPage() {
                     step="0.01"
                     value={settings.exchange_rate}
                     onChange={e => setSettings({...settings, exchange_rate: parseFloat(e.target.value)})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                    className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -330,11 +330,23 @@ export default function BudgetWorksheetPage() {
                     step="1"
                     value={settings.fcas_percent}
                     onChange={e => setSettings({...settings, fcas_percent: parseFloat(e.target.value)})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                    className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                    <DollarSign size={14}/> Bono Mano de Obra
+                  </label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={settings.labor_bonus}
+                    onChange={e => setSettings({...settings, labor_bonus: parseFloat(e.target.value) || 0})}
+                    className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  />
+                </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
                     <Percent size={14}/> Administración (%)
@@ -344,7 +356,7 @@ export default function BudgetWorksheetPage() {
                     step="1"
                     value={settings.admin_percent}
                     onChange={e => setSettings({...settings, admin_percent: parseFloat(e.target.value) || 0})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                    className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -356,7 +368,7 @@ export default function BudgetWorksheetPage() {
                     step="1"
                     value={settings.profit_percent}
                     onChange={e => setSettings({...settings, profit_percent: parseFloat(e.target.value) || 0})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                    className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
                 <div>
