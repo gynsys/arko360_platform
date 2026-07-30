@@ -346,6 +346,7 @@ export default function BudgetWorksheetPage() {
                     className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
