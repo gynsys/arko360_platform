@@ -13,6 +13,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { slug } = useParams();
   const isLandingSite = !!slug;
+  const isSuperAdminDomain = window.location.hostname === 'admin.arko360.net';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,8 +24,10 @@ const Login = () => {
     if (result.success) {
       if (isLandingSite) {
         navigate(`/${slug}/admin`);
+      } else if (isSuperAdminDomain) {
+        navigate('/admin');
       } else {
-        navigate('/budgets');
+        navigate('/cost360');
       }
     } else {
       setError(result.error || 'Ocurrió un error al iniciar sesión');
@@ -38,7 +41,7 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg border border-gray-100">
         <div>
           <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-            {isLandingSite ? 'Panel de Administración' : 'Cost360'}
+            {isLandingSite ? 'Panel de Administración' : (isSuperAdminDomain ? 'Arko360 Admin' : 'Cost360')}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Ingresa tus credenciales para acceder al panel
