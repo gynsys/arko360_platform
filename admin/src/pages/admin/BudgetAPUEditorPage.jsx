@@ -64,19 +64,28 @@ export default function BudgetAPUEditorPage() {
 
   // For Maprex Style Calculations
   const calculateMaterialTotal = () => {
-    return item?.materials?.reduce((sum, mat) => sum + (mat.cantidad * mat.precio_unitario), 0) || 0;
+    return item?.materials?.reduce((sum, mat) => sum + (mat.cantidad * mat.precio_unitario * (1 + (mat.desperdicio || 0) / 100)), 0) || 0;
   };
 
   const calculateEquipmentTotalDay = () => {
-    return item?.equipments?.reduce((sum, eq) => sum + (eq.cantidad * eq.precio_unitario), 0) || 0;
+    return item?.equipments?.reduce((sum, eq) => sum + (eq.cantidad * (eq.depreciacion ?? 1.0) * eq.precio_unitario), 0) || 0;
+  };
+
+  const calculateLaborTotalJornalDay = () => {
+    return item?.labors?.reduce((sum, lab) => sum + (lab.cantidad * lab.jornal), 0) || 0;
+  };
+
+  const calculateLaborTotalBonoDay = () => {
+    return item?.labors?.reduce((sum, lab) => sum + (lab.cantidad * lab.bono), 0) || 0;
   };
 
   const calculateLaborTotalDay = () => {
-    const fcasFactor = 1 + ((budget?.fcas_percent || 417) / 100);
-    return item?.labors?.reduce((sum, lab) => {
-      const costoDiario = (lab.jornal * fcasFactor) + lab.bono;
-      return sum + (lab.cantidad * costoDiario);
-    }, 0) || 0;
+    const totJornal = calculateLaborTotalJornalDay();
+    const totBono = calculateLaborTotalBonoDay();
+    const fcasPercent = budget?.fcas_percent || 417; // Should this be configurable globally? Yes, using budget.fcas_percent
+    const fcasMonto = totJornal * (fcasPercent / 100);
+    // Assuming prestaciones are 0 for now as per image, or could be a parameter.
+    return totJornal + totBono + fcasMonto;
   };
 
   const calculateCostosDirectos = () => {
@@ -201,6 +210,7 @@ export default function BudgetAPUEditorPage() {
                   <th className="p-2 border-r border-slate-200">Descripción</th>
                   <th className="p-2 w-16 text-center border-r border-slate-200">Und.</th>
                   <th className="p-2 w-24 text-right border-r border-slate-200">Cant.</th>
+                  <th className="p-2 w-20 text-right border-r border-slate-200">Desp. %</th>
                   <th className="p-2 w-32 text-right border-r border-slate-200">Precio</th>
                   <th className="p-2 w-32 text-right">Total</th>
                 </tr>
@@ -223,17 +233,25 @@ export default function BudgetAPUEditorPage() {
                       <input 
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={mat.desperdicio || 0}
+                        onChange={() => {}}
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={mat.precio_unitario}
                         onChange={() => {}}
                       />
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
-                      {(mat.cantidad * mat.precio_unitario).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                      {(mat.cantidad * mat.precio_unitario * (1 + (mat.desperdicio || 0) / 100)).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                     </td>
                   </tr>
                 ))}
                 {(!item.materials || item.materials.length === 0) && (
-                  <tr><td colSpan="6" className="p-4 text-center text-slate-400 text-xs">Sin materiales</td></tr>
+                  <tr><td colSpan="7" className="p-4 text-center text-slate-400 text-xs">Sin materiales</td></tr>
                 )}
               </tbody>
             </table>
@@ -267,7 +285,8 @@ export default function BudgetAPUEditorPage() {
                   <th className="p-2 w-24 border-r border-slate-200">Ref. / Código</th>
                   <th className="p-2 border-r border-slate-200">Descripción</th>
                   <th className="p-2 w-24 text-right border-r border-slate-200">Cant.</th>
-                  <th className="p-2 w-32 text-right border-r border-slate-200">Tarifa Día</th>
+                  <th className="p-2 w-24 text-right border-r border-slate-200">COP/Dep/Al</th>
+                  <th className="p-2 w-32 text-right border-r border-slate-200">Precio</th>
                   <th className="p-2 w-32 text-right">Total Día</th>
                 </tr>
               </thead>
@@ -288,17 +307,25 @@ export default function BudgetAPUEditorPage() {
                       <input 
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={eq.depreciacion ?? 1.0}
+                        onChange={() => {}}
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={eq.precio_unitario}
                         onChange={() => {}}
                       />
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
-                      {(eq.cantidad * eq.precio_unitario).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                      {(eq.cantidad * (eq.depreciacion ?? 1.0) * eq.precio_unitario).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                     </td>
                   </tr>
                 ))}
                 {(!item.equipments || item.equipments.length === 0) && (
-                  <tr><td colSpan="5" className="p-4 text-center text-slate-400 text-xs">Sin equipos</td></tr>
+                  <tr><td colSpan="6" className="p-4 text-center text-slate-400 text-xs">Sin equipos</td></tr>
                 )}
               </tbody>
             </table>
@@ -334,14 +361,14 @@ export default function BudgetAPUEditorPage() {
                   <th className="p-2 w-24 text-right border-r border-slate-200">Cuadrilla</th>
                   <th className="p-2 w-28 text-right border-r border-slate-200">Jornal</th>
                   <th className="p-2 w-28 text-right border-r border-slate-200">Bono</th>
-                  <th className="p-2 w-32 text-right">Total Día (c/ FCAS)</th>
+                  <th className="p-2 w-32 text-right border-r border-slate-200">Total Jornal</th>
+                  <th className="p-2 w-32 text-right">Total Bono</th>
                 </tr>
               </thead>
               <tbody>
                 {item.labors?.map(lab => {
-                  const fcasFactor = 1 + ((budget?.fcas_percent || 417) / 100);
-                  const costoDiario = (lab.jornal * fcasFactor) + lab.bono;
-                  const totalDiario = lab.cantidad * costoDiario;
+                  const totalJornal = lab.cantidad * lab.jornal;
+                  const totalBono = lab.cantidad * lab.bono;
                   return (
                     <tr key={lab.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="p-2 border-r border-slate-200 font-mono text-xs">{lab.codigo}</td>
@@ -370,25 +397,44 @@ export default function BudgetAPUEditorPage() {
                           onChange={() => {}}
                         />
                       </td>
+                      <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 border-r border-slate-200 text-xs">
+                        {totalJornal.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                      </td>
                       <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
-                        {totalDiario.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                        {totalBono.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                       </td>
                     </tr>
                   )
                 })}
                 {(!item.labors || item.labors.length === 0) && (
-                  <tr><td colSpan="6" className="p-4 text-center text-slate-400 text-xs">Sin mano de obra</td></tr>
+                  <tr><td colSpan="7" className="p-4 text-center text-slate-400 text-xs">Sin mano de obra</td></tr>
                 )}
               </tbody>
             </table>
           </div>
-          <div className="bg-slate-50 px-4 py-2 border-t border-slate-300 flex justify-between items-center gap-4">
-            <span className="text-xs font-bold text-slate-400">FCAS Aplicado: {budget.fcas_percent}%</span>
-            <div className="flex items-center gap-4">
-              <span className="text-xs font-bold text-slate-600 uppercase">Total Mano de Obra (Día):</span>
-              <span className="text-sm font-black text-slate-800 bg-white border border-slate-300 px-3 py-1 rounded min-w-[120px] text-right">
-                {calculateLaborTotalDay().toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
-              </span>
+          <div className="bg-slate-50 p-4 border-t border-slate-300">
+            <div className="flex flex-col gap-2 items-end">
+              <div className="flex items-center gap-4 w-full md:w-1/2 justify-between">
+                <span className="text-xs font-bold text-slate-600">Total Jornal:</span>
+                <span className="text-sm font-semibold text-slate-700">{calculateLaborTotalJornalDay().toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+              </div>
+              <div className="flex items-center gap-4 w-full md:w-1/2 justify-between border-b border-slate-200 pb-2">
+                <span className="text-xs font-bold text-slate-600 flex items-center gap-2">
+                  <span className="bg-teal-100 text-teal-800 px-1 border border-teal-300 rounded text-[10px]">{budget.fcas_percent}%</span>
+                  F.C.A.S / Prestaciones Sociales:
+                </span>
+                <span className="text-sm font-semibold text-slate-700">{(calculateLaborTotalJornalDay() * ((budget.fcas_percent || 417)/100)).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+              </div>
+              <div className="flex items-center gap-4 w-full md:w-1/2 justify-between">
+                <span className="text-xs font-bold text-slate-600">Total Bono:</span>
+                <span className="text-sm font-semibold text-slate-700">{calculateLaborTotalBonoDay().toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+              </div>
+              <div className="flex items-center gap-4 w-full md:w-1/2 justify-between mt-2 pt-2 border-t-2 border-slate-300">
+                <span className="text-sm font-bold text-slate-800 uppercase">Total Mano de Obra (Día):</span>
+                <span className="text-base font-black text-slate-800 bg-white border border-slate-400 px-3 py-1 rounded min-w-[120px] text-right shadow-sm">
+                  {calculateLaborTotalDay().toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                </span>
+              </div>
             </div>
           </div>
         </div>
