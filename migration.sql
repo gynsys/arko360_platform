@@ -1,0 +1,3 @@
+ALTER TABLE cost360_apu_equipment ADD COLUMN "Deprec" DOUBLE PRECISION DEFAULT 1.0;
+ALTER TABLE budget_apu_equipments ADD COLUMN depreciacion DOUBLE PRECISION DEFAULT 1.0;
+ALTER TABLE budget_apu_materials ADD COLUMN desperdicio DOUBLE PRECISION DEFAULT 0.0;

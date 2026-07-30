@@ -133,7 +133,7 @@ const Cost360Dashboard = () => {
               <li 
                 key={item.CodPar}
                 className="hover:bg-blue-50/50 transition-colors duration-150 cursor-pointer group"
-                onClick={() => navigate(`/admin/cost360/apu/${item.CodPar}`)}
+                onClick={() => navigate(`/cost360/apu/${item.CodPar}`)}
               >
                 <div className="px-6 py-5 flex items-center justify-between">
                   <div className="flex items-start gap-4">

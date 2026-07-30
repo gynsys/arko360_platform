@@ -21,7 +21,7 @@ const APUViewer = () => {
         setApuData(data);
       } catch (error) {
         toast.error('No se pudo cargar el Análisis de Precio Unitario');
-        navigate('/admin/cost360');
+        navigate('/cost360');
       } finally {
         setLoading(false);
       }
@@ -150,7 +150,7 @@ const APUViewer = () => {
             <span className="text-xl font-bold text-blue-800">ARKO360</span>
           </div>
           <button
-            onClick={() => navigate('/admin/cost360')}
+            onClick={() => navigate('/cost360')}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
           >
             <FiArrowLeft /> Volver a Partidas
