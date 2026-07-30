@@ -70,7 +70,7 @@ function App() {
     <AuthProvider>
       <Toaster position="top-center" containerStyle={{ zIndex: 999999 }} />
       <SiteConfigContext.Provider value={{ config, setConfig, fetchSiteConfig }}>
-        <BrowserRouter>
+        <BrowserRouter basename="/app">
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -123,7 +123,7 @@ function App() {
             </Route>
 
             <Route
-              path="/:slug/admin/cost360"
+              path="/:slug/cost360"
               element={
                 <ProtectedRoute>
                   <Cost360Dashboard />
@@ -131,7 +131,7 @@ function App() {
               }
             />
             <Route
-              path="/:slug/admin/cost360/apu/:id"
+              path="/:slug/cost360/apu/:id"
               element={
                 <ProtectedRoute>
                   <APUViewer />
