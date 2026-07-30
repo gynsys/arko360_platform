@@ -24,7 +24,7 @@ const Login = () => {
       if (isLandingSite) {
         navigate(`/${slug}/admin`);
       } else {
-        navigate('/admin');
+        navigate('/budgets');
       }
     } else {
       setError(result.error || 'Ocurrió un error al iniciar sesión');
@@ -38,7 +38,7 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg border border-gray-100">
         <div>
           <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-            Arko360 Admin
+            {isLandingSite ? 'Panel de Administración' : 'Cost360'}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Ingresa tus credenciales para acceder al panel
