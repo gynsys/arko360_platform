@@ -252,7 +252,7 @@ export default function Navbar() {
               ) : null}
 
               <a
-                href={siteConfig?.slug ? `https://admin.arko360.net/${siteConfig.slug}` : "/app/budgets"}
+                href="https://admin.arko360.net/login"
                 target="_blank"
                 rel="noreferrer"
                 className="navbar-admin-icon"
