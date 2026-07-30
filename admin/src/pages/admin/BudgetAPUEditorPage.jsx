@@ -64,19 +64,31 @@ export default function BudgetAPUEditorPage() {
 
   // For Maprex Style Calculations
   const calculateMaterialTotal = () => {
-    return item?.materials?.reduce((sum, mat) => sum + (mat.cantidad * mat.precio_unitario * (1 + (mat.desperdicio || 0) / 100)), 0) || 0;
+    return item?.materials?.reduce((sum, mat) => {
+      const baseCost = mat.cantidad * mat.precio_unitario * (1 + (mat.desperdicio || 0) / 100);
+      return sum + (baseCost * (1 + ((budget?.material_inflation || 0) / 100)));
+    }, 0) || 0;
   };
 
   const calculateEquipmentTotalDay = () => {
-    return item?.equipments?.reduce((sum, eq) => sum + (eq.cantidad * (eq.depreciacion ?? 1.0) * eq.precio_unitario), 0) || 0;
+    return item?.equipments?.reduce((sum, eq) => {
+      const baseCost = eq.cantidad * (eq.depreciacion ?? 1.0) * eq.precio_unitario;
+      return sum + (baseCost * (1 + ((budget?.equipment_inflation || 0) / 100)));
+    }, 0) || 0;
   };
 
   const calculateLaborTotalJornalDay = () => {
-    return item?.labors?.reduce((sum, lab) => sum + (lab.cantidad * lab.jornal), 0) || 0;
+    return item?.labors?.reduce((sum, lab) => {
+      const baseCost = lab.cantidad * lab.jornal;
+      return sum + (baseCost * (1 + ((budget?.labor_inflation || 0) / 100)));
+    }, 0) || 0;
   };
 
   const calculateLaborTotalBonoDay = () => {
-    return item?.labors?.reduce((sum, lab) => sum + (lab.cantidad * (budget?.labor_bonus || 0)), 0) || 0;
+    return item?.labors?.reduce((sum, lab) => {
+      const baseCost = lab.cantidad * (budget?.labor_bonus || 0);
+      return sum + (baseCost * (1 + ((budget?.labor_inflation || 0) / 100)));
+    }, 0) || 0;
   };
 
   const calculateLaborTotalDay = () => {
@@ -246,7 +258,7 @@ export default function BudgetAPUEditorPage() {
                       />
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
-                      {(mat.cantidad * mat.precio_unitario * (1 + (mat.desperdicio || 0) / 100)).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                      {((mat.cantidad * mat.precio_unitario * (1 + (mat.desperdicio || 0) / 100)) * (1 + ((budget?.material_inflation || 0) / 100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                     </td>
                   </tr>
                 ))}
@@ -320,7 +332,7 @@ export default function BudgetAPUEditorPage() {
                       />
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
-                      {(eq.cantidad * (eq.depreciacion ?? 1.0) * eq.precio_unitario).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                      {(eq.cantidad * (eq.depreciacion ?? 1.0) * eq.precio_unitario * (1 + ((budget?.equipment_inflation || 0) / 100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                     </td>
                   </tr>
                 ))}
@@ -398,10 +410,10 @@ export default function BudgetAPUEditorPage() {
                         />
                       </td>
                       <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 border-r border-slate-200 text-xs">
-                        {totalJornal.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                        {(totalJornal * (1 + ((budget?.labor_inflation || 0) / 100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                       </td>
                       <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
-                        {totalBono.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                        {(totalBono * (1 + ((budget?.labor_inflation || 0) / 100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                       </td>
                     </tr>
                   )

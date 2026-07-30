@@ -11,16 +11,22 @@ def run():
     print("Running migration...")
     with engine.connect() as conn:
         try:
-            conn.execute(text("ALTER TABLE budgets ADD COLUMN admin_percent FLOAT DEFAULT 15.0"))
-            print("Added admin_percent")
+            conn.execute(text("ALTER TABLE budgets ADD COLUMN material_inflation FLOAT DEFAULT 0.0"))
+            print("Added material_inflation")
         except Exception as e:
-            print("admin_percent error:", e)
-            
+            print("material_inflation error:", e)
+
         try:
-            conn.execute(text("ALTER TABLE budgets ADD COLUMN profit_percent FLOAT DEFAULT 10.0"))
-            print("Added profit_percent")
+            conn.execute(text("ALTER TABLE budgets ADD COLUMN labor_inflation FLOAT DEFAULT 0.0"))
+            print("Added labor_inflation")
         except Exception as e:
-            print("profit_percent error:", e)
+            print("labor_inflation error:", e)
+
+        try:
+            conn.execute(text("ALTER TABLE budgets ADD COLUMN equipment_inflation FLOAT DEFAULT 0.0"))
+            print("Added equipment_inflation")
+        except Exception as e:
+            print("equipment_inflation error:", e)
             
         conn.commit()
 

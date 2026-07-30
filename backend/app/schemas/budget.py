@@ -92,6 +92,9 @@ class BudgetBase(BaseModel):
     profit_percent: float = 10.0
     iva_percent: float = 16.0
     labor_bonus: float = 0.0
+    material_inflation: float = 0.0
+    labor_inflation: float = 0.0
+    equipment_inflation: float = 0.0
 
 class BudgetCreate(BudgetBase):
     pass
@@ -110,6 +113,9 @@ class BudgetUpdate(BaseModel):
     profit_percent: Optional[float] = 10.0
     iva_percent: Optional[float] = 16.0
     labor_bonus: Optional[float] = 0.0
+    material_inflation: Optional[float] = None
+    labor_inflation: Optional[float] = None
+    equipment_inflation: Optional[float] = None
 
 class Budget(BudgetBase):
     id: str

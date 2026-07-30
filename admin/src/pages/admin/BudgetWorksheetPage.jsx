@@ -25,6 +25,9 @@ export default function BudgetWorksheetPage() {
     admin_percent: 15.0,
     profit_percent: 10.0,
     iva_percent: 16.0,
+    material_inflation: 0.0,
+    labor_inflation: 0.0,
+    equipment_inflation: 0.0,
     company_name: '',
     company_rif: '',
     client_name: '',
@@ -53,6 +56,9 @@ export default function BudgetWorksheetPage() {
         admin_percent: data.admin_percent ?? 15.0,
         profit_percent: data.profit_percent ?? 10.0,
         iva_percent: data.iva_percent ?? 16.0,
+        material_inflation: data.material_inflation ?? 0.0,
+        labor_inflation: data.labor_inflation ?? 0.0,
+        equipment_inflation: data.equipment_inflation ?? 0.0,
         company_name: data.company_name || '',
         company_rif: data.company_rif || '',
         client_name: data.client_name || '',
@@ -126,17 +132,24 @@ export default function BudgetWorksheetPage() {
   const calculatePU = (item) => {
     let matCost = 0;
     if (item.materials) {
-      item.materials.forEach(m => matCost += m.cantidad * m.precio_unitario);
+      item.materials.forEach(m => {
+        const cost = m.cantidad * m.precio_unitario;
+        matCost += cost * (1 + ((budget?.material_inflation || 0) / 100));
+      });
     }
     let eqCost = 0;
     if (item.equipments) {
-      item.equipments.forEach(e => eqCost += (e.cantidad * e.precio_unitario) / (item.performance || 1));
+      item.equipments.forEach(e => {
+        const cost = (e.cantidad * e.precio_unitario) / (item.performance || 1);
+        eqCost += cost * (1 + ((budget?.equipment_inflation || 0) / 100));
+      });
     }
     let labCost = 0;
     if (item.labors) {
       item.labors.forEach(l => {
         const daily = (l.jornal + (budget?.labor_bonus || 0)) * l.cantidad;
-        labCost += daily / (item.performance || 1);
+        const cost = daily / (item.performance || 1);
+        labCost += cost * (1 + ((budget?.labor_inflation || 0) / 100));
       });
       // Apply FCAS from budget config
       labCost = labCost * (1 + (budget.fcas_percent / 100));
@@ -330,6 +343,43 @@ export default function BudgetWorksheetPage() {
                     step="1"
                     value={settings.fcas_percent}
                     onChange={e => setSettings({...settings, fcas_percent: parseFloat(e.target.value)})}
+                    className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  />
+                </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                    <Percent size={14}/> Inflación Materiales
+                  </label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={settings.material_inflation}
+                    onChange={e => setSettings({...settings, material_inflation: parseFloat(e.target.value) || 0})}
+                    className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                    <Percent size={14}/> Inflación Equipos
+                  </label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={settings.equipment_inflation}
+                    onChange={e => setSettings({...settings, equipment_inflation: parseFloat(e.target.value) || 0})}
+                    className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                    <Percent size={14}/> Inflación Mano Obra
+                  </label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={settings.labor_inflation}
+                    onChange={e => setSettings({...settings, labor_inflation: parseFloat(e.target.value) || 0})}
                     className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>

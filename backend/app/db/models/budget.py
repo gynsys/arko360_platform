@@ -24,6 +24,11 @@ class Budget(Base):
     iva_percent = Column(Float, default=16.0) # % de I.V.A.
     labor_bonus = Column(Float, default=0.0) # Bono global para mano de obra
     
+    # Índices de Inflación
+    material_inflation = Column(Float, default=0.0)
+    labor_inflation = Column(Float, default=0.0)
+    equipment_inflation = Column(Float, default=0.0)
+    
     # Datos de la Empresa y Obra
     company_name = Column(String, nullable=True)
     company_rif = Column(String, nullable=True)

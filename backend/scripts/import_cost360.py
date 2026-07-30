@@ -36,7 +36,7 @@ def run_etl():
                 
                 # Cleanup numbers
                 for col in df.columns:
-                    if col in ['CosMat', 'PreUni', 'RenPar', 'CanPar', 'Cantid', 'Costo', 'Jornal', 'Bono', 'CosDia', 'CostEq', 'CanIns']:
+                    if col in ['CosMat', 'PreUni', 'RenPar', 'CanPar', 'Cantid', 'Costo', 'Jornal', 'Bono', 'CosDia', 'CostEq', 'CanIns', 'Salari']:
                         df[col] = df[col].astype(str).str.replace(',', '.', regex=False)
                         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0.0)
                 
@@ -52,11 +52,14 @@ def run_etl():
                 if 'Bono' not in df.columns:
                     df['Bono'] = 0.0
                 
-                # In PostgreSQL, we can use to_sql with if_exists='replace'
-                # but 'replace' drops the table and recreates it without primary keys/foreign keys.
-                # So it's better to use 'append' if the tables are already created by Alembic/create_db.py
+                from sqlalchemy import text, inspect
+                
+                # Filter dataframe to match only the columns that exist in the table
+                inspector = inspect(engine)
+                valid_columns = [col['name'] for col in inspector.get_columns(new_table)]
+                df = df[[c for c in df.columns if c in valid_columns]]
+
                 # First, clear the table
-                from sqlalchemy import text
                 with engine.begin() as conn:
                     conn.execute(text(f"TRUNCATE TABLE {new_table} CASCADE;"))
                 
