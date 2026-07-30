@@ -43,6 +43,11 @@ export default function BudgetWorksheetPage() {
   // Row selection & Reordering
   const [selectedItemId, setSelectedItemId] = useState(null);
 
+  // Custom modals state
+  const [showChapterModal, setShowChapterModal] = useState(false);
+  const [chapterName, setChapterName] = useState("");
+  const [itemToDelete, setItemToDelete] = useState(null);
+
   useEffect(() => {
     loadBudget();
   }, [id]);
@@ -141,7 +146,6 @@ export default function BudgetWorksheetPage() {
   };
 
   const handleAddChapter = async () => {
-    const chapterName = window.prompt("Ingrese el nombre del capítulo:");
     if (!chapterName || !chapterName.trim()) return;
     
     try {
@@ -161,6 +165,8 @@ export default function BudgetWorksheetPage() {
         order: targetOrder,
         is_chapter: true
       });
+      setShowChapterModal(false);
+      setChapterName("");
       loadBudget();
       toast.success('Capítulo agregado');
     } catch (error) {
@@ -169,10 +175,15 @@ export default function BudgetWorksheetPage() {
   };
 
   const handleDeleteItem = async (itemId) => {
-    if (!window.confirm("¿Seguro que desea eliminar esta fila del presupuesto?")) return;
+    setItemToDelete(budget.items.find(i => i.id === itemId));
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      await budgetService.deleteItem(id, itemId);
-      setBudget(prev => ({ ...prev, items: prev.items.filter(i => i.id !== itemId) }));
+      await budgetService.deleteItem(id, itemToDelete.id);
+      setBudget(prev => ({ ...prev, items: prev.items.filter(i => i.id !== itemToDelete.id) }));
+      setItemToDelete(null);
       toast.success('Eliminada correctamente');
     } catch (error) {
       toast.error('Error eliminando la fila');
@@ -273,17 +284,17 @@ export default function BudgetWorksheetPage() {
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sticky top-[64px] z-30 bg-slate-50/95 backdrop-blur-md py-4 -mt-4 border-b border-slate-200 shadow-sm rounded-b-xl mb-6 px-4 -mx-4">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/budgets')}
-            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
           >
             <ArrowLeft size={20} className="text-slate-600" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">{budget.name}</h1>
-            <p className="text-sm text-slate-500">Hoja de Presupuesto</p>
+            <h1 className="text-2xl font-bold text-slate-800 leading-tight">{budget.name}</h1>
+            <p className="text-sm text-slate-500 font-medium">Hoja de Presupuesto</p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -297,7 +308,7 @@ export default function BudgetWorksheetPage() {
             headerPortalTarget
           )}
           <button  
-            onClick={handleAddChapter}
+            onClick={() => { setChapterName(""); setShowChapterModal(true); }}
             className="flex items-center gap-2 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-4 py-2 rounded-xl font-medium shadow-sm transition-all text-sm"
           >
             <FolderPlus size={16} /> Agregar Capítulo
@@ -537,19 +548,19 @@ export default function BudgetWorksheetPage() {
       )}
 
       {/* WORKSHEET TABLE */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-visible">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                <th className="p-4 w-16 text-center">#</th>
-                <th className="p-4 w-32">Código</th>
-                <th className="p-4">Descripción</th>
-                <th className="p-4 w-20 text-center">Und</th>
-                <th className="p-4 w-28 text-right">Cantidad</th>
-                <th className="p-4 w-32 text-right">Precio Unit.</th>
-                <th className="p-4 w-32 text-right">Total</th>
-                <th className="p-4 w-32 text-center">Acciones</th>
+            <thead className="sticky top-[152px] z-20 shadow-sm ring-1 ring-slate-200">
+              <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                <th className="p-4 w-16 text-center bg-slate-50 border-b border-slate-200">#</th>
+                <th className="p-4 w-32 bg-slate-50 border-b border-slate-200">Código</th>
+                <th className="p-4 bg-slate-50 border-b border-slate-200">Descripción</th>
+                <th className="p-4 w-20 text-center bg-slate-50 border-b border-slate-200">Und</th>
+                <th className="p-4 w-28 text-right bg-slate-50 border-b border-slate-200">Cantidad</th>
+                <th className="p-4 w-32 text-right bg-slate-50 border-b border-slate-200">Precio Unit.</th>
+                <th className="p-4 w-32 text-right bg-slate-50 border-b border-slate-200">Total</th>
+                <th className="p-4 w-32 text-center bg-slate-50 border-b border-slate-200">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -567,45 +578,48 @@ export default function BudgetWorksheetPage() {
                   </td>
                 </tr>
               ) : (
-                budget.items.map((item, idx) => {
-                  const isSelected = selectedItemId === item.id;
-                  
-                  if (item.is_chapter) {
+                (() => {
+                  let itemNumber = 0;
+                  return budget.items.map((item, idx) => {
+                    const isSelected = selectedItemId === item.id;
+                    
+                    if (item.is_chapter) {
+                      return (
+                        <tr 
+                          key={item.id} 
+                          onClick={() => setSelectedItemId(isSelected ? null : item.id)}
+                          className={`hover:bg-slate-100 transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50/50 ring-inset ring-2 ring-blue-500/50' : 'bg-slate-100/50'}`}
+                        >
+                          <td className="p-4 text-center font-bold text-slate-800"></td>
+                          <td colSpan="6" className="p-4 text-sm font-bold text-slate-900 tracking-wide uppercase">
+                            {item.description}
+                          </td>
+                          <td className="p-4 text-center">
+                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={(e) => { e.stopPropagation(); handleMove(idx, 'up'); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-colors" title="Subir">
+                                <ArrowUp size={16} />
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); handleMove(idx, 'down'); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-colors" title="Bajar">
+                                <ArrowDown size={16} />
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-colors" title="Eliminar">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    itemNumber++;
                     return (
                       <tr 
                         key={item.id} 
                         onClick={() => setSelectedItemId(isSelected ? null : item.id)}
-                        className={`hover:bg-slate-100 transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50/50 ring-inset ring-2 ring-blue-500/50' : 'bg-slate-100/50'}`}
+                        className={`hover:bg-blue-50/50 transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50 ring-inset ring-2 ring-blue-400' : ''}`}
                       >
-                        <td className="p-4 text-center font-bold text-slate-800">{idx + 1}</td>
-                        <td colSpan="6" className="p-4 text-sm font-bold text-slate-900 tracking-wide uppercase">
-                          {item.description}
-                        </td>
-                        <td className="p-4 text-center">
-                          <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={(e) => { e.stopPropagation(); handleMove(idx, 'up'); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-colors" title="Subir">
-                              <ArrowUp size={16} />
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); handleMove(idx, 'down'); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-colors" title="Bajar">
-                              <ArrowDown size={16} />
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-colors" title="Eliminar">
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  }
-
-                  return (
-                    <tr 
-                      key={item.id} 
-                      onClick={() => setSelectedItemId(isSelected ? null : item.id)}
-                      className={`hover:bg-blue-50/50 transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50 ring-inset ring-2 ring-blue-400' : ''}`}
-                    >
-                      <td className="p-4 text-center text-slate-400 font-medium text-sm">{idx + 1}</td>
-                      <td className="p-4 text-sm font-mono text-slate-600">{item.cov_par || item.cod_par}</td>
+                        <td className="p-4 text-center text-slate-400 font-medium text-sm">{itemNumber}</td>
+                        <td className="p-4 text-sm font-mono text-slate-600">{item.cov_par || item.cod_par}</td>
                       <td className="p-4 text-sm text-slate-800">
                         <div className="line-clamp-2 leading-relaxed" title={item.description}>
                           {item.description}
@@ -756,6 +770,69 @@ export default function BudgetWorksheetPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+      {/* CHAPTER MODAL */}
+      {showChapterModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <FolderPlus className="text-indigo-600" />
+              Agregar Capítulo
+            </h3>
+            <input 
+              type="text" 
+              autoFocus
+              value={chapterName}
+              onChange={(e) => setChapterName(e.target.value)}
+              placeholder="Ej. Movimiento de Tierras"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-indigo-500 mb-6 font-medium text-slate-700"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddChapter();
+              }}
+            />
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => { setShowChapterModal(false); setChapterName(""); }}
+                className="px-4 py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleAddChapter}
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors shadow-lg shadow-indigo-500/30"
+              >
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRM MODAL */}
+      {itemToDelete && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-8 animate-in fade-in zoom-in-95 duration-200 text-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Trash2 className="text-red-600" size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Eliminar {itemToDelete.is_chapter ? 'capítulo' : 'partida'}</h3>
+            <p className="text-slate-500 mb-8 text-sm leading-relaxed">
+              ¿Estás seguro de que deseas eliminar este elemento del presupuesto? Esta acción actualizará los totales y no se puede deshacer.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={confirmDelete}
+                className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors w-full shadow-lg shadow-red-500/30"
+              >
+                Sí, eliminar
+              </button>
+              <button 
+                onClick={() => setItemToDelete(null)}
+                className="px-5 py-3 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-colors w-full"
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         </div>
