@@ -70,12 +70,12 @@ function App() {
     <AuthProvider>
       <Toaster position="top-center" containerStyle={{ zIndex: 999999 }} />
       <SiteConfigContext.Provider value={{ config, setConfig, fetchSiteConfig }}>
-        <BrowserRouter basename="/app">
+        <BrowserRouter basename={window.location.pathname.startsWith('/app') ? '/app' : ''}>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/" element={<Navigate to="/cost360" replace />} />
+            <Route path="/" element={<Navigate to={window.location.hostname === 'admin.arko360.net' ? '/admin' : '/cost360'} replace />} />
             <Route 
               path="/admin/*" 
               element={
