@@ -9,7 +9,8 @@ from app.db.models.cost360 import (
 )
 from app.schemas.cost360 import (
     CostItemBase, APUResponse, APUComponent, CostItemListResponse,
-    CostMaterialSchema, CostEquipmentSchema, CostLaborSchema
+    CostMaterialSchema, CostEquipmentSchema, CostLaborSchema,
+    CostMaterialUpdate, CostEquipmentUpdate, CostLaborUpdate
 )
 
 router = APIRouter()
@@ -147,3 +148,70 @@ def search_labors(search: str = "", db: Session = Depends(get_db)):
             CostLabor.Descri.ilike(search_term)
         )
     return query.limit(50).all()
+@router.patch("/materials/{codigo}")
+def update_material(codigo: str, payload: CostMaterialUpdate, db: Session = Depends(get_db)):
+    mat = db.query(CostMaterial).filter(CostMaterial.CodMat == codigo).first()
+    if not mat:
+        raise HTTPException(status_code=404, detail="Material no encontrado")
+    if payload.CosMat is not None:
+        mat.CosMat = payload.CosMat
+    if payload.Descri is not None:
+        mat.Descri = payload.Descri
+    db.commit()
+    db.refresh(mat)
+    return mat
+
+@router.delete("/materials/{codigo}")
+def delete_material(codigo: str, db: Session = Depends(get_db)):
+    mat = db.query(CostMaterial).filter(CostMaterial.CodMat == codigo).first()
+    if not mat:
+        raise HTTPException(status_code=404, detail="Material no encontrado")
+    db.delete(mat)
+    db.commit()
+    return {"status": "ok"}
+
+@router.patch("/equipments/{codigo}")
+def update_equipment(codigo: str, payload: CostEquipmentUpdate, db: Session = Depends(get_db)):
+    eq = db.query(CostEquipment).filter(CostEquipment.CodEqu == codigo).first()
+    if not eq:
+        raise HTTPException(status_code=404, detail="Equipo no encontrado")
+    if payload.CosDia is not None:
+        eq.CosDia = payload.CosDia
+    if payload.Descri is not None:
+        eq.Descri = payload.Descri
+    db.commit()
+    db.refresh(eq)
+    return eq
+
+@router.delete("/equipments/{codigo}")
+def delete_equipment(codigo: str, db: Session = Depends(get_db)):
+    eq = db.query(CostEquipment).filter(CostEquipment.CodEqu == codigo).first()
+    if not eq:
+        raise HTTPException(status_code=404, detail="Equipo no encontrado")
+    db.delete(eq)
+    db.commit()
+    return {"status": "ok"}
+
+@router.patch("/labors/{codigo}")
+def update_labor(codigo: str, payload: CostLaborUpdate, db: Session = Depends(get_db)):
+    labor = db.query(CostLabor).filter(CostLabor.CodMan == codigo).first()
+    if not labor:
+        raise HTTPException(status_code=404, detail="Mano de obra no encontrada")
+    if payload.Jornal is not None:
+        labor.Jornal = payload.Jornal
+    if payload.Bono is not None:
+        labor.Bono = payload.Bono
+    if payload.Descri is not None:
+        labor.Descri = payload.Descri
+    db.commit()
+    db.refresh(labor)
+    return labor
+
+@router.delete("/labors/{codigo}")
+def delete_labor(codigo: str, db: Session = Depends(get_db)):
+    labor = db.query(CostLabor).filter(CostLabor.CodMan == codigo).first()
+    if not labor:
+        raise HTTPException(status_code=404, detail="Mano de obra no encontrada")
+    db.delete(labor)
+    db.commit()
+    return {"status": "ok"}

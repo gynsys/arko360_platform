@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiLayers, FiArrowRight, FiArrowLeft } from 'react-icons/fi';
+import { FiSearch, FiLayers, FiArrowRight, FiArrowLeft, FiBox, FiTool, FiUsers } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import cost360Service from '../services/cost360Service';
 import { SiteConfigContext } from '../../../App';
+import CatalogResourceTab from '../components/CatalogResourceTab';
 
 const Cost360Dashboard = () => {
+  const [activeTab, setActiveTab] = useState('partidas');
   const [items, setItems] = null || useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -74,12 +76,60 @@ const Cost360Dashboard = () => {
       </header>
 
       <div className="p-8 max-w-7xl mx-auto">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Cost360</h1>
-          <p className="text-gray-500">Base de Datos de Partidas y Análisis de Precio Unitario</p>
+          <p className="text-gray-500">Base de Datos Maestra de Insumos y Partidas</p>
         </div>
 
-      {/* Search Bar & Filters */}
+        {/* Tabs Navigation */}
+        <div className="mb-8 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab('partidas')}
+              className={`${
+                activeTab === 'partidas'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+            >
+              <FiLayers /> Partidas (APU)
+            </button>
+            <button
+              onClick={() => setActiveTab('materiales')}
+              className={`${
+                activeTab === 'materiales'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+            >
+              <FiBox /> Materiales
+            </button>
+            <button
+              onClick={() => setActiveTab('equipos')}
+              className={`${
+                activeTab === 'equipos'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+            >
+              <FiTool /> Equipos
+            </button>
+            <button
+              onClick={() => setActiveTab('mano_obra')}
+              className={`${
+                activeTab === 'mano_obra'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+            >
+              <FiUsers /> Mano de Obra
+            </button>
+          </nav>
+        </div>
+
+      {activeTab === 'partidas' && (
+        <>
+          {/* Search Bar & Filters */}
       <form onSubmit={handleSearch} className="mb-8 flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -179,6 +229,45 @@ const Cost360Dashboard = () => {
           </button>
         </div>
       )}
+      </>
+      )}
+
+      {activeTab === 'materiales' && (
+        <CatalogResourceTab 
+          title="Materiales" 
+          resourceType="materials" 
+          config={{ 
+            idKey: 'CodMat', descKey: 'Descri', 
+            editableFields: [{ key: 'CosMat', label: 'Precio Unitario ($)' }] 
+          }} 
+        />
+      )}
+
+      {activeTab === 'equipos' && (
+        <CatalogResourceTab 
+          title="Equipos" 
+          resourceType="equipments" 
+          config={{ 
+            idKey: 'CodEqu', descKey: 'Descri', 
+            editableFields: [{ key: 'CosDia', label: 'Costo Diario ($)' }] 
+          }} 
+        />
+      )}
+
+      {activeTab === 'mano_obra' && (
+        <CatalogResourceTab 
+          title="Mano de Obra" 
+          resourceType="labors" 
+          config={{ 
+            idKey: 'CodMan', descKey: 'Descri', 
+            editableFields: [
+              { key: 'Jornal', label: 'Jornal ($)' },
+              { key: 'Bono', label: 'Bono ($)' }
+            ] 
+          }} 
+        />
+      )}
+
     </div>
     </div>
   );

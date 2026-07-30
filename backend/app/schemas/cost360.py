@@ -56,3 +56,17 @@ class APUResponse(BaseModel):
     equipos: List[APUComponent]
     mano_obra: List[APUComponent]
     total_directo: float
+
+class CostMaterialUpdate(BaseModel):
+    CosMat: Optional[float] = None
+    Descri: Optional[str] = None
+
+class CostEquipmentUpdate(BaseModel):
+    CosDia: Optional[float] = None
+    Descri: Optional[str] = None
+
+class CostLaborUpdate(BaseModel):
+    Jornal: Optional[float] = None
+    Bono: Optional[float] = None
+    Descri: Optional[str] = None
+

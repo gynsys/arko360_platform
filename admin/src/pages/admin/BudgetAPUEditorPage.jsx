@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Plus } from 'lucide-react';
+import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Plus, RefreshCw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
+import { API_URL } from '../../services/api';
 import ComponentSearchModal from '../../components/ComponentSearchModal';
 
 export default function BudgetAPUEditorPage() {
@@ -13,6 +14,28 @@ export default function BudgetAPUEditorPage() {
   const [loading, setLoading] = useState(true);
   
   const [searchModal, setSearchModal] = useState({ isOpen: false, type: '', title: '' });
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncPrices = async () => {
+    if (!window.confirm('¿Deseas actualizar los precios unitarios de esta partida usando la Base Maestra? Los rendimientos y cantidades se mantendrán intactos.')) return;
+    try {
+      setSyncing(true);
+      const res = await fetch(`${API_URL}/budgets/${id}/sync_prices`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        toast.success('Precios actualizados correctamente');
+        await loadData();
+      } else {
+        toast.error('Error al actualizar precios');
+      }
+    } catch (e) {
+      toast.error('Error de red');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -144,6 +167,16 @@ export default function BudgetAPUEditorPage() {
           <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
             <Calculator size={16} /> ANÁLISIS DE PRECIO UNITARIO
           </h2>
+        </div>
+        <div className="ml-auto">
+          <button 
+            onClick={handleSyncPrices}
+            disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 font-medium text-sm rounded-xl hover:bg-blue-100 transition-colors border border-blue-200"
+          >
+            <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
+            {syncing ? 'Actualizando...' : 'Actualizar Precios desde Base Maestra'}
+          </button>
         </div>
       </div>
 

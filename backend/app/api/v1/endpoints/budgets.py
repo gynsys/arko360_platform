@@ -167,3 +167,37 @@ def add_labor_to_item(budget_id: str, item_id: str, labor_in: BudgetAPULaborBase
     db.commit()
     db.refresh(db_labor)
     return db_labor
+
+@router.post("/{budget_id}/sync_prices")
+def sync_budget_prices(budget_id: str, db: Session = Depends(get_db)):
+    from app.db.models.cost360 import CostMaterial, CostEquipment, CostLabor
+    
+    budget = db.query(Budget).filter(Budget.id == budget_id).first()
+    if not budget:
+        raise HTTPException(status_code=404, detail="Presupuesto no encontrado")
+        
+    for item in budget.items:
+        # Sync Materials
+        for mat in item.materials:
+            cost_mat = db.query(CostMaterial).filter(CostMaterial.CodMat == mat.codigo).first()
+            if cost_mat:
+                mat.precio_unitario = cost_mat.CosMat if cost_mat.CosMat is not None else 0.0
+                mat.descripcion = cost_mat.Descri if cost_mat.Descri is not None else mat.descripcion
+                
+        # Sync Equipment
+        for eq in item.equipments:
+            cost_eq = db.query(CostEquipment).filter(CostEquipment.CodEqu == eq.codigo).first()
+            if cost_eq:
+                eq.precio_unitario = cost_eq.CosDia if cost_eq.CosDia is not None else 0.0
+                eq.descripcion = cost_eq.Descri if cost_eq.Descri is not None else eq.descripcion
+                
+        # Sync Labor
+        for lab in item.labors:
+            cost_lab = db.query(CostLabor).filter(CostLabor.CodMan == lab.codigo).first()
+            if cost_lab:
+                lab.jornal = cost_lab.Jornal if cost_lab.Jornal is not None else 0.0
+                lab.bono = cost_lab.Bono if cost_lab.Bono is not None else 0.0
+                lab.descripcion = cost_lab.Descri if cost_lab.Descri is not None else lab.descripcion
+                
+    db.commit()
+    return {"status": "ok", "message": "Precios sincronizados con la Base Maestra"}
