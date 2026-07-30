@@ -14,10 +14,12 @@ class BudgetAPUComponentBase(BaseModel):
 class BudgetAPUMaterialBase(BudgetAPUComponentBase):
     unidad: str
     precio_unitario: float
+    desperdicio: Optional[float] = 0.0
 
 class BudgetAPUEquipmentBase(BudgetAPUComponentBase):
     unidad: str
     precio_unitario: float
+    depreciacion: Optional[float] = 1.0
 
 class BudgetAPULaborBase(BudgetAPUComponentBase):
     jornal: float

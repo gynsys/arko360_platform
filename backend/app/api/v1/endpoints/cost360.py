@@ -46,14 +46,17 @@ def get_apu(item_code: str, db: Session = Depends(get_db)):
         
     materiales = []
     for rel, mat in mat_results:
-        subtotal = rel.CanIns * (mat.CosMat or 0.0)
+        desperdicio = rel.Desper if hasattr(rel, 'Desper') and rel.Desper else 0.0
+        precio = mat.CosMat or 0.0
+        subtotal = rel.CanIns * precio * (1 + (desperdicio / 100.0))
         materiales.append(APUComponent(
             codigo=mat.CodMat,
             descripcion=mat.Descri,
             unidad=mat.UniMat,
             cantidad=rel.CanIns,
-            precio_unitario=mat.CosMat or 0.0,
-            subtotal=round(subtotal, 2)
+            precio_unitario=precio,
+            subtotal=round(subtotal, 2),
+            desperdicio=desperdicio
         ))
 
     # Get Equipment
@@ -64,14 +67,16 @@ def get_apu(item_code: str, db: Session = Depends(get_db)):
     equipos = []
     for rel, eq in eq_results:
         precio_eq = eq.CosDia if eq.CosDia is not None else 0.0
-        subtotal = rel.CanIns * precio_eq
+        depreciacion = rel.Deprec if hasattr(rel, 'Deprec') and rel.Deprec else 1.0
+        subtotal = rel.CanIns * depreciacion * precio_eq
         equipos.append(APUComponent(
             codigo=eq.CodEqu,
             descripcion=eq.Descri,
             unidad="Día",
             cantidad=rel.CanIns,
             precio_unitario=precio_eq,
-            subtotal=round(subtotal, 2)
+            subtotal=round(subtotal, 2),
+            depreciacion=depreciacion
         ))
 
     # Get Labor

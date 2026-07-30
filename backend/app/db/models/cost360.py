@@ -59,6 +59,7 @@ class CostAPUEquipment(Base):
     CodPar = Column(String, ForeignKey("cost360_items.CodPar"), primary_key=True)
     CodIns = Column(String, ForeignKey("cost360_equipment.CodEqu"), primary_key=True)
     CanIns = Column(Float)
+    Deprec = Column(Float, default=1.0)
 
     item = relationship("CostItem", back_populates="apu_equipments")
     equipment = relationship("CostEquipment")

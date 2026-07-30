@@ -26,7 +26,7 @@ TABLES_MAP = {
 # Columnas numericas a normalizar (coma -> punto)
 NUMERIC_COLS = {
     "CosMat", "PreUni", "RenPar", "CanPar", "Cantid",
-    "Costo", "Jornal", "Bono", "CosDia", "CostEq", "CanIns", "Desper"
+    "Costo", "Jornal", "Bono", "CosDia", "CostEq", "CanIns", "Desper", "Deprec"
 }
 
 # Solo estas columnas se insertan — coinciden exactamente con los modelos SQLAlchemy
@@ -37,7 +37,7 @@ TABLE_COLUMNS = {
     "cost360_items":         ["CodPar", "Descri", "CovPar", "UniPar", "PreUni", "RenPar"],
     "cost360_apu_materials": ["CodPar", "CodIns", "CanIns", "Desper"],
     "cost360_apu_labor":     ["CodPar", "CodIns", "CanIns"],
-    "cost360_apu_equipment": ["CodPar", "CodIns", "CanIns"],
+    "cost360_apu_equipment": ["CodPar", "CodIns", "CanIns", "Deprec"],
 }
 
 # Orden respetando FK: maestros primero, APU al final
@@ -77,7 +77,7 @@ def run_etl() -> None:
                 on_bad_lines="skip",   # ignora lineas con columnas de mas
                 engine="python",
                 encoding="utf-8",
-                quotechar='"',
+                quotechar='"'
             )
 
             # Reglas especiales por tabla

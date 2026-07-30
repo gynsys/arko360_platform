@@ -73,7 +73,8 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
                 descripcion=mat.material.Descri if mat.material else "",
                 unidad=mat.material.UniMat if mat.material else "",
                 precio_unitario=(mat.material.CosMat if (mat.material and mat.material.CosMat is not None) else 0.0),
-                cantidad=mat.CanIns or 0.0
+                cantidad=mat.CanIns or 0.0,
+                desperdicio=mat.Desper or 0.0
             )
             db.add(db_mat)
             
@@ -84,7 +85,8 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
                 descripcion=eq.equipment.Descri if eq.equipment else "",
                 unidad="Día",
                 precio_unitario=(eq.equipment.CosDia if (eq.equipment and eq.equipment.CosDia is not None) else 0.0),
-                cantidad=eq.CanIns or 0.0
+                cantidad=eq.CanIns or 0.0,
+                depreciacion=eq.Deprec or 1.0
             )
             db.add(db_eq)
             

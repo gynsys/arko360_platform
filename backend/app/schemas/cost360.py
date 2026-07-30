@@ -43,6 +43,8 @@ class APUComponent(BaseModel):
     cantidad: float
     precio_unitario: float
     subtotal: float
+    desperdicio: Optional[float] = None
+    depreciacion: Optional[float] = None
     jornal: Optional[float] = None
     bono: Optional[float] = None
     tot_jornal: Optional[float] = None

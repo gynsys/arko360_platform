@@ -69,6 +69,7 @@ class BudgetAPUMaterial(Base):
     unidad = Column(String, nullable=False)
     precio_unitario = Column(Float, nullable=False) # Copiado en el momento, pero puede ser override
     cantidad = Column(Float, nullable=False) # Cantidad de insumo por unidad de partida
+    desperdicio = Column(Float, default=0.0) # Porcentaje de desperdicio
     
     item = relationship("BudgetItem", back_populates="materials")
 
@@ -82,8 +83,9 @@ class BudgetAPUEquipment(Base):
     codigo = Column(String, nullable=False)
     descripcion = Column(Text, nullable=False)
     unidad = Column(String, nullable=False) # Ej: Día, Hr
-    precio_unitario = Column(Float, nullable=False) # Costo o Depreciación (CosDia)
+    precio_unitario = Column(Float, nullable=False) # Tarifa
     cantidad = Column(Float, nullable=False)
+    depreciacion = Column(Float, default=1.0) # Coeficiente COP/Dep/Al
     
     item = relationship("BudgetItem", back_populates="equipments")
 
