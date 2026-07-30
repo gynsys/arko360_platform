@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Search, Plus, Loader2 } from 'lucide-react';
 import { budgetService } from '../services/budgetService';
 
@@ -6,6 +6,13 @@ export default function ComponentSearchModal({ isOpen, onClose, onAdd, type, tit
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setQuery('');
+      setResults([]);
+    }
+  }, [isOpen, type]);
 
   if (!isOpen) return null;
 

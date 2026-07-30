@@ -23,13 +23,7 @@ def run_etl():
     engine = create_engine(settings.DATABASE_URL)
     
     tables_to_import = {
-        'ObraMate': CostMaterial.__tablename__,
         'ObraMano': CostLabor.__tablename__,
-        'ObraEqui': CostEquipment.__tablename__,
-        'ObraPart': CostItem.__tablename__,
-        'ObraPainMate': CostAPUMaterial.__tablename__,
-        'ObraPainMano': CostAPULabor.__tablename__,
-        'ObraPainEqui': CostAPUEquipment.__tablename__
     }
     
     for lulo_table, new_table in tables_to_import.items():
@@ -49,6 +43,14 @@ def run_etl():
                 # If equipment, and column is CosDia, ensure it maps if missing
                 if lulo_table == 'ObraEqui' and 'CosDia' not in df.columns and 'CostEq' in df.columns:
                     df['CosDia'] = df['CostEq']
+                
+                # Map Salari to Jornal for ObraMano
+                if lulo_table == 'ObraMano' and 'Jornal' not in df.columns and 'Salari' in df.columns:
+                    df['Jornal'] = df['Salari']
+                    
+                # Ensure Bono exists
+                if 'Bono' not in df.columns:
+                    df['Bono'] = 0.0
                 
                 # In PostgreSQL, we can use to_sql with if_exists='replace'
                 # but 'replace' drops the table and recreates it without primary keys/foreign keys.
