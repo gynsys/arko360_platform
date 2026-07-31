@@ -605,9 +605,8 @@ export default function BudgetWorksheetPage() {
 
       {/* WORKSHEET TABLE */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-visible">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse relative">
-            <thead className="sticky top-0 z-20 shadow-sm ring-1 ring-slate-200">
+        <table className="w-full text-left border-collapse relative">
+          <thead className="sticky top-0 z-20 shadow-sm ring-1 ring-slate-200">
               <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 font-semibold">
                 <th className="p-4 w-16 text-center bg-slate-50 border-b border-slate-200">#</th>
                 <th className="p-4 w-32 bg-slate-50 border-b border-slate-200">Código</th>
@@ -753,7 +752,6 @@ export default function BudgetWorksheetPage() {
               )}
             </tbody>
           </table>
-        </div>
         
         {/* FOOTER TOTAL */}
         {budget.items?.length > 0 && (
