@@ -48,6 +48,9 @@ export default function BudgetWorksheetPage() {
   const [chapterName, setChapterName] = useState("");
   const [itemToDelete, setItemToDelete] = useState(null);
 
+  const [editingChapterId, setEditingChapterId] = useState(null);
+  const [editingChapterName, setEditingChapterName] = useState("");
+
   useEffect(() => {
     loadBudget();
   }, [id]);
@@ -187,6 +190,25 @@ export default function BudgetWorksheetPage() {
       toast.success('Eliminada correctamente');
     } catch (error) {
       toast.error('Error eliminando la fila');
+    }
+  };
+
+  const handleSaveChapterEdit = async (itemId) => {
+    if (!editingChapterName.trim()) {
+      setEditingChapterId(null);
+      return;
+    }
+    const finalName = editingChapterName.trim().toUpperCase();
+    try {
+      await budgetService.updateItem(id, itemId, { description: finalName });
+      setBudget(prev => ({
+        ...prev,
+        items: prev.items.map(i => i.id === itemId ? { ...i, description: finalName } : i)
+      }));
+      setEditingChapterId(null);
+      toast.success('Capítulo actualizado');
+    } catch (error) {
+      toast.error('Error al actualizar el capítulo');
     }
   };
 
@@ -596,8 +618,34 @@ export default function BudgetWorksheetPage() {
                           className={`hover:bg-slate-100 transition-colors cursor-pointer group ${isSelected ? 'bg-blue-50/50 ring-inset ring-2 ring-blue-500/50' : 'bg-slate-100/50'}`}
                         >
                           <td className="p-4 text-center font-bold text-slate-800"></td>
-                          <td colSpan="6" className="p-4 text-sm font-bold text-slate-900 tracking-wide uppercase">
-                            {item.description}
+                          <td 
+                            colSpan="6" 
+                            className="p-4 text-sm font-bold text-slate-900 tracking-wide uppercase"
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setEditingChapterId(item.id);
+                              setEditingChapterName(item.description);
+                            }}
+                          >
+                            {editingChapterId === item.id ? (
+                              <input
+                                autoFocus
+                                type="text"
+                                value={editingChapterName}
+                                onChange={e => setEditingChapterName(e.target.value)}
+                                onBlur={() => handleSaveChapterEdit(item.id)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') handleSaveChapterEdit(item.id);
+                                  if (e.key === 'Escape') setEditingChapterId(null);
+                                }}
+                                className="w-full bg-white border border-blue-400 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-bold uppercase"
+                                onClick={e => e.stopPropagation()}
+                              />
+                            ) : (
+                              <div title="Doble clic para editar" className="w-full h-full">
+                                {item.description}
+                              </div>
+                            )}
                           </td>
                           <td className="p-4 text-center">
                             <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
