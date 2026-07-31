@@ -15,7 +15,7 @@ const Cost360Dashboard = () => {
   const [skip, setSkip] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const LIMIT = 50;
+  const LIMIT = 1000;
   const navigate = useNavigate();
   const { config } = useContext(SiteConfigContext);
 
@@ -137,7 +137,7 @@ const Cost360Dashboard = () => {
           </div>
           <input
             type="text"
-            className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm shadow-sm transition-all duration-200"
+            className="block w-full pl-12 pr-4 py-4 border border-gray-400 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm shadow-sm transition-all duration-200"
             placeholder="Buscar partida por código (ej. E01) o descripción..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -172,7 +172,8 @@ const Cost360Dashboard = () => {
       <div className="mb-4 text-gray-500 font-medium">
         {totalItems > 0 && (
           <span>
-            {new Intl.NumberFormat('es-VE').format(totalItems)} {totalItems === 1 ? 'coincidencia' : 'coincidencias'} en total
+            {new Intl.NumberFormat('es-VE').format(totalItems)} 
+            {(search || chapter) ? (totalItems === 1 ? ' coincidencia' : ' coincidencias en total') : ' Total Partidas'}
           </span>
         )}
       </div>
@@ -191,7 +192,7 @@ const Cost360Dashboard = () => {
                       <FiLayers className="text-lg" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-gray-900 font-mono mb-1">{item.CodPar}</p>
+                      <p className="text-sm font-bold text-gray-900 font-mono mb-1">{item.CovPar || item.CodPar}</p>
                       <p className="text-sm text-gray-600 line-clamp-2 max-w-3xl">{item.Descri}</p>
                     </div>
                   </div>
