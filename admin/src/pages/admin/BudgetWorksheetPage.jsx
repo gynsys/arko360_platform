@@ -54,22 +54,6 @@ export default function BudgetWorksheetPage() {
   const [editingChapterId, setEditingChapterId] = useState(null);
   const [editingChapterName, setEditingChapterName] = useState("");
 
-  const [pageHeaderHeight, setPageHeaderHeight] = useState(0);
-  const pageHeaderRef = React.useRef(null);
-
-  useEffect(() => {
-    if (pageHeaderRef.current) {
-      setPageHeaderHeight(pageHeaderRef.current.offsetHeight);
-    }
-    const observer = new ResizeObserver(entries => {
-      if (entries[0] && pageHeaderRef.current) {
-        setPageHeaderHeight(pageHeaderRef.current.offsetHeight);
-      }
-    });
-    if (pageHeaderRef.current) observer.observe(pageHeaderRef.current);
-    return () => observer.disconnect();
-  }, []);
-
   useEffect(() => {
     loadBudget();
   }, [id]);
@@ -339,59 +323,8 @@ export default function BudgetWorksheetPage() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-64px)] w-full">
-      {/* PAGE HEADER (Fixed at top) */}
-      <div ref={pageHeaderRef} className="fixed left-0 right-0 bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-sm py-4 z-30" style={{ top: '65px' }}>
-        <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate('/budgets')}
-            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
-          >
-            <ArrowLeft size={20} className="text-slate-600" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800 leading-tight">{budget.name}</h1>
-            <p className="text-sm text-slate-500 font-medium">Hoja de Presupuesto</p>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          {headerPortalTarget && createPortal(
-            <div className="flex gap-2 mx-2">
-              <button 
-                onClick={handleSyncPrices}
-                disabled={syncing}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors font-medium shadow-sm text-sm"
-              >
-                <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
-                {syncing ? 'Actualizando...' : 'Actualizar Precios'}
-              </button>
-              <button 
-                onClick={() => setShowSettings(!showSettings)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium shadow-sm text-sm"
-              >
-                <Settings size={16} /> Configuración Global
-              </button>
-            </div>,
-            headerPortalTarget
-          )}
-          <button  
-            onClick={() => { setChapterName(""); setShowChapterModal(true); }}
-            className="flex items-center gap-2 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-4 py-2 rounded-xl font-medium shadow-sm transition-all text-sm"
-          >
-            <FolderPlus size={16} /> Agregar Capítulo
-          </button>
-          <button  
-            onClick={handleOpenSearchModal}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/30 transition-all active:scale-95 text-sm"
-          >
-            <Plus size={16} /> Agregar Partida
-          </button>
-        </div>
-        </div>
-      </div>
-
-      {/* SPACER FOR FIXED HEADER */}
-      <div style={{ height: pageHeaderHeight ? `${pageHeaderHeight}px` : '89px' }} className="w-full flex-none" />
+  return (
+    <div className="flex flex-col min-h-[calc(100vh-64px)] w-full">
 
       {/* WORKSHEET CONTENT */}
       <div className="flex-1 bg-slate-50/30 p-6 md:p-8 flex flex-col">
@@ -627,8 +560,61 @@ export default function BudgetWorksheetPage() {
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 flex flex-col relative">
         <div className="flex-1">
           <table className="w-full text-left border-collapse relative">
-            <thead className="sticky z-20 bg-slate-50 shadow-sm ring-1 ring-slate-200" style={{ top: `calc(65px + ${pageHeaderHeight || 89}px)` }}>
-              <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+            <thead className="sticky z-30 shadow-md ring-1 ring-slate-200 bg-white" style={{ top: '64px' }}>
+              {/* PAGE HEADER INSIDE TABLE HEADER */}
+              <tr>
+                <th colSpan="8" className="p-0 border-b border-slate-200 bg-slate-50/95 backdrop-blur-md">
+                  <div className="px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex items-center gap-4">
+                      <button 
+                        onClick={() => navigate('/budgets')}
+                        className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
+                      >
+                        <ArrowLeft size={20} className="text-slate-600" />
+                      </button>
+                      <div>
+                        <h1 className="text-2xl font-bold text-slate-800 leading-tight">{budget.name}</h1>
+                        <p className="text-sm text-slate-500 font-medium font-normal">Hoja de Presupuesto</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      {headerPortalTarget && createPortal(
+                        <div className="flex gap-2 mx-2">
+                          <button 
+                            onClick={handleSyncPrices}
+                            disabled={syncing}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors font-medium shadow-sm text-sm"
+                          >
+                            <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
+                            {syncing ? 'Actualizando...' : 'Actualizar Precios'}
+                          </button>
+                          <button 
+                            onClick={() => setShowSettings(!showSettings)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium shadow-sm text-sm"
+                          >
+                            <Settings size={16} /> Configuración Global
+                          </button>
+                        </div>,
+                        headerPortalTarget
+                      )}
+                      <button  
+                        onClick={() => { setChapterName(""); setShowChapterModal(true); }}
+                        className="flex items-center gap-2 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-4 py-2 rounded-xl font-medium shadow-sm transition-all text-sm"
+                      >
+                        <FolderPlus size={16} /> Agregar Capítulo
+                      </button>
+                      <button  
+                        onClick={handleOpenSearchModal}
+                        className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/30 transition-all active:scale-95 text-sm"
+                      >
+                        <Plus size={16} /> Agregar Partida
+                      </button>
+                    </div>
+                  </div>
+                </th>
+              </tr>
+              {/* COLUMN HEADERS */}
+              <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 font-semibold shadow-sm">
                 <th className="p-4 w-16 text-center bg-slate-50 border-b border-slate-200">#</th>
                 <th className="p-4 w-32 bg-slate-50 border-b border-slate-200">Código</th>
                 <th className="p-4 bg-slate-50 border-b border-slate-200">Descripción</th>
