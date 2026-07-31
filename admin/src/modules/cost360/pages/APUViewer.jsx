@@ -72,7 +72,7 @@ const APUViewer = () => {
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto min-h-screen pb-20">
       {/* TOOLBAR */}
-      <div className="flex items-center gap-4 mb-4 sticky top-[70px] z-30 bg-gray-50/95 backdrop-blur py-3 -mx-2 px-2 rounded-b-xl border-b border-gray-200/50 shadow-sm">
+      <div className="flex items-center gap-4 mb-4 sticky top-16 z-30 bg-gray-50/95 backdrop-blur py-3 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-gray-200/50 shadow-sm">
         <button 
           onClick={() => navigate('/cost360')}
           className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0 shadow-sm"
