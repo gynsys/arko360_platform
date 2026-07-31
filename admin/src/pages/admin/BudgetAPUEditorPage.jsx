@@ -196,38 +196,46 @@ export default function BudgetAPUEditorPage() {
         />
       )}
       
-      <div className="print:hidden">
-      {/* TOOLBAR */}
-      <div className="flex items-center justify-between mb-4 sticky top-16 z-30 bg-gray-50/95 backdrop-blur py-3 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-gray-200/50 shadow-sm">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate(`/budgets/${id}`)}
-            className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0 shadow-sm"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h2 className="text-sm font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-              <Calculator size={16} className="text-blue-500" /> APU PRESUPUESTADO
-            </h2>
+      <div className="print:hidden flex flex-col min-h-full">
+        {/* TOOLBAR */}
+        <div className="flex items-center justify-between mb-4 sticky top-16 z-30 bg-gray-50/95 backdrop-blur py-3 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-gray-200/50 shadow-sm">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => navigate(`/budgets/${id}`)}
+              className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0 shadow-sm"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <h2 className="text-sm font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+                <Calculator size={16} className="text-blue-500" /> APU PRESUPUESTADO
+              </h2>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setPrintModalOpen(true)}
+              className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shadow-sm flex items-center gap-2"
+              title="Imprimir"
+            >
+              <Printer size={20} />
+            </button>
+            <button 
+              onClick={syncWithBaseMaestra}
+              disabled={syncing}
+              className="flex items-center gap-2 bg-white border border-slate-300 px-3 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 shadow-sm"
+              title="Sincronizar precios desde la Base Maestra"
+            >
+              <RefreshCw size={16} className={syncing ? "animate-spin text-blue-500" : ""} />
+              <span className="hidden md:inline">Sincronizar Base Maestra</span>
+            </button>
           </div>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setPrintModalOpen(true)}
-            className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shadow-sm flex items-center gap-2"
-            title="Imprimir"
-          >
-            <Printer size={20} />
-          </button>
-        </div>
-      </div>
-      </div>
 
-      {/* MAPREX STYLE TOP HEADER */}
-      <div className="bg-white border-2 border-slate-200 rounded-xl shadow-sm mb-6 overflow-hidden">
-        {/* Info row */}
+        {/* MAPREX STYLE TOP HEADER */}
+        <div className="bg-white border-2 border-slate-200 rounded-xl shadow-sm mb-6 overflow-hidden">
+          {/* Info row */}
         <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-1">
             <span className="block text-xs font-bold text-slate-400 uppercase">Referencia / Código</span>
@@ -598,6 +606,7 @@ export default function BudgetAPUEditorPage() {
           </div>
         </div>
 
+      </div>
       </div>
 
       {/* Component Search Modal */}

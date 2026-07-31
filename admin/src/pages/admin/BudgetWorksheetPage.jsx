@@ -254,36 +254,51 @@ export default function BudgetWorksheetPage() {
   };
 
   const calculatePU = (item) => {
-    let matCost = 0;
-    if (item.materials) {
-      item.materials.forEach(m => {
-        const cost = m.cantidad * m.precio_unitario;
-        matCost += cost * (1 + ((budget?.material_inflation || 0) / 100));
-      });
-    }
-    let eqCost = 0;
-    if (item.equipments) {
-      item.equipments.forEach(e => {
-        const cost = (e.cantidad * e.precio_unitario) / (item.performance || 1);
-        eqCost += cost * (1 + ((budget?.equipment_inflation || 0) / 100));
-      });
-    }
-    let labCost = 0;
-    if (item.labors) {
-      item.labors.forEach(l => {
-        const daily = (l.jornal + (budget?.labor_bonus || 0)) * l.cantidad;
-        const cost = daily / (item.performance || 1);
-        labCost += cost * (1 + ((budget?.labor_inflation || 0) / 100));
-      });
-      // Apply FCAS from budget config
-      labCost = labCost * (1 + (budget.fcas_percent / 100));
-    }
+    // 1. Materiales
+    const matCost = (item.materials || []).reduce((acc, curr) => {
+      const q = parseFloat(curr.quantity || 0);
+      const w = parseFloat(curr.waste || 0);
+      const p = parseFloat(curr.price || 0);
+      const quantityWithWaste = q * (1 + w / 100);
+      return acc + (quantityWithWaste * p);
+    }, 0);
+    
+    // 2. Equipos
+    const eqTotalDay = (item.equipments || []).reduce((acc, curr) => {
+      const q = parseFloat(curr.quantity || 0);
+      const d = parseFloat(curr.depreciation || 1);
+      const p = parseFloat(curr.price || 0);
+      return acc + (q * d * p);
+    }, 0);
+    const eqCost = eqTotalDay / (item.performance || 1);
+    
+    // 3. Mano de Obra
+    const totJornal = (item.labors || []).reduce((acc, curr) => {
+      const q = parseFloat(curr.quantity || 0);
+      const j = parseFloat(curr.jornal || 0);
+      return acc + (q * j);
+    }, 0);
+    const totBono = (item.labors || []).reduce((acc, curr) => {
+      const q = parseFloat(curr.quantity || 0);
+      const b = parseFloat(curr.bono || 0);
+      return acc + (q * b);
+    }, 0);
+    
+    const fcasPercent = budget?.fcas_percent ?? 417;
+    const fcasMonto = totJornal * (fcasPercent / 100);
+    const labTotalDay = totJornal + totBono + fcasMonto;
+    const labCost = labTotalDay / (item.performance || 1);
     
     // Add Administrative and Profit overheads from budget config
     const subtotal = matCost + eqCost + labCost;
-    const admin = subtotal * (budget.admin_percent / 100);
-    const util = subtotal * (budget.profit_percent / 100);
-    return subtotal + admin + util;
+    const adminPercent = budget?.admin_percent ?? 15.0;
+    const utilPercent = budget?.profit_percent ?? 10.0;
+    
+    const admin = subtotal * (adminPercent / 100);
+    const subtotalB = subtotal + admin;
+    const util = subtotalB * (utilPercent / 100);
+    
+    return subtotalB + util;
   };
 
   const calculateBudgetTotal = () => {
