@@ -27,7 +27,7 @@ export default function AppLayout() {
             
             {/* Logo and Nav Links */}
             <div className="flex">
-              <div className="flex-shrink-0 flex items-center gap-2 cursor-pointer" onClick={() => navigate('/cost360')}>
+              <div className="flex-shrink-0 flex items-center gap-2 cursor-pointer" onClick={() => navigate('/budgets')}>
                 <div className="bg-blue-600 text-white p-1.5 rounded-lg">
                   <Layout size={20} />
                 </div>
