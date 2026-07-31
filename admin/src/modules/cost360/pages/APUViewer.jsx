@@ -414,6 +414,4 @@ export default function APUViewer() {
       </div>
     </div>
   );
-};
-
-export default APUViewer;
+}
