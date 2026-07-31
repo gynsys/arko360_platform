@@ -475,7 +475,7 @@ export default function BudgetWorksheetPage() {
                     type="number" 
                     step="0.01"
                     value={settings.exchange_rate}
-                    onChange={e => setSettings({...settings, exchange_rate: parseFloat(e.target.value)})}
+                    onChange={e => setSettings({...settings, exchange_rate: e.target.value})}
                     className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
@@ -487,7 +487,7 @@ export default function BudgetWorksheetPage() {
                     type="number" 
                     step="1"
                     value={settings.fcas_percent}
-                    onChange={e => setSettings({...settings, fcas_percent: parseFloat(e.target.value)})}
+                    onChange={e => setSettings({...settings, fcas_percent: e.target.value})}
                     className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
@@ -501,7 +501,7 @@ export default function BudgetWorksheetPage() {
                     type="number" 
                     step="0.1"
                     value={settings.material_inflation}
-                    onChange={e => setSettings({...settings, material_inflation: parseFloat(e.target.value) || 0})}
+                    onChange={e => setSettings({...settings, material_inflation: e.target.value})}
                     className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
@@ -513,7 +513,7 @@ export default function BudgetWorksheetPage() {
                     type="number" 
                     step="0.1"
                     value={settings.equipment_inflation}
-                    onChange={e => setSettings({...settings, equipment_inflation: parseFloat(e.target.value) || 0})}
+                    onChange={e => setSettings({...settings, equipment_inflation: e.target.value})}
                     className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
@@ -525,7 +525,7 @@ export default function BudgetWorksheetPage() {
                     type="number" 
                     step="0.1"
                     value={settings.labor_inflation}
-                    onChange={e => setSettings({...settings, labor_inflation: parseFloat(e.target.value) || 0})}
+                    onChange={e => setSettings({...settings, labor_inflation: e.target.value})}
                     className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
@@ -539,7 +539,7 @@ export default function BudgetWorksheetPage() {
                     type="number" 
                     step="0.01"
                     value={settings.labor_bonus}
-                    onChange={e => setSettings({...settings, labor_bonus: parseFloat(e.target.value) || 0})}
+                    onChange={e => setSettings({...settings, labor_bonus: e.target.value})}
                     className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
@@ -551,7 +551,7 @@ export default function BudgetWorksheetPage() {
                     type="number" 
                     step="1"
                     value={settings.admin_percent}
-                    onChange={e => setSettings({...settings, admin_percent: parseFloat(e.target.value) || 0})}
+                    onChange={e => setSettings({...settings, admin_percent: e.target.value})}
                     className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
@@ -563,7 +563,7 @@ export default function BudgetWorksheetPage() {
                     type="number" 
                     step="1"
                     value={settings.profit_percent}
-                    onChange={e => setSettings({...settings, profit_percent: parseFloat(e.target.value) || 0})}
+                    onChange={e => setSettings({...settings, profit_percent: e.target.value})}
                     className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
@@ -575,7 +575,7 @@ export default function BudgetWorksheetPage() {
                     type="number" 
                     step="1"
                     value={settings.iva_percent}
-                    onChange={e => setSettings({...settings, iva_percent: parseFloat(e.target.value) || 0})}
+                    onChange={e => setSettings({...settings, iva_percent: e.target.value})}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
                   />
                 </div>
