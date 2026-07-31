@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Plus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Plus, RefreshCw, Printer } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 import { API_URL } from '../../services/api';
 import ComponentSearchModal from '../../components/ComponentSearchModal';
+import PrintAPUModal from '../../components/PrintAPUModal';
+import PrintAPULayout from '../../components/PrintAPULayout';
 
 export default function BudgetAPUEditorPage() {
   const { id, itemId } = useParams();
@@ -15,6 +17,19 @@ export default function BudgetAPUEditorPage() {
   
   const [searchModal, setSearchModal] = useState({ isOpen: false, type: '', title: '' });
   const [syncing, setSyncing] = useState(false);
+  
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [printOptions, setPrintOptions] = useState(null);
+
+  useEffect(() => {
+    if (printOptions) {
+      setTimeout(() => {
+        window.print();
+        setPrintOptions(null);
+        setPrintModalOpen(false);
+      }, 300);
+    }
+  }, [printOptions]);
 
   const handleComponentChange = (type, compId, field, value) => {
     const val = parseFloat(value) || 0;
@@ -154,23 +169,60 @@ export default function BudgetAPUEditorPage() {
   const unitPrice = subtotalB + utilCost;
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto min-h-screen pb-20">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto pb-24 print:p-0 print:m-0 print:max-w-none print:bg-white print:w-full">
+      {printOptions && (
+        <PrintAPULayout 
+          partida={{
+            ...item,
+            fcas_percent: budget.fcas_percent,
+            admin_percent: budget.admin_percent,
+            util_percent: budget.util_percent,
+            rendimiento: item.performance,
+            cantidad: item.quantity
+          }} 
+          materiales={item.materials || []} 
+          equipos={item.equipments || []} 
+          mano_obra={item.labors || []} 
+          options={{...printOptions, companyName: budget.name}} 
+        />
+      )}
+      
+      {printModalOpen && (
+        <PrintAPUModal 
+          isOpen={printModalOpen}
+          onClose={() => setPrintModalOpen(false)} 
+          onPrint={(options) => setPrintOptions(options)}
+          budgetName={budget.name}
+        />
+      )}
+      
+      <div className="print:hidden">
       {/* TOOLBAR */}
-      <div className="flex items-center gap-4 mb-4">
-        <button 
-          onClick={() => navigate(`/budgets/${id}`)}
-          className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shrink-0"
-        >
-          <ArrowLeft size={20} className="text-slate-600" />
-        </button>
-        <div>
-          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-            <Calculator size={16} /> ANÁLISIS DE PRECIO UNITARIO
-          </h2>
+      <div className="flex items-center justify-between mb-4 sticky top-16 z-30 bg-gray-50/95 backdrop-blur py-3 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-gray-200/50 shadow-sm">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate(`/budgets/${id}`)}
+            className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0 shadow-sm"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h2 className="text-sm font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+              <Calculator size={16} className="text-blue-500" /> APU PRESUPUESTADO
+            </h2>
+          </div>
         </div>
-        <div className="ml-auto">
-          {/* Action buttons can go here */}
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setPrintModalOpen(true)}
+            className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shadow-sm flex items-center gap-2"
+            title="Imprimir"
+          >
+            <Printer size={20} />
+          </button>
         </div>
+      </div>
       </div>
 
       {/* MAPREX STYLE TOP HEADER */}

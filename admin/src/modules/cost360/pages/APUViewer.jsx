@@ -1,51 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calculator, ArrowLeft, Package, Wrench, Users } from 'lucide-react';
-import toast from 'react-hot-toast';
-import cost360Service from '../services/cost360Service';
+import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Printer } from 'lucide-react';
+import { cost360Service } from '../../services/cost360Service';
+import PrintAPUModal from '../../../components/PrintAPUModal';
+import PrintAPULayout from '../../../components/PrintAPULayout';
 
-const APUViewer = () => {
-  const { id } = useParams();
+export default function APUViewer() {
+  const { code } = useParams();
   const navigate = useNavigate();
-  const [apuData, setApuData] = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [printOptions, setPrintOptions] = useState(null);
 
   useEffect(() => {
-    const fetchApu = async () => {
+    const fetchAPU = async () => {
       try {
-        const data = await cost360Service.fetchApuDetails(id);
-        setApuData(data);
-      } catch (error) {
-        toast.error('No se pudo cargar el Análisis de Precio Unitario');
-        navigate('/cost360');
+        setLoading(true);
+        const apuData = await cost360Service.getAPUDetails(code);
+        setData(apuData);
+      } catch (err) {
+        console.error("Error loading APU details:", err);
+        setError("Error loading APU details");
       } finally {
         setLoading(false);
       }
     };
-    fetchApu();
-  }, [id, navigate]);
+    fetchAPU();
+  }, [code]);
+
+  useEffect(() => {
+    if (printOptions) {
+      setTimeout(() => {
+        window.print();
+        setPrintOptions(null);
+        setPrintModalOpen(false);
+      }, 300);
+    }
+  }, [printOptions]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-full min-h-screen">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+      <div className="flex justify-center items-center h-64">
+        <Loader className="animate-spin text-blue-500" size={32} />
       </div>
     );
   }
 
-  if (!apuData) return null;
+  if (error || !data || !data.partida) {
+    return (
+      <div className="text-center p-8 text-red-500 bg-red-50 rounded-xl border border-red-200 m-6">
+        {error || "APU not found"}
+      </div>
+    );
+  }
 
-  const { partida, materiales, equipos, mano_obra } = apuData;
+  const { partida, materiales = [], equipos = [], mano_obra = [] } = data;
+
   const rendimiento = partida.RenPar || 1;
-  const fcasFactor = 4.17; // 417%
-  
-  // These percentages usually come from budget, but since this is the global viewer, we can use standard defaults or 0.
-  // Standard defaults in Venezuela construction are often 15% Admin, 10% Utility.
   const adminPercent = 15;
   const utilPercent = 10;
-  
-  const calculateMaterialTotal = () => materiales.reduce((acc, item) => acc + item.subtotal, 0);
-  const calculateEquipmentTotalDay = () => equipos.reduce((acc, item) => acc + item.subtotal, 0);
+  const fcasFactor = 9.88; 
+
+  const calculateMaterialTotal = () => materiales.reduce((acc, item) => acc + (item.subtotal || 0), 0);
+  const calculateEquipmentTotalDay = () => equipos.reduce((acc, item) => acc + (item.subtotal || 0), 0);
   const calculateLaborTotalJornalDay = () => mano_obra.reduce((acc, item) => acc + (item.tot_jornal || 0), 0);
   const calculateLaborTotalBonoDay = () => mano_obra.reduce((acc, item) => acc + (item.tot_bono || 0), 0);
   
@@ -70,19 +90,46 @@ const APUViewer = () => {
   const unitPrice = subtotalB + utilCost;
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto min-h-screen pb-20">
-      {/* TOOLBAR */}
-      <div className="flex items-center gap-4 mb-4 sticky top-16 z-30 bg-gray-50/95 backdrop-blur py-3 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-gray-200/50 shadow-sm">
-        <button 
-          onClick={() => navigate('/cost360')}
-          className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0 shadow-sm"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <div>
-          <h2 className="text-sm font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-            <Calculator size={16} className="text-blue-500" /> ANÁLISIS DE PRECIO UNITARIO
-          </h2>
+    <div className="p-4 md:p-6 max-w-7xl mx-auto min-h-screen pb-20 print:p-0 print:m-0 print:max-w-none print:bg-white print:w-full">
+      {printOptions && (
+        <PrintAPULayout 
+          partida={partida} 
+          materiales={materiales} 
+          equipos={equipos} 
+          mano_obra={mano_obra} 
+          options={printOptions} 
+        />
+      )}
+      
+      {printModalOpen && (
+        <PrintAPUModal 
+          isOpen={printModalOpen}
+          onClose={() => setPrintModalOpen(false)} 
+          onPrint={(options) => setPrintOptions(options)} 
+        />
+      )}
+      
+      <div className="print:hidden">
+        {/* TOOLBAR */}
+        <div className="flex items-center justify-between mb-4 sticky top-16 z-30 bg-gray-50/95 backdrop-blur py-3 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-gray-200/50 shadow-sm">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => navigate('/cost360')}
+              className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0 shadow-sm"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h2 className="text-sm font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+              <Calculator size={16} className="text-blue-500" /> ANÁLISIS DE PRECIO UNITARIO
+            </h2>
+          </div>
+          <button 
+            onClick={() => setPrintModalOpen(true)}
+            className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shadow-sm flex items-center gap-2"
+            title="Imprimir"
+          >
+            <Printer size={20} />
+          </button>
         </div>
       </div>
 
@@ -163,7 +210,7 @@ const APUViewer = () => {
                       {mat.cantidad}
                     </td>
                     <td className="p-2 border-r border-slate-200 text-right font-medium text-xs">
-                      0
+                      {mat.desperdicio || 0}
                     </td>
                     <td className="p-2 border-r border-slate-200 text-right font-medium text-xs">
                       {mat.precio_unitario?.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
