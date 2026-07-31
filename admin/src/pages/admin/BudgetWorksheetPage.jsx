@@ -322,7 +322,7 @@ export default function BudgetWorksheetPage() {
   const { subtotalPresupuesto, ivaAmount, totalGeneral } = calculateBudgetTotal();
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] w-full">
+    <div className="flex flex-col h-[calc(100vh-64px)] w-full overflow-hidden">
       {/* PAGE HEADER (Fixed at top) */}
       <div className="flex-none bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-sm px-6 md:px-8 py-4 z-30">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -373,9 +373,9 @@ export default function BudgetWorksheetPage() {
         </div>
       </div>
 
-      {/* WORKSHEET CONTENT (Scrollable) */}
-      <div className="flex-1 overflow-y-auto bg-slate-50/30 p-6 md:p-8">
-        <div className="max-w-7xl mx-auto w-full">
+      {/* WORKSHEET CONTENT */}
+      <div className="flex-1 bg-slate-50/30 p-6 md:p-8 flex flex-col overflow-hidden">
+        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col overflow-hidden">
 
       {/* SETTINGS MODAL */}
       {showSettings && createPortal(
@@ -604,9 +604,10 @@ export default function BudgetWorksheetPage() {
       )}
 
       {/* WORKSHEET TABLE */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-visible">
-        <table className="w-full text-left border-collapse relative">
-          <thead className="sticky top-0 z-20 shadow-sm ring-1 ring-slate-200">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 flex flex-col overflow-hidden relative">
+        <div className="flex-1 overflow-y-auto">
+          <table className="w-full text-left border-collapse relative">
+            <thead className="sticky top-0 z-20 bg-slate-50 shadow-sm ring-1 ring-slate-200">
               <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 font-semibold">
                 <th className="p-4 w-16 text-center bg-slate-50 border-b border-slate-200">#</th>
                 <th className="p-4 w-32 bg-slate-50 border-b border-slate-200">Código</th>
@@ -752,10 +753,12 @@ export default function BudgetWorksheetPage() {
               )}
             </tbody>
           </table>
+        </div>
+        </div>
         
         {/* FOOTER TOTAL */}
         {budget.items?.length > 0 && (
-          <div className="mt-8 flex flex-col items-end gap-2 p-6">
+          <div className="mt-6 flex-none flex justify-end">
             <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 min-w-[300px]">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-slate-500 font-medium text-sm">SUBTOTAL</span>
@@ -924,8 +927,7 @@ export default function BudgetWorksheetPage() {
         </div>,
         document.body
       )}
-        </div>
-      </div>
+    </div>
     </div>
   );
 }
