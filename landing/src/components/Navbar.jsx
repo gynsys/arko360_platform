@@ -197,7 +197,7 @@ export default function Navbar() {
               )}
               <li>
                 <a 
-                  href="/app/cost360" 
+                  href="/app/login" 
                   style={{ color: '#3498db', fontWeight: 'bold' }}
                 >
                   Cost360
