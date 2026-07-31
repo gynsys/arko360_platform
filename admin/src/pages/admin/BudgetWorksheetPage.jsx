@@ -323,8 +323,6 @@ export default function BudgetWorksheetPage() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-64px)] w-full">
-  return (
-    <div className="flex flex-col min-h-[calc(100vh-64px)] w-full">
 
       {/* WORKSHEET CONTENT */}
       <div className="flex-1 bg-slate-50/30 p-6 md:p-8 flex flex-col">
