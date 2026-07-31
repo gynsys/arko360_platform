@@ -70,3 +70,23 @@ class CostLaborUpdate(BaseModel):
     Bono: Optional[float] = None
     Descri: Optional[str] = None
 
+class CustomCostItemCreate(BaseModel):
+    description: str
+    unit: str
+    performance: float
+    apu_data: str  # JSON encoded string of the APU details
+
+class CustomCostItemResponse(BaseModel):
+    id: str
+    user_id: Optional[int]
+    description: str
+    unit: str
+    performance: float
+    apu_data: str
+    created_at: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class AiApuGenerateRequest(BaseModel):
+    description: str

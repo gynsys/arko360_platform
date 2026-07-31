@@ -40,7 +40,19 @@ export const fetchApuDetails = async (itemCode) => {
   return response.data;
 };
 
+export const generateAIApu = async (description) => {
+  const response = await cost360ApiClient.post('/generate-ai-apu', { description });
+  return response.data;
+};
+
+export const saveCustomApu = async (payload) => {
+  const response = await cost360ApiClient.post('/custom-apus', payload);
+  return response.data;
+};
+
 export default {
   fetchItems,
   fetchApuDetails,
+  generateAIApu,
+  saveCustomApu,
 };

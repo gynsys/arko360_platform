@@ -5,13 +5,17 @@ from typing import List, Optional
 from app.db.base import get_db
 from app.db.models.cost360 import (
     CostItem, CostMaterial, CostEquipment, CostLabor,
-    CostAPUMaterial, CostAPUEquipment, CostAPULabor
+    CostAPUMaterial, CostAPUEquipment, CostAPULabor, CustomCostItem
 )
 from app.schemas.cost360 import (
     CostItemBase, APUResponse, APUComponent, CostItemListResponse,
     CostMaterialSchema, CostEquipmentSchema, CostLaborSchema,
-    CostMaterialUpdate, CostEquipmentUpdate, CostLaborUpdate
+    CostMaterialUpdate, CostEquipmentUpdate, CostLaborUpdate,
+    AiApuGenerateRequest, CustomCostItemCreate, CustomCostItemResponse
 )
+from app.services.llm_router import call_llm_json
+import json
+from sqlalchemy import func
 
 router = APIRouter()
 
@@ -228,3 +232,124 @@ def delete_labor(codigo: str, db: Session = Depends(get_db)):
     db.delete(labor)
     db.commit()
     return {"status": "ok"}
+
+@router.post("/generate-ai-apu")
+def generate_ai_apu(payload: AiApuGenerateRequest, db: Session = Depends(get_db)):
+    # 1. Extraer palabras clave largas para buscar insumos (omitir palabras cortas como 'de', 'con', etc.)
+    keywords = [w.lower() for w in payload.description.split() if len(w) > 3]
+    
+    # Materiales relevantes
+    mat_query = []
+    if keywords:
+        mat_query = db.query(CostMaterial).filter(
+            db.or_(*[CostMaterial.Descri.ilike(f"%{k}%") for k in keywords])
+        ).limit(30).all()
+        
+    mat_ids = [m.CodMat for m in mat_query]
+    yields_dict = {}
+    if mat_ids:
+        yields_mat = db.query(CostAPUMaterial.CodIns, func.avg(CostAPUMaterial.CanIns).label("avg_cant")).filter(CostAPUMaterial.CodIns.in_(mat_ids)).group_by(CostAPUMaterial.CodIns).all()
+        yields_dict = {y.CodIns: y.avg_cant for y in yields_mat}
+
+    context_materiales = []
+    for m in mat_query:
+        context_materiales.append({
+            "codigo": m.CodMat, 
+            "descripcion": m.Descri, 
+            "unidad": m.UniMat, 
+            "precio": m.CosMat,
+            "rendimiento_historico_promedio": yields_dict.get(m.CodMat, None)
+        })
+
+    # Equipos relevantes (búsqueda general pequeña para dar contexto o palabras clave si aplica)
+    eq_query = db.query(CostEquipment).limit(20).all()
+    eq_ids = [e.CodEqu for e in eq_query]
+    eq_yields_dict = {}
+    if eq_ids:
+        yields_eq = db.query(CostAPUEquipment.CodIns, func.avg(CostAPUEquipment.CanIns).label("avg_cant")).filter(CostAPUEquipment.CodIns.in_(eq_ids)).group_by(CostAPUEquipment.CodIns).all()
+        eq_yields_dict = {y.CodIns: y.avg_cant for y in yields_eq}
+        
+    context_equipos = []
+    for e in eq_query:
+        context_equipos.append({
+            "codigo": e.CodEqu,
+            "descripcion": e.Descri,
+            "precio_diario": e.CosDia,
+            "rendimiento_historico_promedio": eq_yields_dict.get(e.CodEqu, None)
+        })
+
+    # Mano de obra relevante
+    mo_query = db.query(CostLabor).limit(20).all()
+    mo_ids = [m.CodMan for m in mo_query]
+    mo_yields_dict = {}
+    if mo_ids:
+        yields_mo = db.query(CostAPULabor.CodIns, func.avg(CostAPULabor.CanIns).label("avg_cant")).filter(CostAPULabor.CodIns.in_(mo_ids)).group_by(CostAPULabor.CodIns).all()
+        mo_yields_dict = {y.CodIns: y.avg_cant for y in yields_mo}
+        
+    context_mano_obra = []
+    for m in mo_query:
+        context_mano_obra.append({
+            "codigo": m.CodMan,
+            "descripcion": m.Descri,
+            "jornal": m.Jornal,
+            "rendimiento_historico_promedio": mo_yields_dict.get(m.CodMan, None)
+        })
+
+    context = {
+        "catalogo_materiales": context_materiales,
+        "catalogo_equipos": context_equipos,
+        "catalogo_mano_obra": context_mano_obra
+    }
+    
+    prompt = f"""
+Eres un ingeniero civil experto calculando Análisis de Precios Unitarios (APU).
+El usuario necesita un APU para la siguiente partida: "{payload.description}"
+
+INSTRUCCIONES CRÍTICAS:
+1. Utiliza ESTRICTAMENTE los códigos, descripciones y precios del catálogo proporcionado abajo.
+2. Para las cantidades (rendimientos), si el catálogo incluye un "rendimiento_historico_promedio", úsalo y marca el campo "origen" como "historico".
+3. Si el insumo no tiene rendimiento histórico, asume uno basado en la ingeniería y marca "origen" como "ia".
+4. Si extraes un insumo tal cual del catálogo, pon "origen" como "catalogo".
+5. Los IDs deben ser UUIDs cortos aleatorios que inventes (ej. 'mat-1', 'eq-2').
+
+Catálogo disponible (SOLO USA ESTOS INSUMOS):
+{json.dumps(context)}
+
+Devuelve un JSON estrictamente con la siguiente estructura (NO AGREGUES TEXTO EXTRA):
+{{
+    "partida": {{
+        "cod_par": "AI-GEN",
+        "description": "{payload.description}",
+        "unit": "m2",
+        "performance": 1.0,
+        "quantity": 1.0
+    }},
+    "materials": [
+        {{ "id": "m-1", "codigo": "CodMat", "descripcion": "Desc", "unidad": "m", "cantidad": 0.5, "desperdicio": 5, "precio_unitario": 10.0, "origen": "historico" }}
+    ],
+    "equipments": [
+        {{ "id": "e-1", "codigo": "CodEqu", "descripcion": "Desc", "cantidad": 0.1, "depreciacion": 1.0, "precio_unitario": 50.0, "origen": "ia" }}
+    ],
+    "labors": [
+        {{ "id": "l-1", "codigo": "CodMan", "descripcion": "Desc", "cantidad": 0.1, "jornal": 15.0, "origen": "historico" }}
+    ]
+}}
+"""
+    
+    result = call_llm_json(prompt, use_case="cost360")
+    return result
+
+@router.post("/custom-apus", response_model=CustomCostItemResponse)
+def save_custom_apu(payload: CustomCostItemCreate, db: Session = Depends(get_db)):
+    import uuid
+    new_item = CustomCostItem(
+        id=str(uuid.uuid4()),
+        description=payload.description,
+        unit=payload.unit,
+        performance=payload.performance,
+        apu_data=payload.apu_data
+    )
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item)
+    return new_item

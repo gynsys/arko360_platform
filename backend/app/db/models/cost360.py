@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, ForeignKey
+from sqlalchemy import Column, String, Float, ForeignKey, Integer, DateTime
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
@@ -63,3 +63,19 @@ class CostAPUEquipment(Base):
 
     item = relationship("CostItem", back_populates="apu_equipments")
     equipment = relationship("CostEquipment")
+
+class CustomCostItem(Base):
+    __tablename__ = "cost360_custom_items"
+    
+    id = Column(String, primary_key=True, index=True) # UUID
+    user_id = Column(Integer, nullable=True) # Optional, can be tied to user if auth exists
+    description = Column(String, nullable=False)
+    unit = Column(String, nullable=False)
+    performance = Column(Float, default=1.0)
+    
+    # Store the fully nested APU data (materials, labors, equipments) for easy export and retrieval
+    apu_data = Column(String) # JSON encoded string
+    
+    from sqlalchemy.sql import func
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
