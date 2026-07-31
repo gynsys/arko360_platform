@@ -94,6 +94,14 @@ export const budgetService = {
     return response.json();
   },
 
+  duplicateBudget: async (id, newName) => {
+    const response = await fetch(`${API_URL}/budgets/${id}/duplicate?new_name=${encodeURIComponent(newName)}`, {
+      method: 'POST'
+    });
+    if (!response.ok) throw new Error('Error al duplicar el presupuesto');
+    return response.json();
+  },
+
   // ITEMS (Partidas del Presupuesto)
   addItem: async (budgetId, data) => {
     const response = await fetch(`${API_URL}/budgets/${budgetId}/items`, {

@@ -147,6 +147,86 @@ def reorder_budget_items(budget_id: str, item_ids: List[str], db: Session = Depe
     db.commit()
     return {"ok": True}
 
+@router.post("/{budget_id}/duplicate", response_model=BudgetSchema)
+def duplicate_budget(budget_id: str, new_name: str, db: Session = Depends(get_db)):
+    budget = db.query(Budget).filter(Budget.id == budget_id).first()
+    if not budget:
+        raise HTTPException(status_code=404, detail="Budget not found")
+    
+    # 1. Duplicate Budget
+    new_budget = Budget(
+        name=new_name,
+        currency=budget.currency,
+        exchange_rate=budget.exchange_rate,
+        material_inflation=budget.material_inflation,
+        equipment_inflation=budget.equipment_inflation,
+        labor_inflation=budget.labor_inflation,
+        labor_bonus=budget.labor_bonus,
+        admin_percent=budget.admin_percent,
+        profit_percent=budget.profit_percent,
+        fcas_percent=budget.fcas_percent,
+        iva_percent=budget.iva_percent,
+        project_name=budget.project_name,
+        company_name=budget.company_name,
+        company_rif=budget.company_rif,
+        client_name=budget.client_name
+    )
+    db.add(new_budget)
+    db.commit()
+    db.refresh(new_budget)
+    
+    # 2. Duplicate Items
+    for item in budget.items:
+        new_item = BudgetItem(
+            budget_id=new_budget.id,
+            cod_par=item.cod_par,
+            cov_par=item.cov_par,
+            description=item.description,
+            unit=item.unit,
+            quantity=item.quantity,
+            performance=item.performance,
+            order=item.order,
+            is_chapter=item.is_chapter
+        )
+        db.add(new_item)
+        db.commit()
+        db.refresh(new_item)
+        
+        # 3. Duplicate APU components for this item
+        for mat in item.materials:
+            db.add(DBMaterial(
+                budget_item_id=new_item.id,
+                codigo=mat.codigo,
+                descripcion=mat.descripcion,
+                unidad=mat.unidad,
+                precio_unitario=mat.precio_unitario,
+                cantidad=mat.cantidad,
+                desperdicio=mat.desperdicio
+            ))
+        for eq in item.equipments:
+            db.add(DBEquipment(
+                budget_item_id=new_item.id,
+                codigo=eq.codigo,
+                descripcion=eq.descripcion,
+                unidad=eq.unidad,
+                precio_unitario=eq.precio_unitario,
+                cantidad=eq.cantidad,
+                depreciacion=eq.depreciacion
+            ))
+        for lab in item.labors:
+            db.add(DBLabor(
+                budget_item_id=new_item.id,
+                codigo=lab.codigo,
+                descripcion=lab.descripcion,
+                jornal=lab.jornal,
+                bono=lab.bono,
+                cantidad=lab.cantidad
+            ))
+            
+    db.commit()
+    db.refresh(new_budget)
+    return new_budget
+
 @router.put("/{budget_id}/items/{item_id}", response_model=BudgetItemSchema)
 def update_item_in_budget(budget_id: str, item_id: str, item_in: BudgetItemUpdate, db: Session = Depends(get_db)):
     db_budget = db.query(Budget).filter(Budget.id == budget_id).first()

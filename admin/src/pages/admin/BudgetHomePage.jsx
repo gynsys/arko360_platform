@@ -14,6 +14,12 @@ export default function BudgetHomePage() {
   const [deletingId, setDeletingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newBudgetName, setNewBudgetName] = useState('');
+  
+  const [duplicatingBudget, setDuplicatingBudget] = useState(null);
+  const [duplicateName, setDuplicateName] = useState("");
+  const [renamingBudget, setRenamingBudget] = useState(null);
+  const [renameName, setRenameName] = useState("");
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,13 +43,43 @@ export default function BudgetHomePage() {
     if (!newBudgetName.trim()) return;
     
     try {
-      const newBudget = await budgetService.create({ name: newBudgetName });
+      const newBudget = await budgetService.create({ 
+        name: newBudgetName.trim(),
+        currency: 'USD'
+      });
+      toast.success('Presupuesto creado con éxito');
       setIsModalOpen(false);
       setNewBudgetName('');
       navigate(`/budgets/${newBudget.id}`);
     } catch (error) {
       console.error(error);
-      toast.error('Error creando presupuesto');
+      toast.error('Error al crear el presupuesto');
+    }
+  };
+
+  const handleDuplicate = async (e) => {
+    e.preventDefault();
+    if (!duplicateName.trim()) return;
+    try {
+      await budgetService.duplicateBudget(duplicatingBudget.id, duplicateName.trim());
+      toast.success('Presupuesto duplicado exitosamente');
+      setDuplicatingBudget(null);
+      loadBudgets();
+    } catch (err) {
+      toast.error('Error al duplicar el presupuesto');
+    }
+  };
+
+  const handleRename = async (e) => {
+    e.preventDefault();
+    if (!renameName.trim()) return;
+    try {
+      await budgetService.update(renamingBudget.id, { name: renameName.trim() });
+      toast.success('Nombre actualizado');
+      setRenamingBudget(null);
+      loadBudgets();
+    } catch (err) {
+      toast.error('Error al actualizar el nombre');
     }
   };
 
@@ -124,7 +160,7 @@ export default function BudgetHomePage() {
             <div 
               key={budget.id}
               onClick={() => navigate(`/budgets/${budget.id}`)}
-              className="group bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/5 transition-all cursor-pointer relative overflow-hidden"
+              className="group bg-white border border-slate-300 rounded-2xl p-5 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/5 transition-all cursor-pointer relative overflow-hidden"
             >
               {/* Decorative top gradient */}
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -135,7 +171,21 @@ export default function BudgetHomePage() {
                 </div>
                 
                 {/* Actions Dropdown (Simple for now) */}
-                <div className="flex gap-2">
+                <div className="flex gap-1">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setDuplicatingBudget(budget); setDuplicateName(budget.name + ' (Copia)'); }}
+                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    title="Duplicar"
+                  >
+                    <Copy size={16} />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setRenamingBudget(budget); setRenameName(budget.name); }}
+                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Renombrar"
+                  >
+                    <Edit3 size={16} />
+                  </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); confirmDelete(budget.id); }}
                     className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -227,6 +277,87 @@ export default function BudgetHomePage() {
         </div>
       )}
 
+      {/* RENAME MODAL */}
+      {renamingBudget && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-slate-800 mb-2">Renombrar Presupuesto</h2>
+              <p className="text-sm text-slate-500 mb-6">Ingresa el nuevo nombre para este proyecto.</p>
+              
+              <form onSubmit={handleRename}>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre del Proyecto</label>
+                  <input 
+                    type="text" 
+                    autoFocus
+                    required
+                    value={renameName}
+                    onChange={(e) => setRenameName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  />
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button 
+                    type="button"
+                    onClick={() => setRenamingBudget(null)}
+                    className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    className="px-5 py-2.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DUPLICATE MODAL */}
+      {duplicatingBudget && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-slate-800 mb-2">Duplicar Presupuesto</h2>
+              <p className="text-sm text-slate-500 mb-6">Se creará una copia exacta con todas sus partidas y APUs.</p>
+              
+              <form onSubmit={handleDuplicate}>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre de la Copia</label>
+                  <input 
+                    type="text" 
+                    autoFocus
+                    required
+                    value={duplicateName}
+                    onChange={(e) => setDuplicateName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  />
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button 
+                    type="button"
+                    onClick={() => setDuplicatingBudget(null)}
+                    className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    className="px-5 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/30 transition-all active:scale-95"
+                  >
+                    Crear Copia
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
