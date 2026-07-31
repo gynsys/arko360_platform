@@ -561,7 +561,7 @@ export default function BudgetWorksheetPage() {
             <thead className="sticky z-30 shadow-md ring-1 ring-slate-200 bg-white" style={{ top: '64px' }}>
               {/* PAGE HEADER INSIDE TABLE HEADER */}
               <tr>
-                <th colSpan="8" className="p-0 border-b border-slate-200 bg-slate-50/95 backdrop-blur-md">
+                <th colSpan="8" className="p-0 border-b border-slate-200 bg-white">
                   <div className="px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-4">
                       <button 
