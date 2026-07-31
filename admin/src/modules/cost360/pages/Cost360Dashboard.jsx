@@ -60,15 +60,7 @@ const Cost360Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {portalTarget && createPortal(
-        <button
-          onClick={() => navigate('/admin')}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors mr-4"
-        >
-          <FiArrowLeft /> Regresar
-        </button>,
-        portalTarget
-      )}
+
 
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
         <div className="mb-6">
