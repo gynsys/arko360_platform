@@ -75,7 +75,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/" element={<Navigate to={window.location.hostname === 'admin.arko360.net' ? '/admin' : '/cost360'} replace />} />
+            <Route path="/" element={<Navigate to={window.location.hostname === 'admin.arko360.net' ? '/admin' : '/budgets'} replace />} />
             <Route 
               path="/admin/*" 
               element={
@@ -91,14 +91,28 @@ function App() {
               <Route path="materials" element={<MaterialsPage />} />
             </Route>
             
-            {/* RUTAS PUBLICAS Y DE INGENIERIA (APP) */}
-            <Route path="/cost360" element={<AppLayout />}>
+            {/* RUTAS DE BASE MAESTRA (Protegidas) */}
+            <Route 
+              path="/cost360" 
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<Cost360Dashboard />} />
               <Route path="apu/:id" element={<APUViewer />} />
             </Route>
 
             {/* RUTAS DE PRESUPUESTOS (APP - Protegidas) */}
-            <Route path="/budgets" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+            <Route 
+              path="/budgets" 
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<BudgetHomePage />} />
               <Route path=":id" element={<BudgetWorksheetPage />} />
               <Route path=":id/item/:itemId" element={<BudgetAPUEditorPage />} />
