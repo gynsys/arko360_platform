@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Printer } from 'lucide-react';
-import { cost360Service } from '../../services/cost360Service';
+import cost360Service from '../services/cost360Service';
 import PrintAPUModal from '../../../components/PrintAPUModal';
 import PrintAPULayout from '../../../components/PrintAPULayout';
 
 export default function APUViewer() {
-  const { code } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,7 +19,7 @@ export default function APUViewer() {
     const fetchAPU = async () => {
       try {
         setLoading(true);
-        const apuData = await cost360Service.getAPUDetails(code);
+        const apuData = await cost360Service.fetchApuDetails(id);
         setData(apuData);
       } catch (err) {
         console.error("Error loading APU details:", err);
@@ -29,7 +29,7 @@ export default function APUViewer() {
       }
     };
     fetchAPU();
-  }, [code]);
+  }, [id]);
 
   useEffect(() => {
     if (printOptions) {
