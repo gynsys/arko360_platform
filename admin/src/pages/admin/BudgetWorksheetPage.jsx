@@ -340,8 +340,8 @@ export default function BudgetWorksheetPage() {
   return (
     <div className="flex flex-col min-h-[calc(100vh-64px)] w-full">
       {/* PAGE HEADER (Fixed at top) */}
-      <div ref={pageHeaderRef} className="flex-none bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-sm px-6 md:px-8 py-4 z-30 sticky" style={{ top: '65px' }}>
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div ref={pageHeaderRef} className="fixed left-0 right-0 bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-sm py-4 z-30" style={{ top: '65px' }}>
+        <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/budgets')}
@@ -387,7 +387,11 @@ export default function BudgetWorksheetPage() {
             <Plus size={16} /> Agregar Partida
           </button>
         </div>
+        </div>
       </div>
+
+      {/* SPACER FOR FIXED HEADER */}
+      <div style={{ height: pageHeaderHeight ? `${pageHeaderHeight}px` : '89px' }} className="w-full flex-none" />
 
       {/* WORKSHEET CONTENT */}
       <div className="flex-1 bg-slate-50/30 p-6 md:p-8 flex flex-col">
