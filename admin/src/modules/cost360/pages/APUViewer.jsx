@@ -72,16 +72,16 @@ const APUViewer = () => {
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto min-h-screen pb-20">
       {/* TOOLBAR */}
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-4 mb-4 sticky top-[70px] z-30 bg-gray-50/95 backdrop-blur py-3 -mx-2 px-2 rounded-b-xl border-b border-gray-200/50 shadow-sm">
         <button 
           onClick={() => navigate('/cost360')}
-          className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shrink-0"
+          className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0 shadow-sm"
         >
-          <ArrowLeft size={20} className="text-slate-600" />
+          <ArrowLeft size={20} />
         </button>
         <div>
-          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-            <Calculator size={16} /> ANÁLISIS DE PRECIO UNITARIO
+          <h2 className="text-sm font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+            <Calculator size={16} className="text-blue-500" /> ANÁLISIS DE PRECIO UNITARIO
           </h2>
         </div>
       </div>

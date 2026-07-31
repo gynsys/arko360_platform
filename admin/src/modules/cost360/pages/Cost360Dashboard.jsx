@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiLayers, FiArrowRight, FiArrowLeft, FiBox, FiTool, FiUsers } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -54,28 +55,22 @@ const Cost360Dashboard = () => {
     fetchPartidas(search, chapter, newSkip, true);
   };
 
+  // Safe portal rendering
+  const portalTarget = document.getElementById('header-actions-portal');
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {config?.logoUrl ? (
-              <img src={config.logoUrl} alt="Arko360 Logo" className="h-8 object-contain" />
-            ) : (
-              <span className="text-xl font-bold text-blue-800">ARKO360</span>
-            )}
-          </div>
-          <button
-            onClick={() => navigate('/admin')}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            <FiArrowLeft /> Regresar
-          </button>
-        </div>
-      </header>
+      {portalTarget && createPortal(
+        <button
+          onClick={() => navigate('/admin')}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors mr-4"
+        >
+          <FiArrowLeft /> Regresar
+        </button>,
+        portalTarget
+      )}
 
-      <div className="p-8 max-w-7xl mx-auto">
+      <div className="p-4 md:p-8 max-w-7xl mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Cost360</h1>
           <p className="text-gray-500">Base de Datos Maestra de Insumos y Partidas</p>
