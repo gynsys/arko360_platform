@@ -54,6 +54,22 @@ export default function BudgetWorksheetPage() {
   const [editingChapterId, setEditingChapterId] = useState(null);
   const [editingChapterName, setEditingChapterName] = useState("");
 
+  const [pageHeaderHeight, setPageHeaderHeight] = useState(0);
+  const pageHeaderRef = React.useRef(null);
+
+  useEffect(() => {
+    if (pageHeaderRef.current) {
+      setPageHeaderHeight(pageHeaderRef.current.offsetHeight);
+    }
+    const observer = new ResizeObserver(entries => {
+      if (entries[0] && pageHeaderRef.current) {
+        setPageHeaderHeight(pageHeaderRef.current.offsetHeight);
+      }
+    });
+    if (pageHeaderRef.current) observer.observe(pageHeaderRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     loadBudget();
   }, [id]);
@@ -322,9 +338,9 @@ export default function BudgetWorksheetPage() {
   const { subtotalPresupuesto, ivaAmount, totalGeneral } = calculateBudgetTotal();
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] w-full overflow-hidden">
+    <div className="flex flex-col min-h-[calc(100vh-64px)] w-full">
       {/* PAGE HEADER (Fixed at top) */}
-      <div className="flex-none bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-sm px-6 md:px-8 py-4 z-30">
+      <div ref={pageHeaderRef} className="flex-none bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-sm px-6 md:px-8 py-4 z-30 sticky top-[65px]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <button 
@@ -374,8 +390,8 @@ export default function BudgetWorksheetPage() {
       </div>
 
       {/* WORKSHEET CONTENT */}
-      <div className="flex-1 bg-slate-50/30 p-6 md:p-8 flex flex-col overflow-hidden">
-        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 bg-slate-50/30 p-6 md:p-8 flex flex-col">
+        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
 
       {/* SETTINGS MODAL */}
       {showSettings && createPortal(
@@ -604,10 +620,10 @@ export default function BudgetWorksheetPage() {
       )}
 
       {/* WORKSHEET TABLE */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 flex flex-col overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 flex flex-col relative">
+        <div className="flex-1">
           <table className="w-full text-left border-collapse relative">
-            <thead className="sticky top-0 z-20 bg-slate-50 shadow-sm ring-1 ring-slate-200">
+            <thead className="sticky z-20 bg-slate-50 shadow-sm ring-1 ring-slate-200" style={{ top: `calc(65px + ${pageHeaderHeight}px)` }}>
               <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 font-semibold">
                 <th className="p-4 w-16 text-center bg-slate-50 border-b border-slate-200">#</th>
                 <th className="p-4 w-32 bg-slate-50 border-b border-slate-200">Código</th>
