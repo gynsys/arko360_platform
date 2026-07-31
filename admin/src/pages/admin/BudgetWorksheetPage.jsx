@@ -322,7 +322,7 @@ export default function BudgetWorksheetPage() {
   const { subtotalPresupuesto, ivaAmount, totalGeneral } = calculateBudgetTotal();
 
   return (
-    <div className="flex flex-col w-full overflow-hidden" style={{ height: 'calc(100vh - 65px)' }}>
+    <div className="fixed inset-0 top-[65px] bottom-[65px] sm:bottom-0 flex flex-col w-full overflow-hidden bg-slate-50">
       {/* PAGE HEADER (Fixed at top) */}
       <div className="flex-none bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-sm px-6 md:px-8 py-4 z-30">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
