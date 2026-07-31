@@ -102,12 +102,16 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
             db.add(db_mat)
             
         for eq in cost_item.apu_equipments:
+            precio_diario_depreciado = eq.equipment.CosDia if (eq.equipment and eq.equipment.CosDia is not None) else 0.0
+            depreciacion = eq.Deprec if (eq.Deprec is not None and eq.Deprec > 0) else 1.0
+            precio_adquisicion = precio_diario_depreciado / depreciacion if depreciacion > 0 else precio_diario_depreciado
+            
             db_eq = DBEquipment(
                 budget_item_id=db_item.id,
                 codigo=eq.CodIns,
                 descripcion=eq.equipment.Descri if eq.equipment else "",
                 unidad="Día",
-                precio_unitario=(eq.equipment.CosDia if (eq.equipment and eq.equipment.CosDia is not None) else 0.0),
+                precio_unitario=precio_adquisicion,
                 cantidad=eq.CanIns or 0.0,
                 depreciacion=eq.Deprec or 1.0
             )
