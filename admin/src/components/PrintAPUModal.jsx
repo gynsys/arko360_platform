@@ -24,7 +24,7 @@ export default function PrintAPUModal({ isOpen, onClose, onPrint, budgetName = "
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:hidden">
       <div className="bg-slate-100 rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-b from-gray-100 to-gray-200 border-b border-gray-300 p-2 flex justify-between items-center px-4 rounded-t-lg">
