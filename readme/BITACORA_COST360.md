@@ -109,3 +109,30 @@ Estos parámetros se configuran desde la pestaña de Configuración (engranaje) 
 ### Largo Plazo (3+ Meses)
 - [ ] **Análisis de Dispersión de Precios:** IA predictiva que analice las fluctuaciones históricas de precios de materiales (acero, cemento) y genere alertas o pronósticos.
 - [ ] **Multitenancy Completo:** Cada tenant (empresa de construcción) puede subir su propia base de datos Lulowin personalizada para Cost360, aislada de la pública.
+
+---
+
+## 6. Auditoría y Depuración de Base de Datos (Julio 2026)
+
+Durante el proceso de sincronización de datos con los archivos Excel (Mano de Obra, Equipos y Materiales), se realizaron auditorías de integridad de datos:
+
+### 6.1. Problema con el Jornal (Mano de Obra)
+Se detectó que varios registros de la tabla de Mano de Obra (Labor) tenían valores en cero (0.00) tanto en *Jornal* como en *Bono*.
+- **Diagnóstico:** Los datos base del servidor importados de LuloWin/Maprex contenían códigos antiguos (824 registros) que no existían en el Excel oficial del cliente (785 registros). 
+- **Solución:** Se corrió un script para limpiar la base de datos eliminando de forma segura los 39 códigos obsoletos (huérfanos) no utilizados, dejando la BD en perfecta sincronía (785 registros válidos con Jornal y Bono actualizados).
+
+### 6.2. Auditoría de Equipos y Materiales
+- **Equipos:** Se cruzó el Excel contra la BD. Habían 13 equipos excedentes en BD sin precio (.00). Se comprobó que no tenían uso en ningún APU y fueron depurados.
+- **Materiales:** Se validaron 12.106 materiales con 100% de precisión en precios. Se encontraron 53 materiales excedentes en BD. 34 se conservaron por estar anclados a la receta de las APUs, y 19 se eliminaron.
+
+---
+
+## 7. Notas Conocidas / Problemas Actuales (Julio 2026)
+
+### 7.1. Problema Persistente de Redirecciones (Caché React/Vite)
+- **Descripción:** Actualmente, al iniciar sesión desde /app/login o al presionar el botón *Cost360* de la Landing Page, algunos navegadores siguen redirigiendo erróneamente hacia la ruta obsoleta /cost360 (Base Maestra) en lugar de llevar al usuario a la vista de /budgets (Presupuestos).
+- **Causa:** Agresivo caché local del frontend en los navegadores cliente y en el Service Worker. Aunque el código fuente en Login.jsx y Navbar.jsx ya apunta a /budgets y /app/login respectivamente, el caché interfiere con el flujo.
+- **Acuerdo (DO NOT MODIFY):** Se ha decidido **NO volver a modificar** la lógica de enrutamiento ni los componentes de React por este problema. Simplemente se mantendrá documentado. El usuario final debe forzar una recarga profunda (Ctrl+F5) si se le presenta este problema.
+
+### 7.2. Problemas con los Botones Pegajosos (Sticky Buttons)
+- **Descripción:** Se ha documentado la presencia de comportamientos anómalos (glitches visuales) con botones que poseen posicionamiento sticky o ixed a lo largo de las vistas de edición y el Dashboard. Estos botones tienden a solaparse o no fijarse correctamente al hacer scroll bajo ciertas condiciones de layout.
