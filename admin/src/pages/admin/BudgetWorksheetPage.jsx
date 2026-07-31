@@ -340,7 +340,7 @@ export default function BudgetWorksheetPage() {
   return (
     <div className="flex flex-col min-h-[calc(100vh-64px)] w-full">
       {/* PAGE HEADER (Fixed at top) */}
-      <div ref={pageHeaderRef} className="flex-none bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-sm px-6 md:px-8 py-4 z-30 sticky top-[65px]">
+      <div ref={pageHeaderRef} className="flex-none bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-sm px-6 md:px-8 py-4 z-30 sticky" style={{ top: '65px' }}>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <button 
