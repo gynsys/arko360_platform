@@ -374,8 +374,8 @@ export default function BudgetWorksheetPage() {
       </div>
 
       {/* WORKSHEET CONTENT */}
-      <div className="flex-1 bg-slate-50/30 p-6 md:p-8 flex flex-col overflow-hidden">
-        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 bg-slate-50/30 p-6 md:p-8 flex flex-col min-h-0 overflow-hidden">
+        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0 overflow-hidden">
 
       {/* SETTINGS MODAL */}
       {showSettings && createPortal(
@@ -604,7 +604,7 @@ export default function BudgetWorksheetPage() {
       )}
 
       {/* WORKSHEET TABLE */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 flex flex-col overflow-hidden relative">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden relative">
         <div className="flex-1 overflow-y-auto">
           <table className="w-full text-left border-collapse relative">
             <thead className="sticky top-0 z-20 bg-slate-50 shadow-sm ring-1 ring-slate-200">
