@@ -32,7 +32,7 @@ NUMERIC_COLS = {
 # Solo estas columnas se insertan — coinciden exactamente con los modelos SQLAlchemy
 TABLE_COLUMNS = {
     "cost360_materials":     ["CodMat", "Descri", "UniMat", "CosMat"],
-    "cost360_labor":         ["CodMan", "Descri", "Salari"],  # Salari -> mapeado a Jornal
+    "cost360_labor":         ["CodMan", "Descri", "Jornal", "Bono"],  # Renombrado de Salari a Jornal antes de filtrar
     "cost360_equipment":     ["CodEqu", "Descri", "CosDia"],
     "cost360_items":         ["CodPar", "Descri", "CovPar", "UniPar", "PreUni", "RenPar"],
     "cost360_apu_materials": ["CodPar", "CodIns", "CanIns", "Desper"],
