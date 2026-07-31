@@ -32,6 +32,26 @@ export const budgetService = {
     return response.json();
   },
 
+  updateComponent: async (budgetId, itemId, type, componentId, data) => {
+    // type is 'materials', 'equipments', or 'labors'
+    const response = await fetch(`${API_URL}/budgets/${budgetId}/items/${itemId}/${type}/${componentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(`Error al actualizar componente`);
+    return response.json();
+  },
+
+  syncPrices: async (budgetId) => {
+    const response = await fetch(`${API_URL}/budgets/${budgetId}/sync_prices`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) throw new Error('Error al sincronizar precios');
+    return response.json();
+  },
+
   getById: async (id) => {
     const response = await fetch(`${API_URL}/budgets/${id}`);
     if (!response.ok) throw new Error('Error al cargar el presupuesto');

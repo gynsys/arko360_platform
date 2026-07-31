@@ -16,24 +16,24 @@ export default function BudgetAPUEditorPage() {
   const [searchModal, setSearchModal] = useState({ isOpen: false, type: '', title: '' });
   const [syncing, setSyncing] = useState(false);
 
-  const handleSyncPrices = async () => {
-    if (!window.confirm('¿Deseas actualizar los precios unitarios de esta partida usando la Base Maestra? Los rendimientos y cantidades se mantendrán intactos.')) return;
+  const handleComponentChange = (type, compId, field, value) => {
+    const val = parseFloat(value) || 0;
+    setItem(prev => {
+      const updated = { ...prev };
+      updated[type] = updated[type].map(c => 
+        c.id === compId ? { ...c, [field]: val } : c
+      );
+      return updated;
+    });
+  };
+
+  const handleComponentBlur = async (type, compId, field, value) => {
+    const val = parseFloat(value) || 0;
     try {
-      setSyncing(true);
-      const res = await fetch(`${API_URL}/budgets/${id}/sync_prices`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (res.ok) {
-        toast.success('Precios actualizados correctamente');
-        await loadData();
-      } else {
-        toast.error('Error al actualizar precios');
-      }
-    } catch (e) {
-      toast.error('Error de red');
-    } finally {
-      setSyncing(false);
+      await budgetService.updateComponent(id, itemId, type, compId, { [field]: val });
+    } catch (error) {
+      toast.error('Error al actualizar el componente');
+      loadData(); // revert on fail
     }
   };
 
@@ -169,14 +169,7 @@ export default function BudgetAPUEditorPage() {
           </h2>
         </div>
         <div className="ml-auto">
-          <button 
-            onClick={handleSyncPrices}
-            disabled={syncing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 font-medium text-sm rounded-xl hover:bg-blue-100 transition-colors border border-blue-200"
-          >
-            <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
-            {syncing ? 'Actualizando...' : 'Actualizar Precios desde Base Maestra'}
-          </button>
+          {/* Action buttons can go here */}
         </div>
       </div>
 
@@ -271,7 +264,9 @@ export default function BudgetAPUEditorPage() {
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={mat.cantidad}
-                        onChange={() => {}}
+                        onChange={e => handleComponentChange('materials', mat.id, 'cantidad', e.target.value)}
+                        onBlur={e => handleComponentBlur('materials', mat.id, 'cantidad', e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
                       />
                     </td>
                     <td className="p-2 border-r border-slate-200 bg-amber-50/40">
@@ -279,7 +274,9 @@ export default function BudgetAPUEditorPage() {
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={mat.desperdicio || 0}
-                        onChange={() => {}}
+                        onChange={e => handleComponentChange('materials', mat.id, 'desperdicio', e.target.value)}
+                        onBlur={e => handleComponentBlur('materials', mat.id, 'desperdicio', e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
                       />
                     </td>
                     <td className="p-2 border-r border-slate-200 bg-amber-50/40">
@@ -287,7 +284,9 @@ export default function BudgetAPUEditorPage() {
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={mat.precio_unitario}
-                        onChange={() => {}}
+                        onChange={e => handleComponentChange('materials', mat.id, 'precio_unitario', e.target.value)}
+                        onBlur={e => handleComponentBlur('materials', mat.id, 'precio_unitario', e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
                       />
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
@@ -345,7 +344,9 @@ export default function BudgetAPUEditorPage() {
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={eq.cantidad}
-                        onChange={() => {}}
+                        onChange={e => handleComponentChange('equipments', eq.id, 'cantidad', e.target.value)}
+                        onBlur={e => handleComponentBlur('equipments', eq.id, 'cantidad', e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
                       />
                     </td>
                     <td className="p-2 border-r border-slate-200 bg-amber-50/40">
@@ -353,7 +354,9 @@ export default function BudgetAPUEditorPage() {
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={eq.depreciacion ?? 1.0}
-                        onChange={() => {}}
+                        onChange={e => handleComponentChange('equipments', eq.id, 'depreciacion', e.target.value)}
+                        onBlur={e => handleComponentBlur('equipments', eq.id, 'depreciacion', e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
                       />
                     </td>
                     <td className="p-2 border-r border-slate-200 bg-amber-50/40">
@@ -361,7 +364,9 @@ export default function BudgetAPUEditorPage() {
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={eq.precio_unitario}
-                        onChange={() => {}}
+                        onChange={e => handleComponentChange('equipments', eq.id, 'precio_unitario', e.target.value)}
+                        onBlur={e => handleComponentBlur('equipments', eq.id, 'precio_unitario', e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
                       />
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
@@ -423,7 +428,9 @@ export default function BudgetAPUEditorPage() {
                           type="number" 
                           className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           value={lab.cantidad}
-                          onChange={() => {}}
+                          onChange={e => handleComponentChange('labors', lab.id, 'cantidad', e.target.value)}
+                          onBlur={e => handleComponentBlur('labors', lab.id, 'cantidad', e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
                         />
                       </td>
                       <td className="p-2 border-r border-slate-200 bg-amber-50/40">
@@ -431,7 +438,9 @@ export default function BudgetAPUEditorPage() {
                           type="number" 
                           className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           value={lab.jornal}
-                          onChange={() => {}}
+                          onChange={e => handleComponentChange('labors', lab.id, 'jornal', e.target.value)}
+                          onBlur={e => handleComponentBlur('labors', lab.id, 'jornal', e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
                         />
                       </td>
                       <td className="p-2 border-r border-slate-200 bg-amber-50/40">
@@ -439,7 +448,8 @@ export default function BudgetAPUEditorPage() {
                           type="number" 
                           className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           value={budget?.labor_bonus || 0}
-                          onChange={() => {}}
+                          disabled
+                          title="El bono se configura de manera global en el Presupuesto"
                         />
                       </td>
                       <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 border-r border-slate-200 text-xs">

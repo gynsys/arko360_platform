@@ -5,7 +5,13 @@ from typing import List
 from app.db.base import get_db
 from app.db.models.budget import Budget, BudgetItem, BudgetAPUMaterial as DBMaterial, BudgetAPUEquipment as DBEquipment, BudgetAPULabor as DBLabor
 from app.db.models.cost360 import CostItem, CostAPUMaterial, CostAPUEquipment, CostAPULabor
-from app.schemas.budget import Budget as BudgetSchema, BudgetCreate, BudgetUpdate, BudgetSummary, BudgetItemCreate, BudgetItem as BudgetItemSchema, BudgetItemUpdate, BudgetAPUMaterialBase, BudgetAPUMaterial, BudgetAPUEquipmentBase, BudgetAPUEquipment, BudgetAPULaborBase, BudgetAPULabor
+from app.schemas.budget import (
+    Budget as BudgetSchema, BudgetCreate, BudgetUpdate, BudgetSummary, 
+    BudgetItemCreate, BudgetItem as BudgetItemSchema, BudgetItemUpdate, 
+    BudgetAPUMaterialBase, BudgetAPUMaterial, BudgetAPUMaterialUpdate,
+    BudgetAPUEquipmentBase, BudgetAPUEquipment, BudgetAPUEquipmentUpdate,
+    BudgetAPULaborBase, BudgetAPULabor, BudgetAPULaborUpdate
+)
 
 router = APIRouter()
 
@@ -288,6 +294,36 @@ def add_labor_to_item(budget_id: str, item_id: str, labor_in: BudgetAPULaborBase
     db.commit()
     db.refresh(db_labor)
     return db_labor
+
+@router.put("/{budget_id}/items/{item_id}/materials/{component_id}", response_model=BudgetAPUMaterial)
+def update_material_in_item(budget_id: str, item_id: str, component_id: str, comp_in: BudgetAPUMaterialUpdate, db: Session = Depends(get_db)):
+    comp = db.query(DBMaterial).filter(DBMaterial.id == component_id, DBMaterial.budget_item_id == item_id).first()
+    if not comp: raise HTTPException(status_code=404, detail="Material not found")
+    for key, value in comp_in.dict(exclude_unset=True).items():
+        setattr(comp, key, value)
+    db.commit()
+    db.refresh(comp)
+    return comp
+
+@router.put("/{budget_id}/items/{item_id}/equipments/{component_id}", response_model=BudgetAPUEquipment)
+def update_equipment_in_item(budget_id: str, item_id: str, component_id: str, comp_in: BudgetAPUEquipmentUpdate, db: Session = Depends(get_db)):
+    comp = db.query(DBEquipment).filter(DBEquipment.id == component_id, DBEquipment.budget_item_id == item_id).first()
+    if not comp: raise HTTPException(status_code=404, detail="Equipment not found")
+    for key, value in comp_in.dict(exclude_unset=True).items():
+        setattr(comp, key, value)
+    db.commit()
+    db.refresh(comp)
+    return comp
+
+@router.put("/{budget_id}/items/{item_id}/labors/{component_id}", response_model=BudgetAPULabor)
+def update_labor_in_item(budget_id: str, item_id: str, component_id: str, comp_in: BudgetAPULaborUpdate, db: Session = Depends(get_db)):
+    comp = db.query(DBLabor).filter(DBLabor.id == component_id, DBLabor.budget_item_id == item_id).first()
+    if not comp: raise HTTPException(status_code=404, detail="Labor not found")
+    for key, value in comp_in.dict(exclude_unset=True).items():
+        setattr(comp, key, value)
+    db.commit()
+    db.refresh(comp)
+    return comp
 
 @router.post("/{budget_id}/sync_prices")
 def sync_budget_prices(budget_id: str, db: Session = Depends(get_db)):

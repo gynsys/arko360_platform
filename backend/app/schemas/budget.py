@@ -25,6 +25,21 @@ class BudgetAPULaborBase(BudgetAPUComponentBase):
     jornal: float
     bono: float
 
+class BudgetAPUComponentUpdate(BaseModel):
+    cantidad: Optional[float] = None
+
+class BudgetAPUMaterialUpdate(BudgetAPUComponentUpdate):
+    precio_unitario: Optional[float] = None
+    desperdicio: Optional[float] = None
+
+class BudgetAPUEquipmentUpdate(BudgetAPUComponentUpdate):
+    precio_unitario: Optional[float] = None
+    depreciacion: Optional[float] = None
+
+class BudgetAPULaborUpdate(BudgetAPUComponentUpdate):
+    jornal: Optional[float] = None
+    bono: Optional[float] = None
+
 # Responses
 class BudgetAPUMaterial(BudgetAPUMaterialBase):
     id: str

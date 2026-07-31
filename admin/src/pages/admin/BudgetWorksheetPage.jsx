@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { 
   ArrowLeft, Settings, Plus, Search, Layers, FileText, 
-  DollarSign, Hash, Percent, Loader, X, Trash2, ArrowUp, ArrowDown, FolderPlus
+  DollarSign, Hash, Percent, Loader, X, Trash2, ArrowUp, ArrowDown, FolderPlus, RefreshCw
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
@@ -92,6 +92,20 @@ export default function BudgetWorksheetPage() {
       setShowSettings(false);
     } catch (error) {
       toast.error('Error guardando configuración');
+    }
+  };
+
+  const handleSyncPrices = async () => {
+    if (!window.confirm('¿Deseas actualizar los precios unitarios de TODO el presupuesto usando la Base Maestra? Los rendimientos y cantidades se mantendrán intactos.')) return;
+    try {
+      setSyncing(true);
+      await budgetService.syncPrices(id);
+      toast.success('Precios de todo el presupuesto actualizados correctamente');
+      loadBudget();
+    } catch (e) {
+      toast.error('Error al actualizar precios');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -322,12 +336,22 @@ export default function BudgetWorksheetPage() {
         </div>
         <div className="flex gap-3">
           {headerPortalTarget && createPortal(
-            <button 
-              onClick={() => setShowSettings(!showSettings)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium shadow-sm text-sm mx-2"
-            >
-              <Settings size={16} /> Configuración Global
-            </button>,
+            <div className="flex gap-2 mx-2">
+              <button 
+                onClick={handleSyncPrices}
+                disabled={syncing}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors font-medium shadow-sm text-sm"
+              >
+                <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
+                {syncing ? 'Actualizando...' : 'Actualizar Precios'}
+              </button>
+              <button 
+                onClick={() => setShowSettings(!showSettings)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium shadow-sm text-sm"
+              >
+                <Settings size={16} /> Configuración Global
+              </button>
+            </div>,
             headerPortalTarget
           )}
           <button  
