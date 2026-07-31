@@ -948,6 +948,5 @@ export default function BudgetWorksheetPage() {
         document.body
       )}
     </div>
-    </div>
   );
 }
