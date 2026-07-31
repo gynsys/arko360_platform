@@ -666,7 +666,8 @@ export default function BudgetWorksheetPage() {
                       </td>
                     </tr>
                   );
-                })
+                });
+              })()
               )}
             </tbody>
           </table>
@@ -772,6 +773,8 @@ export default function BudgetWorksheetPage() {
               )}
             </div>
           </div>
+        </div>
+      )}
       {/* CHAPTER MODAL */}
       {showChapterModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
