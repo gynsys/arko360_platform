@@ -124,7 +124,7 @@ def get_apu(item_code: str, db: Session = Depends(get_db)):
     )
 
 @router.get("/materials")
-def search_materials(search: str = "", db: Session = Depends(get_db)):
+def search_materials(skip: int = 0, limit: int = 50, search: str = "", db: Session = Depends(get_db)):
     query = db.query(CostMaterial)
     if search:
         search_term = f"%{search}%"
@@ -132,10 +132,12 @@ def search_materials(search: str = "", db: Session = Depends(get_db)):
             CostMaterial.CodMat.ilike(search_term) | 
             CostMaterial.Descri.ilike(search_term)
         )
-    return query.limit(50).all()
+    total = query.count()
+    items = query.order_by(CostMaterial.CodMat).offset(skip).limit(limit).all()
+    return {"total": total, "items": items}
 
 @router.get("/equipments")
-def search_equipments(search: str = "", db: Session = Depends(get_db)):
+def search_equipments(skip: int = 0, limit: int = 50, search: str = "", db: Session = Depends(get_db)):
     query = db.query(CostEquipment)
     if search:
         search_term = f"%{search}%"
@@ -143,10 +145,12 @@ def search_equipments(search: str = "", db: Session = Depends(get_db)):
             CostEquipment.CodEqu.ilike(search_term) | 
             CostEquipment.Descri.ilike(search_term)
         )
-    return query.limit(50).all()
+    total = query.count()
+    items = query.order_by(CostEquipment.CodEqu).offset(skip).limit(limit).all()
+    return {"total": total, "items": items}
 
 @router.get("/labors")
-def search_labors(search: str = "", db: Session = Depends(get_db)):
+def search_labors(skip: int = 0, limit: int = 50, search: str = "", db: Session = Depends(get_db)):
     query = db.query(CostLabor)
     if search:
         search_term = f"%{search}%"
@@ -154,7 +158,9 @@ def search_labors(search: str = "", db: Session = Depends(get_db)):
             CostLabor.CodMan.ilike(search_term) | 
             CostLabor.Descri.ilike(search_term)
         )
-    return query.limit(50).all()
+    total = query.count()
+    items = query.order_by(CostLabor.CodMan).offset(skip).limit(limit).all()
+    return {"total": total, "items": items}
 @router.patch("/materials/{codigo}")
 def update_material(codigo: str, payload: CostMaterialUpdate, db: Session = Depends(get_db)):
     mat = db.query(CostMaterial).filter(CostMaterial.CodMat == codigo).first()

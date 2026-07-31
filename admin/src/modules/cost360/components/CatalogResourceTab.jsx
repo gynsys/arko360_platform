@@ -9,16 +9,32 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [totalItems, setTotalItems] = useState(0);
+  const [skip, setSkip] = useState(0);
+  const limit = 50;
+  const [hasMore, setHasMore] = useState(false);
 
-  const fetchItems = async (searchQuery = '') => {
+  const fetchItems = async (searchQuery = '', currentSkip = 0, append = false) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/cost360/${resourceType}?search=${encodeURIComponent(searchQuery)}`, {
+      const res = await fetch(`${API_URL}/cost360/${resourceType}?search=${encodeURIComponent(searchQuery)}&skip=${currentSkip}&limit=${limit}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) {
         const data = await res.json();
-        setItems(data);
+        // Since backend was updated to return { total, items }
+        const newItems = Array.isArray(data) ? data : data.items;
+        const total = Array.isArray(data) ? data.length : data.total;
+        
+        if (append) {
+          setItems(prev => [...prev, ...newItems]);
+        } else {
+          setItems(newItems);
+        }
+        
+        setTotalItems(total || 0);
+        setHasMore((currentSkip + limit) < total);
+        setSkip(currentSkip);
       }
     } catch (e) {
       toast.error('Error cargando ' + title);
@@ -33,7 +49,11 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchItems(search);
+    fetchItems(search, 0, false);
+  };
+
+  const handleLoadMore = () => {
+    fetchItems(search, skip + limit, true);
   };
 
   const startEdit = (item) => {
@@ -109,7 +129,16 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
         </div>
       </form>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="mb-4 text-gray-500 font-medium">
+        {totalItems > 0 && (
+          <span>
+            {new Intl.NumberFormat('es-VE').format(totalItems)} 
+            {search ? (totalItems === 1 ? ' coincidencia' : ' coincidencias en total') : ` Total ${title}`}
+          </span>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -169,6 +198,18 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
           </table>
         </div>
       </div>
+      
+      {/* Load More Button */}
+      {hasMore && !loading && items.length > 0 && (
+        <div className="flex justify-center pb-12">
+          <button
+            onClick={handleLoadMore}
+            className="bg-white text-blue-600 border border-blue-200 px-8 py-3 rounded-full hover:bg-blue-50 transition-colors font-medium text-sm shadow-sm flex items-center gap-2"
+          >
+            Cargar Más {title}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
