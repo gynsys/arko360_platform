@@ -67,15 +67,22 @@ def get_apu(item_code: str, db: Session = Depends(get_db)):
         
     equipos = []
     for rel, eq in eq_results:
-        precio_eq = eq.CosDia if eq.CosDia is not None else 0.0
+        # En la BD LuloWin exportada, eq.CosDia suele ser el costo diario YA DEPRECIADO por unidad.
+        precio_diario_depreciado = eq.CosDia if eq.CosDia is not None else 0.0
         depreciacion = rel.Deprec if hasattr(rel, 'Deprec') and rel.Deprec else 1.0
-        subtotal = rel.CanIns * depreciacion * precio_eq
+        
+        # Para la interfaz (y coincidir con Maprex), el "Precio" debe ser el Costo de Adquisición Original
+        precio_adquisicion = precio_diario_depreciado / depreciacion if depreciacion > 0 else precio_diario_depreciado
+        
+        # El subtotal es simplemente Cantidad * Costo Diario Depreciado (o Cant * Deprec * Adquisicion)
+        subtotal = rel.CanIns * precio_diario_depreciado
+        
         equipos.append(APUComponent(
             codigo=eq.CodEqu,
             descripcion=eq.Descri,
             unidad="Día",
             cantidad=rel.CanIns,
-            precio_unitario=precio_eq,
+            precio_unitario=precio_adquisicion,
             subtotal=round(subtotal, 2),
             depreciacion=depreciacion
         ))
