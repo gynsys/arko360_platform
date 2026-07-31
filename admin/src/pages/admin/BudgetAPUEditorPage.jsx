@@ -221,15 +221,6 @@ export default function BudgetAPUEditorPage() {
             >
               <Printer size={20} />
             </button>
-            <button 
-              onClick={syncWithBaseMaestra}
-              disabled={syncing}
-              className="flex items-center gap-2 bg-white border border-slate-300 px-3 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 shadow-sm"
-              title="Sincronizar precios desde la Base Maestra"
-            >
-              <RefreshCw size={16} className={syncing ? "animate-spin text-blue-500" : ""} />
-              <span className="hidden md:inline">Sincronizar Base Maestra</span>
-            </button>
           </div>
         </div>
 
