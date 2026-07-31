@@ -34,6 +34,8 @@ export default function BudgetWorksheetPage() {
     project_name: ''
   });
 
+  const [syncing, setSyncing] = useState(false);
+
   // Search DB Modal
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
