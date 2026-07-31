@@ -63,6 +63,7 @@ class BudgetItemCreate(BudgetItemBase):
     pass
 
 class BudgetItemUpdate(BaseModel):
+    description: Optional[str] = None
     quantity: Optional[float] = None
     performance: Optional[float] = None
     order: Optional[int] = None
