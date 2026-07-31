@@ -376,7 +376,7 @@ export default function BudgetWorksheetPage() {
         <div className="max-w-7xl mx-auto w-full">
 
       {/* SETTINGS MODAL */}
-      {showSettings && (
+      {showSettings && createPortal(
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -597,7 +597,8 @@ export default function BudgetWorksheetPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* WORKSHEET TABLE */}
@@ -781,7 +782,7 @@ export default function BudgetWorksheetPage() {
       </div>
 
       {/* SEARCH MODAL */}
-      {showSearchModal && (
+      {showSearchModal && createPortal(
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-20">
           <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -853,10 +854,11 @@ export default function BudgetWorksheetPage() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {/* CHAPTER MODAL */}
-      {showChapterModal && (
+      {showChapterModal && createPortal(
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -889,11 +891,12 @@ export default function BudgetWorksheetPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* DELETE CONFIRM MODAL */}
-      {itemToDelete && (
+      {itemToDelete && createPortal(
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-8 animate-in fade-in zoom-in-95 duration-200 text-center">
             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -918,7 +921,8 @@ export default function BudgetWorksheetPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
         </div>
       </div>
