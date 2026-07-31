@@ -627,7 +627,7 @@ export default function BudgetWorksheetPage() {
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 flex flex-col relative">
         <div className="flex-1">
           <table className="w-full text-left border-collapse relative">
-            <thead className="sticky z-20 bg-slate-50 shadow-sm ring-1 ring-slate-200" style={{ top: `calc(65px + ${pageHeaderHeight}px)` }}>
+            <thead className="sticky z-20 bg-slate-50 shadow-sm ring-1 ring-slate-200" style={{ top: `calc(65px + ${pageHeaderHeight || 89}px)` }}>
               <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 font-semibold">
                 <th className="p-4 w-16 text-center bg-slate-50 border-b border-slate-200">#</th>
                 <th className="p-4 w-32 bg-slate-50 border-b border-slate-200">Código</th>
