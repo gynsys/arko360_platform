@@ -99,3 +99,23 @@ Durante la mañana se abordó la portabilidad de la interfaz y la lógica del Ge
 4. **Problemas Técnicos de Inyección de Código (Python vs PowerShell):**
    - *Problema:* Al intentar inyectar un nuevo bloque JSX en `ProfilePage.jsx` usando un script `python -c` de una línea, el símbolo de comillas triples (`'''`) fue malinterpretado por PowerShell, causando un `SyntaxError`.
    - *Solución:* Se abandonó el enfoque del comando `python -c` y se utilizaron herramientas nativas de reemplazo de texto (`replace_file_content`) logrando inyectar el nuevo componente UI de forma atómica y segura.
+
+## Módulo de Presupuestos (ArkoCost)
+
+Durante el desarrollo de la hoja interactiva de presupuestos (`BudgetWorksheetPage.jsx`), se resolvieron múltiples desafíos de UI/UX y estado de React:
+
+1. **Gestión de Estados Numéricos (Modales):**
+   - *Problema:* Los inputs numéricos (como porcentajes e inflación) borraban los decimales mientras el usuario escribía, o se forzaban a `NaN`/`0` si el usuario borraba el contenido, impidiendo una edición fluida.
+   - *Solución:* Se modificaron todos los `onChange` para guardar el valor puro del evento (`e.target.value` como String) en el estado local de React. La conversión matemática (ej. `parseFloat`) se delega exclusivamente al motor de validación del backend o al momento del submit.
+
+2. **Renderizado de Modales por encima del Contexto de Apilamiento (Z-Index):**
+   - *Problema:* El diseño requería que los menús superiores (Navbar) y el encabezado de la página quedaran fijos, lo cual crea nuevos contextos de apilamiento en CSS (Stacking Contexts). Esto causaba que los modales anidados dentro de la página no se pudieran centrar correctamente sobre toda la pantalla usando `fixed inset-0`.
+   - *Solución:* Se extrajeron TODOS los modales fuera del árbol del DOM del componente usando **React Portals (`createPortal(..., document.body)`)**, permitiendo que cubran la pantalla completa y bloqueen la navegación de fondo de forma nativa.
+
+3. **Arquitectura de Layout y Encabezados Pegajosos (Sticky Headers):**
+   - *Desafío:* Mantener fijo tanto el nombre del presupuesto como los encabezados de la tabla de partidas (`CÓDIGO, DESCRIPCIÓN, TOTAL`) mientras se escrolea la larga lista de APUs.
+   - *Iteración 1 (Flexbox Restringido):* Se intentó encapsular la tabla en un contenedor `flex-1 overflow-y-auto` con una altura máxima calculada. *Fallo:* Conflictos con el cálculo de `min-h-0` en componentes padres, causando que la tabla se desbordara y la página entera hiciera scroll, perdiendo el encabezado pegajoso.
+   - *Iteración 2 (Posición Fija):* Se aisló toda la hoja en una capa `fixed inset-0`. *Fallo:* Comportamiento restrictivo y problemas de UX percibidos.
+   - *Solución Definitiva (Scroll Global + Dynamic Sticky):* Se abandonó el confinamiento de flexbox. Se permitió a la tabla expandirse libremente y utilizar la **barra de desplazamiento global de la ventana** (mucho más robusto). Para fijar los encabezados:
+     - El **Encabezado de la Página** usa `position: sticky top-[65px]` (justo debajo del Navbar).
+     - El **Encabezado de la Tabla** usa un `position: sticky` con un offset `top` calculado dinámicamente mediante un **`ResizeObserver`** en React. Esto permite medir en tiempo real la altura del encabezado de la página y anclar la tabla matemáticamente debajo de él, logrando un flujo perfecto sin importar los cambios de resolución o el dispositivo.
