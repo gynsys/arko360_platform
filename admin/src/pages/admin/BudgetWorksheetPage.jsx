@@ -282,9 +282,10 @@ export default function BudgetWorksheetPage() {
   const { subtotalPresupuesto, ivaAmount, totalGeneral } = calculateBudgetTotal();
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen">
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sticky top-[64px] z-30 bg-slate-50/95 backdrop-blur-md py-4 -mt-4 border-b border-slate-200 shadow-sm rounded-b-xl mb-6 px-4 -mx-4">
+    <div className="flex flex-col h-[calc(100vh-64px)] w-full">
+      {/* PAGE HEADER (Fixed at top) */}
+      <div className="flex-none bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-sm px-6 md:px-8 py-4 z-30">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/budgets')}
@@ -321,6 +322,10 @@ export default function BudgetWorksheetPage() {
           </button>
         </div>
       </div>
+
+      {/* WORKSHEET CONTENT (Scrollable) */}
+      <div className="flex-1 overflow-y-auto bg-slate-50/30 p-6 md:p-8">
+        <div className="max-w-7xl mx-auto w-full">
 
       {/* SETTINGS MODAL */}
       {showSettings && (
@@ -550,8 +555,8 @@ export default function BudgetWorksheetPage() {
       {/* WORKSHEET TABLE */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-visible">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="sticky top-[152px] z-20 shadow-sm ring-1 ring-slate-200">
+          <table className="w-full text-left border-collapse relative">
+            <thead className="sticky top-0 z-20 shadow-sm ring-1 ring-slate-200">
               <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 font-semibold">
                 <th className="p-4 w-16 text-center bg-slate-50 border-b border-slate-200">#</th>
                 <th className="p-4 w-32 bg-slate-50 border-b border-slate-200">Código</th>
@@ -699,6 +704,7 @@ export default function BudgetWorksheetPage() {
           </div>
         )}
       </div>
+      </div>
 
       {/* SEARCH MODAL */}
       {showSearchModal && (
@@ -840,6 +846,8 @@ export default function BudgetWorksheetPage() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }
