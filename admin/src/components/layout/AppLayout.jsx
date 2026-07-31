@@ -32,7 +32,7 @@ export default function AppLayout() {
                   <Layout size={20} />
                 </div>
                 <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-700">
-                  Arko360 Eng
+                  Arko360
                 </span>
               </div>
               
