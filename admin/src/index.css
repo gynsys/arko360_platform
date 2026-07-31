@@ -6,3 +6,12 @@ html, body, #root {
   height: 100%;
   margin: 0;
 }
+
+@media print {
+  @page {
+    margin: 0; /* This removes the header/footer (date and URL) */
+  }
+  body {
+    padding: 1cm; /* Gives some padding so content doesn't stick to the very edge of the paper */
+  }
+}

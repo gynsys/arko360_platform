@@ -18,11 +18,29 @@ export default function PrintAPULayout({ partida, materiales, equipos, mano_obra
   const fcasFactor = (partida.fcas_percent ?? 988) / 100;
 
   // Calculos
-  const calcMatTotal = () => materiales.reduce((acc, m) => acc + (m.subtotal || 0), 0);
-  const calcEqTotal = () => equipos.reduce((acc, eq) => acc + (eq.subtotal || 0), 0);
+  const calcMatTotal = () => materiales.reduce((acc, m) => {
+    const q = parseFloat(m.cantidad ?? m.quantity ?? 0);
+    const p = parseFloat(m.precio_unitario ?? m.price ?? 0);
+    const w = parseFloat(m.desperdicio ?? m.waste ?? 0);
+    return acc + (m.subtotal ?? (q * p * (1 + w/100)));
+  }, 0);
+  const calcEqTotal = () => equipos.reduce((acc, eq) => {
+    const q = parseFloat(eq.cantidad ?? eq.quantity ?? 0);
+    const d = parseFloat(eq.depreciacion ?? eq.depreciation ?? 1);
+    const p = parseFloat(eq.precio_unitario ?? eq.price ?? 0);
+    return acc + (eq.subtotal ?? (q * d * p));
+  }, 0);
   
-  const calcLabTotalJornalDay = () => mano_obra.reduce((acc, lab) => acc + (lab.tot_jornal || 0), 0);
-  const calcLabTotalBonoDay = () => mano_obra.reduce((acc, lab) => acc + (lab.tot_bono || 0), 0);
+  const calcLabTotalJornalDay = () => mano_obra.reduce((acc, lab) => {
+    const q = parseFloat(lab.cantidad ?? lab.quantity ?? 0);
+    const j = parseFloat(lab.jornal ?? 0);
+    return acc + (lab.tot_jornal ?? (q * j));
+  }, 0);
+  const calcLabTotalBonoDay = () => mano_obra.reduce((acc, lab) => {
+    const q = parseFloat(lab.cantidad ?? lab.quantity ?? 0);
+    const b = parseFloat(lab.bono ?? 0);
+    return acc + (lab.tot_bono ?? (q * b));
+  }, 0);
   const calcLabTotalDay = () => calcLabTotalJornalDay() * (1 + fcasFactor) + calcLabTotalBonoDay();
 
   const totalMat = calcMatTotal();
@@ -59,14 +77,14 @@ export default function PrintAPULayout({ partida, materiales, equipos, mano_obra
         
         <div className="flex mb-2">
           <span className="font-bold mr-2">Descripción:</span>
-          <span className="flex-1 uppercase">{partida.Descri || partida.descripcion}</span>
+          <span className="flex-1 uppercase">{partida.Descri || partida.descripcion || partida.description}</span>
         </div>
         
         <div className="flex justify-between font-bold mt-4">
-          <div>Unidad: <span className="font-normal">{partida.UniPar || partida.unidad}</span></div>
-          <div>Cantidad: <span className="font-normal">{numFormat(partida.CanPar || partida.cantidad || 1)}</span></div>
+          <div>Unidad: <span className="font-normal">{partida.UniPar || partida.unidad || partida.unit}</span></div>
+          <div>Cantidad: <span className="font-normal">{numFormat(partida.CanPar || partida.cantidad || partida.quantity || 1)}</span></div>
           <div>Rendimiento: <span className="font-normal">{Number(rendimiento).toFixed(6)}</span></div>
-          <div>Código: <span className="font-normal">{partida.CovPar || partida.CodPar || partida.codigo}</span></div>
+          <div>Código: <span className="font-normal">{partida.CovPar || partida.CodPar || partida.codigo || partida.cod_par || partida.cov_par}</span></div>
         </div>
       </div>
 
@@ -86,17 +104,23 @@ export default function PrintAPULayout({ partida, materiales, equipos, mano_obra
             </tr>
           </thead>
           <tbody>
-            {materiales.map((m, i) => (
+            {materiales.map((m, i) => {
+              const q = parseFloat(m.cantidad ?? m.quantity ?? 0);
+              const p = parseFloat(m.precio_unitario ?? m.price ?? 0);
+              const w = parseFloat(m.desperdicio ?? m.waste ?? 0);
+              const subt = m.subtotal ?? (q * p * (1 + w/100));
+              return (
               <tr key={i} className={options.format === 'lines' ? 'border-b border-gray-300' : ''}>
                 <td className={`text-center ${cellClass}`}>{i + 1}</td>
-                <td className={`uppercase ${cellClass}`}>{m.descripcion}</td>
-                <td className={`text-center ${cellClass}`}>{m.unidad}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat4(m.cantidad)}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat(m.desperdicio || 0)}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat(m.precio_unitario)}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat(m.subtotal)}</td>
+                <td className={`uppercase ${cellClass}`}>{m.descripcion || m.description}</td>
+                <td className={`text-center ${cellClass}`}>{m.unidad || m.unit}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat4(q)}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat(w)}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat(p)}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat(subt)}</td>
               </tr>
-            ))}
+              );
+            })}
             {materiales.length === 0 && <tr><td colSpan="7" className={`text-center py-1 ${cellClass}`}>Sin materiales</td></tr>}
           </tbody>
         </table>
@@ -126,16 +150,22 @@ export default function PrintAPULayout({ partida, materiales, equipos, mano_obra
             </tr>
           </thead>
           <tbody>
-            {equipos.map((e, i) => (
+            {equipos.map((e, i) => {
+              const q = parseFloat(e.cantidad ?? e.quantity ?? 0);
+              const d = parseFloat(e.depreciacion ?? e.depreciation ?? 1);
+              const p = parseFloat(e.precio_unitario ?? e.price ?? 0);
+              const subt = e.subtotal ?? (q * d * p);
+              return (
               <tr key={i} className={options.format === 'lines' ? 'border-b border-gray-300' : ''}>
                 <td className={`text-center ${cellClass}`}>{i + 1}</td>
-                <td className={`uppercase ${cellClass}`}>{e.descripcion}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat4(e.cantidad)}</td>
-                <td className={`text-right ${cellClass}`}>{Number(e.depreciacion || 1).toFixed(6)}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat(e.precio_unitario)}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat(e.subtotal)}</td>
+                <td className={`uppercase ${cellClass}`}>{e.descripcion || e.description}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat4(q)}</td>
+                <td className={`text-right ${cellClass}`}>{Number(d).toFixed(6)}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat(p)}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat(subt)}</td>
               </tr>
-            ))}
+              );
+            })}
             {equipos.length === 0 && <tr><td colSpan="6" className={`text-center py-1 ${cellClass}`}>Sin equipos</td></tr>}
           </tbody>
         </table>
@@ -166,17 +196,24 @@ export default function PrintAPULayout({ partida, materiales, equipos, mano_obra
             </tr>
           </thead>
           <tbody>
-            {mano_obra.map((l, i) => (
+            {mano_obra.map((l, i) => {
+              const q = parseFloat(l.cantidad ?? l.quantity ?? 0);
+              const j = parseFloat(l.jornal ?? 0);
+              const b = parseFloat(l.bono ?? 0);
+              const totB = l.tot_bono ?? (q * b);
+              const totJ = l.tot_jornal ?? (q * j);
+              return (
               <tr key={i} className={options.format === 'lines' ? 'border-b border-gray-300' : ''}>
                 <td className={`text-center ${cellClass}`}>{i + 1}</td>
-                <td className={`uppercase ${cellClass}`}>{l.descripcion}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat4(l.cantidad)}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat(l.jornal)}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat(l.bono)}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat(l.tot_bono)}</td>
-                <td className={`text-right ${cellClass}`}>{numFormat(l.tot_jornal)}</td>
+                <td className={`uppercase ${cellClass}`}>{l.descripcion || l.description}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat4(q)}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat(j)}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat(b)}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat(totB)}</td>
+                <td className={`text-right ${cellClass}`}>{numFormat(totJ)}</td>
               </tr>
-            ))}
+              );
+            })}
             {mano_obra.length === 0 && <tr><td colSpan="7" className={`text-center py-1 ${cellClass}`}>Sin mano de obra</td></tr>}
           </tbody>
         </table>

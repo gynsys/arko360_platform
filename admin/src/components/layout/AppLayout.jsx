@@ -21,7 +21,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Top Navbar */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+      <nav className="print:hidden bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             
@@ -91,7 +91,7 @@ export default function AppLayout() {
       </nav>
 
       {/* Mobile Navigation (Bottom) */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 pb-safe">
+      <div className="print:hidden sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 pb-safe">
         <div className="flex justify-around">
           {navigation.map((item) => {
             const isActive = location.pathname.startsWith(item.href);
