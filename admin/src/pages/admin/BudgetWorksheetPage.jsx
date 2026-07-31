@@ -558,10 +558,10 @@ export default function BudgetWorksheetPage() {
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 flex flex-col relative">
         <div className="flex-1">
           <table className="w-full text-left border-collapse relative">
-            <thead className="sticky z-30 shadow-md ring-1 ring-slate-200 bg-white" style={{ top: '64px' }}>
+            <thead className="sticky z-30 shadow-md ring-1 ring-slate-200 bg-red-500" style={{ top: '64px' }}>
               {/* PAGE HEADER INSIDE TABLE HEADER */}
               <tr>
-                <th colSpan="8" className="p-0 border-b border-slate-200 bg-white">
+                <th colSpan="8" className="p-0 border-b border-slate-200 bg-red-500">
                   <div className="px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-4">
                       <button 
@@ -612,15 +612,15 @@ export default function BudgetWorksheetPage() {
                 </th>
               </tr>
               {/* COLUMN HEADERS */}
-              <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 font-semibold shadow-sm">
-                <th className="p-4 w-16 text-center bg-slate-50 border-b border-slate-200">#</th>
-                <th className="p-4 w-32 bg-slate-50 border-b border-slate-200">Código</th>
-                <th className="p-4 bg-slate-50 border-b border-slate-200">Descripción</th>
-                <th className="p-4 w-20 text-center bg-slate-50 border-b border-slate-200">Und</th>
-                <th className="p-4 w-28 text-right bg-slate-50 border-b border-slate-200">Cantidad</th>
-                <th className="p-4 w-32 text-right bg-slate-50 border-b border-slate-200">Precio Unit.</th>
-                <th className="p-4 w-32 text-right bg-slate-50 border-b border-slate-200">Total</th>
-                <th className="p-4 w-32 text-center bg-slate-50 border-b border-slate-200">Acciones</th>
+              <tr className="bg-red-600 text-xs uppercase tracking-wider text-slate-50 font-semibold shadow-sm">
+                <th className="p-4 w-16 text-center border-b border-slate-200">#</th>
+                <th className="p-4 w-32 border-b border-slate-200">Código</th>
+                <th className="p-4 border-b border-slate-200">Descripción</th>
+                <th className="p-4 w-20 text-center border-b border-slate-200">Und</th>
+                <th className="p-4 w-28 text-right border-b border-slate-200">Cantidad</th>
+                <th className="p-4 w-32 text-right border-b border-slate-200">Precio Unit.</th>
+                <th className="p-4 w-32 text-right border-b border-slate-200">Total</th>
+                <th className="p-4 w-32 text-center border-b border-slate-200">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
