@@ -15,7 +15,7 @@ from app.schemas.cost360 import (
 )
 from app.services.llm_router import call_llm_json
 import json
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 router = APIRouter()
 
@@ -242,7 +242,7 @@ def generate_ai_apu(payload: AiApuGenerateRequest, db: Session = Depends(get_db)
     mat_query = []
     if keywords:
         mat_query = db.query(CostMaterial).filter(
-            db.or_(*[CostMaterial.Descri.ilike(f"%{k}%") for k in keywords])
+            or_(*[CostMaterial.Descri.ilike(f"%{k}%") for k in keywords])
         ).limit(30).all()
         
     mat_ids = [m.CodMat for m in mat_query]
