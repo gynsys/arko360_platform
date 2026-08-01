@@ -73,7 +73,7 @@ const Cost360Dashboard = () => {
             className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 text-white px-5 py-2.5 rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-sm font-medium"
           >
             <FiLayers className="text-lg" />
-            Agregar APU con IA
+            Crear APU con IA
           </button>
         </div>
 
