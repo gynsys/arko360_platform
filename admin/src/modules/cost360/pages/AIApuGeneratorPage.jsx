@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Save, Sparkles, Check } from 'lucide-react';
+import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Save, Sparkles, Check, Filter } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { generateAIApu, saveCustomApu } from '../services/cost360Service';
+import { generateAIApu, saveCustomApu, fetchCategoriesTree } from '../services/cost360Service';
 
 export default function AIApuGeneratorPage() {
   const navigate = useNavigate();
@@ -10,6 +10,14 @@ export default function AIApuGeneratorPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [item, setItem] = useState(null);
+  
+  const [categoriesTree, setCategoriesTree] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedActivity, setSelectedActivity] = useState('');
+
+  useEffect(() => {
+    fetchCategoriesTree().then(setCategoriesTree).catch(console.error);
+  }, []);
 
   // Defaults for calculations
   const [settings, setSettings] = useState({
@@ -28,7 +36,7 @@ export default function AIApuGeneratorPage() {
     setLoading(true);
     setItem(null);
     try {
-      const response = await generateAIApu(prompt);
+      const response = await generateAIApu(prompt, selectedCategory, selectedActivity);
       // Map response to the format expected by the editor
       setItem({
         ...response.partida,
@@ -150,6 +158,41 @@ export default function AIApuGeneratorPage() {
 
       {/* PROMPT SECTION */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+        
+        {/* FILTERS */}
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <div className="flex-1">
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría de Obra</label>
+            <select 
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setSelectedActivity('');
+              }}
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            >
+              <option value="">Todas las categorías...</option>
+              {categoriesTree.map(cat => (
+                <option key={cat.categoria} value={cat.categoria}>{cat.categoria}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tipo de Actividad</label>
+            <select 
+              value={selectedActivity}
+              onChange={(e) => setSelectedActivity(e.target.value)}
+              disabled={!selectedCategory}
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50"
+            >
+              <option value="">Todas las actividades...</option>
+              {selectedCategory && categoriesTree.find(c => c.categoria === selectedCategory)?.actividades.map(act => (
+                <option key={act} value={act}>{act}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <label className="block text-sm font-bold text-slate-700 mb-2">Describe la partida a generar</label>
         <textarea
           value={prompt}

@@ -94,6 +94,8 @@ class CustomCostItemResponse(BaseModel):
 
 class AiApuGenerateRequest(BaseModel):
     description: str
+    categoria: Optional[str] = None
+    tipo_actividad: Optional[str] = None
 
 class AiApuResponse(BaseModel):
     partida: dict

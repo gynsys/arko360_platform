@@ -10,6 +10,9 @@ class CostItem(Base):
     UniPar = Column(String)
     PreUni = Column(Float)
     RenPar = Column(Float)
+    Categoria = Column(String, index=True)
+    TipoActividad = Column(String, index=True)
+    
     
     apu_materials = relationship("CostAPUMaterial", back_populates="item")
     apu_labors = relationship("CostAPULabor", back_populates="item")

@@ -40,8 +40,17 @@ export const fetchApuDetails = async (itemCode) => {
   return response.data;
 };
 
-export const generateAIApu = async (description) => {
-  const response = await cost360ApiClient.post('/generate-ai-apu', { description });
+export const fetchCategoriesTree = async () => {
+  const response = await cost360ApiClient.get('/categories_tree');
+  return response.data;
+};
+
+export const generateAIApu = async (description, categoria = null, tipo_actividad = null) => {
+  const payload = { description };
+  if (categoria) payload.categoria = categoria;
+  if (tipo_actividad) payload.tipo_actividad = tipo_actividad;
+  
+  const response = await cost360ApiClient.post('/generate-ai-apu', payload);
   return response.data;
 };
 
@@ -53,6 +62,7 @@ export const saveCustomApu = async (payload) => {
 export default {
   fetchItems,
   fetchApuDetails,
+  fetchCategoriesTree,
   generateAIApu,
   saveCustomApu,
 };

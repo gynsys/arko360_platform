@@ -45,7 +45,7 @@ def test_preprocessing(query_text):
             scored.sort(key=lambda x: x[0], reverse=True)
             similar_items = [p for _, p in scored[:10]]
 
-        modo_fallback = len(similar_items) < 3
+        modo_fallback = len(similar_items) == 0
 
         # 2. Calcular estadísticas de insumos
         resultados = {

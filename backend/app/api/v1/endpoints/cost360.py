@@ -20,7 +20,7 @@ from sqlalchemy import func, or_
 router = APIRouter()
 
 @router.get("/items", response_model=CostItemListResponse)
-def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, db: Session = Depends(get_db)):
+def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(CostItem)
     if search:
         words = search.split()
@@ -32,6 +32,10 @@ def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chap
             )
     if chapter:
         query = query.filter(CostItem.CodPar.startswith(chapter))
+    if categoria:
+        query = query.filter(CostItem.Categoria == categoria)
+    if tipo_actividad:
+        query = query.filter(CostItem.TipoActividad == tipo_actividad)
     
     total = query.count()
     items = query.order_by(CostItem.CodPar).offset(skip).limit(limit).all()
@@ -165,6 +169,27 @@ def search_labors(skip: int = 0, limit: int = 50, search: str = "", db: Session 
     total = query.count()
     items = query.order_by(CostLabor.CodMan).offset(skip).limit(limit).all()
     return {"total": total, "items": items}
+
+@router.get("/categories_tree")
+def get_categories_tree(db: Session = Depends(get_db)):
+    items = db.query(CostItem.Categoria, CostItem.TipoActividad).distinct().all()
+    tree = {}
+    for cat, sub in items:
+        if cat:
+            if cat not in tree:
+                tree[cat] = set()
+            if sub:
+                tree[cat].add(sub)
+                
+    result = []
+    for cat, subs in tree.items():
+        result.append({
+            "categoria": cat,
+            "actividades": sorted(list(subs))
+        })
+    
+    return sorted(result, key=lambda x: x["categoria"])
+
 @router.patch("/materials/{codigo}")
 def update_material(codigo: str, payload: CostMaterialUpdate, db: Session = Depends(get_db)):
     mat = db.query(CostMaterial).filter(CostMaterial.CodMat == codigo).first()
@@ -246,8 +271,14 @@ def generate_ai_apu(payload: AiApuGenerateRequest, db: Session = Depends(get_db)
     
     similar_items = []
     if keywords:
+        query = db.query(CostItem)
+        if payload.categoria:
+            query = query.filter(CostItem.Categoria == payload.categoria)
+        if payload.tipo_actividad:
+            query = query.filter(CostItem.TipoActividad == payload.tipo_actividad)
+            
         filters = [CostItem.Descri.ilike(f"%{k}%") for k in keywords]
-        similar_items = db.query(CostItem).filter(or_(*filters)).limit(20).all()
+        similar_items = query.filter(or_(*filters)).limit(50).all()
 
     # Puntuación de partidas (Similarity Threshold)
     if similar_items:
@@ -266,7 +297,7 @@ def generate_ai_apu(payload: AiApuGenerateRequest, db: Session = Depends(get_db)
         scored.sort(key=lambda x: x[0], reverse=True)
         similar_items = [p for _, p in scored[:10]] # top 10
 
-    modo_fallback = len(similar_items) < 3
+    modo_fallback = len(similar_items) == 0
 
     # 2. Calcular estadísticas de insumos
     resultados = {
@@ -383,13 +414,13 @@ def generate_ai_apu(payload: AiApuGenerateRequest, db: Session = Depends(get_db)
              catalogo_mano_obra = [{"codigo": m.CodMan, "descripcion": m.Descri, "jornal": m.Jornal} for m in cat_mos]
     else:
         if keywords:
-            cat_mats = db.query(CostMaterial).filter(or_(*[CostMaterial.Descri.ilike(f"%{k}%") for k in keywords])).limit(20).all()
+            cat_mats = db.query(CostMaterial).filter(or_(*[CostMaterial.Descri.ilike(f"%{k}%") for k in keywords])).limit(80).all()
             catalogo_materiales = [{"codigo": m.CodMat, "descripcion": m.Descri, "unidad": m.UniMat, "precio": m.CosMat} for m in cat_mats]
         
-        cat_eqs = db.query(CostEquipment).limit(10).all()
+        cat_eqs = db.query(CostEquipment).limit(20).all()
         catalogo_equipos = [{"codigo": e.CodEqu, "descripcion": e.Descri, "precio_diario": e.CosDia} for e in cat_eqs]
         
-        cat_mos = db.query(CostLabor).filter(or_(CostLabor.Descri.ilike("%peón%"), CostLabor.Descri.ilike("%maestro%"))).limit(10).all()
+        cat_mos = db.query(CostLabor).filter(or_(CostLabor.Descri.ilike("%peón%"), CostLabor.Descri.ilike("%maestro%"), CostLabor.Descri.ilike("%albañil%"))).limit(20).all()
         catalogo_mano_obra = [{"codigo": m.CodMan, "descripcion": m.Descri, "jornal": m.Jornal} for m in cat_mos]
 
     # 5. Armar payload
@@ -448,25 +479,24 @@ Eres un Ingeniero Civil especialista en Análisis de Precios Unitarios (APU). Va
 
 # REGLAS DE INSUMOS
 - Usa ÚNICAMENTE insumos del CATÁLOGO proporcionado en el payload.
-- Si un insumo indispensable NO está en el catálogo, agrégalo de todas formas, pero:
-  * El ID debe empezar con "FALTANTE-" seguido del tipo (ej: FALTANTE-MAT-1)
-  * precio_unitario: 0.0
-  * origen: "faltante"
-  * Agrega una advertencia en el campo "advertencias" del JSON final.
-- NUNCA inventes precios para insumos faltantes o estimaciones, usa el precio del catálogo. Si es faltante, el precio es 0.0.
+- PROHIBICIÓN ABSOLUTA: Tienes ESTRICTAMENTE PROHIBIDO inventar o "crear" insumos con precios estimados. El origen "faltante" NO ESTÁ PERMITIDO. Todos los insumos del APU deben extraerse del catálogo.
+- SUSTITUCIÓN INTELIGENTE: Si el insumo exacto que pide el usuario no existe en el catálogo provisto (ej. pide concreto FC=100 y no hay), DEBES seleccionar el sustituto más cercano y razonable disponible en el catálogo (ej. concreto FC=150) para no distorsionar groseramente el costo.
+- ADVERTENCIA OBLIGATORIA: Cada vez que realices una sustitución de este tipo, es OBLIGATORIO que agregues una nota en la matriz de "advertencias" del JSON final, indicando: "No se encontró [Insumo Pedido] en la base de datos. Se utilizó [Insumo Seleccionado] como sustituto temporal para el costeo".
 - Herramientas menores y equipos de protección personal: inclúyelos SOLO si representan un impacto medible (>2% del costo directo) o si aparecen consistentemente en el historial.
 
 # REGLAS DE ORIGEN (OBLIGATORIO en cada insumo)
-- "historico": Cantidad = tomada directamente del promedio del backend (sin ajustes mayores). Insumo existe en catálogo.
-- "ia": Cantidad ajustada/estimada significativamente por ti, o insumo agregado por tu criterio. Insumo existe en catálogo.
-- "faltante": Insumo no existe en el catálogo proporcionado. Precio = 0.0.
+- "historico": Cantidad = tomada directamente del promedio del backend (sin ajustes mayores). Insumo extraído del historial.
+- "ia": Cantidad ajustada/estimada significativamente por ti, o insumo agregado por tu criterio/sustitución desde el catálogo.
 
 # MODO FALLBACK
 Si el "modo" es "sin_datos_historicos":
-- Debes generar el APU por metodología teórica estándar.
-- Toda la mano de obra y equipo debe llevar origen "ia".
-- Materiales: busca en el catálogo, si lo encuentras usa origen "ia", si no, usa origen "faltante".
-- DEBES agregar obligatoriamente una advertencia principal en el JSON final indicando que es un cálculo 100% estimado.
+- Debes generar el APU por metodología teórica estándar, basándote en tu conocimiento técnico.
+- Toda la mano de obra y equipo debe llevar origen "ia". Asegúrate de incluir una cuadrilla completa y realista (ej. maestro, albañiles, peones) y los equipos básicos necesarios, buscándolos EXCLUSIVAMENTE en el catálogo.
+- Materiales: busca en el catálogo, usa origen "ia". Aplica la regla de SUSTITUCIÓN INTELIGENTE si no está el exacto.
+- DEBES agregar obligatoriamente una advertencia principal en el JSON final indicando que es un cálculo 100% estimado por falta de datos históricos.
+
+# DESCRIPCIÓN DE LA PARTIDA
+En el campo "description" de "partida", NO copies simplemente la solicitud del usuario. MEJORA Y EXPANDE la solicitud para crear una descripción técnica profesional, detallada y completa, propia de una norma de medición de ingeniería civil, todo en MAYÚSCULAS (ej. incluir características, acabados, e indicar "INCLUYE MATERIALES, EQUIPOS Y MANO DE OBRA").
 
 # FORMATO DE SALIDA
 Devuelve un JSON estrictamente con la siguiente estructura (NO agregues texto extra antes o después, SOLO EL JSON VÁLIDO):
