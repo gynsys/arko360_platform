@@ -195,7 +195,7 @@ def generate_ai_apu_route(payload: AiApuGenerateRequest, db: Session = Depends(g
                     "description": item.Descri,
                     "unit": item.UniPar,
                     "quantity": 1.0,
-                    "performance": getattr(item, 'Rendimiento', 1.0) or 1.0
+                    "performance": getattr(item, 'RenPar', 1.0) or 1.0
                 },
                 "materials": materials,
                 "equipments": equipments,
