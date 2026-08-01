@@ -241,21 +241,28 @@ def generate_ai_apu(payload: AiApuGenerateRequest, db: Session = Depends(get_db)
     from sqlalchemy import or_
 
     # 1. Buscar partidas similares
-    keywords = [w.lower() for w in payload.description.split() if len(w) > 3]
+    stopwords = {"para", "con", "del", "por", "las", "los", "una", "uno", "como", "sobre"}
+    keywords = [w.lower() for w in payload.description.split() if len(w) > 3 and w.lower() not in stopwords]
     
     similar_items = []
     if keywords:
         filters = [CostItem.Descri.ilike(f"%{k}%") for k in keywords]
-        similar_items = db.query(CostItem).filter(or_(*filters)).limit(15).all()
+        similar_items = db.query(CostItem).filter(or_(*filters)).limit(20).all()
 
-    # Puntuación de partidas (adaptado de buscar_partidas_por_keywords)
+    # Puntuación de partidas (Similarity Threshold)
     if similar_items:
-        query_words = set(payload.description.lower().split())
+        keywords_set = set(keywords)
         scored = []
         for p in similar_items:
-            desc_words = set(p.Descri.lower().split()) if p.Descri else set()
-            score = len(query_words & desc_words)
-            scored.append((score, p))
+            desc_words = set(w.lower() for w in p.Descri.split() if len(w) > 3) if p.Descri else set()
+            score = 0
+            for kw in keywords_set:
+                if any(kw in dw or dw in kw for dw in desc_words):
+                    score += 1
+            similarity = score / len(keywords_set) if len(keywords_set) > 0 else 0
+            if similarity >= 0.25:
+                scored.append((similarity, p))
+        
         scored.sort(key=lambda x: x[0], reverse=True)
         similar_items = [p for _, p in scored[:10]] # top 10
 
@@ -263,9 +270,9 @@ def generate_ai_apu(payload: AiApuGenerateRequest, db: Session = Depends(get_db)
 
     # 2. Calcular estadísticas de insumos
     resultados = {
-        "materiales": defaultdict(list),
-        "mano_obra": defaultdict(list),
-        "equipos": defaultdict(list),
+        "materiales": defaultdict(lambda: defaultdict(list)),
+        "mano_obra": defaultdict(lambda: defaultdict(list)),
+        "equipos": defaultdict(lambda: defaultdict(list)),
     }
 
     if not modo_fallback:
@@ -276,73 +283,66 @@ def generate_ai_apu(payload: AiApuGenerateRequest, db: Session = Depends(get_db)
 
         mat_rels = db.query(CostAPUMaterial, CostMaterial).join(CostMaterial, CostAPUMaterial.CodIns == CostMaterial.CodMat).filter(CostAPUMaterial.CodPar.in_(item_codes)).all()
         for rel, mat in mat_rels:
+            u_partida = unidad_por_partida.get(rel.CodPar, "ND")
             key = f"{mat.Descri.strip() if mat.Descri else ''} | {mat.UniMat.strip() if mat.UniMat else ''}"
-            resultados["materiales"][key].append({
+            resultados["materiales"][u_partida][key].append({
                 "cantidad": rel.CanIns,
-                "unidad_partida": unidad_por_partida.get(rel.CodPar, ""),
                 "codigo": mat.CodMat,
             })
             
         eq_rels = db.query(CostAPUEquipment, CostEquipment).join(CostEquipment, CostAPUEquipment.CodIns == CostEquipment.CodEqu).filter(CostAPUEquipment.CodPar.in_(item_codes)).all()
         for rel, eq in eq_rels:
+            u_partida = unidad_por_partida.get(rel.CodPar, "ND")
             key = f"{eq.Descri.strip() if eq.Descri else ''} | día"
-            resultados["equipos"][key].append({
+            resultados["equipos"][u_partida][key].append({
                 "cantidad": rel.CanIns,
-                "unidad_partida": unidad_por_partida.get(rel.CodPar, ""),
                 "codigo": eq.CodEqu,
             })
             
         mo_rels = db.query(CostAPULabor, CostLabor).join(CostLabor, CostAPULabor.CodIns == CostLabor.CodMan).filter(CostAPULabor.CodPar.in_(item_codes)).all()
         for rel, mo in mo_rels:
+            u_partida = unidad_por_partida.get(rel.CodPar, "ND")
             key = f"{mo.Descri.strip() if mo.Descri else ''} | día"
-            resultados["mano_obra"][key].append({
+            resultados["mano_obra"][u_partida][key].append({
                 "cantidad": rel.CanIns,
-                "unidad_partida": unidad_por_partida.get(rel.CodPar, ""),
                 "codigo": mo.CodMan,
             })
 
-    estadisticas = {"materiales": {}, "mano_obra": {}, "equipos": {}}
-    for tipo, grupos in resultados.items():
-        for key, items in grupos.items():
-            cantidades = [i["cantidad"] for i in items if i["cantidad"] and i["cantidad"] > 0]
-            if not cantidades:
-                continue
-            
-            unidades_partida = set(i["unidad_partida"] for i in items if i["unidad_partida"])
-            inconsistencia_unidad = len(unidades_partida) > 1
-            
-            estadisticas[tipo][key] = {
-                "descripcion": key.split(" | ")[0],
-                "unidad": key.split(" | ")[1],
-                "min": round(min(cantidades), 4),
-                "max": round(max(cantidades), 4),
-                "promedio": round(statistics.mean(cantidades), 4),
-                "frecuencia": len(cantidades),
-                "total_partidas": len(similar_items),
-                "porcentaje_presencia": round(len(cantidades) / len(similar_items) * 100, 1),
-                "unidades_partida": list(unidades_partida),
-                "inconsistencia_unidad": inconsistencia_unidad,
-                "codigos": list(set(i["codigo"] for i in items if i["codigo"])),
-            }
+    estadisticas = {"materiales": defaultdict(dict), "mano_obra": defaultdict(dict), "equipos": defaultdict(dict)}
+    for tipo, grupos_por_unidad in resultados.items():
+        for u_partida, grupos_insumos in grupos_por_unidad.items():
+            for key, items in grupos_insumos.items():
+                cantidades = [i["cantidad"] for i in items if i["cantidad"] and i["cantidad"] > 0]
+                if not cantidades:
+                    continue
+                
+                partidas_con_esta_unidad = len([p for p in similar_items if p.UniPar == u_partida or (not p.UniPar and u_partida == "ND")])
+                
+                estadisticas[tipo][u_partida][key] = {
+                    "descripcion": key.split(" | ")[0],
+                    "unidad": key.split(" | ")[1],
+                    "min": round(min(cantidades), 4),
+                    "max": round(max(cantidades), 4),
+                    "promedio": round(statistics.mean(cantidades), 4),
+                    "frecuencia": len(cantidades),
+                    "total_partidas_unidad": partidas_con_esta_unidad,
+                    "porcentaje_presencia": round(len(cantidades) / partidas_con_esta_unidad * 100, 1) if partidas_con_esta_unidad > 0 else 0,
+                    "codigos": list(set(i["codigo"] for i in items if i["codigo"])),
+                }
 
     # 3. Detectar advertencias
     advertencias_stats = []
-    for tipo, grupos in estadisticas.items():
-        for key, s in grupos.items():
-            if s["promedio"] > 0:
-                rango = s["max"] - s["min"]
-                if rango > s["promedio"] * 0.5:
-                    advertencias_stats.append(
-                        f"{tipo.upper()} '{s['descripcion']}': alta variabilidad "
-                        f"(min={s['min']}, max={s['max']}, promedio={s['promedio']}). "
-                        f"Revisar según condiciones específicas."
-                    )
-            if s.get("inconsistencia_unidad"):
-                advertencias_stats.append(
-                    f"{tipo.upper()} '{s['descripcion']}': las partidas históricas usan "
-                    f"unidades de partida diferentes: {s['unidades_partida']}. "
-                    f"Verificar normalización de cantidades."
-                )
+    for tipo, grupos_por_unidad in estadisticas.items():
+        for u_partida, grupos_insumos in grupos_por_unidad.items():
+            for key, s in grupos_insumos.items():
+                if s["porcentaje_presencia"] >= 20.0 and s["promedio"] > 0:
+                    rango = s["max"] - s["min"]
+                    if rango > s["promedio"] * 0.5:
+                        advertencias_stats.append(
+                            f"{tipo.upper()} '{s['descripcion']}' (para unidad {u_partida}): alta variabilidad "
+                            f"(min={s['min']}, max={s['max']}, promedio={s['promedio']}). "
+                            f"Revisar según condiciones específicas."
+                        )
 
     # 4. Filtrar catálogo
     catalogo_materiales = []
@@ -354,12 +354,18 @@ def generate_ai_apu(payload: AiApuGenerateRequest, db: Session = Depends(get_db)
         codigos_eq = set()
         codigos_mo = set()
         
-        for key, s in estadisticas["materiales"].items():
-            codigos_mat.update(s.get("codigos", []))
-        for key, s in estadisticas["equipos"].items():
-            codigos_eq.update(s.get("codigos", []))
-        for key, s in estadisticas["mano_obra"].items():
-            codigos_mo.update(s.get("codigos", []))
+        for u_partida, grupos_insumos in estadisticas["materiales"].items():
+            for key, s in grupos_insumos.items():
+                if s["porcentaje_presencia"] >= 20.0:
+                    codigos_mat.update(s.get("codigos", []))
+        for u_partida, grupos_insumos in estadisticas["equipos"].items():
+            for key, s in grupos_insumos.items():
+                if s["porcentaje_presencia"] >= 20.0:
+                    codigos_eq.update(s.get("codigos", []))
+        for u_partida, grupos_insumos in estadisticas["mano_obra"].items():
+            for key, s in grupos_insumos.items():
+                if s["porcentaje_presencia"] >= 20.0:
+                    codigos_mo.update(s.get("codigos", []))
             
         if codigos_mat:
             mats = db.query(CostMaterial).filter(CostMaterial.CodMat.in_(list(codigos_mat))).all()
@@ -387,25 +393,26 @@ def generate_ai_apu(payload: AiApuGenerateRequest, db: Session = Depends(get_db)
         catalogo_mano_obra = [{"codigo": m.CodMan, "descripcion": m.Descri, "jornal": m.Jornal} for m in cat_mos]
 
     # 5. Armar payload
-    rendimientos_formateados = {
-        "materiales": [],
-        "mano_obra": [],
-        "equipos": []
-    }
+    rendimientos_formateados_por_unidad = {}
 
-    for tipo, grupos in estadisticas.items():
-        for key, s in grupos.items():
-            rendimientos_formateados[tipo].append({
-                "descripcion": s["descripcion"],
-                "unidad": s["unidad"],
-                "cantidad_minima": s["min"],
-                "cantidad_maxima": s["max"],
-                "cantidad_promedio": s["promedio"],
-                "frecuencia": f"{s['frecuencia']}/{s['total_partidas']} partidas",
-                "porcentaje_presencia": f"{s['porcentaje_presencia']}%",
-                "obligatorio": s["porcentaje_presencia"] > 70,
-                "opcional": s["porcentaje_presencia"] < 30,
-            })
+    for tipo, grupos_por_unidad in estadisticas.items():
+        for u_partida, grupos_insumos in grupos_por_unidad.items():
+            if u_partida not in rendimientos_formateados_por_unidad:
+                rendimientos_formateados_por_unidad[u_partida] = {"materiales": [], "mano_obra": [], "equipos": []}
+            
+            for key, s in grupos_insumos.items():
+                if s["porcentaje_presencia"] >= 20.0:
+                    rendimientos_formateados_por_unidad[u_partida][tipo].append({
+                        "descripcion": s["descripcion"],
+                        "unidad_insumo": s["unidad"],
+                        "cantidad_minima": s["min"],
+                        "cantidad_maxima": s["max"],
+                        "cantidad_promedio": s["promedio"],
+                        "frecuencia": f"{s['frecuencia']}/{s['total_partidas_unidad']} partidas",
+                        "porcentaje_presencia": f"{s['porcentaje_presencia']}%",
+                        "obligatorio": s["porcentaje_presencia"] > 70,
+                        "opcional": s["porcentaje_presencia"] <= 70,
+                    })
 
     payload_llm = {
         "modo": "sin_datos_historicos" if modo_fallback else "con_datos_historicos",
@@ -415,7 +422,7 @@ def generate_ai_apu(payload: AiApuGenerateRequest, db: Session = Depends(get_db)
             {"codigo": p.CodPar, "descripcion": p.Descri, "unidad": p.UniPar}
             for p in similar_items
         ],
-        "rendimientos_historicos": rendimientos_formateados,
+        "rendimientos_historicos_por_unidad_partida": rendimientos_formateados_por_unidad,
         "catalogo_insumos": {
             "materiales": catalogo_materiales,
             "equipos": catalogo_equipos,
@@ -432,9 +439,10 @@ Eres un Ingeniero Civil especialista en Análisis de Precios Unitarios (APU). Va
 {json.dumps(payload_llm, ensure_ascii=False)}
 
 # REGLAS DE INTERPRETACIÓN DE HISTORIAL
-1. Usa la "cantidad_promedio" como cantidad base para cada insumo.
-2. Si la solicitud del usuario difiere de las partidas históricas (espesor, altura, material, condiciones), AJUSTA proporcionalmente y explica en "nota_calculo".
-3. Presta especial atención a las "advertencias_preprocesamiento". Si hay advertencias de variabilidad, el promedio puede ser engañoso, usa tu criterio técnico para ajustarlo.
+1. Si el payload contiene múltiples grupos en "rendimientos_historicos_por_unidad_partida" (ej. m2, m3, und), ELIGE la unidad base más lógica para la partida que vas a generar y utiliza EXCLUSIVAMENTE los rendimientos de ese grupo.
+2. Usa la "cantidad_promedio" del grupo seleccionado como cantidad base para cada insumo.
+3. Si la solicitud del usuario difiere de las partidas históricas, AJUSTA proporcionalmente y explica en "nota_calculo".
+4. Presta especial atención a las "advertencias_preprocesamiento". Si hay advertencias de variabilidad, el promedio puede ser engañoso, usa tu criterio técnico para ajustarlo.
 4. Si un insumo es "obligatorio" (presencia > 70%), DEBE incluirse en el APU final. Si es "opcional" (presencia < 30%), inclúyelo solo si es estrictamente necesario para esta partida en particular.
 5. Si el historial no tiene datos para un insumo que tú consideras indispensable (ej: no hay clavos para un encofrado), agrégalo con origen "ia" y explica el criterio técnico en la nota de cálculo.
 
