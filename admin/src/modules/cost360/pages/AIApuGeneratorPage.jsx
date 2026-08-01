@@ -34,7 +34,8 @@ export default function AIApuGeneratorPage() {
         ...response.partida,
         materials: response.materials || [],
         equipments: response.equipments || [],
-        labors: response.labors || []
+        labors: response.labors || [],
+        advertencias: response.advertencias || []
       });
       toast.success("APU generado con IA");
     } catch (error) {
@@ -78,9 +79,9 @@ export default function AIApuGeneratorPage() {
   };
 
   const renderOrigenTag = (origen) => {
-    if (origen === 'historico') return <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-[9px] font-bold rounded shadow-sm border border-yellow-200" title="Basado en rendimiento histórico">PROMEDIO</span>;
-    if (origen === 'catalogo') return <span className="px-1.5 py-0.5 bg-green-100 text-green-800 text-[9px] font-bold rounded shadow-sm border border-green-200" title="Extraído del catálogo">CATÁLOGO</span>;
-    if (origen === 'ia') return <span className="px-1.5 py-0.5 bg-red-100 text-red-800 text-[9px] font-bold rounded shadow-sm border border-red-200" title="Estimado por IA (Revisar)">ESTIMADO IA</span>;
+    if (origen === 'historico') return <span className="px-1.5 py-0.5 bg-green-100 text-green-800 text-[9px] font-bold rounded shadow-sm border border-green-200" title="Cantidad basada en promedio de partidas históricas">HISTÓRICO</span>;
+    if (origen === 'ia') return <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-[9px] font-bold rounded shadow-sm border border-yellow-200" title="Cantidad ajustada/estimada por IA. Revisar.">ESTIMADO IA</span>;
+    if (origen === 'faltante') return <span className="px-1.5 py-0.5 bg-red-100 text-red-800 text-[9px] font-bold rounded shadow-sm border border-red-200" title="Insumo no existe en catálogo. Precio = 0. Agregar antes de usar.">FALTANTE</span>;
     return null;
   };
 
@@ -171,6 +172,17 @@ export default function AIApuGeneratorPage() {
 
       {item && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          
+          {item.advertencias && item.advertencias.length > 0 && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-300 rounded-xl shadow-sm">
+              <h4 className="text-amber-800 font-bold mb-2 flex items-center gap-2">⚠️ Advertencias del Análisis</h4>
+              <ul className="list-disc list-inside text-sm text-amber-700 space-y-1">
+                {item.advertencias.map((adv, idx) => (
+                  <li key={idx}>{adv}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="bg-white border-2 border-slate-200 rounded-xl shadow-sm mb-6 overflow-hidden">
             <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-1">
@@ -249,6 +261,7 @@ export default function AIApuGeneratorPage() {
                         <td className="p-2 border-r border-slate-200 text-xs">
                           {mat.descripcion}
                           <div className="mt-1">{renderOrigenTag(mat.origen)}</div>
+                          <div className="mt-1 text-[10px] text-slate-500 italic">{mat.nota_calculo || "Sin nota de cálculo proporcionada."}</div>
                         </td>
                         <td className="p-2 text-center border-r border-slate-200 text-xs">{mat.unidad}</td>
                         <td className="p-2 border-r border-slate-200 bg-amber-50/40">
@@ -316,6 +329,7 @@ export default function AIApuGeneratorPage() {
                         <td className="p-2 border-r border-slate-200 text-xs">
                           {eq.descripcion}
                           <div className="mt-1">{renderOrigenTag(eq.origen)}</div>
+                          <div className="mt-1 text-[10px] text-slate-500 italic">{eq.nota_calculo || "Sin nota de cálculo proporcionada."}</div>
                         </td>
                         <td className="p-2 border-r border-slate-200 bg-amber-50/40">
                           <input 
@@ -383,6 +397,7 @@ export default function AIApuGeneratorPage() {
                         <td className="p-2 border-r border-slate-200 text-xs">
                           {lab.descripcion}
                           <div className="mt-1">{renderOrigenTag(lab.origen)}</div>
+                          <div className="mt-1 text-[10px] text-slate-500 italic">{lab.nota_calculo || "Sin nota de cálculo proporcionada."}</div>
                         </td>
                         <td className="p-2 border-r border-slate-200 bg-amber-50/40">
                           <input 

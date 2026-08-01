@@ -49,6 +49,10 @@ class APUComponent(BaseModel):
     bono: Optional[float] = None
     tot_jornal: Optional[float] = None
     tot_bono: Optional[float] = None
+    
+    # AI Engine Fields
+    origen: Optional[str] = None
+    nota_calculo: Optional[str] = None
 
 class APUResponse(BaseModel):
     partida: CostItemBase
@@ -90,3 +94,10 @@ class CustomCostItemResponse(BaseModel):
 
 class AiApuGenerateRequest(BaseModel):
     description: str
+
+class AiApuResponse(BaseModel):
+    partida: dict
+    materials: List[dict]
+    equipments: List[dict]
+    labors: List[dict]
+    advertencias: Optional[List[str]] = []
