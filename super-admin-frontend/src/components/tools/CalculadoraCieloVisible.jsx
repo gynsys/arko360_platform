@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { formatMoney as formatCurrency } from '../../utils/format';
 
 const CalculadoraCieloVisible = () => {
   // ─── ESTADO ───
@@ -155,10 +156,7 @@ const CalculadoraCieloVisible = () => {
     };
   }, [techo, correas, secundarias, desperdicio, costos, baseCurrency, viewCurrency, exchangeRate]);
 
-  const formatMoney = (amount) => {
-    const symbol = viewCurrency === 'VES' ? 'Bs.' : '$';
-    return `${symbol} ${Number(amount || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  const formatMoney = (amount) => formatCurrency(amount, viewCurrency);
 
   // ─── EXPORTAR PDF ───
   const exportarPDF = () => {

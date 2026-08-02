@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Calculator, DollarSign, Settings, Download } from 'lucide-react';
+import { formatMoney as formatCurrency } from '../../utils/format';
 
 export default function DropCeilingCalc() {
   const [width, setWidth] = useState('');
@@ -124,10 +125,7 @@ export default function DropCeilingCalc() {
     return price;
   };
 
-  const formatMoney = (amount) => {
-    const symbol = viewCurrency === 'VES' ? 'Bs.' : '$';
-    return `${symbol} ${Number(amount || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  const formatMoney = (amount) => formatCurrency(amount, viewCurrency);
 
   const calculateTotal = () => {
     if (!results) return 0;

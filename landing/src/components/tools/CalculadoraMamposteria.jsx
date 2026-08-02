@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { AuthModal } from './fea3d/AuthModal';
 import axios from 'axios';
+import { formatMoney as formatCurrency } from '../../utils/format';
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
@@ -253,10 +254,7 @@ const CalculadoraMamposteria = () => {
 
   const logout = () => { localStorage.removeItem('arko_token'); setCurrentUser(null); };
 
-  const formatMoney = (amount) => {
-    const symbol = viewCurrency === 'VES' ? 'Bs.' : '$';
-    return `${symbol} ${Number(amount || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  const formatMoney = (amount) => formatCurrency(amount, viewCurrency);
 
   // ─── EXPORTACIONES ───
   const exportarPDF = () => {

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.schemas.fea3d import Topology, ProjectResults
 from app.engine.solvers import StructuralSolver
 from sqlalchemy.orm import Session
-from app.api.v1.endpoints.arko import get_db_session
+from app.db.arko_base import get_db_session
 from app.db.models.arko import ArkoProject3D
 import uuid
 import traceback

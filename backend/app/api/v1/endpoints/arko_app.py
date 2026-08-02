@@ -1,38 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
-from typing import List, Optional, Any, Generator, Dict
+from typing import List, Optional, Any, Dict
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from passlib.context import CryptContext
-import jwt
 import uuid
-import logging
 
+from app.core.arko_auth import decode_token, get_password_hash, verify_password
 from app.core.logging import logger
-from app.db.arko_base import ArkoSessionLocal
-from contextlib import contextmanager
+from app.db.arko_base import get_db_session
 from app.db.models.arko import ArkoUser, ArkoProject3D
 from app.db.models.calculadora import MamposteriaCalculationRun
 from app.schemas.calculadora import MamposteriaCalculationRunCreate, MamposteriaCalculationRunResponse
 from app.core.security import create_access_token
-from app.core.config import settings
-
-@contextmanager
-def get_db_session() -> Generator[Session, None, None]:
-    db = ArkoSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
 
 router = APIRouter()
 
@@ -75,15 +54,8 @@ class Project3DResponse(Project3DBase):
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/arko_app/auth/login")
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub")
-        token_type: str = payload.get("type")
-        if email is None or token_type != "arko_user":
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
-    
+    email: str = decode_token(token, expected_type="arko_user")["sub"]
+
     with get_db_session() as db:
         user = db.query(ArkoUser).filter(ArkoUser.email == email).first()
         if user is None:
