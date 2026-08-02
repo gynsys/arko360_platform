@@ -66,8 +66,10 @@ export async function getSiteConfig() {
       if (fallbackResponse.ok) {
         return fallbackResponse.json();
       }
+      console.warn(`Global site config fallback failed with status ${fallbackResponse.status}`);
     }
-    return null; // Silent fail, fallback to defaults
+    console.warn(`Site config request to ${endpoint} failed with status ${response.status}; using defaults`);
+    return null;
   }
   return response.json();
 }

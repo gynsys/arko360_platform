@@ -8,8 +8,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-async def run_backup():
-    """Ejecuta un backup de PostgreSQL usando pg_dump."""
+async def run_backup() -> bool:
+    """Ejecuta un backup de PostgreSQL usando pg_dump. Retorna True si tuvo éxito."""
     backup_dir = Path("backups")
     backup_dir.mkdir(exist_ok=True)
     
@@ -54,11 +54,18 @@ async def run_backup():
             logger.info(f"Backup completado con éxito: {backup_file}")
             # Optional: compress or rotate
             rotate_backups(backup_dir)
-        else:
-            logger.error(f"Error en backup automático: {stderr.decode()}")
-            
+            return True
+
+        logger.error(
+            "Error en backup automático (pg_dump salió con código %s): %s",
+            process.returncode,
+            stderr.decode(errors="replace"),
+        )
+        return False
+
     except Exception as e:
-        logger.error(f"Error inesperado durante el backup: {str(e)}")
+        logger.error(f"Error inesperado durante el backup: {e}", exc_info=True)
+        return False
 
 def rotate_backups(backup_dir: Path, keep=10):
     """Mantiene solo los últimos N backups."""
@@ -68,12 +75,13 @@ def rotate_backups(backup_dir: Path, keep=10):
             try:
                 os.remove(f)
                 logger.info(f"Rotación: Eliminando backup antiguo {f.name}")
-            except Exception as e:
-                logger.error(f"Error eliminando backup antiguo: {e}")
+            except OSError as e:
+                logger.error(f"Error eliminando backup antiguo {f.name}: {e}", exc_info=True)
 
 async def backup_scheduler(interval_seconds=3600):
     """Bucle infinito para el programador de backups."""
     logger.info(f"Programador de backups iniciado (Intervalo: {interval_seconds}s)")
     while True:
-        await run_backup()
+        if not await run_backup():
+            logger.error("El backup automático falló; se reintentará en %ss", interval_seconds)
         await asyncio.sleep(interval_seconds)

@@ -1,3 +1,5 @@
+import numpy as np
+
 from .grillage_solver import GrillageSolver
 from .post_processor import PostProcessor
 from .designer import ReinforcementDesigner
@@ -42,11 +44,6 @@ class FoundationSlabDesigner(
     
     def _build_results_dict(self) -> dict:
         """Construye el diccionario de resultados completo para la API."""
-        try:
-            import numpy as np
-        except ImportError:
-            pass
-
         # Reporte en texto (opcional, útil para debugging o logs)
         self.generate_design_report()
 

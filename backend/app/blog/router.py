@@ -74,6 +74,15 @@ async def generate_blog_ai(
         
         try:
             import fitz
+        except ImportError as e:
+            import logging
+            logging.getLogger(__name__).error(f"PyMuPDF no está instalado: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=503,
+                detail="El procesamiento de PDF no está disponible en el servidor.",
+            )
+
+        try:
             content = await pdf_file.read()
             with fitz.open(stream=content, filetype="pdf") as doc:
                 extracted_text = ""
@@ -83,9 +92,13 @@ async def generate_blog_ai(
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"Error procesando PDF subido: {e}")
-            # No fallar aquí, intentar seguir sin el texto si es posible o avisar
-            extracted_text = f"[Error leyendo PDF adjunto: {str(e)}]"
+            logger.error(f"Error procesando PDF subido: {e}", exc_info=True)
+            # Seguir con un texto de error como fuente produciría un artículo basado en
+            # basura sin que el usuario se entere: mejor rechazar la petición.
+            raise HTTPException(
+                status_code=400,
+                detail="No se pudo leer el PDF adjunto. Verifica que el archivo no esté dañado o protegido.",
+            )
 
     try:
         from app.services import ai_service
@@ -381,7 +394,7 @@ def delete_social_carousel(
         raise
     except Exception as e:
         logger.error(f"Error deleting carousel {carousel_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno al eliminar el carrusel.")
 
 @router.post("/", response_model=schemas.BlogPostResponse)
 def create_post(

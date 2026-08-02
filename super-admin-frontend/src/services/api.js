@@ -37,7 +37,8 @@ export async function getSiteConfig() {
   });
 
   if (!response.ok) {
-    return null; // Silent fail, fallback to defaults
+    console.warn(`Site config request failed with status ${response.status}; using defaults`);
+    return null;
   }
   return response.json();
 }

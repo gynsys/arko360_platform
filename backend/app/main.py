@@ -17,7 +17,10 @@ try:
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified/created successfully.")
 except Exception as e:
-    logger.error(f"Error creating Arko360 database tables: {e}", exc_info=True)
+    logger.critical(f"Error creating Arko360 database tables: {e}", exc_info=True)
+    # Serving requests against a database whose schema could not be verified only
+    # produces confusing 500s later, so refuse to start.
+    raise
 
 app = FastAPI(
     title="Arko360 Admin API",

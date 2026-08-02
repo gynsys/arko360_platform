@@ -23,7 +23,11 @@ export const useVideoExport = (
 
   const revokeAllBlobUrls = useCallback(() => {
     blobUrlsRef.current.forEach(url => {
-      try { URL.revokeObjectURL(url); } catch (e) {}
+      try {
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.warn('[Arko360] No se pudo liberar la blob URL:', e);
+      }
     });
     blobUrlsRef.current = [];
   }, []);
@@ -381,7 +385,9 @@ export const useVideoExport = (
               v.vid.pause();
               v.vid.removeAttribute('src');
               v.vid.load();
-            } catch (e) {}
+            } catch (e) {
+              console.warn('[Arko360] No se pudo liberar el video de la diapositiva:', e);
+            }
           });
         });
 

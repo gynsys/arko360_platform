@@ -1,6 +1,10 @@
 #celery_app.py
+import logging
+
 from celery import Celery
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 celery_app = Celery("gynsys", broker=settings.CELERY_BROKER_URL)
 
@@ -45,5 +49,8 @@ try:
     import app.tasks.notifications
     import app.tasks.campaigns
     import app.tasks.scheduled_appointment_reminders
-except ImportError:
-    pass
+except ImportError as exc:
+    # Without these modules the scheduled tasks are never registered and every
+    # beat entry fails at runtime, so fail loudly at startup instead.
+    logger.critical("Could not import Celery task modules: %s", exc, exc_info=True)
+    raise

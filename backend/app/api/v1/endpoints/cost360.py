@@ -20,7 +20,7 @@ from app.crud.crud_cost360 import (
     update_labor, delete_labor,
     save_custom_apu
 )
-from app.services.preprocessing_service import preprocess_apu_data
+from app.services.preprocessing_service import PreprocessingDataError, preprocess_apu_data
 from app.services.ai_apu_service import generate_apu_with_ai
 
 router = APIRouter()
@@ -135,7 +135,11 @@ def delete_labor_route(codigo: str, db: Session = Depends(get_db)):
 @router.post("/generate-ai-apu")
 def generate_ai_apu_route(payload: AiApuGenerateRequest, db: Session = Depends(get_db)):
     # 1. Preprocesamiento (BD + Estadísticas)
-    payload_llm = preprocess_apu_data(db, payload.description, payload.categoria, payload.tipo_actividad)
+    try:
+        payload_llm = preprocess_apu_data(db, payload.description, payload.categoria, payload.tipo_actividad)
+    except PreprocessingDataError as exc:
+        # Sin la base histórica el APU sería 100% inventado por la IA sin avisar al usuario.
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     
     # 1.5. Cortocircuito si hay Match Exacto
     if payload_llm.get("modo") == "partida_exacta_encontrada":

@@ -24,13 +24,13 @@ def ensure_bucket_exists():
     try:
         s3.head_bucket(Bucket=bucket_name)
         logger.info(f"Bucket '{bucket_name}' already exists.")
-    except Exception:
+    except Exception as head_error:
+        logger.info(f"Bucket '{bucket_name}' not reachable ({head_error}); creating it.")
         try:
-            logger.info(f"Creating bucket '{bucket_name}'")
             s3.create_bucket(Bucket=bucket_name)
         except Exception as e:
-            logger.error(f"Failed to create bucket: {e}")
-            return
+            logger.error(f"Failed to create bucket '{bucket_name}': {e}", exc_info=True)
+            raise
     
     # Set public-read policy for the bucket (allows direct browser access to uploaded media)
     # This is simpler than presigned GETs for chat media like images and voice notes.
@@ -87,8 +87,8 @@ def create_presigned_upload(object_name: str, content_type: str = None):
              
         return url
     except Exception as e:
-        logger.error(f"Error generating presigned URL: {e}")
-        return None
+        logger.error(f"Error generating presigned URL for '{object_name}': {e}", exc_info=True)
+        raise
 
 def create_presigned_get(object_name: str):
     """
@@ -107,5 +107,5 @@ def create_presigned_get(object_name: str):
              
         return url
     except Exception as e:
-        logger.error(f"Error generating presigned GET URL: {e}")
-        return None
+        logger.error(f"Error generating presigned GET URL for '{object_name}': {e}", exc_info=True)
+        raise

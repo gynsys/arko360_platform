@@ -8,10 +8,12 @@ de rendimiento de insumos y estructura un payload para consumo por un LLM.
 import logging
 import statistics
 from collections import defaultdict
+from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
 from sqlalchemy import or_
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.db.models.cost360 import (
@@ -46,6 +48,27 @@ SEARCH_LIMIT = 50
 CATALOG_FALLBACK_LIMIT = 20
 MATERIAL_FALLBACK_LIMIT = 80
 VARIABILITY_RATIO = 0.5
+
+
+class PreprocessingDataError(RuntimeError):
+    """
+    Error al leer la base de datos maestra de costos.
+
+    Se propaga en lugar de devolver datos vacíos: un fallo de base de datos haría
+    que el APU se generara como si no existiera historial, sin que el usuario lo sepa.
+    """
+
+
+@contextmanager
+def _db_stage(stage: str) -> Iterator[None]:
+    """Convierte cualquier error de base de datos de una etapa en PreprocessingDataError."""
+    try:
+        yield
+    except SQLAlchemyError as exc:
+        logger.error("Error al consultar %s: %s", stage, exc, exc_info=True)
+        raise PreprocessingDataError(
+            f"No se pudo consultar {stage} en la base de datos de costos."
+        ) from exc
 
 
 # ---------------------------------------------------------------------------
@@ -218,13 +241,11 @@ def _find_similar_items(
 
     logger.info("Buscando partidas con filtros: %s", ", ".join(filters_applied))
 
-    try:
+    with _db_stage("partidas similares"):
         results = query.limit(SEARCH_LIMIT).all()
-        logger.info("Partidas encontradas: %d", len(results))
-        return results
-    except Exception as exc:
-        logger.error("Error al consultar partidas similares: %s", exc)
-        return []
+
+    logger.info("Partidas encontradas: %d", len(results))
+    return results
 
 
 def _score_and_filter_items(
@@ -281,59 +302,56 @@ def _fetch_insumos(
         return resultados["materiales"], resultados["mano_obra"], resultados["equipos"]
 
     # Materiales
-    try:
+    with _db_stage("los materiales de las partidas"):
         mat_rels = (
             db.query(CostAPUMaterial, CostMaterial)
             .join(CostMaterial, CostAPUMaterial.CodIns == CostMaterial.CodMat)
             .filter(CostAPUMaterial.CodPar.in_(item_codes))
             .all()
         )
-        for rel, mat in mat_rels:
-            u_partida = _normalize_unit(unidad_por_partida.get(rel.CodPar))
-            desc = (mat.Descri or "").strip()
-            unidad = _normalize_unit(mat.UniMat)
-            key = f"{desc} | {unidad}"
-            resultados["materiales"][u_partida][key].append(
-                {"cantidad": rel.CanIns, "codigo": mat.CodMat}
-            )
-    except Exception as exc:
-        logger.error("Error al consultar materiales: %s", exc)
+
+    for rel, mat in mat_rels:
+        u_partida = _normalize_unit(unidad_por_partida.get(rel.CodPar))
+        desc = (mat.Descri or "").strip()
+        unidad = _normalize_unit(mat.UniMat)
+        key = f"{desc} | {unidad}"
+        resultados["materiales"][u_partida][key].append(
+            {"cantidad": rel.CanIns, "codigo": mat.CodMat}
+        )
 
     # Equipos
-    try:
+    with _db_stage("los equipos de las partidas"):
         eq_rels = (
             db.query(CostAPUEquipment, CostEquipment)
             .join(CostEquipment, CostAPUEquipment.CodIns == CostEquipment.CodEqu)
             .filter(CostAPUEquipment.CodPar.in_(item_codes))
             .all()
         )
-        for rel, eq in eq_rels:
-            u_partida = _normalize_unit(unidad_por_partida.get(rel.CodPar))
-            desc = (eq.Descri or "").strip()
-            key = f"{desc} | día"
-            resultados["equipos"][u_partida][key].append(
-                {"cantidad": rel.CanIns, "codigo": eq.CodEqu}
-            )
-    except Exception as exc:
-        logger.error("Error al consultar equipos: %s", exc)
+
+    for rel, eq in eq_rels:
+        u_partida = _normalize_unit(unidad_por_partida.get(rel.CodPar))
+        desc = (eq.Descri or "").strip()
+        key = f"{desc} | día"
+        resultados["equipos"][u_partida][key].append(
+            {"cantidad": rel.CanIns, "codigo": eq.CodEqu}
+        )
 
     # Mano de obra
-    try:
+    with _db_stage("la mano de obra de las partidas"):
         mo_rels = (
             db.query(CostAPULabor, CostLabor)
             .join(CostLabor, CostAPULabor.CodIns == CostLabor.CodMan)
             .filter(CostAPULabor.CodPar.in_(item_codes))
             .all()
         )
-        for rel, mo in mo_rels:
-            u_partida = _normalize_unit(unidad_por_partida.get(rel.CodPar))
-            desc = (mo.Descri or "").strip()
-            key = f"{desc} | día"
-            resultados["mano_obra"][u_partida][key].append(
-                {"cantidad": rel.CanIns, "codigo": mo.CodMan}
-            )
-    except Exception as exc:
-        logger.error("Error al consultar mano de obra: %s", exc)
+
+    for rel, mo in mo_rels:
+        u_partida = _normalize_unit(unidad_por_partida.get(rel.CodPar))
+        desc = (mo.Descri or "").strip()
+        key = f"{desc} | día"
+        resultados["mano_obra"][u_partida][key].append(
+            {"cantidad": rel.CanIns, "codigo": mo.CodMan}
+        )
 
     return resultados["materiales"], resultados["mano_obra"], resultados["equipos"]
 
@@ -446,63 +464,57 @@ def _build_catalog(
 
         # Consultar catálogos
         if codigos_mat:
-            try:
+            with _db_stage("el catálogo de materiales"):
                 mats = (
                     db.query(CostMaterial)
                     .filter(CostMaterial.CodMat.in_(list(codigos_mat)))
                     .all()
                 )
-                catalogo["materiales"] = [
-                    {
-                        "codigo": m.CodMat,
-                        "descripcion": m.Descri,
-                        "unidad": m.UniMat,
-                        "precio": m.CosMat,
-                    }
-                    for m in mats
-                ]
-            except Exception as exc:
-                logger.error("Error al consultar catálogo de materiales: %s", exc)
+            catalogo["materiales"] = [
+                {
+                    "codigo": m.CodMat,
+                    "descripcion": m.Descri,
+                    "unidad": m.UniMat,
+                    "precio": m.CosMat,
+                }
+                for m in mats
+            ]
 
         if codigos_eq:
-            try:
+            with _db_stage("el catálogo de equipos"):
                 eqs = (
                     db.query(CostEquipment)
                     .filter(CostEquipment.CodEqu.in_(list(codigos_eq)))
                     .all()
                 )
-                catalogo["equipos"] = [
-                    {
-                        "codigo": e.CodEqu,
-                        "descripcion": e.Descri,
-                        "precio_diario": e.CosDia,
-                    }
-                    for e in eqs
-                ]
-            except Exception as exc:
-                logger.error("Error al consultar catálogo de equipos: %s", exc)
+            catalogo["equipos"] = [
+                {
+                    "codigo": e.CodEqu,
+                    "descripcion": e.Descri,
+                    "precio_diario": e.CosDia,
+                }
+                for e in eqs
+            ]
 
         if codigos_mo:
-            try:
+            with _db_stage("el catálogo de mano de obra"):
                 mos = (
                     db.query(CostLabor)
                     .filter(CostLabor.CodMan.in_(list(codigos_mo)))
                     .all()
                 )
-                catalogo["mano_obra"] = [
-                    {
-                        "codigo": m.CodMan,
-                        "descripcion": m.Descri,
-                        "jornal": m.Jornal,
-                    }
-                    for m in mos
-                ]
-            except Exception as exc:
-                logger.error("Error al consultar catálogo de mano de obra: %s", exc)
+            catalogo["mano_obra"] = [
+                {
+                    "codigo": m.CodMan,
+                    "descripcion": m.Descri,
+                    "jornal": m.Jornal,
+                }
+                for m in mos
+            ]
 
         # Fallback de mano de obra si no hay resultados
         if not catalogo["mano_obra"]:
-            try:
+            with _db_stage("el catálogo de mano de obra"):
                 cat_mos = (
                     db.query(CostLabor)
                     .filter(
@@ -514,60 +526,54 @@ def _build_catalog(
                     .limit(CATALOG_FALLBACK_LIMIT)
                     .all()
                 )
-                catalogo["mano_obra"] = [
-                    {
-                        "codigo": m.CodMan,
-                        "descripcion": m.Descri,
-                        "jornal": m.Jornal,
-                    }
-                    for m in cat_mos
-                ]
-            except Exception as exc:
-                logger.error("Error en fallback de mano de obra: %s", exc)
+            catalogo["mano_obra"] = [
+                {
+                    "codigo": m.CodMan,
+                    "descripcion": m.Descri,
+                    "jornal": m.Jornal,
+                }
+                for m in cat_mos
+            ]
 
     else:
         # Modo fallback: búsqueda por keywords en catálogos
         if keywords:
-            try:
+            with _db_stage("el catálogo de materiales"):
                 cat_mats = (
                     db.query(CostMaterial)
                     .filter(or_(*[CostMaterial.Descri.ilike(f"%{k}%") for k in keywords]))
                     .limit(MATERIAL_FALLBACK_LIMIT)
                     .all()
                 )
-                catalogo["materiales"] = [
-                    {
-                        "codigo": m.CodMat,
-                        "descripcion": m.Descri,
-                        "unidad": m.UniMat,
-                        "precio": m.CosMat,
-                    }
-                    for m in cat_mats
-                ]
-            except Exception as exc:
-                logger.error("Error en fallback de materiales: %s", exc)
+            catalogo["materiales"] = [
+                {
+                    "codigo": m.CodMat,
+                    "descripcion": m.Descri,
+                    "unidad": m.UniMat,
+                    "precio": m.CosMat,
+                }
+                for m in cat_mats
+            ]
 
         # Equipos: en fallback, buscar por keywords si existen, sino vacío
         if keywords:
-            try:
+            with _db_stage("el catálogo de equipos"):
                 cat_eqs = (
                     db.query(CostEquipment)
                     .filter(or_(*[CostEquipment.Descri.ilike(f"%{k}%") for k in keywords]))
                     .limit(CATALOG_FALLBACK_LIMIT)
                     .all()
                 )
-                catalogo["equipos"] = [
-                    {
-                        "codigo": e.CodEqu,
-                        "descripcion": e.Descri,
-                        "precio_diario": e.CosDia,
-                    }
-                    for e in cat_eqs
-                ]
-            except Exception as exc:
-                logger.error("Error en fallback de equipos: %s", exc)
+            catalogo["equipos"] = [
+                {
+                    "codigo": e.CodEqu,
+                    "descripcion": e.Descri,
+                    "precio_diario": e.CosDia,
+                }
+                for e in cat_eqs
+            ]
 
-        try:
+        with _db_stage("el catálogo de mano de obra"):
             cat_mos = (
                 db.query(CostLabor)
                 .filter(
@@ -580,16 +586,14 @@ def _build_catalog(
                 .limit(CATALOG_FALLBACK_LIMIT)
                 .all()
             )
-            catalogo["mano_obra"] = [
-                {
-                    "codigo": m.CodMan,
-                    "descripcion": m.Descri,
-                    "jornal": m.Jornal,
-                }
-                for m in cat_mos
-            ]
-        except Exception as exc:
-            logger.error("Error en fallback de mano de obra: %s", exc)
+        catalogo["mano_obra"] = [
+            {
+                "codigo": m.CodMan,
+                "descripcion": m.Descri,
+                "jornal": m.Jornal,
+            }
+            for m in cat_mos
+        ]
 
     return catalogo
 

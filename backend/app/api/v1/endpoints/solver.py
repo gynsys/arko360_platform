@@ -23,7 +23,7 @@ async def submit_solver_job(project_id: str, topology: Topology):
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Solver Error: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno durante el análisis estructural.")
 
 @router.get("/jobs/{job_id}")
 async def get_job_status(job_id: str):
