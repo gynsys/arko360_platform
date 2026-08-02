@@ -181,3 +181,5 @@ slowapi==0.1.9
 google-generativeai
 numpy
 scipy
+pytest==7.4.4
+pytest-cov==4.1.0

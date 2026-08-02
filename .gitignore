@@ -19,3 +19,8 @@ ssh_runner.py
 arko360.conf
 arko360.net.conf
 admin.arko360.net.conf
+
+# Cobertura de pruebas
+.coverage
+htmlcov/
+.pytest_cache/
