@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Calculator, DoorOpen, Maximize, Ruler, Download, Brush, Grid, DollarSign, Save, FolderOpen, LogIn, LogOut, ArrowLeft, User, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { formatMoney as formatCurrency } from '../../utils/format';
 
 const toast = {
   success: (msg) => alert(msg),
@@ -256,10 +257,7 @@ const CalculadoraMamposteria = () => {
 
   const logout = () => { localStorage.removeItem('arko_token'); setCurrentUser(null); };
 
-  const formatMoney = (amount) => {
-    const symbol = viewCurrency === 'VES' ? 'Bs.' : '$';
-    return `${symbol} ${Number(amount || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  const formatMoney = (amount) => formatCurrency(amount, viewCurrency);
 
   // ─── EXPORTACIONES ───
   const exportarPDF = () => {

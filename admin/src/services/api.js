@@ -1,5 +1,15 @@
-export const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
+import { API_URL, apiRequest } from './http';
+
+export { API_URL };
+
 const CONTACT_ENDPOINT = import.meta.env.VITE_CONTACT_ENDPOINT || '/arko360/contact';
+
+const credentialsBody = (email, password) => {
+  const formData = new URLSearchParams();
+  formData.append('username', email);
+  formData.append('password', password);
+  return formData;
+};
 
 /**
  * @param {Object} data - Form data to submit
@@ -10,36 +20,17 @@ const CONTACT_ENDPOINT = import.meta.env.VITE_CONTACT_ENDPOINT || '/arko360/cont
  * @param {string} data.message
  * @returns {Promise<Object>}
  */
-export async function submitContactForm(data) {
-  const response = await fetch(`${API_URL}${CONTACT_ENDPOINT}`, {
+export function submitContactForm(data) {
+  return apiRequest(CONTACT_ENDPOINT, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify(data),
+    body: data,
+    errorMessage: 'Error al enviar el formulario. Intenta nuevamente.',
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || 'Error al enviar el formulario. Intenta nuevamente.');
-  }
-
-  return response.json();
 }
 
-export async function getSiteConfig() {
-  const response = await fetch(`${API_URL}/arko/config`, {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-    }
-  });
-
-  if (!response.ok) {
-    return null; // Silent fail, fallback to defaults
-  }
-  return response.json();
+export function getSiteConfig() {
+  // Silent fail, fallback to defaults
+  return apiRequest('/arko/config', { fallback: null });
 }
 
 /**
@@ -48,26 +39,12 @@ export async function getSiteConfig() {
  * @param {string} password
  * @returns {Promise<Object>}
  */
-export async function loginArkoAdmin(email, password) {
-  const formData = new URLSearchParams();
-  formData.append('username', email);
-  formData.append('password', password);
-
-  const response = await fetch(`${API_URL}/arko/auth/login`, {
+export function loginArkoAdmin(email, password) {
+  return apiRequest('/arko/auth/login', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Accept': 'application/json',
-    },
-    body: formData,
+    body: credentialsBody(email, password),
+    errorMessage: 'Credenciales incorrectas',
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || 'Credenciales incorrectas');
-  }
-
-  return response.json();
 }
 
 /**
@@ -76,136 +53,71 @@ export async function loginArkoAdmin(email, password) {
  * @param {string} password
  * @returns {Promise<Object>}
  */
-export async function loginLandingSite(email, password) {
-  const formData = new URLSearchParams();
-  formData.append('username', email);
-  formData.append('password', password);
-
-  const response = await fetch(`${API_URL}/arko/landing_sites/auth/login`, {
+export function loginLandingSite(email, password) {
+  return apiRequest('/arko/landing_sites/auth/login', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Accept': 'application/json',
-    },
-    body: formData,
+    body: credentialsBody(email, password),
+    errorMessage: 'Credenciales incorrectas',
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || 'Credenciales incorrectas');
-  }
-
-  return response.json();
 }
 
 /**
  * Get current Landing Site config
  */
-export async function getMyLandingSiteConfig(token) {
-  const response = await fetch(`${API_URL}/arko/landing_sites/me/config`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-    }
-  });
-  if (!response.ok) {
-    if (response.status === 401) throw new Error('Unauthorized');
-    return null;
-  }
-  return response.json();
+export function getMyLandingSiteConfig(token) {
+  return apiRequest('/arko/landing_sites/me/config', { token, fallback: null });
 }
 
 /**
  * Update current Landing Site config
  */
-export async function updateMyLandingSiteConfig(token, config) {
-  const response = await fetch(`${API_URL}/arko/landing_sites/me/config`, {
+export function updateMyLandingSiteConfig(token, config) {
+  return apiRequest('/arko/landing_sites/me/config', {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify(config)
+    token,
+    body: config,
+    errorMessage: 'Error saving config',
   });
-  if (!response.ok) {
-    if (response.status === 401) throw new Error('Unauthorized');
-    throw new Error('Error saving config');
-  }
-  return response.json();
 }
 
 /**
  * Get Landing Site posts
  */
-export async function getMyLandingSitePosts(token) {
-  const response = await fetch(`${API_URL}/arko/landing_sites/me/posts`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-    }
-  });
-  if (!response.ok) {
-    if (response.status === 401) throw new Error('Unauthorized');
-    return [];
-  }
-  return response.json();
+export function getMyLandingSitePosts(token) {
+  return apiRequest('/arko/landing_sites/me/posts', { token, fallback: [] });
 }
 
 /**
  * Create Landing Site post
  */
-export async function createMyLandingSitePost(token, postData) {
-  const response = await fetch(`${API_URL}/arko/landing_sites/me/posts`, {
+export function createMyLandingSitePost(token, postData) {
+  return apiRequest('/arko/landing_sites/me/posts', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify(postData)
+    token,
+    body: postData,
+    errorMessage: 'Error creating post',
   });
-  if (!response.ok) {
-    if (response.status === 401) throw new Error('Unauthorized');
-    throw new Error('Error creating post');
-  }
-  return response.json();
 }
 
 /**
  * Update Landing Site post
  */
-export async function updateMyLandingSitePost(token, postId, postData) {
-  const response = await fetch(`${API_URL}/arko/landing_sites/me/posts/${postId}`, {
+export function updateMyLandingSitePost(token, postId, postData) {
+  return apiRequest(`/arko/landing_sites/me/posts/${postId}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify(postData)
+    token,
+    body: postData,
+    errorMessage: 'Error updating post',
   });
-  if (!response.ok) {
-    if (response.status === 401) throw new Error('Unauthorized');
-    throw new Error('Error updating post');
-  }
-  return response.json();
 }
 
 /**
  * Delete Landing Site post
  */
-export async function deleteMyLandingSitePost(token, postId) {
-  const response = await fetch(`${API_URL}/arko/landing_sites/me/posts/${postId}`, {
+export function deleteMyLandingSitePost(token, postId) {
+  return apiRequest(`/arko/landing_sites/me/posts/${postId}`, {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-    }
+    token,
+    errorMessage: 'Error deleting post',
   });
-  if (!response.ok) {
-    if (response.status === 401) throw new Error('Unauthorized');
-    throw new Error('Error deleting post');
-  }
-  return response.json();
 }

@@ -1,9 +1,12 @@
 """
 Database base configuration and session management for Arko360.
 """
+from contextlib import contextmanager
+from typing import Generator
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from app.core.config import settings
 
 # Determine Arko Database URL
@@ -32,6 +35,16 @@ def get_arko_db():
     Dependency function to get database session for Arko360.
     Yields a database session and ensures it's closed after use.
     """
+    db = ArkoSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@contextmanager
+def get_db_session() -> Generator[Session, None, None]:
+    """Context manager yielding an Arko360 session that is always closed."""
     db = ArkoSessionLocal()
     try:
         yield db

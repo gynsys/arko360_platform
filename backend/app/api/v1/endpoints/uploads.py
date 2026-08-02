@@ -1,21 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
-from datetime import datetime
-from pathlib import Path
-import shutil
 
 from app.db.base import get_db
 from app.blog.models import SocialAudio
 from app.api.v1.endpoints.arko import get_current_arko_admin as get_current_user
-from app.core.config import settings
+from app.core.logging import logger
+from app.core.uploads import ensure_upload_dir, save_upload
 
 router = APIRouter()
 
-UPLOAD_DIR = Path(settings.UPLOAD_DIR).resolve()
-AUDIO_DIR = UPLOAD_DIR / "audios"
-AUDIO_DIR.mkdir(parents=True, exist_ok=True)
-MEDIA_DIR = UPLOAD_DIR / "media"
-MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+AUDIO_DIR = ensure_upload_dir("audios")
+MEDIA_DIR = ensure_upload_dir("media")
 
 @router.post("/social-audio", status_code=status.HTTP_201_CREATED)
 async def upload_social_audio(
@@ -24,18 +19,8 @@ async def upload_social_audio(
     current_user = Depends(get_current_user)
 ):
     try:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_extension = Path(file.filename).suffix
-        filename = f"audio_{timestamp}{file_extension}"
-        file_path = AUDIO_DIR / filename
-        
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
-        # Get relative path for URL
-        relative_path = file_path.relative_to(UPLOAD_DIR)
-        url_path = f"/uploads/{relative_path.as_posix()}"
-        
+        url_path = save_upload(file, AUDIO_DIR, prefix="audio")
+
         # Guardar en base de datos
         db_audio = SocialAudio(
             name=file.filename,
@@ -55,8 +40,6 @@ async def upload_social_audio(
             "admin_id": db_audio.admin_id
         }
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Error uploading social audio: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error uploading audio")
 
@@ -66,24 +49,12 @@ async def upload_social_media(
     current_user = Depends(get_current_user)
 ):
     try:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_extension = Path(file.filename).suffix
-        filename = f"media_{timestamp}{file_extension}"
-        file_path = MEDIA_DIR / filename
-        
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
-        # Get relative path for URL
-        relative_path = file_path.relative_to(UPLOAD_DIR)
-        url_path = f"/uploads/{relative_path.as_posix()}"
-        
+        url_path = save_upload(file, MEDIA_DIR, prefix="media")
+
         return {
             "url": url_path,
             "filename": file.filename
         }
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Error uploading social media: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error uploading media")
