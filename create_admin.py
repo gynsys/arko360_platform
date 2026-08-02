@@ -8,7 +8,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import os
 
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://arko_user:arko_password@db:5432/arko360')
+DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL:
+    raise SystemExit('DATABASE_URL environment variable is required.')
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
@@ -41,8 +43,12 @@ def create_admin(email: str, password: str, full_name: str) -> None:
         db.close()
 
 if __name__ == "__main__":
+    admin_password = os.getenv("ARKO_ADMIN_PASSWORD")
+    if not admin_password:
+        raise SystemExit("ARKO_ADMIN_PASSWORD environment variable is required.")
+
     create_admin(
-        email="admin@arko360.net",
-        password="Arko2024@Admin",
-        full_name="Administrador Arko360"
+        email=os.getenv("ARKO_ADMIN_EMAIL", "admin@arko360.net"),
+        password=admin_password,
+        full_name=os.getenv("ARKO_ADMIN_NAME", "Administrador Arko360")
     )

@@ -4,14 +4,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-try:
-    key = settings.ENCRYPTION_KEY
-    if isinstance(key, str):
-        key = key.encode('utf-8')
-    cipher_suite = Fernet(key)
-except Exception as e:
-    logger.error(f"Error initializing encryption: {e}")
-    cipher_suite = None
+cipher_suite = None
+if not settings.ENCRYPTION_KEY:
+    logger.warning("ENCRYPTION_KEY is not configured; encryption helpers are disabled.")
+else:
+    try:
+        key = settings.ENCRYPTION_KEY
+        if isinstance(key, str):
+            key = key.encode('utf-8')
+        cipher_suite = Fernet(key)
+    except Exception as e:
+        logger.error(f"Error initializing encryption: {e}")
 
 def decrypt_text(text: str) -> str:
     """

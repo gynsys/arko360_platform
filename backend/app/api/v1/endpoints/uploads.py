@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
-from datetime import datetime
 from pathlib import Path
-import shutil
 
 from app.db.base import get_db
 from app.blog.models import SocialAudio
 from app.api.v1.endpoints.arko import get_current_arko_admin as get_current_user
 from app.core.config import settings
+from app.core.uploads import AUDIO_EXTENSIONS, MEDIA_EXTENSIONS, save_upload
 
 router = APIRouter()
 
@@ -24,14 +23,8 @@ async def upload_social_audio(
     current_user = Depends(get_current_user)
 ):
     try:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_extension = Path(file.filename).suffix
-        filename = f"audio_{timestamp}{file_extension}"
-        file_path = AUDIO_DIR / filename
-        
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
+        file_path = save_upload(file, AUDIO_DIR, "audio", AUDIO_EXTENSIONS)
+
         # Get relative path for URL
         relative_path = file_path.relative_to(UPLOAD_DIR)
         url_path = f"/uploads/{relative_path.as_posix()}"
@@ -54,6 +47,8 @@ async def upload_social_audio(
             "created_at": db_audio.created_at,
             "admin_id": db_audio.admin_id
         }
+    except HTTPException:
+        raise
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
@@ -66,22 +61,18 @@ async def upload_social_media(
     current_user = Depends(get_current_user)
 ):
     try:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_extension = Path(file.filename).suffix
-        filename = f"media_{timestamp}{file_extension}"
-        file_path = MEDIA_DIR / filename
-        
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
+        file_path = save_upload(file, MEDIA_DIR, "media", MEDIA_EXTENSIONS)
+
         # Get relative path for URL
         relative_path = file_path.relative_to(UPLOAD_DIR)
         url_path = f"/uploads/{relative_path.as_posix()}"
         
         return {
             "url": url_path,
-            "filename": file.filename
+            "filename": file_path.name
         }
+    except HTTPException:
+        raise
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)

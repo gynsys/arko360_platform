@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Tag } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { getArticleBySlug } from '../services/api.js';
 
 export default function BiblioArticle() {
@@ -77,7 +78,7 @@ export default function BiblioArticle() {
             </p>
           )}
           
-          <div dangerouslySetInnerHTML={{ __html: article.content }} />
+          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.content || '') }} />
         </div>
       </div>
     </main>

@@ -22,8 +22,12 @@ from app.crud.crud_cost360 import (
 )
 from app.services.preprocessing_service import preprocess_apu_data
 from app.services.ai_apu_service import generate_apu_with_ai
+from app.api.v1.endpoints.arko import get_current_arko_admin
 
 router = APIRouter()
+
+# Write operations on the master cost database are restricted to administrators.
+admin_only = Depends(get_current_arko_admin)
 
 @router.get("/items", response_model=CostItemListResponse)
 def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, db: Session = Depends(get_db)):
@@ -100,40 +104,40 @@ def get_categories_tree_route(db: Session = Depends(get_db)):
     return get_categories_tree_data(db)
 
 @router.patch("/materials/{codigo}")
-def update_material_route(codigo: str, payload: CostMaterialUpdate, db: Session = Depends(get_db)):
+def update_material_route(codigo: str, payload: CostMaterialUpdate, db: Session = Depends(get_db), current_admin=admin_only):
     mat = update_material(db, codigo, payload)
     if not mat: raise HTTPException(status_code=404, detail="Material no encontrado")
     return mat
 
 @router.delete("/materials/{codigo}")
-def delete_material_route(codigo: str, db: Session = Depends(get_db)):
+def delete_material_route(codigo: str, db: Session = Depends(get_db), current_admin=admin_only):
     if not delete_material(db, codigo): raise HTTPException(status_code=404, detail="Material no encontrado")
     return {"status": "ok"}
 
 @router.patch("/equipments/{codigo}")
-def update_equipment_route(codigo: str, payload: CostEquipmentUpdate, db: Session = Depends(get_db)):
+def update_equipment_route(codigo: str, payload: CostEquipmentUpdate, db: Session = Depends(get_db), current_admin=admin_only):
     eq = update_equipment(db, codigo, payload)
     if not eq: raise HTTPException(status_code=404, detail="Equipo no encontrado")
     return eq
 
 @router.delete("/equipments/{codigo}")
-def delete_equipment_route(codigo: str, db: Session = Depends(get_db)):
+def delete_equipment_route(codigo: str, db: Session = Depends(get_db), current_admin=admin_only):
     if not delete_equipment(db, codigo): raise HTTPException(status_code=404, detail="Equipo no encontrado")
     return {"status": "ok"}
 
 @router.patch("/labors/{codigo}")
-def update_labor_route(codigo: str, payload: CostLaborUpdate, db: Session = Depends(get_db)):
+def update_labor_route(codigo: str, payload: CostLaborUpdate, db: Session = Depends(get_db), current_admin=admin_only):
     labor = update_labor(db, codigo, payload)
     if not labor: raise HTTPException(status_code=404, detail="Mano de obra no encontrada")
     return labor
 
 @router.delete("/labors/{codigo}")
-def delete_labor_route(codigo: str, db: Session = Depends(get_db)):
+def delete_labor_route(codigo: str, db: Session = Depends(get_db), current_admin=admin_only):
     if not delete_labor(db, codigo): raise HTTPException(status_code=404, detail="Mano de obra no encontrada")
     return {"status": "ok"}
 
 @router.post("/generate-ai-apu")
-def generate_ai_apu_route(payload: AiApuGenerateRequest, db: Session = Depends(get_db)):
+def generate_ai_apu_route(payload: AiApuGenerateRequest, db: Session = Depends(get_db), current_admin=admin_only):
     # 1. Preprocesamiento (BD + Estadísticas)
     payload_llm = preprocess_apu_data(db, payload.description, payload.categoria, payload.tipo_actividad)
     
@@ -211,6 +215,6 @@ def generate_ai_apu_route(payload: AiApuGenerateRequest, db: Session = Depends(g
     return result
 
 @router.post("/custom-apus", response_model=CustomCostItemResponse)
-def save_custom_apu_route(payload: CustomCostItemCreate, db: Session = Depends(get_db)):
+def save_custom_apu_route(payload: CustomCostItemCreate, db: Session = Depends(get_db), current_admin=admin_only):
     new_item = save_custom_apu(db, payload.description, payload.unit, payload.performance, payload.apu_data)
     return new_item

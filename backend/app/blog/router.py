@@ -19,6 +19,7 @@ router = APIRouter()
 
 TEMP_DOWNLOAD_DIR = Path("/tmp/gynsys_downloads")
 TEMP_DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+DOWNLOAD_EXTENSIONS = {"mp4", "zip"}
 
 @router.post("/download-proxy")
 async def upload_for_download(
@@ -43,6 +44,13 @@ async def download_proxied_file(file_id: str, ext: str = "mp4"):
     """
     Sirve un archivo guardado temporalmente con headers de descarga forzada.
     """
+    if ext not in DOWNLOAD_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Extensión no permitida")
+    try:
+        file_id = str(uuid.UUID(file_id))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Identificador inválido")
+
     file_path = TEMP_DOWNLOAD_DIR / f"{file_id}.{ext}"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Archivo expirado o no encontrado")

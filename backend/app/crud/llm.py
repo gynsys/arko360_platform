@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 def _get_fernet() -> Fernet:
     """Return a Fernet instance initialized with the configured ENCRYPTION_KEY."""
     key = settings.ENCRYPTION_KEY
+    if not key:
+        raise RuntimeError("ENCRYPTION_KEY is not configured; cannot encrypt/decrypt API keys.")
     if isinstance(key, str):
         key = key.encode()
     return Fernet(key)

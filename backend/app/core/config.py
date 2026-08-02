@@ -13,9 +13,17 @@ from pydantic import AnyHttpUrl, field_validator
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    # Database
-    # DATABASE_URL: str = "sqlite:///./gynsys.db"
-    DATABASE_URL: str = "postgresql://postgres:gyn13409534@db:5432/gynsys"
+    # Database — credentials must come from the environment, never from code.
+    DATABASE_URL: str = "sqlite:///./arko360.db"
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        """Prevent production deployments falling back to the local dev database."""
+        if not v or v.startswith("sqlite"):
+            if os.getenv("ENVIRONMENT", "development") == "production":
+                raise ValueError("DATABASE_URL must be explicitly set in production.")
+        return v
 
     # JWT Security — Validated at startup (see validator below)
     SECRET_KEY: str = "your-secret-key-change-in-production"
@@ -117,6 +125,12 @@ class Settings(BaseSettings):
                 clean_domain = domain.strip().rstrip("/")
                 if clean_domain not in origins:
                     origins.append(clean_domain)
+            if os.getenv("ENVIRONMENT", "development") == "production":
+                # Dev servers must not be trusted origins for credentialed requests.
+                origins = [
+                    o for o in origins
+                    if o == "http://localhost" or not o.startswith(("http://localhost:", "http://127.0.0.1"))
+                ]
             return origins
             
         return v
@@ -133,15 +147,26 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024  # 5MB
 
-    # Data Encryption
-    ENCRYPTION_KEY: str = "r4Pn0YDQH7obBlPFuPHzWj_hEWLotrVUHonpkba_fn8="
+    # Data Encryption (Fernet key). Must be provided via the environment.
+    ENCRYPTION_KEY: Optional[str] = None
+
+    @field_validator("ENCRYPTION_KEY", mode="before")
+    @classmethod
+    def validate_encryption_key(cls, v: Optional[str]) -> Optional[str]:
+        """Refuse to start in production without an explicit encryption key."""
+        if not v and os.getenv("ENVIRONMENT", "development") == "production":
+            raise ValueError(
+                "ENCRYPTION_KEY must be explicitly set in production. "
+                "Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+            )
+        return v
 
     # Email
     SMTP_TLS: bool = True
     SMTP_PORT: int = 587
     SMTP_HOST: str | None = "smtp.gmail.com"
-    SMTP_USER: str | None = "multitenant.app@gmail.com"
-    SMTP_PASSWORD: str | None = "tu_password"
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
     
     # Force verified domain sender
     EMAILS_FROM_EMAIL: str | None = "info@gynsys.net" 
@@ -150,8 +175,8 @@ class Settings(BaseSettings):
     # MinIO / S3
     MINIO_ENDPOINT: str = "minio:9000" # Internal Docker URL
     MINIO_PUBLIC_ENDPOINT: str = "http://localhost:9000" # URL accessible from Browser
-    MINIO_ACCESS_KEY: str = "minioadmin"
-    MINIO_SECRET_KEY: str = "minioadmin"
+    MINIO_ACCESS_KEY: Optional[str] = None
+    MINIO_SECRET_KEY: Optional[str] = None
     MINIO_BUCKET: str = "gynsys-media"
 
     # VAPID (Web Push)

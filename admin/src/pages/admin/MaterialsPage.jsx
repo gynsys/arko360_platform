@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../services/api';
 
+const authHeaders = (extra = {}) => ({
+  'Authorization': `Bearer ${localStorage.getItem('arko_admin_token')}`,
+  ...extra,
+});
+
 export default function MaterialsPage() {
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +39,7 @@ export default function MaterialsPage() {
     try {
       const res = await fetch(`${API_URL}/materials/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(editForm)
       });
       if (res.ok) {
@@ -56,7 +61,7 @@ export default function MaterialsPage() {
     try {
       const res = await fetch(`${API_URL}/materials/${editingId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(editForm)
       });
       if (res.ok) {
@@ -76,7 +81,7 @@ export default function MaterialsPage() {
   const handleDelete = async (id) => {
     if (!window.confirm('¿Seguro que deseas eliminar este material?')) return;
     try {
-      const res = await fetch(`${API_URL}/materials/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/materials/${id}`, { method: 'DELETE', headers: authHeaders() });
       if (res.ok) {
         toast.success('Material eliminado');
         fetchMaterials();

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 from typing import List, Optional, Any, Generator, Dict
 from pydantic import BaseModel, EmailStr
@@ -17,6 +17,7 @@ from app.db.models.calculadora import MamposteriaCalculationRun
 from app.schemas.calculadora import MamposteriaCalculationRunCreate, MamposteriaCalculationRunResponse
 from app.core.security import create_access_token
 from app.core.config import settings
+from app.core.limiter import limiter
 
 @contextmanager
 def get_db_session() -> Generator[Session, None, None]:
@@ -91,7 +92,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         return user
 
 @router.post("/auth/register", response_model=UserResponse)
-def register(user_in: UserCreate):
+@limiter.limit("5/hour")
+def register(request: Request, user_in: UserCreate):
     try:
         with get_db_session() as db:
             existing = db.query(ArkoUser).filter(ArkoUser.email == user_in.email).first()
@@ -114,7 +116,8 @@ def register(user_in: UserCreate):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/auth/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
+@limiter.limit("10/minute")
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     try:
         with get_db_session() as db:
             user = db.query(ArkoUser).filter(ArkoUser.email == form_data.username).first()
