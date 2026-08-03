@@ -28,15 +28,19 @@ export const DatabaseProvider = ({ children }) => {
         ...dbList.filter(db => !db.is_master)
       ];
       
-      setDatabases(sortedDatabases);
-      
-      // Set active database to master if not set
       if (sortedDatabases.length > 0) {
+        setDatabases(sortedDatabases);
         setActiveDatabase(sortedDatabases[0]);
+      } else {
+        // If no databases returned, use default
+        setDatabases(DEFAULT_DATABASES);
+        setActiveDatabase(DEFAULT_DATABASES[0]);
       }
     } catch (error) {
       console.error('Error loading databases:', error);
       // Keep default databases on error
+      setDatabases(DEFAULT_DATABASES);
+      setActiveDatabase(DEFAULT_DATABASES[0]);
     } finally {
       setLoading(false);
     }

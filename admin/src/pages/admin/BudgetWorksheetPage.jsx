@@ -607,7 +607,7 @@ export default function BudgetWorksheetPage() {
                               <ChevronDown size={14} className={headerDbDropdownOpen ? 'rotate-180' : ''} />
                             </button>
                             {headerDbDropdownOpen && (
-                              <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+                              <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 min-w-[200px]">
                                 {databases.map(db => (
                                   <button
                                     key={db.id}

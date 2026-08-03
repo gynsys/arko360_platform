@@ -272,3 +272,50 @@ def delete_database_route(database_id: str, db: Session = Depends(get_db)):
         return {"status": "ok", "message": "Base de datos eliminada correctamente"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/databases/initialize")
+def initialize_master_database(db: Session = Depends(get_db)):
+    """Inicializar la base de datos maestra si no existe"""
+    from app.db.models.cost360_database import Cost360Database
+    from sqlalchemy import text
+    
+    # Verificar si la tabla existe
+    try:
+        db.execute(text("SELECT 1 FROM cost360_databases LIMIT 1"))
+    except:
+        # Crear tabla si no existe
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS cost360_databases (
+                id VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                is_master BOOLEAN DEFAULT FALSE,
+                is_active BOOLEAN DEFAULT TRUE,
+                material_inflation FLOAT DEFAULT 0,
+                labor_inflation FLOAT DEFAULT 0,
+                equipment_inflation FLOAT DEFAULT 0,
+                source_database_id VARCHAR(255),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                created_by VARCHAR(255)
+            )
+        """))
+        db.commit()
+    
+    # Verificar si existe la base maestra
+    master_db = db.query(Cost360Database).filter(Cost360Database.id == 'master').first()
+    
+    if not master_db:
+        master_db = Cost360Database(
+            id='master',
+            name='Base Maestra',
+            description='Base de datos oficial de Cost360 con precios actualizados',
+            is_master=True,
+            is_active=True,
+            material_inflation=0.0,
+            labor_inflation=0.0,
+            equipment_inflation=0.0
+        )
+        db.add(master_db)
+        db.commit()
+    
+    return {"status": "ok", "message": "Base de datos maestra inicializada"}
