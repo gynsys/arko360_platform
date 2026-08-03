@@ -228,51 +228,6 @@ def list_databases(db: Session = Depends(get_db)):
     databases = get_all_databases(db)
     return {"databases": databases}
 
-@router.get("/databases/{database_id}")
-def get_database(database_id: str, db: Session = Depends(get_db)):
-    """Obtener detalles de una base de datos específica"""
-    database = get_database_by_id(db, database_id)
-    if not database:
-        raise HTTPException(status_code=404, detail="Base de datos no encontrada")
-    return database
-
-@router.post("/databases")
-def create_database_route(payload: Cost360DatabaseCreate, db: Session = Depends(get_db)):
-    """
-    Crear una nueva base de datos duplicando de una existente con índices de inflación
-    
-    Ejemplo de uso:
-    - Duplicar Base Maestra con 10% inflación en materiales para crear "Base Julio 2024"
-    - Duplicar Base Personalizada con 5% inflación en mano de obra
-    """
-    try:
-        new_database = create_database(db, payload)
-        return new_database
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@router.patch("/databases/{database_id}")
-def update_database_route(database_id: str, payload: Cost360DatabaseUpdate, db: Session = Depends(get_db)):
-    """Actualizar metadatos de una base de datos (nombre, descripción, estado activo)"""
-    try:
-        updated_database = update_database(db, database_id, payload)
-        if not updated_database:
-            raise HTTPException(status_code=404, detail="Base de datos no encontrada")
-        return updated_database
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@router.delete("/databases/{database_id}")
-def delete_database_route(database_id: str, db: Session = Depends(get_db)):
-    """Eliminar una base de datos personalizada (no la base maestra)"""
-    try:
-        success = delete_database(db, database_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Base de datos no encontrada")
-        return {"status": "ok", "message": "Base de datos eliminada correctamente"}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
 @router.post("/databases/initialize")
 def initialize_master_database(db: Session = Depends(get_db)):
     """Inicializar la base de datos maestra si no existe"""
@@ -319,3 +274,48 @@ def initialize_master_database(db: Session = Depends(get_db)):
         db.commit()
     
     return {"status": "ok", "message": "Base de datos maestra inicializada"}
+
+@router.get("/databases/{database_id}")
+def get_database(database_id: str, db: Session = Depends(get_db)):
+    """Obtener detalles de una base de datos específica"""
+    database = get_database_by_id(db, database_id)
+    if not database:
+        raise HTTPException(status_code=404, detail="Base de datos no encontrada")
+    return database
+
+@router.post("/databases")
+def create_database_route(payload: Cost360DatabaseCreate, db: Session = Depends(get_db)):
+    """
+    Crear una nueva base de datos duplicando de una existente con índices de inflación
+    
+    Ejemplo de uso:
+    - Duplicar Base Maestra con 10% inflación en materiales para crear "Base Julio 2024"
+    - Duplicar Base Personalizada con 5% inflación en mano de obra
+    """
+    try:
+        new_database = create_database(db, payload)
+        return new_database
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.patch("/databases/{database_id}")
+def update_database_route(database_id: str, payload: Cost360DatabaseUpdate, db: Session = Depends(get_db)):
+    """Actualizar metadatos de una base de datos (nombre, descripción, estado activo)"""
+    try:
+        updated_database = update_database(db, database_id, payload)
+        if not updated_database:
+            raise HTTPException(status_code=404, detail="Base de datos no encontrada")
+        return updated_database
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/databases/{database_id}")
+def delete_database_route(database_id: str, db: Session = Depends(get_db)):
+    """Eliminar una base de datos personalizada (no la base maestra)"""
+    try:
+        success = delete_database(db, database_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Base de datos no encontrada")
+        return {"status": "ok", "message": "Base de datos eliminada correctamente"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
