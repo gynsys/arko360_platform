@@ -72,3 +72,6 @@ export const useDatabase = () => {
   }
   return context;
 };
+
+// Alias for consistency
+export const useDatabaseContext = useDatabase;
