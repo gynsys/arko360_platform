@@ -7,9 +7,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { cost360DatabaseService } from '../../../services/cost360DatabaseService';
+import { useDatabaseContext } from '../../../contexts/DatabaseContext';
 
 export default function DatabaseManagementPage() {
   const navigate = useNavigate();
+  const { loadDatabases: reloadDatabases } = useDatabaseContext();
   const [databases, setDatabases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -63,6 +65,7 @@ export default function DatabaseManagementPage() {
         equipment_inflation: 0
       });
       loadDatabases();
+      reloadDatabases(); // Actualizar el contexto global
     } catch (error) {
       toast.error('Error al crear base de datos');
       console.error(error);
@@ -78,6 +81,7 @@ export default function DatabaseManagementPage() {
       setShowDeleteModal(false);
       setDatabaseToDelete(null);
       loadDatabases();
+      reloadDatabases(); // Actualizar el contexto global
     } catch (error) {
       toast.error('Error al eliminar base de datos');
       console.error(error);
@@ -109,7 +113,7 @@ export default function DatabaseManagementPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate('/admin/cost360')}
+                onClick={() => navigate('/cost360')}
                 className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 <X size={20} className="text-slate-600" />
