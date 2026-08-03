@@ -75,7 +75,9 @@ class BudgetItemBase(BaseModel):
     is_chapter: bool = False
 
 class BudgetItemCreate(BudgetItemBase):
-    pass
+    materials: Optional[List[BudgetAPUMaterialBase]] = None
+    equipments: Optional[List[BudgetAPUEquipmentBase]] = None
+    labors: Optional[List[BudgetAPULaborBase]] = None
 
 class BudgetItemUpdate(BaseModel):
     description: Optional[str] = None

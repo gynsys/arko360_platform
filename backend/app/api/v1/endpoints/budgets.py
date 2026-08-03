@@ -86,50 +86,91 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
     if item_in.is_chapter:
         return db_item
     
-    # 2. Copiar el APU de Cost360 hacia el BudgetAPU
-    cost_item = db.query(CostItem).filter(CostItem.CodPar == item_in.cod_par).first()
-    if cost_item:
-        for mat in cost_item.apu_materials:
+    # 2. Guardar el APU en BudgetAPU
+    # PRIORIDAD: Si el frontend envió insumos pre-calculados (con factores de inflación aplicados),
+    # se usan directamente. Si no, se copia desde la base maestra de Cost360 (comportamiento original).
+    if item_in.materials is not None or item_in.equipments is not None or item_in.labors is not None:
+        # --- Ruta A: Frontend proveyó los insumos (base personalizada con factores aplicados) ---
+        for mat in (item_in.materials or []):
             db_mat = DBMaterial(
                 budget_item_id=db_item.id,
-                codigo=mat.CodIns,
-                descripcion=mat.material.Descri if mat.material else "",
-                unidad=mat.material.UniMat if mat.material else "",
-                precio_unitario=(mat.material.CosMat if (mat.material and mat.material.CosMat is not None) else 0.0),
-                cantidad=mat.CanIns or 0.0,
-                desperdicio=mat.Desper or 0.0
+                codigo=mat.codigo,
+                descripcion=mat.descripcion,
+                unidad=mat.unidad,
+                precio_unitario=mat.precio_unitario,
+                cantidad=mat.cantidad,
+                desperdicio=mat.desperdicio or 0.0
             )
             db.add(db_mat)
-            
-        for eq in cost_item.apu_equipments:
-            precio_diario_depreciado = eq.equipment.CosDia if (eq.equipment and eq.equipment.CosDia is not None) else 0.0
-            depreciacion = eq.Deprec if (eq.Deprec is not None and eq.Deprec > 0) else 1.0
-            precio_adquisicion = precio_diario_depreciado / depreciacion if depreciacion > 0 else precio_diario_depreciado
-            
+
+        for eq in (item_in.equipments or []):
             db_eq = DBEquipment(
                 budget_item_id=db_item.id,
-                codigo=eq.CodIns,
-                descripcion=eq.equipment.Descri if eq.equipment else "",
-                unidad="Día",
-                precio_unitario=precio_adquisicion,
-                cantidad=eq.CanIns or 0.0,
-                depreciacion=eq.Deprec or 1.0
+                codigo=eq.codigo,
+                descripcion=eq.descripcion,
+                unidad=eq.unidad,
+                precio_unitario=eq.precio_unitario,
+                cantidad=eq.cantidad,
+                depreciacion=eq.depreciacion or 1.0
             )
             db.add(db_eq)
-            
-        for lab in cost_item.apu_labors:
+
+        for lab in (item_in.labors or []):
             db_lab = DBLabor(
                 budget_item_id=db_item.id,
-                codigo=lab.CodIns,
-                descripcion=lab.labor.Descri if lab.labor else "",
-                jornal=(lab.labor.Jornal if (lab.labor and lab.labor.Jornal is not None) else 0.0),
-                bono=(lab.labor.Bono if (lab.labor and lab.labor.Bono is not None) else 0.0),
-                cantidad=lab.CanIns or 0.0
+                codigo=lab.codigo,
+                descripcion=lab.descripcion,
+                jornal=lab.jornal,
+                bono=lab.bono,
+                cantidad=lab.cantidad
             )
             db.add(db_lab)
-            
-        db.commit()
-        db.refresh(db_item)
+
+    else:
+        # --- Ruta B: Fallback — Copiar desde la base maestra de Cost360 sin factores ---
+        cost_item = db.query(CostItem).filter(CostItem.CodPar == item_in.cod_par).first()
+        if cost_item:
+            for mat in cost_item.apu_materials:
+                db_mat = DBMaterial(
+                    budget_item_id=db_item.id,
+                    codigo=mat.CodIns,
+                    descripcion=mat.material.Descri if mat.material else "",
+                    unidad=mat.material.UniMat if mat.material else "",
+                    precio_unitario=(mat.material.CosMat if (mat.material and mat.material.CosMat is not None) else 0.0),
+                    cantidad=mat.CanIns or 0.0,
+                    desperdicio=mat.Desper or 0.0
+                )
+                db.add(db_mat)
+                
+            for eq in cost_item.apu_equipments:
+                precio_diario_depreciado = eq.equipment.CosDia if (eq.equipment and eq.equipment.CosDia is not None) else 0.0
+                depreciacion = eq.Deprec if (eq.Deprec is not None and eq.Deprec > 0) else 1.0
+                precio_adquisicion = precio_diario_depreciado / depreciacion if depreciacion > 0 else precio_diario_depreciado
+                
+                db_eq = DBEquipment(
+                    budget_item_id=db_item.id,
+                    codigo=eq.CodIns,
+                    descripcion=eq.equipment.Descri if eq.equipment else "",
+                    unidad="Día",
+                    precio_unitario=precio_adquisicion,
+                    cantidad=eq.CanIns or 0.0,
+                    depreciacion=eq.Deprec or 1.0
+                )
+                db.add(db_eq)
+                
+            for lab in cost_item.apu_labors:
+                db_lab = DBLabor(
+                    budget_item_id=db_item.id,
+                    codigo=lab.CodIns,
+                    descripcion=lab.labor.Descri if lab.labor else "",
+                    jornal=(lab.labor.Jornal if (lab.labor and lab.labor.Jornal is not None) else 0.0),
+                    bono=(lab.labor.Bono if (lab.labor and lab.labor.Bono is not None) else 0.0),
+                    cantidad=lab.CanIns or 0.0
+                )
+                db.add(db_lab)
+        
+    db.commit()
+    db.refresh(db_item)
         
     return db_item
 
