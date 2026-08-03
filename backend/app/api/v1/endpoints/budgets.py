@@ -74,8 +74,8 @@ def add_item_to_budget(budget_id: str, item_in: BudgetItemCreate, db: Session = 
             BudgetItem.order >= target_order
         ).update({BudgetItem.order: BudgetItem.order + 1})
     
-    # 1. Crear el BudgetItem
-    item_data = item_in.model_dump()
+    # 1. Crear el BudgetItem (excluir listas de insumos — no son columnas del modelo ORM)
+    item_data = item_in.model_dump(exclude={"materials", "equipments", "labors"})
     item_data["order"] = target_order
     db_item = BudgetItem(**item_data, budget_id=budget_id)
     db.add(db_item)
