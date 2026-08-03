@@ -15,7 +15,7 @@ export default function BudgetWorksheetPage() {
   const navigate = useNavigate();
   const [budget, setBudget] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [dbDropdownOpen, setDbDropdownOpen] = useState(false);
+  const [headerDbDropdownOpen, setHeaderDbDropdownOpen] = useState(false);
   const { activeDatabase, setActiveDatabase, databases } = useDatabase();
   
   // Settings Panel
@@ -599,21 +599,21 @@ export default function BudgetWorksheetPage() {
                           {/* Database Selector Dropdown */}
                           <div className="relative">
                             <button
-                              onClick={() => setDbDropdownOpen(!dbDropdownOpen)}
+                              onClick={() => setHeaderDbDropdownOpen(!headerDbDropdownOpen)}
                               className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium shadow-sm text-sm"
                             >
                               <Database size={16} />
                               Base de Datos
-                              <ChevronDown size={14} className={dbDropdownOpen ? 'rotate-180' : ''} />
+                              <ChevronDown size={14} className={headerDbDropdownOpen ? 'rotate-180' : ''} />
                             </button>
-                            {dbDropdownOpen && (
+                            {headerDbDropdownOpen && (
                               <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[200px]">
                                 {databases.map(db => (
                                   <button
                                     key={db.id}
                                     onClick={() => {
                                       setActiveDatabase(db);
-                                      setDbDropdownOpen(false);
+                                      setHeaderDbDropdownOpen(false);
                                     }}
                                     className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition-colors flex items-center gap-2 ${
                                       activeDatabase.id === db.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700'
@@ -845,35 +845,10 @@ export default function BudgetWorksheetPage() {
                 <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                   <Search className="text-blue-500" /> Buscar Partidas
                 </h2>
-                {/* Database Selector */}
-                <div className="relative">
-                  <button
-                    onClick={() => setDbDropdownOpen(!dbDropdownOpen)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
-                  >
-                    <Database size={16} />
-                    {activeDatabase.name}
-                    <ChevronDown size={14} className={dbDropdownOpen ? 'rotate-180' : ''} />
-                  </button>
-                  {dbDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[180px]">
-                      {databases.map(db => (
-                        <button
-                          key={db.id}
-                          onClick={() => {
-                            setActiveDatabase(db);
-                            setDbDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 transition-colors flex items-center gap-2 ${
-                            activeDatabase.id === db.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700'
-                          }`}
-                        >
-                          <Database size={14} />
-                          {db.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                {/* Database Display (non-interactive) */}
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm font-medium">
+                  <Database size={16} />
+                  {activeDatabase.name}
                 </div>
               </div>
               <button 
