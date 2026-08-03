@@ -11,7 +11,7 @@ import { useDatabaseContext } from '../../../contexts/DatabaseContext';
 
 export default function DatabaseManagementPage() {
   const navigate = useNavigate();
-  const { loadDatabases: reloadDatabases } = useDatabaseContext();
+  const { refreshDatabases: reloadDatabases } = useDatabaseContext();
   const [databases, setDatabases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
