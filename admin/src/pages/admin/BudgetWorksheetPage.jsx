@@ -8,7 +8,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 import { API_URL } from '../../services/api';
-import { useDatabase, DATABASES } from '../../contexts/DatabaseContext';
+import { useDatabaseContext } from '../../contexts/DatabaseContext';
 
 export default function BudgetWorksheetPage() {
   const { id } = useParams();
@@ -16,7 +16,7 @@ export default function BudgetWorksheetPage() {
   const [budget, setBudget] = useState(null);
   const [loading, setLoading] = useState(true);
   const [headerDbDropdownOpen, setHeaderDbDropdownOpen] = useState(false);
-  const { activeDatabase, setActiveDatabase, databases } = useDatabase();
+  const { activeDatabase, setActiveDatabase, databases } = useDatabaseContext();
   
   // Settings Panel
   const [showSettings, setShowSettings] = useState(false);

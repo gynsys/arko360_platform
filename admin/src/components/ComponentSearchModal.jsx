@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Plus, Loader2, ChevronDown, Database } from 'lucide-react';
 import { budgetService } from '../services/budgetService';
-import { useDatabase, DATABASES } from '../contexts/DatabaseContext';
+import { useDatabaseContext } from '../contexts/DatabaseContext';
 
 const DatabaseIcon = Database;
 
@@ -10,7 +10,7 @@ export default function ComponentSearchModal({ isOpen, onClose, onAdd, type, tit
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dbDropdownOpen, setDbDropdownOpen] = useState(false);
-  const { activeDatabase, setActiveDatabase, databases } = useDatabase();
+  const { activeDatabase, setActiveDatabase, databases } = useDatabaseContext();
 
   useEffect(() => {
     if (isOpen) {
