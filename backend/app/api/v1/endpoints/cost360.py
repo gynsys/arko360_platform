@@ -28,44 +28,60 @@ from app.services.ai_apu_service import generate_apu_with_ai
 router = APIRouter()
 
 @router.get("/items", response_model=CostItemListResponse)
-def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, db: Session = Depends(get_db)):
+def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, database_id: str = "master", db: Session = Depends(get_db)):
     total, items = get_items_paginated(db, skip, limit, search, chapter, categoria, tipo_actividad)
     return {"total": total, "items": items}
 
+
+def _get_db_factors(db: Session, database_id: str) -> dict:
+    """Obtener los factores de inflación de una base de datos por su ID."""
+    if not database_id or database_id == 'master':
+        return {"mat": 1.0, "lab": 1.0, "eq": 1.0}
+    db_config = get_database_by_id(db, database_id)
+    if not db_config:
+        return {"mat": 1.0, "lab": 1.0, "eq": 1.0}
+    return {
+        "mat": 1 + (db_config.material_inflation or 0.0) / 100.0,
+        "lab": 1 + (db_config.labor_inflation or 0.0) / 100.0,
+        "eq": 1 + (db_config.equipment_inflation or 0.0) / 100.0,
+    }
+
 @router.get("/items/{item_code}/apu", response_model=APUResponse)
-def get_apu(item_code: str, db: Session = Depends(get_db)):
+def get_apu(item_code: str, database_id: str = "master", db: Session = Depends(get_db)):
     item = get_item_by_code(db, item_code)
     if not item:
         raise HTTPException(status_code=404, detail="Partida no encontrada")
-        
+
+    factors = _get_db_factors(db, database_id)
+
     mat_results = get_apu_materials(db, item_code)
     materiales = []
     for rel, mat in mat_results:
         desperdicio = rel.Desper if hasattr(rel, 'Desper') and rel.Desper else 0.0
-        precio = mat.CosMat or 0.0
+        precio = (mat.CosMat or 0.0) * factors["mat"]
         subtotal = rel.CanIns * precio * (1 + (desperdicio / 100.0))
         materiales.append(APUComponent(
             codigo=mat.CodMat, descripcion=mat.Descri, unidad=mat.UniMat, cantidad=rel.CanIns,
-            precio_unitario=precio, subtotal=round(subtotal, 2), desperdicio=desperdicio
+            precio_unitario=round(precio, 4), subtotal=round(subtotal, 2), desperdicio=desperdicio
         ))
 
     eq_results = get_apu_equipments(db, item_code)
     equipos = []
     for rel, eq in eq_results:
-        precio_diario_depreciado = eq.CosDia if eq.CosDia is not None else 0.0
         depreciacion = rel.Deprec if hasattr(rel, 'Deprec') and rel.Deprec else 1.0
+        precio_diario_depreciado = (eq.CosDia or 0.0) * factors["eq"]
         precio_adquisicion = precio_diario_depreciado / depreciacion if depreciacion > 0 else precio_diario_depreciado
         subtotal = rel.CanIns * precio_diario_depreciado
         equipos.append(APUComponent(
             codigo=eq.CodEqu, descripcion=eq.Descri, unidad="Día", cantidad=rel.CanIns,
-            precio_unitario=precio_adquisicion, subtotal=round(subtotal, 2), depreciacion=depreciacion
+            precio_unitario=round(precio_adquisicion, 4), subtotal=round(subtotal, 2), depreciacion=depreciacion
         ))
 
     mo_results = get_apu_labors(db, item_code)
     mano_obra = []
     for rel, mo in mo_results:
-        jornal = mo.Jornal if mo.Jornal is not None else 0.0
-        bono = mo.Bono if mo.Bono is not None else 0.0
+        jornal = (mo.Jornal or 0.0) * factors["lab"]
+        bono = (mo.Bono or 0.0) * factors["lab"]
         tot_jornal = rel.CanIns * jornal
         tot_bono = rel.CanIns * bono
         precio = jornal + bono
@@ -73,7 +89,8 @@ def get_apu(item_code: str, db: Session = Depends(get_db)):
         mano_obra.append(APUComponent(
             codigo=mo.CodMan, descripcion=mo.Descri, unidad="Día", cantidad=rel.CanIns,
             precio_unitario=round(precio, 2), subtotal=round(subtotal, 2),
-            jornal=jornal, bono=bono, tot_jornal=round(tot_jornal, 2), tot_bono=round(tot_bono, 2)
+            jornal=round(jornal, 4), bono=round(bono, 4),
+            tot_jornal=round(tot_jornal, 2), tot_bono=round(tot_bono, 2)
         ))
 
     total_directo = sum(c.subtotal for c in materiales) + sum(c.subtotal for c in equipos) + sum(c.subtotal for c in mano_obra)
@@ -84,21 +101,39 @@ def get_apu(item_code: str, db: Session = Depends(get_db)):
 
 @router.get("/materials")
 def search_materials_route(skip: int = 0, limit: int = 50, search: str = "", database_id: str = "master", db: Session = Depends(get_db)):
-    # database_id parameter allows selecting different databases (master, personalizada, junio, etc.)
-    # For now, we'll use the same database but this parameter prepares for multi-database support
     total, items = search_materials_paginated(db, skip, limit, search)
+    # Aplicar factor de inflación de materiales si la base no es maestra
+    if database_id and database_id != "master":
+        db_config = get_database_by_id(db, database_id)
+        if db_config and db_config.material_inflation:
+            factor = 1 + (db_config.material_inflation / 100.0)
+            for item in items:
+                item.CosMat = round((item.CosMat or 0.0) * factor, 4)
     return {"total": total, "items": items}
 
 @router.get("/equipments")
 def search_equipments_route(skip: int = 0, limit: int = 50, search: str = "", database_id: str = "master", db: Session = Depends(get_db)):
-    # database_id parameter allows selecting different databases (master, personalizada, junio, etc.)
     total, items = search_equipments_paginated(db, skip, limit, search)
+    # Aplicar factor de inflación de equipos si la base no es maestra
+    if database_id and database_id != "master":
+        db_config = get_database_by_id(db, database_id)
+        if db_config and db_config.equipment_inflation:
+            factor = 1 + (db_config.equipment_inflation / 100.0)
+            for item in items:
+                item.CosDia = round((item.CosDia or 0.0) * factor, 4)
     return {"total": total, "items": items}
 
 @router.get("/labors")
 def search_labors_route(skip: int = 0, limit: int = 50, search: str = "", database_id: str = "master", db: Session = Depends(get_db)):
-    # database_id parameter allows selecting different databases (master, personalizada, junio, etc.)
     total, items = search_labors_paginated(db, skip, limit, search)
+    # Aplicar factor de inflación de mano de obra si la base no es maestra
+    if database_id and database_id != "master":
+        db_config = get_database_by_id(db, database_id)
+        if db_config and db_config.labor_inflation:
+            factor = 1 + (db_config.labor_inflation / 100.0)
+            for item in items:
+                item.Jornal = round((item.Jornal or 0.0) * factor, 4)
+                item.Bono = round((item.Bono or 0.0) * factor, 4)
     return {"total": total, "items": items}
 
 @router.get("/categories_tree")

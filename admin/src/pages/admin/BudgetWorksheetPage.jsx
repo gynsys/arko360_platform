@@ -148,7 +148,49 @@ export default function BudgetWorksheetPage() {
         const selected = budget.items.find(i => i.id === selectedItemId);
         if (selected) targetOrder = selected.order + 1;
       }
-      
+
+      // Cargar el APU completo con los factores de inflación de la base activa
+      let materials = [], equipments = [], labors = [];
+      try {
+        const apuRes = await fetch(`${API_URL}/cost360/items/${item.CodPar}/apu?database_id=${activeDatabase.id}`);
+        if (apuRes.ok) {
+          const apuData = await apuRes.json();
+          materials = (apuData.materiales || []).map(m => ({
+            id: `m-${m.codigo}`,
+            codigo: m.codigo,
+            descripcion: m.descripcion,
+            unidad: m.unidad,
+            cantidad: m.cantidad,
+            desperdicio: m.desperdicio || 0,
+            precio_unitario: m.precio_unitario,
+            origen: activeDatabase.is_master ? 'historico' : 'base_personalizada'
+          }));
+          equipments = (apuData.equipos || []).map(e => ({
+            id: `e-${e.codigo}`,
+            codigo: e.codigo,
+            descripcion: e.descripcion,
+            unidad: e.unidad,
+            cantidad: e.cantidad,
+            depreciacion: e.depreciacion ?? 1.0,
+            precio_unitario: e.precio_unitario,
+            origen: activeDatabase.is_master ? 'historico' : 'base_personalizada'
+          }));
+          labors = (apuData.mano_obra || []).map(l => ({
+            id: `l-${l.codigo}`,
+            codigo: l.codigo,
+            descripcion: l.descripcion,
+            unidad: l.unidad,
+            cantidad: l.cantidad,
+            jornal: l.jornal,
+            bono: l.bono,
+            precio_unitario: l.precio_unitario,
+            origen: activeDatabase.is_master ? 'historico' : 'base_personalizada'
+          }));
+        }
+      } catch (apuError) {
+        console.error('Error cargando APU:', apuError);
+      }
+
       await budgetService.addItem(id, {
         cod_par: item.CodPar,
         cov_par: item.CovPar || '',
@@ -157,17 +199,25 @@ export default function BudgetWorksheetPage() {
         quantity: 1.0,
         performance: item.RenPar || 1.0,
         order: targetOrder,
-        is_chapter: false
+        is_chapter: false,
+        materials,
+        equipments,
+        labors
       });
       setShowSearchModal(false);
       setSearchQuery('');
       setSearchResults([]);
-      loadBudget(); // Reload to get new items
-      toast.success('Partida agregada al presupuesto');
+      loadBudget();
+      toast.success(
+        activeDatabase.is_master
+          ? 'Partida agregada al presupuesto'
+          : `Partida agregada con precios de “${activeDatabase.name}”`
+      );
     } catch (error) {
       toast.error('Error agregando partida');
     }
   };
+
 
   const handleAddChapter = async () => {
     if (!chapterName || !chapterName.trim()) return;
@@ -845,10 +895,18 @@ export default function BudgetWorksheetPage() {
                 <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                   <Search className="text-blue-500" /> Buscar Partidas
                 </h2>
-                {/* Database Display (non-interactive) */}
+                {/* Database badge with active factors */}
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm font-medium">
                   <Database size={16} />
-                  {activeDatabase.name}
+                  <span>{activeDatabase.name}</span>
+                  {!activeDatabase.is_master && (
+                    <span className="ml-1 text-xs text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded">
+                      {[activeDatabase.material_inflation ? `Mat +${activeDatabase.material_inflation}%` : null,
+                        activeDatabase.labor_inflation ? `MO +${activeDatabase.labor_inflation}%` : null,
+                        activeDatabase.equipment_inflation ? `Eq +${activeDatabase.equipment_inflation}%` : null
+                      ].filter(Boolean).join(' • ') || 'Personalizada'}
+                    </span>
+                  )}
                 </div>
               </div>
               <button 
