@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime
 
 class CostItemBase(BaseModel):
     CodPar: str
@@ -115,7 +116,7 @@ class Cost360DatabaseBase(BaseModel):
     labor_inflation: float
     equipment_inflation: float
     source_database_id: Optional[str] = None
-    created_at: Optional[str] = None
+    created_at: Optional[datetime] = None
     created_by: Optional[str] = None
     
     class Config:
