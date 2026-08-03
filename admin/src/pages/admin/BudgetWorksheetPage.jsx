@@ -3,17 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { 
   ArrowLeft, Settings, Plus, Search, Layers, FileText, 
-  DollarSign, Hash, Percent, Loader, X, Trash2, ArrowUp, ArrowDown, FolderPlus, RefreshCw
+  DollarSign, Hash, Percent, Loader, X, Trash2, ArrowUp, ArrowDown, FolderPlus, RefreshCw, ChevronDown, Database
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 import { API_URL } from '../../services/api';
+import { useDatabase, DATABASES } from '../../contexts/DatabaseContext';
 
 export default function BudgetWorksheetPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [budget, setBudget] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dbDropdownOpen, setDbDropdownOpen] = useState(false);
+  const { activeDatabase, setActiveDatabase, databases } = useDatabase();
   
   // Settings Panel
   const [showSettings, setShowSettings] = useState(false);
@@ -118,8 +121,8 @@ export default function BudgetWorksheetPage() {
     try {
       setSearching(true);
       const url = searchQuery.trim() 
-        ? `${API_URL}/cost360/items?search=${encodeURIComponent(searchQuery.trim())}&limit=30`
-        : `${API_URL}/cost360/items?limit=30`;
+        ? `${API_URL}/cost360/items?search=${encodeURIComponent(searchQuery.trim())}&limit=30&database_id=${activeDatabase.id}`
+        : `${API_URL}/cost360/items?limit=30&database_id=${activeDatabase.id}`;
       
       const res = await fetch(url);
       const data = await res.json();
@@ -593,6 +596,36 @@ export default function BudgetWorksheetPage() {
                     <div className="flex gap-3">
                       {headerPortalTarget && createPortal(
                         <div className="flex gap-2 mx-2">
+                          {/* Database Selector Dropdown */}
+                          <div className="relative">
+                            <button
+                              onClick={() => setDbDropdownOpen(!dbDropdownOpen)}
+                              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium shadow-sm text-sm"
+                            >
+                              <Database size={16} />
+                              Base de Datos
+                              <ChevronDown size={14} className={dbDropdownOpen ? 'rotate-180' : ''} />
+                            </button>
+                            {dbDropdownOpen && (
+                              <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+                                {databases.map(db => (
+                                  <button
+                                    key={db.id}
+                                    onClick={() => {
+                                      setActiveDatabase(db);
+                                      setDbDropdownOpen(false);
+                                    }}
+                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition-colors flex items-center gap-2 ${
+                                      activeDatabase.id === db.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700'
+                                    }`}
+                                  >
+                                    <Database size={14} />
+                                    {db.name}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           <button 
                             onClick={handleSyncPrices}
                             disabled={syncing}
@@ -808,9 +841,41 @@ export default function BudgetWorksheetPage() {
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-20">
           <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <Search className="text-blue-500" /> Buscar Partidas
-              </h2>
+              <div className="flex items-center gap-4">
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <Search className="text-blue-500" /> Buscar Partidas
+                </h2>
+                {/* Database Selector */}
+                <div className="relative">
+                  <button
+                    onClick={() => setDbDropdownOpen(!dbDropdownOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                  >
+                    <Database size={16} />
+                    {activeDatabase.name}
+                    <ChevronDown size={14} className={dbDropdownOpen ? 'rotate-180' : ''} />
+                  </button>
+                  {dbDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[180px]">
+                      {databases.map(db => (
+                        <button
+                          key={db.id}
+                          onClick={() => {
+                            setActiveDatabase(db);
+                            setDbDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 transition-colors flex items-center gap-2 ${
+                            activeDatabase.id === db.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700'
+                          }`}
+                        >
+                          <Database size={14} />
+                          {db.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
               <button 
                 onClick={() => setShowSearchModal(false)}
                 className="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 p-2 rounded-full transition-colors"

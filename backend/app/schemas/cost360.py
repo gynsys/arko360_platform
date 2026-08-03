@@ -103,3 +103,39 @@ class AiApuResponse(BaseModel):
     equipments: List[dict]
     labors: List[dict]
     advertencias: Optional[List[str]] = []
+
+# Database Management Schemas
+class Cost360DatabaseBase(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    is_master: bool
+    is_active: bool
+    material_inflation: float
+    labor_inflation: float
+    equipment_inflation: float
+    source_database_id: Optional[str] = None
+    created_at: Optional[str] = None
+    created_by: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class Cost360DatabaseCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    material_inflation: float = 0.0
+    labor_inflation: float = 0.0
+    equipment_inflation: float = 0.0
+    source_database_id: Optional[str] = None  # Si no se especifica, usa 'master'
+
+class Cost360DatabaseUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class Cost360DatabaseResponse(Cost360DatabaseBase):
+    pass
+
+class Cost360DatabaseListResponse(BaseModel):
+    databases: List[Cost360DatabaseBase]

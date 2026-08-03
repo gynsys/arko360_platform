@@ -17,9 +17,11 @@ import BudgetAPUEditorPage from './pages/admin/BudgetAPUEditorPage.jsx';
 import Cost360Dashboard from './modules/cost360/pages/Cost360Dashboard.jsx';
 import APUViewer from './modules/cost360/pages/APUViewer.jsx';
 import AIApuGeneratorPage from './modules/cost360/pages/AIApuGeneratorPage.jsx';
+import DatabaseManagementPage from './modules/cost360/pages/DatabaseManagementPage.jsx';
 import AppLayout from './components/layout/AppLayout.jsx';
 import { API_URL } from './services/api';
 import { Toaster } from 'react-hot-toast';
+import { DatabaseProvider } from './contexts/DatabaseContext.jsx';
 
 export const SiteConfigContext = React.createContext(null);
 
@@ -70,8 +72,9 @@ function App() {
   return (
     <AuthProvider>
       <Toaster position="top-center" containerStyle={{ zIndex: 999999 }} />
-      <SiteConfigContext.Provider value={{ config, setConfig, fetchSiteConfig }}>
-        <BrowserRouter basename={window.location.pathname.startsWith('/app') ? '/app' : ''}>
+      <DatabaseProvider>
+        <SiteConfigContext.Provider value={{ config, setConfig, fetchSiteConfig }}>
+          <BrowserRouter basename={window.location.pathname.startsWith('/app') ? '/app' : ''}>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -104,6 +107,7 @@ function App() {
               <Route index element={<Cost360Dashboard />} />
               <Route path="apu/:id" element={<APUViewer />} />
               <Route path="ai-generator" element={<AIApuGeneratorPage />} />
+              <Route path="databases" element={<DatabaseManagementPage />} />
             </Route>
 
             {/* RUTAS DE PRESUPUESTOS (APP - Protegidas) */}
@@ -165,6 +169,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </SiteConfigContext.Provider>
+      </DatabaseProvider>
     </AuthProvider>
   );
 }

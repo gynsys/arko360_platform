@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, Plus, Loader2 } from 'lucide-react';
+import { X, Search, Plus, Loader2, ChevronDown, Database } from 'lucide-react';
 import { budgetService } from '../services/budgetService';
+import { useDatabase, DATABASES } from '../contexts/DatabaseContext';
+
+const DatabaseIcon = Database;
 
 export default function ComponentSearchModal({ isOpen, onClose, onAdd, type, title }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [dbDropdownOpen, setDbDropdownOpen] = useState(false);
+  const { activeDatabase, setActiveDatabase, databases } = useDatabase();
 
   useEffect(() => {
     if (isOpen) {
@@ -22,7 +27,7 @@ export default function ComponentSearchModal({ isOpen, onClose, onAdd, type, tit
     
     try {
       setLoading(true);
-      const data = await budgetService.searchComponents(type, query);
+      const data = await budgetService.searchComponents(type, query, activeDatabase.id);
       setResults(data);
     } catch (error) {
       console.error(error);
@@ -66,7 +71,38 @@ export default function ComponentSearchModal({ isOpen, onClose, onAdd, type, tit
         
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-          <h2 className="font-bold text-slate-800">{title}</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="font-bold text-slate-800">{title}</h2>
+            {/* Database Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setDbDropdownOpen(!dbDropdownOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+              >
+                <DatabaseIcon size={16} />
+                {activeDatabase.name}
+                <ChevronDown size={14} className={dbDropdownOpen ? 'rotate-180' : ''} />
+              </button>
+              {dbDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[180px]">
+                  {databases.map(db => (
+                    <button
+                      key={db.id}
+                      onClick={() => {
+                        setActiveDatabase(db);
+                        setDbDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 transition-colors ${
+                        activeDatabase.id === db.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700'
+                      }`}
+                    >
+                      {db.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-slate-500">
             <X size={20} />
           </button>

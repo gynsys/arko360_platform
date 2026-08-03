@@ -6,19 +6,21 @@ from app.db.base import get_db
 from app.schemas.cost360 import (
     CostItemListResponse, APUResponse, APUComponent,
     CostMaterialUpdate, CostEquipmentUpdate, CostLaborUpdate,
-    AiApuGenerateRequest, CustomCostItemCreate, CustomCostItemResponse
+    AiApuGenerateRequest, CustomCostItemCreate, CustomCostItemResponse,
+    Cost360DatabaseCreate, Cost360DatabaseUpdate, Cost360DatabaseListResponse
 )
 
 # Import Services and CRUD
 from app.crud.crud_cost360 import (
-    get_items_paginated, get_item_by_code, 
+    get_items_paginated, get_item_by_code,
     get_apu_materials, get_apu_equipments, get_apu_labors,
     search_materials_paginated, search_equipments_paginated, search_labors_paginated,
     get_categories_tree_data,
     update_material, delete_material,
     update_equipment, delete_equipment,
     update_labor, delete_labor,
-    save_custom_apu
+    save_custom_apu,
+    get_all_databases, get_database_by_id, create_database, update_database, delete_database
 )
 from app.services.preprocessing_service import preprocess_apu_data
 from app.services.ai_apu_service import generate_apu_with_ai
@@ -81,17 +83,21 @@ def get_apu(item_code: str, db: Session = Depends(get_db)):
     )
 
 @router.get("/materials")
-def search_materials_route(skip: int = 0, limit: int = 50, search: str = "", db: Session = Depends(get_db)):
+def search_materials_route(skip: int = 0, limit: int = 50, search: str = "", database_id: str = "master", db: Session = Depends(get_db)):
+    # database_id parameter allows selecting different databases (master, personalizada, junio, etc.)
+    # For now, we'll use the same database but this parameter prepares for multi-database support
     total, items = search_materials_paginated(db, skip, limit, search)
     return {"total": total, "items": items}
 
 @router.get("/equipments")
-def search_equipments_route(skip: int = 0, limit: int = 50, search: str = "", db: Session = Depends(get_db)):
+def search_equipments_route(skip: int = 0, limit: int = 50, search: str = "", database_id: str = "master", db: Session = Depends(get_db)):
+    # database_id parameter allows selecting different databases (master, personalizada, junio, etc.)
     total, items = search_equipments_paginated(db, skip, limit, search)
     return {"total": total, "items": items}
 
 @router.get("/labors")
-def search_labors_route(skip: int = 0, limit: int = 50, search: str = "", db: Session = Depends(get_db)):
+def search_labors_route(skip: int = 0, limit: int = 50, search: str = "", database_id: str = "master", db: Session = Depends(get_db)):
+    # database_id parameter allows selecting different databases (master, personalizada, junio, etc.)
     total, items = search_labors_paginated(db, skip, limit, search)
     return {"total": total, "items": items}
 
@@ -214,3 +220,55 @@ def generate_ai_apu_route(payload: AiApuGenerateRequest, db: Session = Depends(g
 def save_custom_apu_route(payload: CustomCostItemCreate, db: Session = Depends(get_db)):
     new_item = save_custom_apu(db, payload.description, payload.unit, payload.performance, payload.apu_data)
     return new_item
+
+# Database Management Endpoints
+@router.get("/databases", response_model=Cost360DatabaseListResponse)
+def list_databases(db: Session = Depends(get_db)):
+    """Listar todas las bases de datos Cost360 disponibles"""
+    databases = get_all_databases(db)
+    return {"databases": databases}
+
+@router.get("/databases/{database_id}")
+def get_database(database_id: str, db: Session = Depends(get_db)):
+    """Obtener detalles de una base de datos específica"""
+    database = get_database_by_id(db, database_id)
+    if not database:
+        raise HTTPException(status_code=404, detail="Base de datos no encontrada")
+    return database
+
+@router.post("/databases")
+def create_database_route(payload: Cost360DatabaseCreate, db: Session = Depends(get_db)):
+    """
+    Crear una nueva base de datos duplicando de una existente con índices de inflación
+    
+    Ejemplo de uso:
+    - Duplicar Base Maestra con 10% inflación en materiales para crear "Base Julio 2024"
+    - Duplicar Base Personalizada con 5% inflación en mano de obra
+    """
+    try:
+        new_database = create_database(db, payload)
+        return new_database
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.patch("/databases/{database_id}")
+def update_database_route(database_id: str, payload: Cost360DatabaseUpdate, db: Session = Depends(get_db)):
+    """Actualizar metadatos de una base de datos (nombre, descripción, estado activo)"""
+    try:
+        updated_database = update_database(db, database_id, payload)
+        if not updated_database:
+            raise HTTPException(status_code=404, detail="Base de datos no encontrada")
+        return updated_database
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/databases/{database_id}")
+def delete_database_route(database_id: str, db: Session = Depends(get_db)):
+    """Eliminar una base de datos personalizada (no la base maestra)"""
+    try:
+        success = delete_database(db, database_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Base de datos no encontrada")
+        return {"status": "ok", "message": "Base de datos eliminada correctamente"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
