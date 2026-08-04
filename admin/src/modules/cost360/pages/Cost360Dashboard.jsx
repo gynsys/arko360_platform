@@ -165,7 +165,7 @@ const Cost360Dashboard = () => {
           </span>
         )}
       </div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 max-h-[600px] overflow-y-auto">
         {items.length > 0 ? (
           <ul className="divide-y divide-gray-50">
             {items.map((item) => (
