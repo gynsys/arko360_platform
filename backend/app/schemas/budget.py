@@ -26,6 +26,8 @@ class BudgetAPULaborBase(BudgetAPUComponentBase):
     bono: float
 
 class BudgetAPUComponentUpdate(BaseModel):
+    codigo: Optional[str] = None
+    descripcion: Optional[str] = None
     cantidad: Optional[float] = None
 
 class BudgetAPUMaterialUpdate(BudgetAPUComponentUpdate):

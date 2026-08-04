@@ -370,6 +370,33 @@ def update_labor_in_item(budget_id: str, item_id: str, component_id: str, comp_i
     db.refresh(comp)
     return comp
 
+@router.delete("/{budget_id}/items/{item_id}/materials/{component_id}")
+def delete_material_from_item(budget_id: str, item_id: str, component_id: str, db: Session = Depends(get_db)):
+    comp = db.query(DBMaterial).filter(DBMaterial.id == component_id, DBMaterial.budget_item_id == item_id).first()
+    if not comp:
+        raise HTTPException(status_code=404, detail="Material not found")
+    db.delete(comp)
+    db.commit()
+    return {"ok": True}
+
+@router.delete("/{budget_id}/items/{item_id}/equipments/{component_id}")
+def delete_equipment_from_item(budget_id: str, item_id: str, component_id: str, db: Session = Depends(get_db)):
+    comp = db.query(DBEquipment).filter(DBEquipment.id == component_id, DBEquipment.budget_item_id == item_id).first()
+    if not comp:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    db.delete(comp)
+    db.commit()
+    return {"ok": True}
+
+@router.delete("/{budget_id}/items/{item_id}/labors/{component_id}")
+def delete_labor_from_item(budget_id: str, item_id: str, component_id: str, db: Session = Depends(get_db)):
+    comp = db.query(DBLabor).filter(DBLabor.id == component_id, DBLabor.budget_item_id == item_id).first()
+    if not comp:
+        raise HTTPException(status_code=404, detail="Labor not found")
+    db.delete(comp)
+    db.commit()
+    return {"ok": True}
+
 @router.post("/{budget_id}/sync_prices")
 def sync_budget_prices(budget_id: str, db: Session = Depends(get_db)):
     from app.db.models.cost360 import CostMaterial, CostEquipment, CostLabor

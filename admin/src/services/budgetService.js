@@ -132,5 +132,14 @@ export const budgetService = {
     });
     if (!response.ok) throw new Error('Error al agregar partida al presupuesto');
     return response.json();
+  },
+
+  // DELETE a single APU component (material, equipment or labor)
+  deleteComponent: async (budgetId, itemId, type, componentId) => {
+    const response = await fetch(`${API_URL}/budgets/${budgetId}/items/${itemId}/${type}/${componentId}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error(`Error al eliminar componente de tipo ${type}`);
+    return response.json();
   }
 };
