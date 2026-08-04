@@ -162,7 +162,7 @@ export default function AppLayout() {
 
         {/* ── SIDEBAR Desktop (always visible lg+) ─────────────────── */}
         {sidebarVisible && (
-          <aside className="print:hidden hidden lg:flex lg:flex-col w-60 shrink-0 bg-white border-r-2 border-slate-300 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto shadow-lg">
+          <aside className="print:hidden hidden lg:flex lg:flex-col w-60 shrink-0 bg-white border-r-2 border-slate-300 fixed top-14 bottom-0 left-0 overflow-y-auto shadow-lg">
             <SidebarContent />
           </aside>
         )}
@@ -195,7 +195,7 @@ export default function AppLayout() {
         )}
 
         {/* ── MAIN CONTENT ─────────────────────────────────────────── */}
-        <main className="flex-1 overflow-y-auto min-w-0">
+        <main className="flex-1 overflow-y-auto min-w-0 lg:pl-60">
           <Outlet />
         </main>
       </div>
