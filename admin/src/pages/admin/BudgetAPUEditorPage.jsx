@@ -7,12 +7,12 @@ import { API_URL } from '../../services/api';
 import ComponentSearchModal from '../../components/ComponentSearchModal';
 import PrintAPUModal from '../../components/PrintAPUModal';
 import PrintAPULayout from '../../components/PrintAPULayout';
-import { useSidebar } from '../../components/layout/AppLayout';
+
 
 export default function BudgetAPUEditorPage() {
   const { id, itemId } = useParams();
   const navigate = useNavigate();
-  const { setVisible } = useSidebar();
+
   const [budget, setBudget] = useState(null);
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,14 +35,7 @@ export default function BudgetAPUEditorPage() {
     }
   }, [printOptions]);
 
-  // Ocultar barra lateral al entrar a edición de APU
-  useEffect(() => {
-    setVisible(false);
-    // Mostrar barra lateral al salir
-    return () => {
-      setVisible(true);
-    };
-  }, [setVisible]);
+
 
   // ── Numeric field change (local state only) ──────────────────────────────
   const handleComponentChange = (type, compId, field, value) => {
