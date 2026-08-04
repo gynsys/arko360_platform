@@ -138,7 +138,8 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden mb-6">
+      <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden mb-6" style={{height: 'calc(100vh - 300px)'}}>
+        <div className="overflow-y-auto h-full">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-slate-50 border-b-2 border-gray-300">
@@ -196,6 +197,7 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
               )}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
       
