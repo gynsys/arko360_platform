@@ -6,11 +6,15 @@ from app.db.arko_base import get_arko_db
 from app.db.models.material import MaterialPrice
 from app.schemas.material import MaterialPriceCreate, MaterialPriceUpdate, MaterialPriceResponse
 from app.core.logging import logger
+from app.api.v1.endpoints.arko import get_current_arko_admin
 
 router = APIRouter()
 
+# Prices are public to read, but only administrators may modify them.
+admin_only = Depends(get_current_arko_admin)
+
 @router.post("/", response_model=MaterialPriceResponse)
-def create_material(material_in: MaterialPriceCreate, db: Session = Depends(get_arko_db)):
+def create_material(material_in: MaterialPriceCreate, db: Session = Depends(get_arko_db), current_admin=admin_only):
     try:
         db_material = db.query(MaterialPrice).filter(MaterialPrice.nombre == material_in.nombre).first()
         if db_material:
@@ -42,7 +46,7 @@ def get_materials(db: Session = Depends(get_arko_db)):
         raise HTTPException(status_code=500, detail="Error interno.")
 
 @router.put("/{material_id}", response_model=MaterialPriceResponse)
-def update_material(material_id: int, material_in: MaterialPriceUpdate, db: Session = Depends(get_arko_db)):
+def update_material(material_id: int, material_in: MaterialPriceUpdate, db: Session = Depends(get_arko_db), current_admin=admin_only):
     try:
         material = db.query(MaterialPrice).filter(MaterialPrice.id == material_id).first()
         if not material:
@@ -68,7 +72,7 @@ def update_material(material_id: int, material_in: MaterialPriceUpdate, db: Sess
         raise HTTPException(status_code=500, detail="Error interno.")
 
 @router.delete("/{material_id}")
-def delete_material(material_id: int, db: Session = Depends(get_arko_db)):
+def delete_material(material_id: int, db: Session = Depends(get_arko_db), current_admin=admin_only):
     try:
         material = db.query(MaterialPrice).filter(MaterialPrice.id == material_id).first()
         if not material:

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 
@@ -129,8 +129,9 @@ class SlabModelInput(BaseModel):
     doors: List[DoorInput] = []
     retaining_walls: List[RetainingWallInput] = []
     support_beams: List[SupportBeamInput] = []
-    mesh_nx: int = 40
-    mesh_ny: int = 40
+    # Mesh density drives the FEM cost: keep it inside a solvable range.
+    mesh_nx: int = Field(default=40, ge=1, le=200)
+    mesh_ny: int = Field(default=40, ge=1, le=200)
     band_width_factor: float = 1.0
     max_settlement_ratio: float = 500.0
     extra_load: float = 0.0  # N/m2 adicional (piso + sobrecarga)

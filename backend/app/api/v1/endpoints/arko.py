@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional, Any, Generator
 from pydantic import BaseModel
@@ -15,6 +15,8 @@ from contextlib import contextmanager
 from app.db.models.arko import ArkoPost, ArkoProject, ArkoAdmin
 from app.core.security import create_access_token
 from app.core.config import settings
+from app.core.uploads import IMAGE_EXTENSIONS, save_upload
+from app.core.limiter import limiter
 
 @contextmanager
 def get_db_session() -> Generator[Session, None, None]:
@@ -102,7 +104,8 @@ def get_public_post(slug: str):
 # --- Autenticación Arko ---
 
 @router.post("/auth/login")
-def login_arko_admin(form_data: OAuth2PasswordRequestForm = Depends()):
+@limiter.limit("10/minute")
+def login_arko_admin(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     try:
         with get_db_session() as db:
             user = db.query(ArkoAdmin).filter(ArkoAdmin.email == form_data.username).first()
@@ -483,19 +486,15 @@ async def upload_arko_image(
     current_admin = Depends(get_current_arko_admin)
 ):
     try:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_extension = Path(file.filename).suffix
-        filename = f"arko_{timestamp}{file_extension}"
-        file_path = ARKO_DIR / filename
-        
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
+        file_path = save_upload(file, ARKO_DIR, "arko", IMAGE_EXTENSIONS)
+
         # Get relative path for URL
         relative_path = file_path.relative_to(UPLOAD_DIR)
         url_path = f"/uploads/{relative_path.as_posix()}"
         
         return {"message": "Image uploaded successfully", "image_url": url_path}
+    except HTTPException:
+        raise
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)

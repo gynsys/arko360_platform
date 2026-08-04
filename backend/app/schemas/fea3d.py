@@ -96,13 +96,14 @@ class Section(BaseModel):
     params: Dict[str, float] # {"b": 0.3, "h": 0.5}
 
 class Topology(BaseModel):
-    nodes: List[Node]
-    elements: List[Element]
-    shells: List[Shell] = []
-    materials: List[Material]
-    sections: List[Section]
-    loads: List[LoadAssignment] = []
-    combinations: List[LoadCombination] = []
+    # Model size is bounded so a single request cannot exhaust the solver.
+    nodes: List[Node] = Field(max_length=20000)
+    elements: List[Element] = Field(max_length=20000)
+    shells: List[Shell] = Field(default=[], max_length=5000)
+    materials: List[Material] = Field(max_length=1000)
+    sections: List[Section] = Field(max_length=1000)
+    loads: List[LoadAssignment] = Field(default=[], max_length=20000)
+    combinations: List[LoadCombination] = Field(default=[], max_length=100)
 
 class ProjectResults(BaseModel):
     displacements: Dict[str, List[float]]

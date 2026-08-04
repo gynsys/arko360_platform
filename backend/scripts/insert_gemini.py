@@ -18,8 +18,11 @@ def insert_gemini():
             print("Gemini provider already exists.")
             return
 
-        api_key = os.environ.get("GEMINI_API_KEY", "AIzaSyC0BCk40pQYge-VJ_7SsXE5fXcj_pvDv70")
-        
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise SystemExit("GEMINI_API_KEY environment variable is required.")
+
+
         provider_data = {
             "provider_key": "gemini",
             "display_name": "Google Gemini 1.5 Flash",

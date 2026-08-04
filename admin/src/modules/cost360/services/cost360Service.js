@@ -10,6 +10,14 @@ const cost360ApiClient = axios.create({
   },
 });
 
+cost360ApiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('arko_admin_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 /**
  * Fetch a list of cost items (Partidas)
  * @param {number} skip - Offset for pagination

@@ -18,7 +18,7 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/cost360/${resourceType}?search=${encodeURIComponent(searchQuery)}&skip=${currentSkip}&limit=${limit}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('arko_admin_token')}` }
       });
       if (res.ok) {
         const data = await res.json();
@@ -76,7 +76,7 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('arko_admin_token')}`
         },
         body: JSON.stringify(editForm)
       });
@@ -99,7 +99,7 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
     try {
       const res = await fetch(`${API_URL}/cost360/${resourceType}/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('arko_admin_token')}` }
       });
       if (res.ok) {
         toast.success(`${title} eliminado`);

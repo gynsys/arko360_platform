@@ -12,8 +12,10 @@ from app.schemas.budget import (
     BudgetAPUEquipmentBase, BudgetAPUEquipment, BudgetAPUEquipmentUpdate,
     BudgetAPULaborBase, BudgetAPULabor, BudgetAPULaborUpdate
 )
+from app.api.v1.endpoints.arko import get_current_arko_admin
 
-router = APIRouter()
+# Budgets contain client/commercial data: the whole router requires an authenticated admin.
+router = APIRouter(dependencies=[Depends(get_current_arko_admin)])
 
 @router.post("/", response_model=BudgetSchema, status_code=status.HTTP_201_CREATED)
 def create_budget(budget_in: BudgetCreate, db: Session = Depends(get_db)):

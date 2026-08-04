@@ -1,5 +1,5 @@
 from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.db.base import get_db
@@ -11,6 +11,7 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from app.core.security import verify_password, create_access_token
 import jwt
 from app.core.config import settings
+from app.core.limiter import limiter
 
 router = APIRouter()
 
@@ -403,7 +404,9 @@ class LandingSiteResponse(BaseModel):
         from_attributes = True
 
 @router.post("/auth/login")
+@limiter.limit("10/minute")
 def login_landing_site(
+    request: Request,
     db: Session = Depends(get_db),
     form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
@@ -691,8 +694,7 @@ def delete_my_post(
 
 from fastapi import File, UploadFile
 from pathlib import Path
-import shutil
-from datetime import datetime
+from app.core.uploads import IMAGE_EXTENSIONS, save_upload
 
 UPLOAD_DIR = Path(settings.UPLOAD_DIR).resolve()
 LANDING_DIR = UPLOAD_DIR / "landings"
@@ -704,23 +706,17 @@ async def upload_my_image(
     current_user: LandingSite = Depends(get_current_landing_client)
 ) -> Any:
     try:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_extension = Path(file.filename).suffix
-        filename = f"landing_{current_user.id}_{timestamp}{file_extension}"
-        
         # Guardar en una carpeta específica para cada landing site
         site_dir = LANDING_DIR / str(current_user.id)
-        site_dir.mkdir(parents=True, exist_ok=True)
-        file_path = site_dir / filename
-        
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
+        file_path = save_upload(file, site_dir, f"landing_{current_user.id}", IMAGE_EXTENSIONS)
+
         # Get relative path for URL
         relative_path = file_path.relative_to(UPLOAD_DIR)
         url_path = f"/uploads/{relative_path.as_posix()}"
         
         return {"message": "Image uploaded successfully", "image_url": url_path}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error uploading landing image: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error uploading image")
