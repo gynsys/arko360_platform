@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Plus, Printer, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Plus, Printer, Trash2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 import { API_URL } from '../../services/api';
 import ComponentSearchModal from '../../components/ComponentSearchModal';
 import PrintAPUModal from '../../components/PrintAPUModal';
 import PrintAPULayout from '../../components/PrintAPULayout';
+import { useSidebar } from '../../components/layout/AppLayout';
 
 export default function BudgetAPUEditorPage() {
   const { id, itemId } = useParams();
   const navigate = useNavigate();
+  const { visible: sidebarVisible, toggle: toggleSidebar } = useSidebar();
   const [budget, setBudget] = useState(null);
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  const [editingHeader, setEditingHeader] = useState({ code: false, description: false });
   
   const [searchModal, setSearchModal] = useState({ isOpen: false, type: '', title: '' });
   const [syncing, setSyncing] = useState(false);
@@ -120,6 +123,21 @@ export default function BudgetAPUEditorPage() {
       await budgetService.updateItem(id, itemId, { performance: val });
     } catch (error) {
       toast.error('Error actualizando rendimiento');
+    }
+  };
+
+  const handleHeaderFieldChange = (field, value) => {
+    setItem(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleHeaderFieldBlur = async (field, value) => {
+    try {
+      await budgetService.updateItem(id, itemId, { [field]: value });
+      toast.success('Actualizado');
+      setEditingHeader(prev => ({ ...prev, [field === 'cov_par' ? 'code' : 'description']: false }));
+    } catch (error) {
+      toast.error('Error al actualizar');
+      loadData();
     }
   };
 
@@ -257,6 +275,13 @@ export default function BudgetAPUEditorPage() {
           </div>
           <div className="flex items-center gap-3">
             <button
+              onClick={toggleSidebar}
+              className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shadow-sm"
+              title={sidebarVisible ? "Ocultar barra lateral" : "Mostrar barra lateral"}
+            >
+              {sidebarVisible ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+            </button>
+            <button
               onClick={() => setPrintModalOpen(true)}
               className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shadow-sm"
               title="Imprimir"
@@ -271,13 +296,45 @@ export default function BudgetAPUEditorPage() {
           <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-1">
               <span className="block text-xs font-bold text-slate-400 uppercase">Referencia / Código</span>
-              <span className="text-sm font-mono font-bold text-slate-800 bg-slate-200 px-2 py-0.5 rounded">
-                {item.cov_par || item.cod_par}
-              </span>
+              {editingHeader.code ? (
+                <input
+                  type="text"
+                  className="text-sm font-mono font-bold text-slate-800 bg-white border-2 border-blue-400 px-2 py-0.5 rounded focus:outline-none"
+                  value={item.cov_par || item.cod_par}
+                  onChange={e => handleHeaderFieldChange('cov_par', e.target.value)}
+                  onBlur={e => handleHeaderFieldBlur('cov_par', e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+                  autoFocus
+                />
+              ) : (
+                <span
+                  className="text-sm font-mono font-bold text-slate-800 bg-slate-200 px-2 py-0.5 rounded cursor-pointer hover:bg-slate-300 transition-colors"
+                  onClick={() => setEditingHeader(prev => ({ ...prev, code: true }))}
+                >
+                  {item.cov_par || item.cod_par}
+                </span>
+              )}
             </div>
             <div className="md:col-span-3">
               <span className="block text-xs font-bold text-slate-400 uppercase">Descripción</span>
-              <span className="text-sm font-medium text-slate-800 leading-tight">{item.description}</span>
+              {editingHeader.description ? (
+                <input
+                  type="text"
+                  className="text-sm font-medium text-slate-800 bg-white border-2 border-blue-400 px-2 py-0.5 rounded focus:outline-none w-full"
+                  value={item.description}
+                  onChange={e => handleHeaderFieldChange('description', e.target.value)}
+                  onBlur={e => handleHeaderFieldBlur('description', e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+                  autoFocus
+                />
+              ) : (
+                <span
+                  className="text-sm font-medium text-slate-800 leading-tight cursor-pointer hover:bg-slate-100 px-1 rounded transition-colors"
+                  onClick={() => setEditingHeader(prev => ({ ...prev, description: true }))}
+                >
+                  {item.description}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex flex-wrap border-b border-slate-200 bg-white">

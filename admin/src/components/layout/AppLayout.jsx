@@ -1,10 +1,20 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, createContext } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Layout, LogOut, Menu, X, Home, Settings,
   FileText, Database, Server, Cpu, ChevronRight
 } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
+
+const SidebarContext = createContext(null);
+
+export const useSidebar = () => {
+  const context = useContext(SidebarContext);
+  if (!context) {
+    throw new Error('useSidebar must be used within a SidebarProvider');
+  }
+  return context;
+};
 
 const NAV_ITEMS = [
   { name: 'Mis Presupuestos', href: '/budgets',              Icon: FileText, exact: false },
@@ -18,6 +28,7 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const { isAuthenticated, logout } = useContext(AuthContext);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
 
   const handleLogout = () => {
     logout();
@@ -71,8 +82,15 @@ export default function AppLayout() {
     </nav>
   );
 
+  const sidebarValue = {
+    visible: sidebarVisible,
+    setVisible: setSidebarVisible,
+    toggle: () => setSidebarVisible(prev => !prev)
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col print:block">
+    <SidebarContext.Provider value={sidebarValue}>
+      <div className="min-h-screen bg-slate-50 flex flex-col print:block">
 
       {/* ── TOP HEADER ─────────────────────────────────────────────── */}
       <header className="print:hidden h-14 bg-white border-b border-slate-200 sticky top-0 z-50 flex items-center px-4 gap-3 shadow-sm">
@@ -143,9 +161,11 @@ export default function AppLayout() {
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── SIDEBAR Desktop (always visible lg+) ─────────────────── */}
-        <aside className="print:hidden hidden lg:flex lg:flex-col w-60 shrink-0 bg-white border-r border-slate-200 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
-          <SidebarContent />
-        </aside>
+        {sidebarVisible && (
+          <aside className="print:hidden hidden lg:flex lg:flex-col w-60 shrink-0 bg-white border-r border-slate-200 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+            <SidebarContent />
+          </aside>
+        )}
 
         {/* ── SIDEBAR Mobile Overlay ────────────────────────────────── */}
         {sidebarOpen && (
@@ -180,5 +200,6 @@ export default function AppLayout() {
         </main>
       </div>
     </div>
+    </SidebarContext.Provider>
   );
 }
