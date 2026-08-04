@@ -65,8 +65,7 @@ const Cost360Dashboard = () => {
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
         <div className="mb-6 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Cost360</h1>
-            <p className="text-gray-500">Base de Datos Maestra de Insumos y Partidas</p>
+            <p className="text-3xl font-bold text-gray-800 mb-2">Base de Datos Maestra de Insumos y Partidas</p>
           </div>
         </div>
 
