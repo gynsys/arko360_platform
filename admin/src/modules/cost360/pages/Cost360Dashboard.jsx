@@ -59,22 +59,15 @@ const Cost360Dashboard = () => {
   const portalTarget = document.getElementById('header-actions-portal');
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="bg-gray-50">
 
-      {/* ── PAGE HEADER ─── more emphasis ───────────────────────── */}
-      <div className="bg-white border-b-4 border-blue-600 shadow-md">
-        <div className="px-6 md:px-10 py-5 max-w-7xl mx-auto flex items-center gap-4">
-          <div className="bg-blue-600 text-white p-3 rounded-xl shadow-sm">
-            <FiDatabase size={24} />
-          </div>
+
+      <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        <div className="mb-6 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight leading-none">APUpro</h1>
-            <p className="text-sm text-blue-600 font-medium mt-0.5">Base de Datos Maestra de Insumos y Partidas</p>
+            <p className="text-3xl font-bold text-gray-800 mb-2">APUpro — Base de Datos Maestra</p>
           </div>
         </div>
-      </div>
-
-      <div className="flex-1 overflow-hidden flex flex-col px-6 md:px-10 max-w-7xl mx-auto w-full py-6">
 
         {/* Tabs Navigation */}
         <div className="mb-8 border-b-2 border-gray-300">
@@ -172,8 +165,7 @@ const Cost360Dashboard = () => {
           </span>
         )}
       </div>
-      <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden mb-6" style={{height: 'calc(100vh - 260px)'}}>
-        <div className="overflow-y-auto h-full">
+      <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden mb-6">
         {items.length > 0 ? (
           <ul className="divide-y divide-gray-200">
             {items.map((item) => (
@@ -213,15 +205,14 @@ const Cost360Dashboard = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         )}
-        </div>
       </div>
 
       {/* Load More Button */}
       {hasMore && !loading && items.length > 0 && (
-        <div className="flex justify-center pb-6 pt-2">
+        <div className="flex justify-center pb-12">
           <button
             onClick={handleLoadMore}
-            className="bg-white text-blue-600 border-2 border-blue-300 px-8 py-3 rounded-full hover:bg-blue-50 hover:border-blue-500 transition-all font-medium text-sm shadow-sm flex items-center gap-2"
+            className="bg-white text-blue-600 border border-blue-200 px-8 py-3 rounded-full hover:bg-blue-50 transition-colors font-medium text-sm shadow-sm flex items-center gap-2"
           >
             Cargar Más Partidas
           </button>
@@ -266,7 +257,7 @@ const Cost360Dashboard = () => {
         />
       )}
 
-      </div>
+    </div>
     </div>
   );
 };
