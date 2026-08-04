@@ -106,28 +106,38 @@ export default function DatabaseManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <div className="flex flex-col h-full bg-transparent">
+      {/* ── PAGE HEADER ─── glass style ───────────────────────── */}
+      <div
+        className="sticky top-0 z-10"
+        style={{
+          background: 'rgba(255,255,255,0.75)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: '1px solid rgba(255,255,255,0.6)',
+          boxShadow: '0 1px 24px 0 rgba(80,100,200,0.07)',
+        }}
+      >
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/cost360')}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              <div
+                className="p-2.5 rounded-xl shadow-sm"
+                style={{ background: 'linear-gradient(135deg,#2563eb,#4f46e5)', color: '#fff' }}
               >
-                <X size={20} className="text-slate-600" />
-              </button>
+                <Database size={22} />
+              </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-800">Gestión de Bases de Datos</h1>
-                <p className="text-sm text-slate-500">Administra y duplica bases de datos de Cost360</p>
+                <h1 className="text-xl font-extrabold text-slate-800 tracking-tight leading-none">Gestión de Bases de Datos</h1>
+                <p className="text-sm text-blue-600/80 font-medium mt-0.5">Administra y duplica bases de datos de APUpro</p>
               </div>
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-blue-500/30 transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white transition-all hover:opacity-90 hover:shadow-lg active:scale-95"
+              style={{ background: 'linear-gradient(135deg,#2563eb,#4f46e5)', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}
             >
-              <Plus size={16} /> Nueva Base de Datos
+              <Plus size={18} /> Nueva Base de Datos
             </button>
           </div>
         </div>
@@ -136,8 +146,16 @@ export default function DatabaseManagementPage() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {databases.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-            <Database className="mx-auto mb-4 text-slate-300" size={48} />
+          <div
+            className="rounded-2xl p-12 text-center"
+            style={{
+              background: 'rgba(255,255,255,0.72)',
+              backdropFilter: 'blur(18px)',
+              border: '1px solid rgba(255,255,255,0.65)',
+              boxShadow: '0 4px 32px 0 rgba(80,100,200,0.08)',
+            }}
+          >
+            <Database className="mx-auto mb-4 text-slate-400" size={48} />
             <h3 className="text-lg font-semibold text-slate-700 mb-2">No hay bases de datos personalizadas</h3>
             <p className="text-slate-500 mb-4">Crea tu primera base de datos duplicando la Base Maestra</p>
             <button
@@ -152,14 +170,22 @@ export default function DatabaseManagementPage() {
             {databases.map((db) => (
               <div
                 key={db.id}
-                className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all hover:shadow-md ${
-                  db.is_master ? 'border-blue-200' : 'border-slate-200'
-                }`}
+                className="rounded-2xl overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 group"
+                style={{
+                  background: 'rgba(255,255,255,0.88)',
+                  backdropFilter: 'blur(20px)',
+                  border: db.is_master ? '2px solid rgba(37,99,235,0.3)' : '1px solid rgba(255,255,255,0.7)',
+                  boxShadow: db.is_master ? '0 8px 40px 0 rgba(37,99,235,0.15)' : '0 8px 32px 0 rgba(80,100,200,0.08)',
+                }}
               >
                 {/* Header */}
-                <div className={`p-4 border-b ${
-                  db.is_master ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-200'
-                }`}>
+                <div
+                  className="p-5 border-b"
+                  style={{
+                    background: db.is_master ? 'linear-gradient(90deg,rgba(37,99,235,0.08),rgba(99,102,241,0.04))' : 'rgba(255,255,255,0.5)',
+                    borderBottomColor: 'rgba(148,163,255,0.2)'
+                  }}
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <Database className={db.is_master ? 'text-blue-600' : 'text-slate-600'} size={20} />
@@ -192,7 +218,13 @@ export default function DatabaseManagementPage() {
 
                   {/* Inflation Stats */}
                   {(db.material_inflation > 0 || db.labor_inflation > 0 || db.equipment_inflation > 0) && (
-                    <div className="bg-slate-50 rounded-lg p-3 space-y-2">
+                    <div
+                      className="rounded-xl p-3.5 space-y-2.5"
+                      style={{
+                        background: 'rgba(241,245,249,0.7)',
+                        border: '1px solid rgba(148,163,255,0.15)'
+                      }}
+                    >
                       <div className="text-xs font-medium text-slate-500 mb-2">Índices de Inflación Aplicados</div>
                       
                       {db.material_inflation > 0 && (
