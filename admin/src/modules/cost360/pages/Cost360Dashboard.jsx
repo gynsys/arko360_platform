@@ -59,26 +59,26 @@ const Cost360Dashboard = () => {
   const portalTarget = document.getElementById('header-actions-portal');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
 
 
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
         <div className="mb-6 flex justify-between items-center">
           <div>
-            <p className="text-3xl font-bold text-gray-800 mb-2">Base de Datos Maestra de Insumos y Partidas</p>
+            <p className="text-3xl font-bold text-gray-800 mb-2">APUpro — Base de Datos Maestra</p>
           </div>
         </div>
 
         {/* Tabs Navigation */}
-        <div className="mb-8 border-b border-gray-200">
+        <div className="mb-8 border-b-2 border-gray-300">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('partidas')}
               className={`${
                 activeTab === 'partidas'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+                  ? 'border-blue-600 text-blue-700 font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 rounded-t-lg'
+              } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-sm flex items-center gap-2 transition-all duration-150`}
             >
               <FiLayers /> Partidas (APU)
             </button>
@@ -86,9 +86,9 @@ const Cost360Dashboard = () => {
               onClick={() => setActiveTab('materiales')}
               className={`${
                 activeTab === 'materiales'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+                  ? 'border-blue-600 text-blue-700 font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 rounded-t-lg'
+              } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-sm flex items-center gap-2 transition-all duration-150`}
             >
               <FiBox /> Materiales
             </button>
@@ -96,9 +96,9 @@ const Cost360Dashboard = () => {
               onClick={() => setActiveTab('equipos')}
               className={`${
                 activeTab === 'equipos'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+                  ? 'border-blue-600 text-blue-700 font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 rounded-t-lg'
+              } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-sm flex items-center gap-2 transition-all duration-150`}
             >
               <FiTool /> Equipos
             </button>
@@ -106,9 +106,9 @@ const Cost360Dashboard = () => {
               onClick={() => setActiveTab('mano_obra')}
               className={`${
                 activeTab === 'mano_obra'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+                  ? 'border-blue-600 text-blue-700 font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 rounded-t-lg'
+              } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-sm flex items-center gap-2 transition-all duration-150`}
             >
               <FiUsers /> Mano de Obra
             </button>
@@ -165,30 +165,30 @@ const Cost360Dashboard = () => {
           </span>
         )}
       </div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 max-h-[600px] overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden mb-6">
         {items.length > 0 ? (
-          <ul className="divide-y divide-gray-50">
+          <ul className="divide-y divide-gray-200">
             {items.map((item) => (
               <li 
                 key={item.CodPar}
-                className="hover:bg-blue-50/50 transition-colors duration-150 cursor-pointer group"
+                className="hover:bg-blue-50 border-l-4 border-l-transparent hover:border-l-blue-500 transition-all duration-150 cursor-pointer group"
                 onClick={() => navigate(`/cost360/apu/${item.CodPar}`)}
               >
                 <div className="px-6 py-5 flex items-center justify-between">
                   <div className="flex items-start gap-4">
-                    <div className="mt-1 bg-blue-100 text-blue-600 p-2 rounded-lg">
+                    <div className="mt-1 bg-blue-100 text-blue-600 p-2 rounded-lg group-hover:bg-blue-200 group-hover:text-blue-700 transition-colors">
                       <FiLayers className="text-lg" />
                     </div>
                     <div>
                       <p className="text-sm font-bold text-gray-900 font-mono mb-1">{item.CovPar || item.CodPar}</p>
-                      <p className="text-sm text-gray-600 line-clamp-2 max-w-3xl">{item.Descri}</p>
+                      <p className="text-sm text-gray-600 line-clamp-2 max-w-3xl group-hover:text-gray-800">{item.Descri}</p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2 ml-4 flex-shrink-0">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                       Und: {item.UniPar}
                     </span>
-                    <FiArrowRight className="text-gray-400 group-hover:text-blue-600 transition-colors" />
+                    <FiArrowRight className="text-gray-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
                   </div>
                 </div>
               </li>

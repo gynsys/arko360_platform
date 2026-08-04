@@ -138,10 +138,10 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+      <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-slate-50 border-b-2 border-gray-300">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
@@ -158,9 +158,9 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
                 <tr><td colSpan="100%" className="text-center py-8 text-gray-500">No se encontraron resultados</td></tr>
               ) : (
                 items.map((item) => (
-                  <tr key={item[config.idKey]} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">{item[config.idKey]}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item[config.descKey]}</td>
+                  <tr key={item[config.idKey]} className="hover:bg-blue-50 border-l-4 border-l-transparent hover:border-l-blue-500 transition-all duration-150 group">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-700 font-mono">{item[config.idKey]}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700 group-hover:text-gray-900">{item[config.descKey]}</td>
                     
                     {config.editableFields.map(f => (
                       <td key={f.key} className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
