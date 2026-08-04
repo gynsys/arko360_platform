@@ -82,6 +82,7 @@ class BudgetItemCreate(BudgetItemBase):
     labors: Optional[List[BudgetAPULaborBase]] = None
 
 class BudgetItemUpdate(BaseModel):
+    cov_par: Optional[str] = None
     description: Optional[str] = None
     quantity: Optional[float] = None
     performance: Optional[float] = None
