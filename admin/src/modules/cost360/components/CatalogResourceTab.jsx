@@ -145,7 +145,7 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
           </div>
           <button
             type="submit"
-            className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+            className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all duration-300 hover:opacity-100 hover:shadow-[0_8px_25px_rgba(37,99,235,0.5)] hover:-translate-y-0.5 active:scale-95"
             style={{ background: 'linear-gradient(135deg,#2563eb,#4f46e5)', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}
           >
             Buscar
@@ -247,7 +247,7 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
         <div className="flex justify-center py-2 pb-6">
           <button
             onClick={handleLoadMore}
-            className="px-8 py-2.5 rounded-full text-sm font-semibold text-blue-700 transition-all hover:shadow-md"
+            className="px-8 py-2.5 rounded-full text-sm font-semibold text-blue-700 transition-all duration-300 hover:shadow-[0_8px_20px_rgba(37,99,235,0.2)] hover:-translate-y-0.5 hover:bg-white"
             style={{
               background: 'rgba(255,255,255,0.8)',
               border: '1.5px solid rgba(37,99,235,0.3)',

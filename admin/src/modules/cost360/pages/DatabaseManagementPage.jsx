@@ -134,7 +134,7 @@ export default function DatabaseManagementPage() {
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white transition-all hover:opacity-90 hover:shadow-lg active:scale-95"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white transition-all duration-300 hover:opacity-100 hover:shadow-[0_8px_25px_rgba(37,99,235,0.5)] hover:-translate-y-0.5 active:scale-95"
               style={{ background: 'linear-gradient(135deg,#2563eb,#4f46e5)', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}
             >
               <Plus size={18} /> Nueva Base de Datos
@@ -160,7 +160,7 @@ export default function DatabaseManagementPage() {
             <p className="text-slate-500 mb-4">Crea tu primera base de datos duplicando la Base Maestra</p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="text-blue-600 font-medium hover:underline"
+              className="text-blue-600 font-bold transition-all duration-300 hover:text-blue-700 hover:drop-shadow-md hover:-translate-y-0.5"
             >
               Crear Base de Datos
             </button>
