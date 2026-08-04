@@ -111,7 +111,7 @@ export default function APUViewer() {
       
       <div className="print:hidden">
         {/* TOOLBAR */}
-        <div className="flex items-center justify-between mb-4 sticky top-16 z-30 bg-gray-50/95 backdrop-blur py-3 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-gray-200/50 shadow-sm">
+        <div className="flex items-center justify-between mb-4 sticky top-0 z-30 bg-gray-50/95 backdrop-blur py-3 px-4 md:px-6 border-b border-gray-200/50 shadow-sm">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => navigate('/cost360')}
