@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Plus, Printer, Trash2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Plus, Printer, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 import { API_URL } from '../../services/api';
@@ -12,7 +12,7 @@ import { useSidebar } from '../../components/layout/AppLayout';
 export default function BudgetAPUEditorPage() {
   const { id, itemId } = useParams();
   const navigate = useNavigate();
-  const { visible: sidebarVisible, toggle: toggleSidebar } = useSidebar();
+  const { setVisible } = useSidebar();
   const [budget, setBudget] = useState(null);
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,6 +34,15 @@ export default function BudgetAPUEditorPage() {
       }, 300);
     }
   }, [printOptions]);
+
+  // Ocultar barra lateral al entrar a edición de APU
+  useEffect(() => {
+    setVisible(false);
+    // Mostrar barra lateral al salir
+    return () => {
+      setVisible(true);
+    };
+  }, [setVisible]);
 
   // ── Numeric field change (local state only) ──────────────────────────────
   const handleComponentChange = (type, compId, field, value) => {
@@ -263,7 +272,7 @@ export default function BudgetAPUEditorPage() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(`/budgets/${id}`)}
-              className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0 shadow-sm"
+              className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 hover:border-blue-400 hover:shadow-md transition-all duration-200 shrink-0 shadow-sm"
             >
               <ArrowLeft size={20} />
             </button>
@@ -275,15 +284,8 @@ export default function BudgetAPUEditorPage() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={toggleSidebar}
-              className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shadow-sm"
-              title={sidebarVisible ? "Ocultar barra lateral" : "Mostrar barra lateral"}
-            >
-              {sidebarVisible ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
-            </button>
-            <button
               onClick={() => setPrintModalOpen(true)}
-              className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-colors shadow-sm"
+              className="p-2 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 hover:text-blue-600 hover:border-blue-400 hover:shadow-md transition-all duration-200 shadow-sm"
               title="Imprimir"
             >
               <Printer size={20} />
@@ -377,7 +379,7 @@ export default function BudgetAPUEditorPage() {
               </div>
               <button
                 onClick={() => setSearchModal({ isOpen: true, type: 'materials', title: 'Agregar Material' })}
-                className="flex items-center gap-1 bg-white border border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                className="flex items-center gap-1 bg-white border border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-400 hover:shadow-md text-xs font-bold px-3 py-1.5 rounded-lg transition-all duration-200"
               >
                 <Plus size={14} /> Agregar
               </button>
@@ -474,7 +476,7 @@ export default function BudgetAPUEditorPage() {
               </div>
               <button
                 onClick={() => setSearchModal({ isOpen: true, type: 'equipments', title: 'Agregar Equipo' })}
-                className="flex items-center gap-1 bg-white border border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                className="flex items-center gap-1 bg-white border border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-400 hover:shadow-md text-xs font-bold px-3 py-1.5 rounded-lg transition-all duration-200"
               >
                 <Plus size={14} /> Agregar
               </button>

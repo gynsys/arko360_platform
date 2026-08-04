@@ -750,7 +750,7 @@ export default function BudgetWorksheetPage() {
                         >
                           <td className="p-4 text-center font-bold text-slate-800"></td>
                           <td 
-                            colSpan="6" 
+                            colSpan="7" 
                             className="p-4 text-sm font-bold text-slate-900 tracking-wide uppercase"
                             onDoubleClick={(e) => {
                               e.stopPropagation();
