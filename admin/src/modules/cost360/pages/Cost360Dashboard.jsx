@@ -138,7 +138,7 @@ const Cost360Dashboard = () => {
                 </div>
                 <input
                   type="text"
-                  className="block w-full pl-11 pr-4 py-3 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                  className="block w-full pl-11 pr-4 py-3 rounded-xl text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium"
                   style={{
                     background: 'rgba(255,255,255,0.8)',
                     border: '1px solid rgba(148,163,255,0.35)',
@@ -199,16 +199,7 @@ const Cost360Dashboard = () => {
                   <li
                     key={item.CodPar}
                     onClick={() => navigate(`/cost360/apu/${item.CodPar}`)}
-                    className="group cursor-pointer transition-all duration-150"
-                    style={{ borderLeft: '3px solid transparent' }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.background = 'rgba(239,246,255,0.7)';
-                      e.currentTarget.style.borderLeftColor = '#2563eb';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.borderLeftColor = 'transparent';
-                    }}
+                    className="group cursor-pointer transition-all duration-200 border-l-4 border-transparent hover:border-blue-600 hover:bg-blue-50/90 hover:shadow-md hover:translate-x-1"
                   >
                     <div className="px-5 py-4 flex items-center justify-between gap-4">
                       <div className="flex items-start gap-3 min-w-0">
@@ -219,8 +210,8 @@ const Cost360Dashboard = () => {
                           <FiLayers size={15} />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-800 font-mono mb-0.5">{item.CovPar || item.CodPar}</p>
-                          <p className="text-xs text-slate-500 line-clamp-2 max-w-3xl group-hover:text-slate-700 transition-colors">{item.Descri}</p>
+                          <p className="text-sm font-bold text-slate-900 font-mono mb-1">{item.CovPar || item.CodPar}</p>
+                          <p className="text-sm text-slate-700 font-medium line-clamp-2 max-w-3xl group-hover:text-slate-900 transition-colors">{item.Descri}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
@@ -231,8 +222,8 @@ const Cost360Dashboard = () => {
                           {item.UniPar}
                         </span>
                         <FiArrowRight
-                          size={15}
-                          className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all duration-150"
+                          size={18}
+                          className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all duration-200"
                         />
                       </div>
                     </div>
