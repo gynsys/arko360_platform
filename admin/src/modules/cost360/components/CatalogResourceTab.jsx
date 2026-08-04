@@ -113,36 +113,67 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
   };
 
   return (
-    <div>
-      <form onSubmit={handleSearch} className="mb-6">
-        <div className="relative max-w-lg">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <FiSearch className="text-gray-400" />
+    <div className="space-y-4">
+      {/* Glass search */}
+      <div
+        className="rounded-2xl p-4"
+        style={{
+          background: 'rgba(255,255,255,0.72)',
+          backdropFilter: 'blur(18px)',
+          WebkitBackdropFilter: 'blur(18px)',
+          border: '1px solid rgba(255,255,255,0.65)',
+          boxShadow: '0 4px 32px 0 rgba(80,100,200,0.08)',
+        }}
+      >
+        <form onSubmit={handleSearch} className="flex gap-3">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <FiSearch className="text-slate-400" />
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-11 pr-4 py-3 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+              style={{
+                background: 'rgba(255,255,255,0.8)',
+                border: '1px solid rgba(148,163,255,0.35)',
+                boxShadow: 'inset 0 1px 4px rgba(80,100,200,0.06)',
+              }}
+              placeholder={`Buscar en ${title}...`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          <input
-            type="text"
-            className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-            placeholder={`Buscar en ${title}...`}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      </form>
-
-      <div className="mb-4 text-gray-500 font-medium">
+          <button
+            type="submit"
+            className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg,#2563eb,#4f46e5)', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}
+          >
+            Buscar
+          </button>
+        </form>
         {totalItems > 0 && (
-          <span>
-            {new Intl.NumberFormat('es-VE').format(totalItems)} 
-            {search ? (totalItems === 1 ? ' coincidencia' : ' coincidencias en total') : ` Total ${title}`}
-          </span>
+          <p className="mt-3 text-xs text-slate-500 font-medium">
+            <span className="font-bold text-slate-700">{new Intl.NumberFormat('es-VE').format(totalItems)}</span>{' '}
+            {search ? 'coincidencias' : `Total ${title}`}
+          </p>
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden mb-6">
+      {/* Glass table */}
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{
+          background: 'rgba(255,255,255,0.88)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.7)',
+          boxShadow: '0 8px 40px 0 rgba(80,100,200,0.10)',
+        }}
+      >
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-slate-50 border-b-2 border-gray-300">
-              <tr>
+            <thead>
+              <tr style={{ background: 'linear-gradient(90deg,rgba(37,99,235,0.06),rgba(99,102,241,0.03))', borderBottom: '2px solid rgba(148,163,255,0.25)' }}>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
                 {config.editableFields.map(f => (
@@ -151,16 +182,28 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
                 <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr><td colSpan="100%" className="text-center py-8 text-gray-500">Cargando...</td></tr>
               ) : items.length === 0 ? (
                 <tr><td colSpan="100%" className="text-center py-8 text-gray-500">No se encontraron resultados</td></tr>
               ) : (
                 items.map((item) => (
-                  <tr key={item[config.idKey]} className="hover:bg-blue-50 border-l-4 border-l-transparent hover:border-l-blue-500 transition-all duration-150 group">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-700 font-mono">{item[config.idKey]}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700 group-hover:text-gray-900">{item[config.descKey]}</td>
+                  <tr
+                    key={item[config.idKey]}
+                    className="group cursor-default transition-all duration-150"
+                    style={{ borderLeft: '3px solid transparent' }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = 'rgba(239,246,255,0.6)';
+                      e.currentTarget.style.borderLeftColor = '#2563eb';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.borderLeftColor = 'transparent';
+                    }}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-blue-700 font-mono">{item[config.idKey]}</td>
+                    <td className="px-6 py-4 text-xs text-slate-600 group-hover:text-slate-800">{item[config.descKey]}</td>
                     
                     {config.editableFields.map(f => (
                       <td key={f.key} className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
@@ -201,10 +244,15 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
       
       {/* Load More Button */}
       {hasMore && !loading && items.length > 0 && (
-        <div className="flex justify-center pb-12">
+        <div className="flex justify-center py-2 pb-6">
           <button
             onClick={handleLoadMore}
-            className="bg-white text-blue-600 border border-blue-200 px-8 py-3 rounded-full hover:bg-blue-50 transition-colors font-medium text-sm shadow-sm flex items-center gap-2"
+            className="px-8 py-2.5 rounded-full text-sm font-semibold text-blue-700 transition-all hover:shadow-md"
+            style={{
+              background: 'rgba(255,255,255,0.8)',
+              border: '1.5px solid rgba(37,99,235,0.3)',
+              backdropFilter: 'blur(8px)',
+            }}
           >
             Cargar Más {title}
           </button>

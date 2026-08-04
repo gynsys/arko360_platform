@@ -1,15 +1,31 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiLayers, FiArrowRight, FiArrowLeft, FiBox, FiTool, FiUsers, FiDatabase } from 'react-icons/fi';
+import { FiSearch, FiLayers, FiArrowRight, FiBox, FiTool, FiUsers, FiDatabase } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import cost360Service from '../services/cost360Service';
 import { SiteConfigContext } from '../../../App';
 import CatalogResourceTab from '../components/CatalogResourceTab';
 
+/* ── Shared glass style ─────────────────────────────────── */
+const glass = {
+  background: 'rgba(255,255,255,0.72)',
+  backdropFilter: 'blur(18px)',
+  WebkitBackdropFilter: 'blur(18px)',
+  border: '1px solid rgba(255,255,255,0.65)',
+  boxShadow: '0 4px 32px 0 rgba(80,100,200,0.08)',
+};
+
+const glassStrong = {
+  background: 'rgba(255,255,255,0.88)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.7)',
+  boxShadow: '0 8px 40px 0 rgba(80,100,200,0.10)',
+};
+
 const Cost360Dashboard = () => {
   const [activeTab, setActiveTab] = useState('partidas');
-  const [items, setItems] = null || useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [chapter, setChapter] = useState('');
@@ -32,7 +48,7 @@ const Cost360Dashboard = () => {
       setTotalItems(response.total);
       setHasMore(response.items.length === LIMIT && (currentSkip + LIMIT) < response.total);
     } catch (error) {
-      toast.error('Error al cargar la base de datos de Cost360');
+      toast.error('Error al cargar la base de datos de APUpro');
     } finally {
       setLoading(false);
     }
@@ -55,209 +71,242 @@ const Cost360Dashboard = () => {
     fetchPartidas(search, chapter, newSkip, true);
   };
 
-  // Safe portal rendering
-  const portalTarget = document.getElementById('header-actions-portal');
+  const TABS = [
+    { key: 'partidas',   label: 'Partidas (APU)', Icon: FiLayers },
+    { key: 'materiales', label: 'Materiales',      Icon: FiBox   },
+    { key: 'equipos',    label: 'Equipos',         Icon: FiTool  },
+    { key: 'mano_obra',  label: 'Mano de Obra',    Icon: FiUsers },
+  ];
 
   return (
-    <div className="bg-gray-50">
+    <div className="p-4 md:p-6 space-y-4">
 
-
-      <div className="p-4 md:p-8 max-w-7xl mx-auto">
-        <div className="mb-6 flex justify-between items-center">
+      {/* ── ZONE 3: Title + Tabs ─────────────────────────────── */}
+      <div className="rounded-2xl overflow-hidden" style={glassStrong}>
+        {/* Title strip */}
+        <div
+          className="px-6 py-5 flex items-center gap-4"
+          style={{
+            background: 'linear-gradient(90deg, rgba(37,99,235,0.08) 0%, rgba(99,102,241,0.04) 100%)',
+            borderBottom: '1px solid rgba(148,163,255,0.2)',
+          }}
+        >
+          <div
+            className="p-2.5 rounded-xl shadow-sm"
+            style={{ background: 'linear-gradient(135deg,#2563eb,#4f46e5)', color: '#fff' }}
+          >
+            <FiDatabase size={22} />
+          </div>
           <div>
-            <p className="text-3xl font-bold text-gray-800 mb-2">APUpro — Base de Datos Maestra</p>
+            <h1 className="text-xl font-extrabold text-slate-800 tracking-tight leading-none">APUpro</h1>
+            <p className="text-sm text-blue-600/80 font-medium mt-0.5">Base de Datos Maestra de Insumos y Partidas</p>
           </div>
         </div>
 
-        {/* Tabs Navigation */}
-        <div className="mb-8 border-b-2 border-gray-300">
-          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-            <button
-              onClick={() => setActiveTab('partidas')}
-              className={`${
-                activeTab === 'partidas'
-                  ? 'border-blue-600 text-blue-700 font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 rounded-t-lg'
-              } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-sm flex items-center gap-2 transition-all duration-150`}
-            >
-              <FiLayers /> Partidas (APU)
-            </button>
-            <button
-              onClick={() => setActiveTab('materiales')}
-              className={`${
-                activeTab === 'materiales'
-                  ? 'border-blue-600 text-blue-700 font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 rounded-t-lg'
-              } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-sm flex items-center gap-2 transition-all duration-150`}
-            >
-              <FiBox /> Materiales
-            </button>
-            <button
-              onClick={() => setActiveTab('equipos')}
-              className={`${
-                activeTab === 'equipos'
-                  ? 'border-blue-600 text-blue-700 font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 rounded-t-lg'
-              } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-sm flex items-center gap-2 transition-all duration-150`}
-            >
-              <FiTool /> Equipos
-            </button>
-            <button
-              onClick={() => setActiveTab('mano_obra')}
-              className={`${
-                activeTab === 'mano_obra'
-                  ? 'border-blue-600 text-blue-700 font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 rounded-t-lg'
-              } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-sm flex items-center gap-2 transition-all duration-150`}
-            >
-              <FiUsers /> Mano de Obra
-            </button>
-          </nav>
+        {/* Tabs row */}
+        <div className="px-4 flex gap-1 pt-2 pb-0">
+          {TABS.map(({ key, label, Icon }) => {
+            const active = activeTab === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-b-2 transition-all duration-200 ${
+                  active
+                    ? 'text-blue-700 border-blue-600 bg-blue-50/60'
+                    : 'text-slate-500 border-transparent hover:text-blue-600 hover:bg-blue-50/40'
+                }`}
+              >
+                <Icon size={14} />
+                {label}
+              </button>
+            );
+          })}
         </div>
+        <div className="h-px" style={{ background: 'linear-gradient(90deg,rgba(148,163,255,0.4),transparent)' }} />
+      </div>
 
+      {/* ── Partidas tab content ─────────────────────────────── */}
       {activeTab === 'partidas' && (
         <>
-          {/* Search Bar & Filters */}
-      <form onSubmit={handleSearch} className="mb-8 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <FiSearch className="text-gray-400 text-lg" />
-          </div>
-          <input
-            type="text"
-            className="block w-full pl-12 pr-4 py-4 border border-gray-400 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm shadow-sm transition-all duration-200"
-            placeholder="Buscar partida por código (ej. E01) o descripción..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        
-        <div className="sm:w-64">
-          <select
-            value={chapter}
-            onChange={(e) => setChapter(e.target.value)}
-            className="block w-full px-4 py-4 border border-gray-200 rounded-xl leading-5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm shadow-sm transition-all duration-200 appearance-none"
-            style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
-          >
-            <option value="">Todas las Categorías</option>
-            <option value="E">Edificaciones (E)</option>
-            <option value="I">Instalaciones (I)</option>
-            <option value="V">Vialidad (V)</option>
-            <option value="U">Urbanismo (U)</option>
-            <option value="M">Mantenimiento (M)</option>
-          </select>
-        </div>
-
-        <button 
-          type="submit"
-          className="bg-blue-600 text-white px-8 py-4 rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-        >
-          Filtrar
-        </button>
-      </form>
-
-      {/* Results Grid */}
-      <div className="mb-4 text-gray-500 font-medium">
-        {totalItems > 0 && (
-          <span>
-            {new Intl.NumberFormat('es-VE').format(totalItems)} 
-            {(search || chapter) ? (totalItems === 1 ? ' coincidencia' : ' coincidencias en total') : ' Total Partidas'}
-          </span>
-        )}
-      </div>
-      <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden mb-6">
-        {items.length > 0 ? (
-          <ul className="divide-y divide-gray-200">
-            {items.map((item) => (
-              <li 
-                key={item.CodPar}
-                className="hover:bg-blue-50 border-l-4 border-l-transparent hover:border-l-blue-500 transition-all duration-150 cursor-pointer group"
-                onClick={() => navigate(`/cost360/apu/${item.CodPar}`)}
-              >
-                <div className="px-6 py-5 flex items-center justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="mt-1 bg-blue-100 text-blue-600 p-2 rounded-lg group-hover:bg-blue-200 group-hover:text-blue-700 transition-colors">
-                      <FiLayers className="text-lg" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900 font-mono mb-1">{item.CovPar || item.CodPar}</p>
-                      <p className="text-sm text-gray-600 line-clamp-2 max-w-3xl group-hover:text-gray-800">{item.Descri}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2 ml-4 flex-shrink-0">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      Und: {item.UniPar}
-                    </span>
-                    <FiArrowRight className="text-gray-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
-                  </div>
+          {/* ── ZONE 4: Search bar ─────────────────────────── */}
+          <div className="rounded-2xl p-4" style={glass}>
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <FiSearch className="text-slate-400 text-base" />
                 </div>
-              </li>
-            ))}
-          </ul>
-        ) : !loading ? (
-          <div className="py-20 text-center">
-            <p className="text-gray-500">No se encontraron partidas con ese criterio de búsqueda.</p>
-          </div>
-        ) : null}
-        
-        {loading && (
-          <div className="flex justify-center items-center py-10">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        )}
-      </div>
+                <input
+                  type="text"
+                  className="block w-full pl-11 pr-4 py-3 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                  style={{
+                    background: 'rgba(255,255,255,0.8)',
+                    border: '1px solid rgba(148,163,255,0.35)',
+                    boxShadow: 'inset 0 1px 4px rgba(80,100,200,0.06)',
+                  }}
+                  placeholder="Buscar partida por código (ej. E01) o descripción..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
 
-      {/* Load More Button */}
-      {hasMore && !loading && items.length > 0 && (
-        <div className="flex justify-center pb-12">
-          <button
-            onClick={handleLoadMore}
-            className="bg-white text-blue-600 border border-blue-200 px-8 py-3 rounded-full hover:bg-blue-50 transition-colors font-medium text-sm shadow-sm flex items-center gap-2"
-          >
-            Cargar Más Partidas
-          </button>
-        </div>
-      )}
-      </>
+              <div className="sm:w-56">
+                <select
+                  value={chapter}
+                  onChange={(e) => setChapter(e.target.value)}
+                  className="block w-full px-4 py-3 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all appearance-none"
+                  style={{
+                    background: 'rgba(255,255,255,0.8)',
+                    border: '1px solid rgba(148,163,255,0.35)',
+                    backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
+                    backgroundPosition: 'right 0.5rem center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '1.5em 1.5em',
+                    paddingRight: '2.5rem',
+                  }}
+                >
+                  <option value="">Todas las Categorías</option>
+                  <option value="E">Edificaciones (E)</option>
+                  <option value="I">Instalaciones (I)</option>
+                  <option value="V">Vialidad (V)</option>
+                  <option value="U">Urbanismo (U)</option>
+                  <option value="M">Mantenimiento (M)</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                className="px-8 py-3 rounded-xl text-sm font-bold text-white transition-all duration-200 hover:opacity-90 hover:shadow-lg active:scale-95"
+                style={{ background: 'linear-gradient(135deg,#2563eb,#4f46e5)', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}
+              >
+                Filtrar
+              </button>
+            </form>
+
+            {totalItems > 0 && (
+              <p className="mt-3 text-xs text-slate-500 font-medium">
+                <span className="font-bold text-slate-700">{new Intl.NumberFormat('es-VE').format(totalItems)}</span>{' '}
+                {(search || chapter) ? 'coincidencias' : 'Total Partidas'}
+              </p>
+            )}
+          </div>
+
+          {/* ── ZONE 5: Results list ──────────────────────── */}
+          <div className="rounded-2xl overflow-hidden" style={glassStrong}>
+            {items.length > 0 ? (
+              <ul className="divide-y" style={{ borderColor: 'rgba(148,163,255,0.15)' }}>
+                {items.map((item) => (
+                  <li
+                    key={item.CodPar}
+                    onClick={() => navigate(`/cost360/apu/${item.CodPar}`)}
+                    className="group cursor-pointer transition-all duration-150"
+                    style={{ borderLeft: '3px solid transparent' }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = 'rgba(239,246,255,0.7)';
+                      e.currentTarget.style.borderLeftColor = '#2563eb';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.borderLeftColor = 'transparent';
+                    }}
+                  >
+                    <div className="px-5 py-4 flex items-center justify-between gap-4">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div
+                          className="mt-0.5 p-2 rounded-lg shrink-0 transition-colors duration-150"
+                          style={{ background: 'rgba(219,234,254,0.8)', color: '#2563eb' }}
+                        >
+                          <FiLayers size={15} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 font-mono mb-0.5">{item.CovPar || item.CodPar}</p>
+                          <p className="text-xs text-slate-500 line-clamp-2 max-w-3xl group-hover:text-slate-700 transition-colors">{item.Descri}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span
+                          className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                          style={{ background: 'rgba(241,245,249,0.9)', color: '#475569', border: '1px solid rgba(148,163,184,0.3)' }}
+                        >
+                          {item.UniPar}
+                        </span>
+                        <FiArrowRight
+                          size={15}
+                          className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all duration-150"
+                        />
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : !loading ? (
+              <div className="py-20 text-center">
+                <FiLayers size={32} className="mx-auto mb-3 text-slate-300" />
+                <p className="text-slate-400 text-sm">No se encontraron partidas con ese criterio.</p>
+              </div>
+            ) : null}
+
+            {loading && (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+              </div>
+            )}
+          </div>
+
+          {hasMore && !loading && items.length > 0 && (
+            <div className="flex justify-center py-2 pb-8">
+              <button
+                onClick={handleLoadMore}
+                className="px-8 py-2.5 rounded-full text-sm font-semibold text-blue-700 transition-all duration-200 hover:shadow-md"
+                style={{
+                  background: 'rgba(255,255,255,0.8)',
+                  border: '1.5px solid rgba(37,99,235,0.3)',
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
+                Cargar Más Partidas
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {activeTab === 'materiales' && (
-        <CatalogResourceTab 
-          title="Materiales" 
-          resourceType="materials" 
-          config={{ 
-            idKey: 'CodMat', descKey: 'Descri', 
-            editableFields: [{ key: 'CosMat', label: 'Precio Unitario ($)' }] 
-          }} 
+        <CatalogResourceTab
+          title="Materiales"
+          resourceType="materials"
+          config={{
+            idKey: 'CodMat', descKey: 'Descri',
+            editableFields: [{ key: 'CosMat', label: 'Precio Unitario ($)' }]
+          }}
         />
       )}
 
       {activeTab === 'equipos' && (
-        <CatalogResourceTab 
-          title="Equipos" 
-          resourceType="equipments" 
-          config={{ 
-            idKey: 'CodEqu', descKey: 'Descri', 
-            editableFields: [{ key: 'CosDia', label: 'Costo Diario ($)' }] 
-          }} 
+        <CatalogResourceTab
+          title="Equipos"
+          resourceType="equipments"
+          config={{
+            idKey: 'CodEqu', descKey: 'Descri',
+            editableFields: [{ key: 'CosDia', label: 'Costo Diario ($)' }]
+          }}
         />
       )}
 
       {activeTab === 'mano_obra' && (
-        <CatalogResourceTab 
-          title="Mano de Obra" 
-          resourceType="labors" 
-          config={{ 
-            idKey: 'CodMan', descKey: 'Descri', 
+        <CatalogResourceTab
+          title="Mano de Obra"
+          resourceType="labors"
+          config={{
+            idKey: 'CodMan', descKey: 'Descri',
             editableFields: [
               { key: 'Jornal', label: 'Jornal ($)' },
-              { key: 'Bono', label: 'Bono ($)' }
-            ] 
-          }} 
+              { key: 'Bono',   label: 'Bono ($)' }
+            ]
+          }}
         />
       )}
 
-    </div>
     </div>
   );
 };
