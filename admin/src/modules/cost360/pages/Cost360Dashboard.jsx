@@ -68,22 +68,6 @@ const Cost360Dashboard = () => {
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Cost360</h1>
             <p className="text-gray-500">Base de Datos Maestra de Insumos y Partidas</p>
           </div>
-          <div className="flex gap-3">
-            <button 
-              onClick={() => navigate('/cost360/databases')}
-              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl hover:bg-gray-50 transition-all shadow-sm font-medium"
-            >
-              <FiDatabase className="text-lg" />
-              Gestionar Bases de Datos
-            </button>
-            <button 
-              onClick={() => navigate('/cost360/ai-generator')}
-              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 text-white px-5 py-2.5 rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-sm font-medium"
-            >
-              <FiLayers className="text-lg" />
-              Crear APU con IA
-            </button>
-          </div>
         </div>
 
         {/* Tabs Navigation */}

@@ -65,6 +65,8 @@ export default function BudgetAPUEditorPage() {
   const handleTextBlur = async (type, compId, field, value) => {
     try {
       await budgetService.updateComponent(id, itemId, type, compId, { [field]: value });
+      toast.success('Actualizado');
+      loadData(); // Recargar datos para reflejar cambios
     } catch (error) {
       toast.error('Error al actualizar');
       loadData();
