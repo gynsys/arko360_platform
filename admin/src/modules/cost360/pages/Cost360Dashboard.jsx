@@ -111,10 +111,10 @@ const Cost360Dashboard = () => {
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-b-2 transition-all duration-200 ${
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-b-2 transition-all duration-200 btn-borde-azul-redondeado ${
                   active
                     ? 'text-blue-700 border-blue-600 bg-blue-50/60'
-                    : 'text-slate-500 border-transparent hover:text-blue-600 hover:bg-blue-50/40'
+                    : 'text-slate-500 border-transparent'
                 }`}
               >
                 <Icon size={14} />
