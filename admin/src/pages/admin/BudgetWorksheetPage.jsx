@@ -858,23 +858,23 @@ export default function BudgetWorksheetPage() {
         
         {/* FOOTER TOTAL */}
         {budget.items?.length > 0 && (
-          <div className="mt-6 flex-none flex justify-end">
-            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 min-w-[300px]">
-              <div className="flex justify-between items-center mb-2">
+          <div className="mt-4 flex-none flex justify-end">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 min-w-[300px]">
+              <div className="flex justify-between items-center mb-1.5">
                 <span className="text-slate-500 font-medium text-sm">SUBTOTAL</span>
                 <span className="text-lg font-semibold text-slate-700">
                   {subtotalPresupuesto.toLocaleString('es-VE', {minimumFractionDigits: 2})}
                 </span>
               </div>
-              <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-200">
+              <div className="flex justify-between items-center mb-2.5 pb-2.5 border-b border-slate-200">
                 <span className="text-slate-500 font-medium text-sm">I.V.A. ({budget.iva_percent ?? 16}%)</span>
                 <span className="text-lg font-semibold text-slate-700">
                   {ivaAmount.toLocaleString('es-VE', {minimumFractionDigits: 2})}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-800 font-bold text-sm">TOTAL PRESUPUESTO ({budget.currency})</span>
-                <span className="text-2xl font-bold text-blue-700">
+                <span className="text-slate-500 font-medium text-sm">TOTAL ({budget.currency})</span>
+                <span className="text-lg font-semibold text-slate-700">
                   {totalGeneral.toLocaleString('es-VE', {minimumFractionDigits: 2})}
                 </span>
               </div>

@@ -134,10 +134,13 @@ export default function DatabaseManagementPage() {
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white transition-all duration-300 hover:opacity-100 hover:shadow-[0_8px_25px_rgba(37,99,235,0.5)] hover:-translate-y-0.5 active:scale-95"
-              style={{ background: 'linear-gradient(135deg,#2563eb,#4f46e5)', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}
+              className="relative overflow-hidden group bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95"
             >
-              <Plus size={18} /> Nueva Base de Datos
+              <div className="absolute inset-0 bg-[#e0f2fe] transform scale-x-0 origin-left transition-transform duration-400 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-x-100"></div>
+              <div className="relative z-10 flex items-center gap-2 font-medium text-white group-hover:text-[#1e3a8a] transition-colors">
+                <Plus size={18} />
+                <span>Nueva Base de Datos</span>
+              </div>
             </button>
           </div>
         </div>
