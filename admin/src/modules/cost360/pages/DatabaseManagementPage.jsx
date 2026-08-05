@@ -170,56 +170,47 @@ export default function DatabaseManagementPage() {
             {databases.map((db) => (
               <div
                 key={db.id}
-                className="rounded-2xl overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 group"
-                style={{
-                  background: 'rgba(255,255,255,0.88)',
-                  backdropFilter: 'blur(20px)',
-                  border: db.is_master ? '2px solid rgba(37,99,235,0.3)' : '1px solid rgba(255,255,255,0.7)',
-                  boxShadow: db.is_master ? '0 8px 40px 0 rgba(37,99,235,0.15)' : '0 8px 32px 0 rgba(80,100,200,0.08)',
-                }}
+                className="tarjeta-presupuesto-ambar group cursor-default"
               >
                 {/* Header */}
-                <div
-                  className="p-5 border-b"
-                  style={{
-                    background: db.is_master ? 'linear-gradient(90deg,rgba(37,99,235,0.08),rgba(99,102,241,0.04))' : 'rgba(255,255,255,0.5)',
-                    borderBottomColor: 'rgba(148,163,255,0.2)'
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Database className={db.is_master ? 'text-blue-600' : 'text-slate-600'} size={20} />
-                      <div>
-                        <h3 className="font-semibold text-slate-800">{db.name}</h3>
-                        {db.is_master && (
-                          <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
-                            Base Maestra
-                          </span>
-                        )}
-                      </div>
+                <div className="tarjeta-header">
+                  <div className="flex items-center gap-3">
+                    <div className="icono-archivo-ambar">
+                      <Database size={20} strokeWidth={2} />
                     </div>
-                    {!db.is_master && (
+                    <div>
+                      <h3 className="tarjeta-titulo-ambar">{db.name}</h3>
+                      {db.is_master && (
+                        <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full mt-1 inline-block">
+                          Base Maestra
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {!db.is_master && (
+                    <div className="acciones-rapidas">
                       <button
                         onClick={() => confirmDelete(db)}
-                        className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                        className="btn-accion"
                         title="Eliminar"
                       >
                         <Trash2 size={16} />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Body */}
-                <div className="p-4 space-y-3">
+                <div className="tarjeta-body flex-1">
                   {db.description && (
-                    <p className="text-sm text-slate-600">{db.description}</p>
+                    <p className="text-sm text-slate-600 mb-2">{db.description}</p>
                   )}
 
                   {/* Inflation Stats */}
                   {(db.material_inflation > 0 || db.labor_inflation > 0 || db.equipment_inflation > 0) && (
                     <div
-                      className="rounded-xl p-3.5 space-y-2.5"
+                      className="rounded-xl p-3.5 space-y-2.5 mb-2"
                       style={{
                         background: 'rgba(241,245,249,0.7)',
                         border: '1px solid rgba(148,163,255,0.15)'
@@ -257,34 +248,32 @@ export default function DatabaseManagementPage() {
                   )}
 
                   {/* Metadata */}
-                  <div className="text-xs text-slate-400 space-y-1">
-                    <div className="flex items-center gap-1">
-                      <Copy size={12} />
+                  <div className="tarjeta-detalles flex-col items-start gap-1 mt-auto">
+                    <div className="detalle-fecha">
+                      <Copy size={13} className="mini-icono" />
                       Origen: {db.source_database_id || 'master'}
                     </div>
-                    <div>
+                    <div className="detalle-fecha">
                       Creado: {db.created_at ? new Date(db.created_at).toLocaleDateString('es-VE') : 'N/A'}
                     </div>
                   </div>
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 border-t border-slate-200 bg-slate-50">
-                  <div className={`flex items-center gap-2 text-sm ${
-                    db.is_active ? 'text-green-600' : 'text-slate-400'
-                  }`}>
-                    {db.is_active ? (
-                      <>
-                        <CheckCircle size={16} />
-                        Activa
-                      </>
-                    ) : (
-                      <>
-                        <X size={16} />
-                        Inactiva
-                      </>
-                    )}
-                  </div>
+                {/* Footer (Activa indicator) */}
+                <div className={`flex items-center gap-2 text-sm pt-2 border-t border-slate-100 ${
+                  db.is_active ? 'text-green-600' : 'text-slate-400'
+                }`}>
+                  {db.is_active ? (
+                    <>
+                      <CheckCircle size={16} />
+                      Activa
+                    </>
+                  ) : (
+                    <>
+                      <X size={16} />
+                      Inactiva
+                    </>
+                  )}
                 </div>
               </div>
             ))}

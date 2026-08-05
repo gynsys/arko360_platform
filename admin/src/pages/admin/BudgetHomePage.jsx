@@ -106,9 +106,9 @@ export default function BudgetHomePage() {
   );
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen">
+    <div className="absolute inset-0 p-6 md:p-8 flex flex-col overflow-hidden gap-4 max-w-7xl mx-auto w-full">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center shrink-0">
         <div>
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
             Gestor de Presupuestos
@@ -117,15 +117,18 @@ export default function BudgetHomePage() {
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-blue-500/30 transition-all active:scale-95"
+          className="relative overflow-hidden group bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95"
         >
-          <Plus size={18} />
-          <span>Nuevo Presupuesto</span>
+          <div className="absolute inset-0 bg-[#e0f2fe] transform scale-x-0 origin-left transition-transform duration-400 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-x-100"></div>
+          <div className="relative z-10 flex items-center gap-2 font-medium text-white group-hover:text-[#1e3a8a] transition-colors">
+            <Plus size={18} />
+            <span>Nuevo Presupuesto</span>
+          </div>
         </button>
       </div>
 
       {/* SEARCH AND FILTERS */}
-      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-2xl p-4 mb-8 shadow-sm flex gap-4">
+      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-2xl p-4 shadow-sm flex gap-4 shrink-0">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
@@ -139,8 +142,9 @@ export default function BudgetHomePage() {
       </div>
 
       {/* BUDGET LIST */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+      <div className="flex-1 overflow-y-auto min-h-0 pr-1 pb-16">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
           <Loader className="animate-spin mb-4" size={32} />
           <p>Cargando presupuestos...</p>
         </div>
@@ -212,6 +216,7 @@ export default function BudgetHomePage() {
           ))}
         </div>
       )}
+      </div>
 
       {/* NEW BUDGET MODAL */}
       {isModalOpen && (
