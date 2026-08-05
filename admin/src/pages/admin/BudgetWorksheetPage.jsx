@@ -434,32 +434,37 @@ export default function BudgetWorksheetPage() {
                       {headerPortalTarget && createPortal(
                         <div className="flex gap-2 mx-2">
                           {/* Database Selector Dropdown */}
-                          <div className="relative">
+                          <div 
+                            className="relative"
+                            onMouseEnter={() => setHeaderDbDropdownOpen(true)}
+                            onMouseLeave={() => setHeaderDbDropdownOpen(false)}
+                          >
                             <button
-                              onClick={() => setHeaderDbDropdownOpen(!headerDbDropdownOpen)}
                               className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium shadow-sm text-sm"
                             >
                               <Database size={16} />
                               Base de Datos
-                              <ChevronDown size={14} className={headerDbDropdownOpen ? 'rotate-180' : ''} />
+                              <ChevronDown size={14} className={headerDbDropdownOpen ? 'rotate-180 transition-transform duration-200' : 'transition-transform duration-200'} />
                             </button>
                             {headerDbDropdownOpen && (
-                              <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 min-w-[200px]">
-                                {databases.map(db => (
-                                  <button
-                                    key={db.id}
-                                    onClick={() => {
-                                      setActiveDatabase(db);
-                                      setHeaderDbDropdownOpen(false);
-                                    }}
-                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition-colors flex items-center gap-2 ${
-                                      activeDatabase.id === db.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700'
-                                    }`}
-                                  >
-                                    <Database size={14} />
-                                    {db.name}
-                                  </button>
-                                ))}
+                              <div className="absolute top-full left-0 pt-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="bg-white border border-slate-200 rounded-lg shadow-xl min-w-[200px] overflow-hidden py-1">
+                                  {databases.map(db => (
+                                    <button
+                                      key={db.id}
+                                      onClick={() => {
+                                        setActiveDatabase(db);
+                                        setHeaderDbDropdownOpen(false);
+                                      }}
+                                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition-colors flex items-center gap-2 ${
+                                        activeDatabase.id === db.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700'
+                                      }`}
+                                    >
+                                      <Database size={14} />
+                                      {db.name}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
                             )}
                           </div>
