@@ -19,8 +19,8 @@ def sync_ia_data(csv_path: str, chunk_size: int = 1000):
     print(f"Iniciando sincronización desde {csv_path}...")
     engine = create_engine(str(settings.DATABASE_URL))
 
-    # Read CSV in chunks
-    chunks = pd.read_csv(csv_path, chunksize=chunk_size)
+    # Read CSV in chunks, using semicolon as separator
+    chunks = pd.read_csv(csv_path, chunksize=chunk_size, sep=';', on_bad_lines='skip')
     total_processed = 0
 
     with engine.begin() as conn:
@@ -39,22 +39,28 @@ def sync_ia_data(csv_path: str, chunk_size: int = 1000):
                 # Preparar diccionario con campos. Usamos .get para no fallar si falta alguna columna
                 record = {
                     'CodPar': str(row['Referencia']).strip(),
-                    'disciplina': str(row.get('Disciplina', '')) if row.get('Disciplina') else None,
-                    'diametro_pulg': str(row.get('Diámetro', '')) if row.get('Diámetro') else None,
-                    'resistencia_fc': float(row.get('Resistencia', 0.0)) if row.get('Resistencia') else None,
-                    'material': str(row.get('Material', '')) if row.get('Material') else None,
-                    'preparacion': str(row.get('Preparación', '')) if row.get('Preparación') else None,
-                    'desc_limpia': str(row.get('desc_limpia', '')) if row.get('desc_limpia') else None,
+                    'disciplina': str(row.get('DISCIPLINA', '')) if pd.notnull(row.get('DISCIPLINA')) else None,
+                    'diametro_pulg': str(row.get('DIAMETRO_PULG', '')) if pd.notnull(row.get('DIAMETRO_PULG')) else None,
+                    'resistencia_fc': float(row.get('RESISTENCIA_FC', 0.0)) if pd.notnull(row.get('RESISTENCIA_FC')) else None,
+                    'material': str(row.get('MATERIAL', '')) if pd.notnull(row.get('MATERIAL')) else None,
+                    'preparacion': str(row.get('PREPARACION', '')) if pd.notnull(row.get('PREPARACION')) else None,
+                    'desc_limpia': str(row.get('desc_limpia', '')) if 'desc_limpia' in df.columns and pd.notnull(row.get('desc_limpia')) else None,
                 }
                 
+                def safe_float(val):
+                    try:
+                        if pd.isnull(val): return 0.0
+                        return float(str(val).replace('.', '').replace(',', '.'))
+                    except ValueError:
+                        return 0.0
+
                 # Si el CSV también trae campos originales requeridos por si el registro es nuevo
-                if 'Descri' in row: record['Descri'] = str(row['Descri'])
-                if 'UniPar' in row: record['UniPar'] = str(row['UniPar'])
-                if 'CovPar' in row: record['CovPar'] = str(row['CovPar'])
-                if 'PreUni' in row: record['PreUni'] = float(row['PreUni']) if pd.notnull(row['PreUni']) else 0.0
-                if 'RenPar' in row: record['RenPar'] = float(row['RenPar']) if pd.notnull(row['RenPar']) else 0.0
-                if 'Categoria' in row: record['Categoria'] = str(row['Categoria'])
-                if 'TipoActividad' in row: record['TipoActividad'] = str(row['TipoActividad'])
+                if 'Descripción' in df.columns: record['Descri'] = str(row['Descripción'])
+                if 'Unidad' in df.columns: record['UniPar'] = str(row['Unidad'])
+                if 'Código' in df.columns: record['CovPar'] = str(row['Código'])
+                if 'RENDIMIENTO' in df.columns: record['RenPar'] = safe_float(row.get('RENDIMIENTO'))
+                if 'CATEGORIA' in df.columns: record['Categoria'] = str(row['CATEGORIA'])
+                if 'SUB CATEGORIA' in df.columns: record['TipoActividad'] = str(row['SUB CATEGORIA'])
 
                 records.append(record)
 
