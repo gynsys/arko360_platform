@@ -281,67 +281,74 @@ export default function DatabaseManagementPage() {
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <Copy className="text-blue-500" /> Duplicar Base de Datos
+          <div className="w-full max-w-[550px] bg-amber-100 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] overflow-hidden font-sans flex flex-col max-h-[90vh]">
+            
+            {/* Encabezado */}
+            <div className="flex justify-between items-center px-8 py-6 bg-white/40 border-b border-amber-600/15">
+              <h2 className="m-0 text-xl font-bold text-amber-900 flex items-center gap-2">
+                <Copy className="text-sky-600" /> Duplicar Base de Datos
               </h2>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-slate-500"
+                className="text-amber-700 hover:text-amber-900 bg-transparent transition-colors p-1"
               >
-                <X size={20} />
+                <X size={24} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateDatabase} className="p-6 space-y-6">
-              {/* Basic Info */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre de la Base de Datos</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Ej. Base Julio 2024"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción (opcional)</label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows={2}
-                    placeholder="Ej. Base de datos con precios actualizados a julio 2024"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Base de Datos Origen</label>
-                  <select
-                    value={formData.source_database_id}
-                    onChange={(e) => setFormData({ ...formData, source_database_id: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="master">Base Maestra</option>
-                    {databases.filter(db => !db.is_master).map(db => (
-                      <option key={db.id} value={db.id}>{db.name}</option>
-                    ))}
-                  </select>
-                </div>
+            <form onSubmit={handleCreateDatabase} className="p-8 flex flex-col gap-5 overflow-y-auto">
+              
+              {/* Nombre de la Base de Datos */}
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-[13px] font-semibold text-amber-900">
+                  Nombre de la Base de Datos <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  placeholder="Ej. Base Julio 2024"
+                  required
+                />
               </div>
 
-              {/* Inflation Factors */}
-              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+              {/* Descripción */}
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-[13px] font-semibold text-amber-900">Descripción (opcional)</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10 resize-none"
+                  rows={2}
+                  placeholder="Ej. Base de datos con precios actualizados a julio 2024"
+                />
+              </div>
+
+              {/* Base de Datos Origen */}
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-[13px] font-semibold text-amber-900">Base de Datos Origen</label>
+                <select
+                  value={formData.source_database_id}
+                  onChange={(e) => setFormData({ ...formData, source_database_id: e.target.value })}
+                  className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                >
+                  <option value="master">Base Maestra</option>
+                  {databases.filter(db => !db.is_master).map(db => (
+                    <option key={db.id} value={db.id}>{db.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Índices de Inflación */}
+              <div className="bg-white/40 rounded-xl p-5 border border-sky-200 mt-2">
                 <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="text-blue-600" size={20} />
-                  <h3 className="font-semibold text-slate-800">Índices de Inflación</h3>
+                  <TrendingUp className="text-sky-600" size={20} />
+                  <h3 className="font-semibold text-amber-900 text-[14px]">Índices de Inflación</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1">
                       <DollarSign size={14} /> Materiales (%)
                     </label>
                     <input
@@ -351,12 +358,12 @@ export default function DatabaseManagementPage() {
                       max="100"
                       value={formData.material_inflation}
                       onChange={(e) => setFormData({ ...formData, material_inflation: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                       placeholder="0"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1">
                       <Users size={14} /> Mano de Obra (%)
                     </label>
                     <input
@@ -366,12 +373,12 @@ export default function DatabaseManagementPage() {
                       max="100"
                       value={formData.labor_inflation}
                       onChange={(e) => setFormData({ ...formData, labor_inflation: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                       placeholder="0"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1">
                       <Settings size={14} /> Equipos (%)
                     </label>
                     <input
@@ -381,7 +388,7 @@ export default function DatabaseManagementPage() {
                       max="100"
                       value={formData.equipment_inflation}
                       onChange={(e) => setFormData({ ...formData, equipment_inflation: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                       placeholder="0"
                     />
                   </div>
@@ -389,17 +396,17 @@ export default function DatabaseManagementPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex justify-end gap-4 mt-3">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-colors"
+                  className="bg-transparent border-none text-amber-700 text-sm font-semibold px-6 py-3 cursor-pointer rounded-xl hover:bg-white/30 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg shadow-blue-500/30 transition-all"
+                  className="bg-sky-600 text-white border-none text-sm font-semibold px-7 py-3 rounded-xl cursor-pointer shadow-[0_4px_6px_rgba(2,132,199,0.2)] transition-all hover:bg-sky-700 hover:-translate-y-[1px]"
                 >
                   Crear Base de Datos
                 </button>
