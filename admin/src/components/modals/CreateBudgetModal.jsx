@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, UploadCloud, DollarSign, Hash, Percent } from 'lucide-react';
+import { X, UploadCloud, DollarSign, Hash, Percent, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 
 export default function CreateBudgetModal({ onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
+  const [logoPreview, setLogoPreview] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     company_name: '',
@@ -52,6 +53,20 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setLogoPreview(url);
+      setFormData(prev => ({ ...prev, logo: file }));
+    }
+  };
+
+  const clearLogo = () => {
+    setLogoPreview(null);
+    setFormData(prev => ({ ...prev, logo: null }));
   };
 
   return createPortal(
@@ -203,17 +218,31 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
 
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-2">Logo de la Empresa (Opcional)</label>
-              <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 p-3 rounded-xl">
-                <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
-                  <UploadCloud size={20} className="text-slate-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-slate-700 font-medium mb-1">Cargar imagen del logo</p>
-                  <label className="cursor-pointer text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors inline-block">
-                    Explorar archivos
-                    <input type="file" className="hidden" accept="image/png, image/jpeg" />
-                  </label>
-                </div>
+              <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 p-2 rounded-xl">
+                <label className="flex items-center gap-3 cursor-pointer flex-1 group pl-2">
+                  <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm group-hover:border-blue-400 group-hover:text-blue-600 transition-colors">
+                    <UploadCloud size={20} className="text-slate-400 group-hover:text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-700 font-medium group-hover:text-blue-600 transition-colors">Cargar imagen del logo</p>
+                    <p className="text-xs text-slate-400">Haz clic para explorar (PNG o JPG)</p>
+                  </div>
+                  <input type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleLogoChange} />
+                </label>
+                
+                {logoPreview && (
+                  <div className="flex items-center gap-3 pr-2 border-l border-slate-200 pl-4">
+                    <img src={logoPreview} alt="Logo preview" className="w-10 h-10 object-contain rounded-md bg-white border border-slate-200" />
+                    <button 
+                      type="button" 
+                      onClick={clearLogo}
+                      className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Eliminar logo"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             
