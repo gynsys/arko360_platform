@@ -255,82 +255,82 @@ export default function BudgetHomePage() {
 
       {/* RENAME MODAL */}
       {renamingBudget && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-slate-800 mb-2">Renombrar Presupuesto</h2>
-              <p className="text-sm text-slate-500 mb-6">Ingresa el nuevo nombre para este proyecto.</p>
-              
-              <form onSubmit={handleRename}>
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre del Proyecto</label>
-                  <input 
-                    type="text" 
-                    autoFocus
-                    required
-                    value={renameName}
-                    onChange={(e) => setRenameName(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                  />
-                </div>
-                <div className="flex justify-end gap-3">
-                  <button 
-                    type="button"
-                    onClick={() => setRenamingBudget(null)}
-                    className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit"
-                    className="px-5 py-2.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95"
-                  >
-                    Guardar
-                  </button>
-                </div>
-              </form>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-[550px] bg-amber-100 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] overflow-hidden font-sans flex flex-col max-h-[90vh]">
+            <div className="flex flex-col gap-2 px-6 pt-6 pb-2">
+              <h2 className="m-0 text-xl font-bold text-amber-900">Renombrar Presupuesto</h2>
+              <p className="text-[13px] text-amber-700 m-0">Ingresa el nuevo nombre para este proyecto.</p>
             </div>
+            
+            <form onSubmit={handleRename} className="px-6 pb-6 pt-2 flex flex-col gap-4">
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-[13px] font-semibold text-amber-900">Nombre del Proyecto</label>
+                <input 
+                  type="text" 
+                  autoFocus
+                  required
+                  value={renameName}
+                  onChange={(e) => setRenameName(e.target.value)}
+                  className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                />
+              </div>
+              <div className="flex justify-end gap-4 mt-2">
+                <button 
+                  type="button"
+                  onClick={() => setRenamingBudget(null)}
+                  className="bg-transparent border-none text-amber-700 text-sm font-semibold px-6 py-2 cursor-pointer rounded-xl hover:bg-white/30 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="bg-sky-600 text-white border-none text-sm font-semibold px-6 py-2 rounded-xl cursor-pointer shadow-[0_4px_6px_rgba(2,132,199,0.2)] transition-all hover:bg-sky-700 hover:-translate-y-[1px]"
+                >
+                  Guardar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
       {/* DUPLICATE MODAL */}
       {duplicatingBudget && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-slate-800 mb-2">Duplicar Presupuesto</h2>
-              <p className="text-sm text-slate-500 mb-6">Se creará una copia exacta con todas sus partidas y APUs.</p>
-              
-              <form onSubmit={handleDuplicate}>
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre de la Copia</label>
-                  <input 
-                    type="text" 
-                    autoFocus
-                    required
-                    value={duplicateName}
-                    onChange={(e) => setDuplicateName(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                  />
-                </div>
-                <div className="flex justify-end gap-3">
-                  <button 
-                    type="button"
-                    onClick={() => setDuplicatingBudget(null)}
-                    className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit"
-                    className="px-5 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/30 transition-all active:scale-95"
-                  >
-                    Crear Copia
-                  </button>
-                </div>
-              </form>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-[550px] bg-amber-100 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] overflow-hidden font-sans flex flex-col max-h-[90vh]">
+            <div className="flex flex-col gap-2 px-6 pt-6 pb-2">
+              <h2 className="m-0 text-xl font-bold text-amber-900">Duplicar Presupuesto</h2>
+              <p className="text-[13px] text-amber-700 m-0">Se creará una copia exacta con todas sus partidas y APUs.</p>
             </div>
+            
+            <form onSubmit={handleDuplicate} className="px-6 pb-6 pt-2 flex flex-col gap-4">
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-[13px] font-semibold text-amber-900">Nombre de la Copia</label>
+                <input 
+                  type="text" 
+                  autoFocus
+                  required
+                  value={duplicateName}
+                  onChange={(e) => setDuplicateName(e.target.value)}
+                  className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                />
+              </div>
+              <div className="flex justify-end gap-4 mt-2">
+                <button 
+                  type="button"
+                  onClick={() => setDuplicatingBudget(null)}
+                  className="bg-transparent border-none text-amber-700 text-sm font-semibold px-6 py-2 cursor-pointer rounded-xl hover:bg-white/30 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="bg-sky-600 text-white border-none text-sm font-semibold px-6 py-2 rounded-xl cursor-pointer shadow-[0_4px_6px_rgba(2,132,199,0.2)] transition-all hover:bg-sky-700 hover:-translate-y-[1px]"
+                >
+                  Crear Copia
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
