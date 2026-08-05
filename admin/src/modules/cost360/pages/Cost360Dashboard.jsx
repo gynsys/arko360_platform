@@ -61,7 +61,7 @@ const Cost360Dashboard = () => {
     const loadDatabases = async () => {
       try {
         const dbs = await cost360DatabaseService.getAll();
-        setDatabases(dbs);
+        setDatabases(dbs.databases || []);
       } catch (error) {
         console.error('Error al cargar bases de datos:', error);
       }
