@@ -48,6 +48,107 @@ html, body, #root {
   border-color: #0369a1; /* Todo el contorno se acentúa */
 }
 
+/* --- TARJETAS DE PRESUPUESTO ÁMBAR --- */
+.tarjeta-presupuesto-ambar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: transform 0.3s cubic-bezier(0.215, 0.610, 0.355, 1), 
+              background-color 0.3s ease, 
+              border-color 0.3s ease, 
+              box-shadow 0.3s ease;
+}
+
+.tarjeta-presupuesto-ambar:hover {
+  transform: translateY(-5px);
+  background-color: #fef3c7; /* Ámbar ultra claro */
+  border-color: #f59e0b;
+  box-shadow: 0 20px 25px -5px rgba(217, 119, 6, 0.05), 
+              0 10px 10px -5px rgba(0, 0, 0, 0.03);
+}
+
+.tarjeta-presupuesto-ambar:hover .tarjeta-titulo-ambar {
+  color: #78350f; 
+}
+
+.tarjeta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.icono-archivo-ambar {
+  background: #eff6ff;
+  color: #3b82f6;
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.tarjeta-presupuesto-ambar:hover .icono-archivo-ambar {
+  background-color: #d97706;
+  color: #ffffff;
+}
+
+.acciones-rapidas {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-accion {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.btn-accion:hover {
+  background-color: rgba(217, 119, 6, 0.15);
+  color: #b45309;
+}
+
+.tarjeta-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tarjeta-titulo-ambar {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  transition: color 0.3s ease;
+}
+
+.tarjeta-detalles {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.detalle-fecha, .detalle-moneda {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mini-icono {
+  width: 13px;
+  height: 13px;
+}
 .btn-borde-azul-redondeado:hover::before {
   transform: scaleX(1); /* El fondo se desliza respetando las curvas */
 }

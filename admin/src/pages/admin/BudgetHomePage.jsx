@@ -160,35 +160,31 @@ export default function BudgetHomePage() {
             <div 
               key={budget.id}
               onClick={() => navigate(`/budgets/${budget.id}`)}
-              className="group bg-white border border-slate-300 rounded-2xl p-5 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/5 transition-all cursor-pointer relative overflow-hidden"
+              className="tarjeta-presupuesto-ambar cursor-pointer group"
             >
-              {/* Decorative top gradient */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="flex justify-between items-start mb-4">
-                <div className="bg-blue-50 text-blue-600 p-2.5 rounded-xl">
-                  <FileText size={22} />
+              <div className="tarjeta-header">
+                <div className="icono-archivo-ambar">
+                  <FileText size={20} strokeWidth={2} />
                 </div>
                 
-                {/* Actions Dropdown (Simple for now) */}
-                <div className="flex gap-1">
+                <div className="acciones-rapidas">
                   <button 
                     onClick={(e) => { e.stopPropagation(); setDuplicatingBudget(budget); setDuplicateName(budget.name + ' (Copia)'); }}
-                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    className="btn-accion"
                     title="Duplicar"
                   >
                     <Copy size={16} />
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); setRenamingBudget(budget); setRenameName(budget.name); }}
-                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Renombrar"
+                    className="btn-accion"
+                    title="Editar"
                   >
                     <Edit3 size={16} />
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); confirmDelete(budget.id); }}
-                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    className="btn-accion"
                     title="Eliminar"
                   >
                     <Trash2 size={16} />
@@ -196,13 +192,21 @@ export default function BudgetHomePage() {
                 </div>
               </div>
               
-              <h3 className="font-semibold text-slate-800 text-lg truncate mb-1" title={budget.name}>
-                {budget.name}
-              </h3>
-              
-              <div className="flex items-center text-xs text-slate-500 mb-4 gap-2">
-                <span className="flex items-center gap-1"><Clock size={12}/> {new Date(budget.created_at).toLocaleDateString()}</span>
-                <span className="flex items-center gap-1"><DollarSign size={12}/> {budget.currency}</span>
+              <div className="tarjeta-body">
+                <h3 className="tarjeta-titulo-ambar truncate" title={budget.name}>
+                  {budget.name}
+                </h3>
+                
+                <div className="tarjeta-detalles">
+                  <span className="detalle-fecha">
+                    <Clock size={13} className="mini-icono"/>
+                    {new Date(budget.created_at).toLocaleDateString()}
+                  </span>
+                  <span className="detalle-moneda">
+                    <DollarSign size={13} className="mini-icono"/>
+                    {budget.currency}
+                  </span>
+                </div>
               </div>
             </div>
           ))}
