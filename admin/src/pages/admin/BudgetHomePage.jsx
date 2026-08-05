@@ -142,7 +142,7 @@ export default function BudgetHomePage() {
       </div>
 
       {/* BUDGET LIST */}
-      <div className="flex-1 overflow-y-auto min-h-0 pr-1 pb-16">
+      <div className="flex-1 overflow-y-auto min-h-0 pr-1 pb-16 pt-2">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
           <Loader className="animate-spin mb-4" size={32} />

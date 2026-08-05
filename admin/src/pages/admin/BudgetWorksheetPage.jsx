@@ -390,11 +390,9 @@ export default function BudgetWorksheetPage() {
   const { subtotalPresupuesto, ivaAmount, totalGeneral } = calculateBudgetTotal();
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-64px)] w-full">
-
+    <div className="absolute inset-0 p-4 md:p-6 flex flex-col overflow-hidden w-full max-w-7xl mx-auto">
       {/* WORKSHEET CONTENT */}
-      <div className="flex-1 bg-slate-50/30 p-6 md:p-8 flex flex-col">
-        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col relative min-h-0">
 
       {/* SETTINGS MODAL */}
       {showSettings && createPortal(
@@ -623,10 +621,10 @@ export default function BudgetWorksheetPage() {
       )}
 
       {/* WORKSHEET TABLE */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 flex flex-col relative">
-        <div className="flex-1">
-          <table className="w-full text-left border-separate border-spacing-0 relative">
-            <thead className="sticky z-30 shadow-md ring-1 ring-slate-200 bg-white" style={{ top: '56px' }}>
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 flex flex-col relative overflow-hidden">
+        <div className="flex-1 overflow-y-auto min-h-0 relative">
+          <table className="w-full text-left border-separate border-spacing-0">
+            <thead className="sticky top-0 z-30 shadow-md ring-1 ring-slate-200 bg-white">
               {/* PAGE HEADER INSIDE TABLE HEADER */}
               <tr>
                 <th colSpan="8" className="p-0 border-b border-slate-200 bg-white">
@@ -884,7 +882,7 @@ export default function BudgetWorksheetPage() {
           </div>
         )}
       </div>
-      </div>
+
 
       {/* SEARCH MODAL */}
       {showSearchModal && createPortal(

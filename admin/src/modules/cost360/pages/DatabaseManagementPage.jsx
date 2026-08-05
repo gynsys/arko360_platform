@@ -209,13 +209,7 @@ export default function DatabaseManagementPage() {
 
                   {/* Inflation Stats */}
                   {(db.material_inflation > 0 || db.labor_inflation > 0 || db.equipment_inflation > 0) && (
-                    <div
-                      className="rounded-xl p-3.5 space-y-2.5 mb-2"
-                      style={{
-                        background: 'rgba(241,245,249,0.7)',
-                        border: '1px solid rgba(148,163,255,0.15)'
-                      }}
-                    >
+                    <div className="rounded-xl p-3.5 space-y-2.5 mb-2 caja-inflacion">
                       <div className="text-xs font-medium text-slate-500 mb-2">Índices de Inflación Aplicados</div>
                       
                       {db.material_inflation > 0 && (
