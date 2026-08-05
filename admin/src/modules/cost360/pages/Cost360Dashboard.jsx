@@ -168,7 +168,8 @@ const Cost360Dashboard = () => {
                   <option value="">Todas las Categorías</option>
                   <option value="E">Edificaciones (E)</option>
                   <option value="I">Instalaciones (I)</option>
-                  <option value="V">Vialidad (V)</option>
+                  <option value="C">Vialidad (C)</option>
+                  <option value="V">Vivienda (V)</option>
                   <option value="U">Urbanismo (U)</option>
                   <option value="M">Mantenimiento (M)</option>
                 </select>
