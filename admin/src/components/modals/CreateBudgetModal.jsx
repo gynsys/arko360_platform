@@ -74,7 +74,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
       <div className="w-full max-w-[550px] bg-amber-100 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] overflow-hidden font-sans flex flex-col max-h-[90vh]">
         
         {/* Encabezado */}
-        <div className="flex justify-between items-center px-8 py-6 bg-white/40 border-b border-amber-600/15">
+        <div className="flex justify-between items-center px-6 py-4 bg-white/40 border-b border-amber-600/15">
           <h2 className="m-0 text-xl font-bold text-amber-900">Nuevo Presupuesto</h2>
           <button 
             type="button"
@@ -86,7 +86,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
         </div>
         
         {/* Cuerpo del Formulario */}
-        <form onSubmit={handleSubmit} className="p-8 flex flex-col gap-5 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="px-6 py-4 flex flex-col gap-4 overflow-y-auto">
           
           {/* Línea 1: Nombre del Proyecto */}
           <div className="flex flex-col gap-2 w-full">
