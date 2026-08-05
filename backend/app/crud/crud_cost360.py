@@ -11,8 +11,50 @@ from app.schemas.cost360 import (
     Cost360DatabaseCreate, Cost360DatabaseUpdate
 )
 import uuid
+import json
 
-def get_items_paginated(db: Session, skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None):
+def get_items_paginated(db: Session, skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, database_id: str = "master"):
+    if database_id == "personalizada":
+        query = db.query(CustomCostItem)
+        if search:
+            words = search.split()
+            for word in words:
+                query = query.filter(CustomCostItem.description.ilike(f"%{word}%"))
+        
+        total = query.count()
+        custom_items = query.order_by(CustomCostItem.created_at.desc()).offset(skip).limit(limit).all()
+        
+        items = []
+        for ci in custom_items:
+            try:
+                data = json.loads(ci.apu_data)
+                cod_par = data.get("cod_par", "CUST-" + ci.id[:4].upper())
+                
+                mat_total = sum(m.get('cantidad', 0) * m.get('precio_unitario', 0) * (1 + m.get('desperdicio', 0)/100) for m in data.get('materials', []))
+                eq_total = sum(e.get('cantidad', 0) * e.get('depreciacion', 1.0) * e.get('precio_unitario', 0) for e in data.get('equipments', [])) / (ci.performance or 1)
+                
+                lab_jornal = sum(l.get('cantidad', 0) * l.get('jornal', 0) for l in data.get('labors', []))
+                lab_bono = sum(l.get('cantidad', 0) * l.get('bono', 0) for l in data.get('labors', []))
+                lab_total = (lab_jornal + lab_bono + (lab_jornal * 4.17)) / (ci.performance or 1)
+                
+                subtotal_a = mat_total + eq_total + lab_total
+                pre_uni = subtotal_a * 1.15 * 1.10
+            except:
+                cod_par = "CUST-" + ci.id[:4].upper()
+                pre_uni = 0.0
+
+            items.append({
+                "CodPar": cod_par,
+                "Descri": ci.description,
+                "CovPar": None,
+                "UniPar": ci.unit,
+                "PreUni": pre_uni,
+                "RenPar": ci.performance,
+                "Categoria": "Custom",
+                "TipoActividad": "Custom"
+            })
+        return total, items
+
     query = db.query(CostItem)
     if search:
         words = search.split()

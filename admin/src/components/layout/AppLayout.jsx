@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { name: 'Mis Presupuestos', href: '/budgets',              Icon: FileText },
   { name: 'Visor Bases de Datos', href: '/cost360',              Icon: Database, exact: true  },
   { name: 'Gestion Bases de Datos', href: '/cost360/databases',    Icon: Server   },
-  { name: 'Crear APU con IA', href: '/cost360/ai-generator', Icon: Cpu      },
+  { name: 'Crear APU', href: '/cost360/ai-generator', Icon: Cpu      },
 ];
 
 export default function AppLayout() {

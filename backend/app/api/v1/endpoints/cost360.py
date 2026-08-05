@@ -29,7 +29,7 @@ router = APIRouter()
 
 @router.get("/items", response_model=CostItemListResponse)
 def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, database_id: str = "master", db: Session = Depends(get_db)):
-    total, items = get_items_paginated(db, skip, limit, search, chapter, categoria, tipo_actividad)
+    total, items = get_items_paginated(db, skip, limit, search, chapter, categoria, tipo_actividad, database_id)
     return {"total": total, "items": items}
 
 
@@ -48,6 +48,35 @@ def _get_db_factors(db: Session, database_id: str) -> dict:
 
 @router.get("/items/{item_code}/apu", response_model=APUResponse)
 def get_apu(item_code: str, database_id: str = "master", db: Session = Depends(get_db)):
+    if item_code.startswith("CUST-"):
+        from app.db.models.cost360 import CustomCostItem
+        import json
+        custom_items = db.query(CustomCostItem).all()
+        for ci in custom_items:
+            try:
+                data = json.loads(ci.apu_data)
+                cod = data.get("cod_par") or ("CUST-" + ci.id[:4].upper())
+                if cod == item_code:
+                    partida = {
+                        "CodPar": cod,
+                        "Descri": ci.description,
+                        "UniPar": ci.unit,
+                        "RenPar": ci.performance
+                    }
+                    materials = [
+                        APUComponent(codigo=m.get('id',''), descripcion=m.get('descripcion',''), unidad=m.get('unidad',''), cantidad=m.get('cantidad',0), precio_unitario=m.get('precio_unitario',0), subtotal=m.get('cantidad',0)*m.get('precio_unitario',0)*(1+m.get('desperdicio',0)/100), desperdicio=m.get('desperdicio',0)) for m in data.get('materials', [])
+                    ]
+                    equipments = [
+                        APUComponent(codigo=e.get('id',''), descripcion=e.get('descripcion',''), unidad=e.get('unidad',''), cantidad=e.get('cantidad',0), precio_unitario=e.get('precio_unitario',0), subtotal=e.get('cantidad',0)*e.get('precio_unitario',0)*(e.get('depreciacion',1.0)), depreciacion=e.get('depreciacion',1.0)) for e in data.get('equipments', [])
+                    ]
+                    labors = [
+                        APUComponent(codigo=l.get('id',''), descripcion=l.get('descripcion',''), unidad=l.get('unidad',''), cantidad=l.get('cantidad',0), precio_unitario=l.get('jornal',0), subtotal=l.get('cantidad',0)*l.get('jornal',0), jornal=l.get('jornal',0), bono=l.get('bono',0)) for l in data.get('labors', [])
+                    ]
+                    return {"partida": partida, "materiales": materials, "equipos": equipments, "manoObra": labors}
+            except:
+                continue
+        raise HTTPException(status_code=404, detail="Partida personalizada no encontrada")
+
     item = get_item_by_code(db, item_code)
     if not item:
         raise HTTPException(status_code=404, detail="Partida no encontrada")
@@ -298,17 +327,28 @@ def initialize_master_database(db: Session = Depends(get_db)):
         master_db = Cost360Database(
             id='master',
             name='Base Maestra',
-            description='Base de datos oficial de Cost360 con precios actualizados',
+            description='Base de datos principal del sistema (Inmutable)',
             is_master=True,
-            is_active=True,
-            material_inflation=0.0,
-            labor_inflation=0.0,
-            equipment_inflation=0.0
+            created_by='system'
         )
         db.add(master_db)
         db.commit()
+
+    # Verificar si existe la base personalizada
+    personalizada_db = db.query(Cost360Database).filter(Cost360Database.id == 'personalizada').first()
     
-    return {"status": "ok", "message": "Base de datos maestra inicializada"}
+    if not personalizada_db:
+        personalizada_db = Cost360Database(
+            id='personalizada',
+            name='Base Personalizada',
+            description='Base de datos para guardar tus APUs creados desde cero o con IA',
+            is_master=False,
+            created_by='system'
+        )
+        db.add(personalizada_db)
+        db.commit()
+        
+    return {"message": "Base de datos inicializada correctamente"}
 
 @router.get("/databases/{database_id}")
 def get_database(database_id: str, db: Session = Depends(get_db)):

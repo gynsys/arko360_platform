@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Save, Sparkles, Check, Filter } from 'lucide-react';
+import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Save, Sparkles, Check, Filter, Plus, Search, FileText } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { generateAIApu, saveCustomApu, fetchCategoriesTree } from '../services/cost360Service';
+import { generateAIApu, saveCustomApu, fetchCategoriesTree, fetchItems, fetchApuDetails } from '../services/cost360Service';
 
 export default function AIApuGeneratorPage() {
   const navigate = useNavigate();
+  const [creationMode, setCreationMode] = useState('ia'); // 'ia', 'manual', 'import'
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -14,6 +15,10 @@ export default function AIApuGeneratorPage() {
   const [categoriesTree, setCategoriesTree] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedActivity, setSelectedActivity] = useState('');
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     fetchCategoriesTree().then(setCategoriesTree).catch(console.error);
@@ -27,6 +32,59 @@ export default function AIApuGeneratorPage() {
     labor_bonus: 0,
     currency: 'USD'
   });
+
+  const handleCreateManual = () => {
+    setItem({
+      cod_par: "CUST-" + Math.floor(Math.random() * 10000),
+      description: "Nueva Partida Personalizada",
+      unit: "und",
+      performance: 1,
+      materials: [],
+      equipments: [],
+      labors: [],
+      advertencias: []
+    });
+  };
+
+  const handleSearchToImport = async (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const data = await fetchItems(0, 10, searchQuery);
+      setSearchResults(data.items || []);
+    } catch (error) {
+      toast.error('Error al buscar partidas');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleImportApu = async (itemCode) => {
+    try {
+      setLoading(true);
+      const data = await fetchApuDetails(itemCode);
+      
+      setItem({
+        cod_par: `CUST-${data.partida.CodPar}`,
+        description: data.partida.Descri,
+        unit: data.partida.UniPar,
+        performance: data.partida.RenPar || 1,
+        materials: (data.materiales || []).map(m => ({ id: m.codigo, descripcion: m.descripcion, unidad: m.unidad, cantidad: m.cantidad, precio_unitario: m.precio_unitario, desperdicio: m.desperdicio || 5, origen: 'historico' })),
+        equipments: (data.equipos || []).map(e => ({ id: e.codigo, descripcion: e.descripcion, unidad: 'día', cantidad: e.cantidad, precio_unitario: e.precio_unitario, depreciacion: e.depreciacion || 1.0, origen: 'historico' })),
+        labors: (data.manoObra || []).map(l => ({ id: l.codigo, descripcion: l.descripcion, unidad: 'día', cantidad: l.cantidad, jornal: l.jornal, bono: l.bono, origen: 'historico' })),
+        advertencias: []
+      });
+      toast.success('APU importado correctamente. Ahora puedes editarlo.');
+      setSearchResults([]);
+      setSearchQuery('');
+    } catch(err) {
+      console.error(err);
+      toast.error('Error importando APU');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -156,62 +214,129 @@ export default function AIApuGeneratorPage() {
         </div>
       </div>
 
-      {/* PROMPT SECTION */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
-        
-        {/* FILTERS */}
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <div className="flex-1">
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría de Obra</label>
-            <select 
-              value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value);
-                setSelectedActivity('');
-              }}
-              className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-            >
-              <option value="">Todas las categorías...</option>
-              {categoriesTree.map(cat => (
-                <option key={cat.categoria} value={cat.categoria}>{cat.categoria}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tipo de Actividad</label>
-            <select 
-              value={selectedActivity}
-              onChange={(e) => setSelectedActivity(e.target.value)}
-              disabled={!selectedCategory}
-              className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50"
-            >
-              <option value="">Todas las actividades...</option>
-              {selectedCategory && categoriesTree.find(c => c.categoria === selectedCategory)?.actividades.map(act => (
-                <option key={act} value={act}>{act}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <label className="block text-sm font-bold text-slate-700 mb-2">Describe la partida a generar</label>
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Ej: Fundición de losa de entrepiso de concreto f'c=210 kg/cm2, espesor 15 cm, con acero de refuerzo fy=4200 kg/cm2"
-          className="w-full h-24 p-4 border border-slate-300 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm mb-4"
-          disabled={loading}
-        />
-        <div className="flex justify-end">
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-sm font-bold disabled:opacity-50"
-          >
-            {loading ? <Loader className="animate-spin" size={18} /> : <Sparkles size={18} />}
-            {loading ? 'Generando...' : 'Generar APU'}
-          </button>
-        </div>
+      {/* CREATION MODE TABS */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          onClick={() => { setCreationMode('manual'); handleCreateManual(); }}
+          className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${creationMode === 'manual' ? 'bg-blue-600 text-white shadow-blue-500/30' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+        >
+          <Plus size={16} /> Desde Cero (Cascarón)
+        </button>
+        <button
+          onClick={() => setCreationMode('import')}
+          className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${creationMode === 'import' ? 'bg-indigo-600 text-white shadow-indigo-500/30' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+        >
+          <FileText size={16} /> Importar Base
+        </button>
+        <button
+          onClick={() => setCreationMode('ia')}
+          className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${creationMode === 'ia' ? 'bg-red-500 text-white shadow-red-500/30' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+        >
+          <Sparkles size={16} /> Inteligencia Artificial
+        </button>
       </div>
+
+      {creationMode === 'import' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 animate-in fade-in slide-in-from-top-2 duration-300">
+          <label className="block text-sm font-bold text-slate-700 mb-2">Buscar partida existente en la Base de Datos</label>
+          <form onSubmit={handleSearchToImport} className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Ej: E01, Reforestacion..."
+              className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner"
+            />
+            <button
+              type="submit"
+              disabled={isSearching}
+              className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2 shadow-sm transition-all"
+            >
+              {isSearching ? <Loader className="animate-spin" size={16} /> : <Search size={16} />}
+              Buscar
+            </button>
+          </form>
+
+          {searchResults.length > 0 && (
+            <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+              <ul className="divide-y divide-slate-100">
+                {searchResults.map((res) => (
+                  <li key={res.CodPar} className="p-3 hover:bg-slate-50 flex items-center justify-between gap-4 transition-colors">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{res.CodPar}</p>
+                      <p className="text-xs text-slate-600 line-clamp-1">{res.Descri}</p>
+                    </div>
+                    <button
+                      onClick={() => handleImportApu(res.CodPar)}
+                      className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg hover:bg-indigo-100 shrink-0 transition-colors"
+                    >
+                      Usar como base
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {creationMode === 'ia' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 animate-in fade-in slide-in-from-top-2 duration-300">
+          
+          {/* FILTERS */}
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría de Obra</label>
+              <select 
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setSelectedActivity('');
+                }}
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+              >
+                <option value="">Todas las categorías...</option>
+                {categoriesTree.map(cat => (
+                  <option key={cat.categoria} value={cat.categoria}>{cat.categoria}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tipo de Actividad</label>
+              <select 
+                value={selectedActivity}
+                onChange={(e) => setSelectedActivity(e.target.value)}
+                disabled={!selectedCategory}
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 disabled:opacity-50"
+              >
+                <option value="">Todas las actividades...</option>
+                {selectedCategory && categoriesTree.find(c => c.categoria === selectedCategory)?.actividades.map(act => (
+                  <option key={act} value={act}>{act}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <label className="block text-sm font-bold text-slate-700 mb-2">Describe la partida a generar</label>
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Ej: Fundición de losa de entrepiso de concreto f'c=210 kg/cm2, espesor 15 cm, con acero de refuerzo fy=4200 kg/cm2"
+            className="w-full h-24 p-4 border border-slate-300 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all text-sm mb-4"
+            disabled={loading}
+          />
+          <div className="flex justify-end">
+            <button
+              onClick={handleGenerate}
+              disabled={loading}
+              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-sm font-bold disabled:opacity-50"
+            >
+              {loading ? <Loader className="animate-spin" size={18} /> : <Sparkles size={18} />}
+              {loading ? 'Generando...' : 'Generar APU'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {item && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">

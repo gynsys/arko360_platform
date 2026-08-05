@@ -251,13 +251,18 @@ const Cost360Dashboard = () => {
                           <p className="text-sm text-slate-700 font-medium line-clamp-2 max-w-3xl group-hover:text-slate-900 transition-colors">{item.Descri}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex items-center gap-4 shrink-0">
                         <span
                           className="text-xs font-semibold px-2.5 py-1 rounded-full"
                           style={{ background: 'rgba(241,245,249,0.9)', color: '#475569', border: '1px solid rgba(148,163,184,0.3)' }}
                         >
                           {item.UniPar}
                         </span>
+                        <div className="text-right min-w-[100px]">
+                          <p className="text-[15px] font-bold text-slate-800">
+                            {item.PreUni ? new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(item.PreUni) : '0,00'}
+                          </p>
+                        </div>
                         <FiArrowRight
                           size={18}
                           className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all duration-200"
