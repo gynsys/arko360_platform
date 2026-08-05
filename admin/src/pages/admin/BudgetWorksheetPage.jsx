@@ -675,19 +675,19 @@ export default function BudgetWorksheetPage() {
 
       {/* SEARCH MODAL */}
       {showSearchModal && createPortal(
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-20">
-          <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-20">
+          <div className="w-full max-w-4xl bg-amber-100 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] overflow-hidden font-sans flex flex-col max-h-[80vh] animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center px-6 py-4 bg-white/40 border-b border-amber-600/15">
               <div className="flex items-center gap-4">
-                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                  <Search className="text-blue-500" /> Buscar Partidas
+                <h2 className="m-0 text-xl font-bold text-amber-900 flex items-center gap-2">
+                  <Search className="text-sky-600" /> Buscar Partidas
                 </h2>
                 {/* Database badge with active factors */}
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm font-medium">
-                  <Database size={16} />
+                <div className="flex items-center gap-2 px-3 py-1 bg-sky-50 border border-sky-200 text-sky-700 rounded-lg text-xs font-medium shadow-sm">
+                  <Database size={14} />
                   <span>{activeDatabase.name}</span>
                   {!activeDatabase.is_master && (
-                    <span className="ml-1 text-xs text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded">
+                    <span className="ml-1 text-[10px] text-emerald-700 bg-emerald-100/50 border border-emerald-200 px-1.5 py-0.5 rounded">
                       {[activeDatabase.material_inflation ? `Mat +${activeDatabase.material_inflation}%` : null,
                         activeDatabase.labor_inflation ? `MO +${activeDatabase.labor_inflation}%` : null,
                         activeDatabase.equipment_inflation ? `Eq +${activeDatabase.equipment_inflation}%` : null
@@ -698,13 +698,13 @@ export default function BudgetWorksheetPage() {
               </div>
               <button 
                 onClick={() => setShowSearchModal(false)}
-                className="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 p-2 rounded-full transition-colors"
+                className="text-amber-700 hover:text-amber-900 bg-transparent transition-colors p-1"
               >
-                <X size={20} />
+                <X size={24} />
               </button>
             </div>
             
-            <div className="p-6 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-amber-600/15 bg-white/40">
               <form onSubmit={searchDatabase} className="flex gap-3">
                 <input 
                   type="text" 
@@ -712,48 +712,48 @@ export default function BudgetWorksheetPage() {
                   placeholder="Ej. Transporte de maquinaria pesada 30 ton..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-lg"
+                  className="flex-1 px-4 py-2 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                 />
                 <button 
                   type="submit"
                   disabled={searching}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-blue-500/30 transition-all disabled:opacity-50"
+                  className="bg-sky-600 hover:bg-sky-700 text-white px-8 py-2 rounded-xl text-sm font-semibold shadow-[0_4px_6px_rgba(2,132,199,0.2)] transition-all hover:-translate-y-[1px] disabled:opacity-50 disabled:hover:translate-y-0"
                 >
                   {searching ? 'Buscando...' : 'Buscar'}
                 </button>
               </form>
             </div>
 
-            <div className="overflow-y-auto p-2 bg-slate-50 flex-1">
+            <div className="overflow-y-auto p-4 flex-1 bg-white/20">
               {searchResults.length === 0 && !searching ? (
-                <div className="text-center py-12 text-slate-400">
+                <div className="text-center py-12 text-amber-700/70 text-sm font-medium">
                   No se encontraron partidas.
                 </div>
               ) : (
-                <div className="space-y-2 p-4">
+                <div className="space-y-3">
                   {searchResults.map(item => (
                     <div 
                       key={item.CodPar}
-                      className="bg-white border border-slate-200 rounded-xl p-4 flex gap-4 hover:border-blue-300 hover:shadow-md transition-all items-center"
+                      className="bg-white/80 border border-amber-600/10 rounded-xl p-4 flex gap-4 hover:border-sky-300 hover:shadow-md transition-all items-center"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="font-mono text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
                             {item.CovPar || item.CodPar}
                           </span>
-                          <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                          <span className="text-[11px] font-semibold text-sky-700 bg-sky-100 px-2 py-0.5 rounded">
                             UND: {item.UniPar}
                           </span>
                         </div>
-                        <p className="text-sm text-slate-800 line-clamp-2 leading-relaxed">
+                        <p className="text-[13px] text-amber-950 line-clamp-2 leading-relaxed m-0">
                           {item.Descri}
                         </p>
                       </div>
                       <button 
                         onClick={() => handleAddItem(item)}
-                        className="shrink-0 flex items-center gap-1 bg-white border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                        className="shrink-0 flex items-center gap-1.5 bg-transparent border border-sky-200 hover:border-sky-500 hover:bg-sky-50 text-sky-700 px-4 py-1.5 rounded-lg font-semibold transition-colors text-xs"
                       >
-                        <Plus size={16} /> Incluir
+                        <Plus size={14} /> Incluir
                       </button>
                     </div>
                   ))}
@@ -766,36 +766,40 @@ export default function BudgetWorksheetPage() {
       )}
       {/* CHAPTER MODAL */}
       {showChapterModal && createPortal(
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <FolderPlus className="text-indigo-600" />
-              Agregar Capítulo
-            </h3>
-            <input 
-              type="text" 
-              autoFocus
-              value={chapterName}
-              onChange={(e) => setChapterName(e.target.value)}
-              placeholder="Ej. Movimiento de Tierras"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-indigo-500 mb-6 font-medium text-slate-700"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAddChapter();
-              }}
-            />
-            <div className="flex justify-end gap-3">
-              <button 
-                onClick={() => { setShowChapterModal(false); setChapterName(""); }}
-                className="px-4 py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-colors"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleAddChapter}
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors shadow-lg shadow-indigo-500/30"
-              >
-                Agregar
-              </button>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-[550px] bg-amber-100 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] overflow-hidden font-sans flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col gap-2 px-6 pt-6 pb-2">
+              <h2 className="m-0 text-xl font-bold text-amber-900 flex items-center gap-2">
+                <FolderPlus className="text-sky-600" size={24} />
+                Agregar Capítulo
+              </h2>
+            </div>
+            <div className="px-6 pb-6 pt-2 flex flex-col gap-4">
+              <input 
+                type="text" 
+                autoFocus
+                value={chapterName}
+                onChange={(e) => setChapterName(e.target.value)}
+                placeholder="Ej. Movimiento de Tierras"
+                className="px-4 py-2 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddChapter();
+                }}
+              />
+              <div className="flex justify-end gap-4 mt-2">
+                <button 
+                  onClick={() => { setShowChapterModal(false); setChapterName(""); }}
+                  className="bg-transparent border-none text-amber-700 text-sm font-semibold px-6 py-2 cursor-pointer rounded-xl hover:bg-white/30 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleAddChapter}
+                  className="bg-sky-600 text-white border-none text-sm font-semibold px-6 py-2 rounded-xl cursor-pointer shadow-[0_4px_6px_rgba(2,132,199,0.2)] transition-all hover:bg-sky-700 hover:-translate-y-[1px]"
+                >
+                  Agregar
+                </button>
+              </div>
             </div>
           </div>
         </div>,
