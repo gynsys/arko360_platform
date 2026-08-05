@@ -8,6 +8,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
 import BudgetSettingsModal from '../../components/modals/BudgetSettingsModal';
+import CreateBudgetModal from '../../components/modals/CreateBudgetModal';
 
 export default function BudgetHomePage() {
   const [budgets, setBudgets] = useState([]);
@@ -38,25 +39,6 @@ export default function BudgetHomePage() {
       console.error(error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!newBudgetName.trim()) return;
-    
-    try {
-      const newBudget = await budgetService.create({ 
-        name: newBudgetName.trim(),
-        currency: 'USD'
-      });
-      toast.success('Presupuesto creado con éxito');
-      setIsModalOpen(false);
-      setNewBudgetName('');
-      navigate(`/budgets/${newBudget.id}`);
-    } catch (error) {
-      console.error(error);
-      toast.error('Error al crear el presupuesto');
     }
   };
 
@@ -237,45 +219,13 @@ export default function BudgetHomePage() {
 
       {/* NEW BUDGET MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-slate-800 mb-2">Nuevo Presupuesto</h2>
-              <p className="text-sm text-slate-500 mb-6">Asigna un nombre a tu nuevo proyecto de estimación.</p>
-              
-              <form onSubmit={handleCreate}>
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre del Proyecto</label>
-                  <input 
-                    type="text" 
-                    autoFocus
-                    required
-                    value={newBudgetName}
-                    onChange={(e) => setNewBudgetName(e.target.value)}
-                    placeholder="Ej. Construcción Casa Modelo A"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                  />
-                </div>
-                
-                <div className="flex justify-end gap-3">
-                  <button 
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit"
-                    className="px-5 py-2.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95"
-                  >
-                    Crear Proyecto
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+        <CreateBudgetModal
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={(newBudget) => {
+            setIsModalOpen(false);
+            navigate(`/budgets/${newBudget.id}`);
+          }}
+        />
       )}
       {/* Delete Confirmation Modal */}
       {deletingId && (
