@@ -101,7 +101,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
               value={formData.name}
               onChange={handleChange}
               placeholder="Ej. Construcción Casa Modelo A"
-              className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+              className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
             />
           </div>
 
@@ -114,7 +114,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
                 name="company_name"
                 value={formData.company_name}
                 onChange={handleChange}
-                className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -124,7 +124,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
                 name="company_rif"
                 value={formData.company_rif}
                 onChange={handleChange}
-                className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
               />
             </div>
           </div>
@@ -137,7 +137,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
               name="client_name"
               value={formData.client_name}
               onChange={handleChange}
-              className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+              className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
             />
           </div>
 
@@ -149,7 +149,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
                 name="currency"
                 value={formData.currency}
                 onChange={handleChange}
-                className="px-2 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
               >
                 <option value="USD">USD</option>
                 <option value="BS">BS</option>
@@ -160,7 +160,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
               <input 
                 type="number" step="0.01" name="exchange_rate"
                 value={formData.exchange_rate} onChange={handleChange}
-                className="px-2 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -168,7 +168,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
               <input 
                 type="number" step="1" name="fcas_percent"
                 value={formData.fcas_percent} onChange={handleChange}
-                className="px-2 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -176,7 +176,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
               <input 
                 type="number" step="0.01" name="labor_bonus"
                 value={formData.labor_bonus} onChange={handleChange}
-                className="px-2 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
               />
             </div>
           </div>
@@ -188,7 +188,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
               <input 
                 type="number" step="1" name="admin_percent"
                 value={formData.admin_percent} onChange={handleChange}
-                className="px-2 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -196,7 +196,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
               <input 
                 type="number" step="1" name="profit_percent"
                 value={formData.profit_percent} onChange={handleChange}
-                className="px-2 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -204,7 +204,7 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
               <input 
                 type="number" step="1" name="iva_percent"
                 value={formData.iva_percent} onChange={handleChange}
-                className="px-2 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
               />
             </div>
             {/* 4to espacio vacío para alinear a la izquierda */}
@@ -247,14 +247,14 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
             <button 
               type="button"
               onClick={onClose}
-              className="bg-transparent border-none text-amber-700 text-sm font-semibold px-6 py-3 cursor-pointer rounded-xl hover:bg-white/30 transition-colors"
+              className="bg-transparent border-none text-amber-700 text-sm font-semibold px-6 py-2 cursor-pointer rounded-xl hover:bg-white/30 transition-colors"
             >
               Cancelar
             </button>
             <button 
               type="submit"
               disabled={loading}
-              className="bg-sky-600 text-white border-none text-sm font-semibold px-7 py-3 rounded-xl cursor-pointer shadow-[0_4px_6px_rgba(2,132,199,0.2)] transition-all hover:bg-sky-700 hover:-translate-y-[1px] disabled:opacity-70 disabled:hover:translate-y-0"
+              className="bg-sky-600 text-white border-none text-sm font-semibold px-6 py-2 rounded-xl cursor-pointer shadow-[0_4px_6px_rgba(2,132,199,0.2)] transition-all hover:bg-sky-700 hover:-translate-y-[1px] disabled:opacity-70 disabled:hover:translate-y-0"
             >
               {loading ? 'Creando...' : 'Crear Proyecto'}
             </button>

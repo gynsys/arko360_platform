@@ -307,7 +307,7 @@ export default function DatabaseManagementPage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                   placeholder="Ej. Base Julio 2024"
                   required
                 />
@@ -319,7 +319,7 @@ export default function DatabaseManagementPage() {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10 resize-none"
+                  className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10 resize-none"
                   rows={2}
                   placeholder="Ej. Base de datos con precios actualizados a julio 2024"
                 />
@@ -331,7 +331,7 @@ export default function DatabaseManagementPage() {
                 <select
                   value={formData.source_database_id}
                   onChange={(e) => setFormData({ ...formData, source_database_id: e.target.value })}
-                  className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                 >
                   <option value="master">Base Maestra</option>
                   {databases.filter(db => !db.is_master).map(db => (
@@ -358,7 +358,7 @@ export default function DatabaseManagementPage() {
                       max="100"
                       value={formData.material_inflation}
                       onChange={(e) => setFormData({ ...formData, material_inflation: parseFloat(e.target.value) || 0 })}
-                      className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                      className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                       placeholder="0"
                     />
                   </div>
@@ -373,7 +373,7 @@ export default function DatabaseManagementPage() {
                       max="100"
                       value={formData.labor_inflation}
                       onChange={(e) => setFormData({ ...formData, labor_inflation: parseFloat(e.target.value) || 0 })}
-                      className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                      className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                       placeholder="0"
                     />
                   </div>
@@ -388,7 +388,7 @@ export default function DatabaseManagementPage() {
                       max="100"
                       value={formData.equipment_inflation}
                       onChange={(e) => setFormData({ ...formData, equipment_inflation: parseFloat(e.target.value) || 0 })}
-                      className="px-4 py-3 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                      className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                       placeholder="0"
                     />
                   </div>
@@ -400,13 +400,13 @@ export default function DatabaseManagementPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="bg-transparent border-none text-amber-700 text-sm font-semibold px-6 py-3 cursor-pointer rounded-xl hover:bg-white/30 transition-colors"
+                  className="bg-transparent border-none text-amber-700 text-sm font-semibold px-6 py-2 cursor-pointer rounded-xl hover:bg-white/30 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="bg-sky-600 text-white border-none text-sm font-semibold px-7 py-3 rounded-xl cursor-pointer shadow-[0_4px_6px_rgba(2,132,199,0.2)] transition-all hover:bg-sky-700 hover:-translate-y-[1px]"
+                  className="bg-sky-600 text-white border-none text-sm font-semibold px-6 py-2 rounded-xl cursor-pointer shadow-[0_4px_6px_rgba(2,132,199,0.2)] transition-all hover:bg-sky-700 hover:-translate-y-[1px]"
                 >
                   Crear Base de Datos
                 </button>
