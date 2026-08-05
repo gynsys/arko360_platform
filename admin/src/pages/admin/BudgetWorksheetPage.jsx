@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { 
   ArrowLeft, Settings, Plus, Search, Layers, FileText, 
@@ -57,9 +57,14 @@ export default function BudgetWorksheetPage() {
   const [editingChapterId, setEditingChapterId] = useState(null);
   const [editingChapterName, setEditingChapterName] = useState("");
 
+  const location = useLocation();
+
   useEffect(() => {
     loadBudget();
-  }, [id]);
+    if (new URLSearchParams(location.search).get('settings') === 'true') {
+      setShowSettings(true);
+    }
+  }, [id, location.search]);
 
   const loadBudget = async () => {
     try {
@@ -859,20 +864,20 @@ export default function BudgetWorksheetPage() {
         {/* FOOTER TOTAL */}
         {budget.items?.length > 0 && (
           <div className="mt-4 flex-none flex justify-end">
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 min-w-[300px]">
-              <div className="flex justify-between items-center mb-1.5">
+            <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-300 shadow-sm min-w-[300px]">
+              <div className="flex justify-between items-center py-1.5">
                 <span className="text-slate-500 font-medium text-sm">SUBTOTAL</span>
                 <span className="text-lg font-semibold text-slate-700">
                   {subtotalPresupuesto.toLocaleString('es-VE', {minimumFractionDigits: 2})}
                 </span>
               </div>
-              <div className="flex justify-between items-center mb-2.5 pb-2.5 border-b border-slate-200">
+              <div className="flex justify-between items-center py-1.5 border-b border-slate-200">
                 <span className="text-slate-500 font-medium text-sm">I.V.A. ({budget.iva_percent ?? 16}%)</span>
                 <span className="text-lg font-semibold text-slate-700">
                   {ivaAmount.toLocaleString('es-VE', {minimumFractionDigits: 2})}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center pt-3 pb-1.5">
                 <span className="text-slate-500 font-medium text-sm">TOTAL ({budget.currency})</span>
                 <span className="text-lg font-semibold text-slate-700">
                   {totalGeneral.toLocaleString('es-VE', {minimumFractionDigits: 2})}

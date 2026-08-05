@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Folder, Plus, FileText, Trash2, Edit3, Copy, Search, 
+  Settings, Printer,
   MoreVertical, Clock, DollarSign, Loader
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -178,6 +179,20 @@ export default function BudgetHomePage() {
                     title="Duplicar"
                   >
                     <Copy size={16} />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); navigate(`/budgets/${budget.id}?settings=true`); }}
+                    className="btn-accion"
+                    title="Configuración Global"
+                  >
+                    <Settings size={16} />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); window.print(); }}
+                    className="btn-accion"
+                    title="Imprimir"
+                  >
+                    <Printer size={16} />
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); setRenamingBudget(budget); setRenameName(budget.name); }}
