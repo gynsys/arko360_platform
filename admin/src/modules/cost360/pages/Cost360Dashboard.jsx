@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiLayers, FiArrowRight, FiBox, FiTool, FiUsers, FiDatabase } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import cost360Service from '../services/cost360Service';
+import { cost360DatabaseService } from '../../../services/cost360DatabaseService';
 import { SiteConfigContext } from '../../../App';
 import CatalogResourceTab from '../components/CatalogResourceTab';
 
@@ -32,6 +33,8 @@ const Cost360Dashboard = () => {
   const [skip, setSkip] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [databases, setDatabases] = useState([]);
+  const [selectedDatabase, setSelectedDatabase] = useState('master');
   const LIMIT = 1000;
   const navigate = useNavigate();
   const { config } = useContext(SiteConfigContext);
@@ -55,9 +58,21 @@ const Cost360Dashboard = () => {
   };
 
   useEffect(() => {
+    const loadDatabases = async () => {
+      try {
+        const dbs = await cost360DatabaseService.getAll();
+        setDatabases(dbs);
+      } catch (error) {
+        console.error('Error al cargar bases de datos:', error);
+      }
+    };
+    loadDatabases();
+  }, []);
+
+  useEffect(() => {
     setSkip(0);
     fetchPartidas(search, chapter, 0, false);
-  }, [chapter]);
+  }, [chapter, selectedDatabase]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -98,30 +113,50 @@ const Cost360Dashboard = () => {
             <FiDatabase size={22} />
           </div>
           <div>
-            <h1 className="text-xl font-extrabold text-slate-800 tracking-tight leading-none">APUpro</h1>
-            <p className="text-sm text-blue-600/80 font-medium mt-0.5">Base de Datos Maestra de Insumos y Partidas</p>
+            <h1 className="text-xl font-extrabold text-slate-800 tracking-tight leading-none">Explora las Bases de Datos, Insumos, Materiales o Personal</h1>
           </div>
         </div>
 
         {/* Tabs row */}
-        <div className="px-4 flex gap-1 pt-2 pb-0">
-          {TABS.map(({ key, label, Icon }) => {
-            const active = activeTab === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-b-2 transition-all duration-200 btn-borde-azul-redondeado ${
-                  active
-                    ? 'text-blue-700 border-blue-600 bg-blue-50/60'
-                    : 'text-slate-500 border-transparent'
-                }`}
-              >
-                <Icon size={14} />
-                {label}
-              </button>
-            );
-          })}
+        <div className="px-4 flex justify-between items-end pt-2 pb-0">
+          <div className="flex gap-1">
+            {TABS.map(({ key, label, Icon }) => {
+              const active = activeTab === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-b-2 transition-all duration-200 btn-borde-azul-redondeado ${
+                    active
+                      ? 'text-blue-700 border-blue-600 bg-blue-50/60'
+                      : 'text-slate-500 border-transparent'
+                  }`}
+                >
+                  <Icon size={14} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="pb-2">
+            <select
+              value={selectedDatabase}
+              onChange={(e) => setSelectedDatabase(e.target.value)}
+              className="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg px-4 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-sm transition-all w-64 appearance-none"
+              style={{
+                backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
+                backgroundPosition: 'right 0.5rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.5em 1.5em',
+                paddingRight: '2.5rem',
+              }}
+            >
+              <option value="master">Base Maestra (Defecto)</option>
+              {databases.filter(db => db.id !== 'master' && db.is_master !== true).map(db => (
+                <option key={db.id} value={db.id}>{db.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="h-px" style={{ background: 'linear-gradient(90deg,rgba(148,163,255,0.4),transparent)' }} />
       </div>
