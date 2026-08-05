@@ -79,7 +79,7 @@ const Cost360Dashboard = () => {
   ];
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="p-4 md:p-6 flex flex-col h-full overflow-hidden gap-4">
 
       {/* ── ZONE 3: Title + Tabs ─────────────────────────────── */}
       <div className="rounded-2xl overflow-hidden" style={glassStrong}>
@@ -192,7 +192,8 @@ const Cost360Dashboard = () => {
           </div>
 
           {/* ── ZONE 5: Results list ──────────────────────── */}
-          <div className="rounded-2xl overflow-hidden" style={glassStrong}>
+          <div className="rounded-2xl overflow-y-auto flex-1 min-h-0 flex flex-col" style={glassStrong}>
+            <div className="flex-1">
             {items.length > 0 ? (
               <ul className="divide-y" style={{ borderColor: 'rgba(148,163,255,0.15)' }}>
                 {items.map((item) => (
@@ -244,21 +245,22 @@ const Cost360Dashboard = () => {
             )}
           </div>
 
-          {hasMore && !loading && items.length > 0 && (
-            <div className="flex justify-center py-2 pb-8">
-              <button
-                onClick={handleLoadMore}
-                className="px-8 py-2.5 rounded-full text-sm font-semibold text-blue-700 transition-all duration-300 hover:shadow-[0_8px_20px_rgba(37,99,235,0.2)] hover:-translate-y-0.5 hover:bg-white"
-                style={{
-                  background: 'rgba(255,255,255,0.8)',
-                  border: '1.5px solid rgba(37,99,235,0.3)',
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
-                Cargar Más Partidas
-              </button>
-            </div>
-          )}
+            {hasMore && !loading && items.length > 0 && (
+              <div className="flex justify-center py-4 pb-8 shrink-0">
+                <button
+                  onClick={handleLoadMore}
+                  className="px-8 py-2.5 rounded-full text-sm font-semibold text-blue-700 transition-all duration-300 hover:shadow-[0_8px_20px_rgba(37,99,235,0.2)] hover:-translate-y-0.5 hover:bg-white"
+                  style={{
+                    background: 'rgba(255,255,255,0.8)',
+                    border: '1.5px solid rgba(37,99,235,0.3)',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                >
+                  Cargar Más Partidas
+                </button>
+              </div>
+            )}
+          </div>
         </>
       )}
 

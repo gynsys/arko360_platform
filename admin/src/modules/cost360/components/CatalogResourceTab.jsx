@@ -113,7 +113,7 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col flex-1 min-h-0 gap-4">
       {/* Glass search */}
       <div
         className="rounded-2xl p-4"
@@ -161,7 +161,7 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
 
       {/* Glass table */}
       <div
-        className="rounded-2xl overflow-hidden"
+        className="rounded-2xl flex-1 min-h-0 overflow-y-auto flex flex-col"
         style={{
           background: 'rgba(255,255,255,0.88)',
           backdropFilter: 'blur(20px)',
@@ -170,10 +170,10 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
           boxShadow: '0 8px 40px 0 rgba(80,100,200,0.10)',
         }}
       >
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr style={{ background: 'linear-gradient(90deg,rgba(37,99,235,0.06),rgba(99,102,241,0.03))', borderBottom: '2px solid rgba(148,163,255,0.25)' }}>
+        <div className="flex-1">
+          <table className="min-w-full divide-y divide-gray-200 border-separate border-spacing-0">
+            <thead className="sticky top-0 z-10" style={{ background: '#f8fafc' }}>
+              <tr style={{ background: 'linear-gradient(90deg,rgba(37,99,235,0.06),rgba(99,102,241,0.03))' }}>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
                 {config.editableFields.map(f => (
@@ -240,25 +240,23 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
             </tbody>
           </table>
         </div>
-      </div>
-      
-      {/* Load More Button */}
-      {hasMore && !loading && items.length > 0 && (
-        <div className="flex justify-center py-2 pb-6">
-          <button
-            onClick={handleLoadMore}
-            className="px-8 py-2.5 rounded-full text-sm font-semibold text-blue-700 transition-all duration-300 hover:shadow-[0_8px_20px_rgba(37,99,235,0.2)] hover:-translate-y-0.5 hover:bg-white"
-            style={{
-              background: 'rgba(255,255,255,0.8)',
-              border: '1.5px solid rgba(37,99,235,0.3)',
-              backdropFilter: 'blur(8px)',
-            }}
-          >
-            Cargar Más {title}
-          </button>
+            {hasMore && !loading && items.length > 0 && (
+              <div className="flex justify-center py-4 pb-6 shrink-0">
+                <button
+                  onClick={handleLoadMore}
+                  className="px-8 py-2.5 rounded-full text-sm font-semibold text-blue-700 transition-all duration-300 hover:shadow-[0_8px_20px_rgba(37,99,235,0.2)] hover:-translate-y-0.5 hover:bg-white"
+                  style={{
+                    background: 'rgba(255,255,255,0.8)',
+                    border: '1.5px solid rgba(37,99,235,0.3)',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                >
+                  Cargar Más
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      )}
-    </div>
   );
 };
 
