@@ -34,227 +34,232 @@ export default function BudgetSettingsModal({ budget, onClose, onSave }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Settings className="text-blue-500" /> Configuración del Presupuesto
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-[550px] bg-amber-100 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] overflow-hidden font-sans flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex justify-between items-center px-6 py-4 bg-white/40 border-b border-amber-600/15">
+          <h2 className="m-0 text-xl font-bold text-amber-900 flex items-center gap-2">
+            <Settings className="text-sky-600" /> Configuración del Presupuesto
           </h2>
           <button 
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 p-2 rounded-full transition-colors"
+            className="text-amber-700 hover:text-amber-900 bg-transparent transition-colors p-1"
           >
-            <X size={20} />
+            <X size={24} />
           </button>
         </div>
         
-        <div className="flex border-b border-slate-200 px-6 pt-4 bg-slate-50/50">
+        <div className="flex border-b border-amber-600/15 px-6 pt-4 bg-white/40">
           <button
-            className={`pb-3 px-4 font-medium text-sm transition-colors border-b-2 ${configTab === 'general' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            className={`pb-3 px-4 font-medium text-sm transition-colors border-b-2 ${configTab === 'general' ? 'border-sky-600 text-sky-700' : 'border-transparent text-amber-700 hover:text-amber-900'}`}
             onClick={() => setConfigTab('general')}
           >
             Datos Generales
           </button>
           <button
-            className={`pb-3 px-4 font-medium text-sm transition-colors border-b-2 ${configTab === 'params' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            className={`pb-3 px-4 font-medium text-sm transition-colors border-b-2 ${configTab === 'params' ? 'border-sky-600 text-sky-700' : 'border-transparent text-amber-700 hover:text-amber-900'}`}
             onClick={() => setConfigTab('params')}
           >
             Parámetros de Cálculo
           </button>
         </div>
 
-        <div className="p-6 h-[400px] overflow-y-auto">
+        <div className="px-6 py-4 flex flex-col gap-4 overflow-y-auto">
           {configTab === 'general' ? (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1.5">Nombre de la Obra / Proyecto</label>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-[13px] font-semibold text-amber-900">Nombre de la Obra / Proyecto</label>
                 <input 
                   type="text" 
                   value={settings.project_name}
                   onChange={e => setSettings({...settings, project_name: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                   placeholder="Ej. Construcción de Muro Perimetral"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Empresa</label>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900">Empresa</label>
                   <input 
                     type="text" 
                     value={settings.company_name}
                     onChange={e => setSettings({...settings, company_name: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                    className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1.5">RIF de la Empresa</label>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900">RIF de la Empresa</label>
                   <input 
                     type="text" 
                     value={settings.company_rif}
                     onChange={e => setSettings({...settings, company_rif: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                    className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1.5">Contratante / Cliente</label>
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-[13px] font-semibold text-amber-900">Contratante / Cliente</label>
                 <input 
                   type="text" 
                   value={settings.client_name}
                   onChange={e => setSettings({...settings, client_name: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
+                  className="px-3 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
                 />
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <DollarSign size={14}/> Moneda Base
-              </label>
-              <select 
-                value={settings.currency}
-                onChange={e => setSettings({...settings, currency: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              >
-                <option value="USD">Dólares (USD)</option>
-                <option value="BS">Bolívares (BS)</option>
-              </select>
+            <div className="flex flex-col gap-6">
+              {/* Row 1: Moneda, Tasa, FCAS */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1">
+                    <DollarSign size={14}/> Moneda Base
+                  </label>
+                  <select 
+                    value={settings.currency}
+                    onChange={e => setSettings({...settings, currency: e.target.value})}
+                    className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  >
+                    <option value="USD">Dólares (USD)</option>
+                    <option value="BS">Bolívares (BS)</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1">
+                    <Hash size={14}/> Tasa (BS/USD)
+                  </label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={settings.exchange_rate}
+                    onChange={e => setSettings({...settings, exchange_rate: e.target.value})}
+                    className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1">
+                    <Percent size={14}/> FCAS Global
+                  </label>
+                  <input 
+                    type="number" 
+                    step="1"
+                    value={settings.fcas_percent}
+                    onChange={e => setSettings({...settings, fcas_percent: e.target.value})}
+                    className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  />
+                </div>
+              </div>
+              
+              {/* Row 2: Inflación Materiales, Equipos, Mano de Obra, Bono */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1 whitespace-nowrap">
+                    <Percent size={14}/> Inf. Mat.
+                  </label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={settings.material_inflation}
+                    onChange={e => setSettings({...settings, material_inflation: e.target.value})}
+                    className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1 whitespace-nowrap">
+                    <Percent size={14}/> Inf. Eq.
+                  </label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={settings.equipment_inflation}
+                    onChange={e => setSettings({...settings, equipment_inflation: e.target.value})}
+                    className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1 whitespace-nowrap">
+                    <Percent size={14}/> Inf. M.O.
+                  </label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={settings.labor_inflation}
+                    onChange={e => setSettings({...settings, labor_inflation: e.target.value})}
+                    className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1 whitespace-nowrap">
+                    <DollarSign size={14}/> Bono
+                  </label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={settings.labor_bonus}
+                    onChange={e => setSettings({...settings, labor_bonus: e.target.value})}
+                    className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Admin, Utilidad, IVA */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1">
+                    <Percent size={14}/> Admin.
+                  </label>
+                  <input 
+                    type="number" 
+                    step="1"
+                    value={settings.admin_percent}
+                    onChange={e => setSettings({...settings, admin_percent: e.target.value})}
+                    className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1">
+                    <Percent size={14}/> Utilidad
+                  </label>
+                  <input 
+                    type="number" 
+                    step="1"
+                    value={settings.profit_percent}
+                    onChange={e => setSettings({...settings, profit_percent: e.target.value})}
+                    className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-amber-900 flex items-center gap-1">
+                    <Percent size={14}/> I.V.A
+                  </label>
+                  <input 
+                    type="number" 
+                    step="1"
+                    value={settings.iva_percent}
+                    onChange={e => setSettings({...settings, iva_percent: e.target.value})}
+                    className="px-2 py-1 border border-sky-200 rounded-xl text-sm text-sky-700 bg-sky-50 outline-none transition-all focus:border-sky-600 focus:bg-sky-100 focus:ring-4 focus:ring-sky-700/10"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <Hash size={14}/> Tasa de Cambio (BS/USD)
-              </label>
-              <input 
-                type="number" 
-                step="0.01"
-                value={settings.exchange_rate}
-                onChange={e => setSettings({...settings, exchange_rate: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <Percent size={14}/> FCAS Global (%)
-              </label>
-              <input 
-                type="number" 
-                step="1"
-                value={settings.fcas_percent}
-                onChange={e => setSettings({...settings, fcas_percent: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <Percent size={14}/> Inflación Materiales
-              </label>
-              <input 
-                type="number" 
-                step="0.1"
-                value={settings.material_inflation}
-                onChange={e => setSettings({...settings, material_inflation: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <Percent size={14}/> Inflación Equipos
-              </label>
-              <input 
-                type="number" 
-                step="0.1"
-                value={settings.equipment_inflation}
-                onChange={e => setSettings({...settings, equipment_inflation: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <Percent size={14}/> Inflación Mano Obra
-              </label>
-              <input 
-                type="number" 
-                step="0.1"
-                value={settings.labor_inflation}
-                onChange={e => setSettings({...settings, labor_inflation: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <DollarSign size={14}/> Bono Mano de Obra
-              </label>
-              <input 
-                type="number" 
-                step="0.01"
-                value={settings.labor_bonus}
-                onChange={e => setSettings({...settings, labor_bonus: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <Percent size={14}/> Administración (%)
-              </label>
-              <input 
-                type="number" 
-                step="1"
-                value={settings.admin_percent}
-                onChange={e => setSettings({...settings, admin_percent: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <Percent size={14}/> Utilidad (%)
-              </label>
-              <input 
-                type="number" 
-                step="1"
-                value={settings.profit_percent}
-                onChange={e => setSettings({...settings, profit_percent: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
-                <Percent size={14}/> I.V.A (%)
-              </label>
-              <input 
-                type="number" 
-                step="1"
-                value={settings.iva_percent}
-                onChange={e => setSettings({...settings, iva_percent: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-blue-500"
-              />
-            </div>
-          </div>
-        </div>
           )}
         </div>
         
-        <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
-            <button 
-              onClick={onClose}
-              className="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-200 rounded-xl transition-colors text-sm"
-            >
-              Cancelar
-            </button>
-            <button 
-              onClick={handleSaveSettings}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-lg shadow-blue-500/30"
-            >
-              Guardar Configuración
-            </button>
-          </div>
+        <div className="px-6 py-4 border-t border-amber-600/15 flex justify-end gap-4 bg-white/40">
+          <button 
+            onClick={onClose}
+            className="bg-transparent border-none text-amber-700 text-sm font-semibold px-6 py-2 cursor-pointer rounded-xl hover:bg-white/30 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={handleSaveSettings}
+            className="bg-sky-600 text-white border-none text-sm font-semibold px-6 py-2 rounded-xl cursor-pointer shadow-[0_4px_6px_rgba(2,132,199,0.2)] transition-all hover:bg-sky-700 hover:-translate-y-[1px]"
+          >
+            Guardar Configuración
+          </button>
         </div>
-      </div>,
+      </div>
+    </div>,
     document.body
   );
 }
