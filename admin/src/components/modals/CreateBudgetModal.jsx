@@ -199,13 +199,17 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
 
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-2">Logo de la Empresa (Opcional)</label>
-              <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center text-center hover:bg-slate-50 hover:border-blue-400 transition-colors cursor-pointer group">
-                <div className="bg-slate-100 p-2 rounded-full mb-2 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
-                  <UploadCloud size={24} className="text-slate-400 group-hover:text-blue-600" />
+              <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+                  <UploadCloud size={20} className="text-slate-400" />
                 </div>
-                <p className="text-sm text-slate-600 font-medium">Arrastra y suelta aquí</p>
-                <p className="text-xs text-slate-400 mt-1">o haz clic para explorar archivos (PNG, JPG)</p>
-                <input type="file" className="hidden" accept="image/png, image/jpeg" />
+                <div className="flex-1">
+                  <p className="text-sm text-slate-700 font-medium mb-1">Cargar imagen del logo</p>
+                  <label className="cursor-pointer text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors inline-block">
+                    Explorar archivos
+                    <input type="file" className="hidden" accept="image/png, image/jpeg" />
+                  </label>
+                </div>
               </div>
             </div>
             
