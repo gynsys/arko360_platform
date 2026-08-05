@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { budgetService } from '../../services/budgetService';
+import BudgetSettingsModal from '../../components/modals/BudgetSettingsModal';
 
 export default function BudgetHomePage() {
   const [budgets, setBudgets] = useState([]);
@@ -20,6 +21,7 @@ export default function BudgetHomePage() {
   const [duplicateName, setDuplicateName] = useState("");
   const [renamingBudget, setRenamingBudget] = useState(null);
   const [renameName, setRenameName] = useState("");
+  const [settingsBudget, setSettingsBudget] = useState(null);
   
   const navigate = useNavigate();
 
@@ -181,7 +183,7 @@ export default function BudgetHomePage() {
                     <Copy size={16} />
                   </button>
                   <button 
-                    onClick={(e) => { e.stopPropagation(); navigate(`/budgets/${budget.id}?settings=true`); }}
+                    onClick={(e) => { e.stopPropagation(); setSettingsBudget(budget); }}
                     className="btn-accion"
                     title="Configuración Global"
                   >
@@ -381,6 +383,17 @@ export default function BudgetHomePage() {
             </div>
           </div>
         </div>
+      )}
+      
+      {settingsBudget && (
+        <BudgetSettingsModal
+          budget={settingsBudget}
+          onClose={() => setSettingsBudget(null)}
+          onSave={() => {
+            setSettingsBudget(null);
+            fetchBudgets();
+          }}
+        />
       )}
     </div>
   );
