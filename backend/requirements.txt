@@ -184,3 +184,6 @@ google-generativeai
 numpy
 scipy
 matplotlib
+sentence-transformers
+scikit-learn
+pandas

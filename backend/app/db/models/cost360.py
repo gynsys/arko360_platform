@@ -13,6 +13,15 @@ class CostItem(Base):
     Categoria = Column(String, index=True)
     TipoActividad = Column(String, index=True)
     
+    # Nuevos campos técnicos para búsqueda IA / Motor V6
+    disciplina = Column(String)
+    diametro_pulg = Column(String)
+    resistencia_fc = Column(Float)
+    material = Column(String)
+    preparacion = Column(String)
+    desc_limpia = Column(String)
+
+    
     
     apu_materials = relationship("CostAPUMaterial", back_populates="item")
     apu_labors = relationship("CostAPULabor", back_populates="item")

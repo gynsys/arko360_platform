@@ -27,6 +27,13 @@ app = FastAPI(
     openapi_url="/api/v1/arko/openapi.json",
 )
 
+from app.services.ai_search import ai_engine
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Application starting up... Loading AI brain")
+    ai_engine.load_brain()
+
 # Set all CORS enabled origins
 if settings.CORS_ORIGINS:
     app.add_middleware(
