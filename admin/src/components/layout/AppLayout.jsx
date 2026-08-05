@@ -198,7 +198,7 @@ export default function AppLayout() {
         )}
 
         {/* ── MAIN CONTENT ──────────────────────────────────── */}
-        <main className="flex-1 overflow-y-auto min-w-0">
+        <main className="flex-1 overflow-y-auto min-w-0 relative">
           <Outlet />
         </main>
       </div>
