@@ -49,10 +49,10 @@ export default function AppLayout() {
               key={href}
               to={href}
               onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 btn-borde-azul-redondeado ${
                 active
                   ? 'bg-blue-600/10 text-blue-700 shadow-sm border border-blue-200/60'
-                  : 'text-slate-500 hover:bg-white/70 hover:text-slate-800 hover:shadow-sm'
+                  : 'text-slate-500'
               }`}
             >
               <Icon
@@ -75,7 +75,7 @@ export default function AppLayout() {
   return (
     /* ── Root: gradient mesh background ──────────────────────── */
     <div
-      className="min-h-screen flex flex-col print:block"
+      className="h-screen overflow-hidden flex flex-col print:block"
       style={{
         background: 'linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 40%, #f5f3ff 100%)',
       }}
