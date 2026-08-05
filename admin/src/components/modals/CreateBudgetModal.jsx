@@ -35,12 +35,16 @@ export default function CreateBudgetModal({ onClose, onSuccess }) {
         name: formData.name.trim(),
         project_name: formData.name.trim() // Usually the name is the project name
       });
-      toast.success('Presupuesto creado con éxito');
-      onSuccess(newBudget);
+      toast.success('Presupuesto creado con éxito. Redirigiendo a edición...', {
+        duration: 2000,
+      });
+      setTimeout(() => {
+        onSuccess(newBudget);
+        setLoading(false);
+      }, 1500);
     } catch (error) {
       console.error(error);
       toast.error('Error al crear el presupuesto');
-    } finally {
       setLoading(false);
     }
   };
