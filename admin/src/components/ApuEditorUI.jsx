@@ -1,0 +1,614 @@
+import React from 'react';
+import { Package, Wrench, Users, Plus, Search, Trash2, Loader, Sparkles } from 'lucide-react';
+
+export default function ApuEditorUI({
+  item,
+  settings,
+  onHeaderChange,
+  onHeaderBlur,
+  onComponentChange,
+  onComponentBlur,
+  onRemoveRow,
+  onAddBlankRow,
+  onAddSearchRow,
+  deletingId,
+  onSettingsChange
+}) {
+  if (!item) return null;
+
+  const {
+    currency = 'USD',
+    material_inflation = 0,
+    equipment_inflation = 0,
+    labor_inflation = 0,
+    labor_bonus = 0,
+    fcas_percent = 417,
+    admin_percent = 15,
+    profit_percent = 10
+  } = settings || {};
+
+  // ── Calculations ─────────────────────────────────────────────────────────
+  const calculateMaterialTotal = () => {
+    return item.materials?.reduce((sum, mat) => {
+      const baseCost = mat.cantidad * mat.precio_unitario * (1 + (mat.desperdicio || 0) / 100);
+      return sum + (baseCost * (1 + (material_inflation / 100)));
+    }, 0) || 0;
+  };
+
+  const calculateEquipmentTotalDay = () => {
+    return item.equipments?.reduce((sum, eq) => {
+      const baseCost = eq.cantidad * (eq.depreciacion ?? 1.0) * eq.precio_unitario;
+      return sum + (baseCost * (1 + (equipment_inflation / 100)));
+    }, 0) || 0;
+  };
+
+  const calculateLaborTotalJornalDay = () => {
+    return item.labors?.reduce((sum, lab) => {
+      const baseCost = lab.cantidad * lab.jornal;
+      return sum + (baseCost * (1 + (labor_inflation / 100)));
+    }, 0) || 0;
+  };
+
+  const calculateLaborTotalBonoDay = () => {
+    return item.labors?.reduce((sum, lab) => {
+      const baseCost = lab.cantidad * labor_bonus;
+      return sum + (baseCost * (1 + (labor_inflation / 100)));
+    }, 0) || 0;
+  };
+
+  const calculateLaborTotalDay = () => {
+    const totJornal = calculateLaborTotalJornalDay();
+    const totBono = calculateLaborTotalBonoDay();
+    const fcasMonto = totJornal * (fcas_percent / 100);
+    return totJornal + totBono + fcasMonto;
+  };
+
+  const calculateCostosDirectos = () => {
+    const matTotal = calculateMaterialTotal();
+    const perf = item.performance || item.rendimiento || 1;
+    const eqTotal = calculateEquipmentTotalDay() / perf;
+    const labTotal = calculateLaborTotalDay() / perf;
+    
+    const subtotalA = matTotal + eqTotal + labTotal;
+    const adminCost = subtotalA * (admin_percent / 100);
+    const subtotalB = subtotalA + adminCost;
+    const profitCost = subtotalB * (profit_percent / 100);
+    
+    return {
+      materiales: matTotal,
+      equipos: eqTotal,
+      manoObra: labTotal,
+      subtotalA,
+      adminCost,
+      subtotalB,
+      profitCost,
+      unitPrice: subtotalB + profitCost
+    };
+  };
+
+  const renderOrigenTag = (origen) => {
+    if (!origen) return null;
+    if (origen === 'master') return <span className="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-blue-200">Maestra</span>;
+    if (origen === 'custom') return <span className="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-purple-200">Personalizada</span>;
+    if (origen === 'ai') return <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-emerald-200 flex items-center gap-1 w-fit"><Sparkles size={10}/> Generado IA</span>;
+    return <span className="bg-slate-100 text-slate-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-slate-200">{origen}</span>;
+  };
+
+  const costos = calculateCostosDirectos();
+  const safeFn = (fn) => typeof fn === 'function' ? fn : () => {};
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white border-2 border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-1">
+            <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Código</span>
+            <input 
+              type="text" 
+              className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-blue-500"
+              value={item.cov_par || item.cod_par || item.codigo || ''}
+              onChange={e => safeFn(onHeaderChange)(item.cov_par !== undefined ? 'cov_par' : 'cod_par', e.target.value)}
+              onBlur={e => safeFn(onHeaderBlur)(item.cov_par !== undefined ? 'cov_par' : 'cod_par', e.target.value)}
+              placeholder="Ej. CUST-001"
+            />
+          </div>
+          <div className="md:col-span-3">
+            <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Descripción</span>
+            <input 
+              type="text" 
+              className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm font-medium focus:outline-none focus:border-blue-500"
+              value={item.description || item.descripcion || ''}
+              onChange={e => safeFn(onHeaderChange)('description', e.target.value)}
+              onBlur={e => safeFn(onHeaderBlur)('description', e.target.value)}
+              placeholder="Descripción de la partida"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap border-b border-slate-200 bg-white">
+          <div className="flex-1 p-3 border-r border-slate-100 min-w-[120px]">
+            <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Unidad</span>
+            <input 
+              type="text" 
+              className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500"
+              value={item.unit || item.unidad || ''}
+              onChange={e => safeFn(onHeaderChange)('unit', e.target.value)}
+              onBlur={e => safeFn(onHeaderBlur)('unit', e.target.value)}
+            />
+          </div>
+          <div className="flex-1 p-3 border-r border-slate-100 min-w-[120px]">
+            <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Cantidad Base</span>
+            <span className="text-sm font-bold text-slate-700">1</span>
+          </div>
+          <div className="flex-1 p-3 border-r border-slate-100 min-w-[150px] bg-amber-50/30">
+            <span className="block text-xs font-bold text-amber-700/70 uppercase mb-1">Rendimiento</span>
+            <input 
+              type="number" 
+              className="w-full bg-amber-100/50 border-b-2 border-amber-300 focus:border-amber-500 focus:outline-none focus:bg-amber-100 px-1 font-bold text-amber-900 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={item.performance || item.rendimiento || 1}
+              onChange={e => safeFn(onHeaderChange)('performance', e.target.value)}
+              onBlur={e => safeFn(onHeaderBlur)('performance', e.target.value)}
+            />
+          </div>
+          <div className="flex-1 p-3 min-w-[150px] bg-blue-50/50">
+            <span className="block text-xs font-bold text-blue-500 uppercase mb-1">Precio Unitario ({currency})</span>
+            <span className="text-lg font-black text-blue-700">
+              {costos.unitPrice.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {/* 1. MATERIALES */}
+        <div className="bg-white border border-slate-400 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package className="text-orange-600" size={18} />
+              <h3 className="font-bold text-orange-800 text-sm tracking-wide">1. MATERIALES ( {item.materials?.length || 0} )</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => safeFn(onAddSearchRow)('materials')}
+                className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm"
+              >
+                <Search size={14} /> Buscar
+              </button>
+              <button
+                onClick={() => safeFn(onAddBlankRow)('materials')}
+                className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 hover:text-orange-600 transition-colors shadow-sm"
+              >
+                <Plus size={14} /> Fila
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-white border-b border-slate-200 text-xs font-bold text-slate-600">
+                  <th className="p-2 w-24 border-r border-slate-200">Ref.</th>
+                  <th className="p-2 border-r border-slate-200">Descripción</th>
+                  <th className="p-2 w-16 text-center border-r border-slate-200">Und.</th>
+                  <th className="p-2 w-24 text-right border-r border-slate-200">Cant.</th>
+                  <th className="p-2 w-20 text-right border-r border-slate-200">Desp. %</th>
+                  <th className="p-2 w-32 text-right border-r border-slate-200">Precio</th>
+                  <th className="p-2 w-32 text-right border-r border-slate-200">Total</th>
+                  <th className="p-2 w-10 text-center"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {item.materials?.map(mat => (
+                  <tr key={mat.id} className="border-b border-slate-100 hover:bg-slate-50 group">
+                    <td className="p-2 border-r border-slate-200 font-mono text-xs">
+                      <input 
+                        type="text" 
+                        className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1"
+                        value={mat.codigo || ''}
+                        onChange={e => safeFn(onComponentChange)('materials', mat.id, 'codigo', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('materials', mat.id, 'codigo', e.target.value)}
+                        placeholder="Ref."
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 text-xs">
+                      <input 
+                        type="text" 
+                        className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1 font-medium text-slate-700"
+                        value={mat.descripcion || ''}
+                        onChange={e => safeFn(onComponentChange)('materials', mat.id, 'descripcion', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('materials', mat.id, 'descripcion', e.target.value)}
+                        placeholder="Descripción del material"
+                      />
+                      {(mat.origen || mat.nota_calculo) && (
+                        <div className="flex items-center gap-2 mt-1 px-1">
+                          {mat.origen && renderOrigenTag(mat.origen)}
+                          {mat.nota_calculo && <span className="text-[10px] text-slate-500 italic truncate" title={mat.nota_calculo}>{mat.nota_calculo}</span>}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-2 text-center border-r border-slate-200 text-xs">
+                      <input 
+                        type="text" 
+                        className="w-full text-center bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1"
+                        value={mat.unidad || ''}
+                        onChange={e => safeFn(onComponentChange)('materials', mat.id, 'unidad', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('materials', mat.id, 'unidad', e.target.value)}
+                        placeholder="Und"
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
+                        value={mat.cantidad}
+                        onChange={e => safeFn(onComponentChange)('materials', mat.id, 'cantidad', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('materials', mat.id, 'cantidad', e.target.value)}
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
+                        value={mat.desperdicio || 0}
+                        onChange={e => safeFn(onComponentChange)('materials', mat.id, 'desperdicio', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('materials', mat.id, 'desperdicio', e.target.value)}
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
+                        value={mat.precio_unitario}
+                        onChange={e => safeFn(onComponentChange)('materials', mat.id, 'precio_unitario', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('materials', mat.id, 'precio_unitario', e.target.value)}
+                      />
+                    </td>
+                    <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs border-r border-slate-200">
+                      {((mat.cantidad * mat.precio_unitario * (1 + (mat.desperdicio || 0) / 100)) * (1 + (material_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                    <td className="p-2 text-center">
+                      <button
+                        onClick={() => safeFn(onRemoveRow)('materials', mat.id)}
+                        disabled={deletingId === mat.id}
+                        className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50 opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                        title="Eliminar insumo"
+                      >
+                        {deletingId === mat.id ? <Loader size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 px-4 py-2 border-t border-slate-300 flex justify-end items-center gap-4">
+            <span className="text-xs font-bold text-slate-600 uppercase">Total Materiales:</span>
+            <span className="text-sm font-black text-slate-800 bg-white border border-slate-300 px-3 py-1 rounded min-w-[120px] text-right">
+              {costos.materiales.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+            </span>
+          </div>
+        </div>
+
+        {/* 2. EQUIPOS */}
+        <div className="bg-white border border-slate-400 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wrench className="text-indigo-600" size={18} />
+              <h3 className="font-bold text-indigo-800 text-sm tracking-wide">2. EQUIPOS ( {item.equipments?.length || 0} )</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => safeFn(onAddSearchRow)('equipments')}
+                className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm"
+              >
+                <Search size={14} /> Buscar
+              </button>
+              <button
+                onClick={() => safeFn(onAddBlankRow)('equipments')}
+                className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 hover:text-indigo-600 transition-colors shadow-sm"
+              >
+                <Plus size={14} /> Fila
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-white border-b border-slate-200 text-xs font-bold text-slate-600">
+                  <th className="p-2 w-24 border-r border-slate-200">Ref.</th>
+                  <th className="p-2 border-r border-slate-200">Descripción</th>
+                  <th className="p-2 w-24 text-right border-r border-slate-200">Cant.</th>
+                  <th className="p-2 w-24 text-right border-r border-slate-200">Deprec.</th>
+                  <th className="p-2 w-32 text-right border-r border-slate-200">Precio</th>
+                  <th className="p-2 w-32 text-right border-r border-slate-200">Total Día</th>
+                  <th className="p-2 w-10 text-center"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {item.equipments?.map(eq => (
+                  <tr key={eq.id} className="border-b border-slate-100 hover:bg-slate-50 group">
+                    <td className="p-2 border-r border-slate-200 font-mono text-xs">
+                      <input 
+                        type="text" 
+                        className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1"
+                        value={eq.codigo || ''}
+                        onChange={e => safeFn(onComponentChange)('equipments', eq.id, 'codigo', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('equipments', eq.id, 'codigo', e.target.value)}
+                        placeholder="Ref."
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 text-xs">
+                      <input 
+                        type="text" 
+                        className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1 font-medium text-slate-700"
+                        value={eq.descripcion || ''}
+                        onChange={e => safeFn(onComponentChange)('equipments', eq.id, 'descripcion', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('equipments', eq.id, 'descripcion', e.target.value)}
+                        placeholder="Descripción del equipo"
+                      />
+                      {(eq.origen || eq.nota_calculo) && (
+                        <div className="flex items-center gap-2 mt-1 px-1">
+                          {eq.origen && renderOrigenTag(eq.origen)}
+                          {eq.nota_calculo && <span className="text-[10px] text-slate-500 italic truncate" title={eq.nota_calculo}>{eq.nota_calculo}</span>}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
+                        value={eq.cantidad}
+                        onChange={e => safeFn(onComponentChange)('equipments', eq.id, 'cantidad', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('equipments', eq.id, 'cantidad', e.target.value)}
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
+                        value={eq.depreciacion ?? 1.0}
+                        onChange={e => safeFn(onComponentChange)('equipments', eq.id, 'depreciacion', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('equipments', eq.id, 'depreciacion', e.target.value)}
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
+                        value={eq.precio_unitario}
+                        onChange={e => safeFn(onComponentChange)('equipments', eq.id, 'precio_unitario', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('equipments', eq.id, 'precio_unitario', e.target.value)}
+                      />
+                    </td>
+                    <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs border-r border-slate-200">
+                      {((eq.cantidad * (eq.depreciacion ?? 1.0) * eq.precio_unitario) * (1 + (equipment_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                    <td className="p-2 text-center">
+                      <button
+                        onClick={() => safeFn(onRemoveRow)('equipments', eq.id)}
+                        disabled={deletingId === eq.id}
+                        className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50 opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                        title="Eliminar equipo"
+                      >
+                        {deletingId === eq.id ? <Loader size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 px-4 py-2 border-t border-slate-300 flex justify-end items-center gap-4">
+            <span className="text-xs font-bold text-slate-600 uppercase">Total Equipos (Día):</span>
+            <span className="text-sm font-black text-slate-800 bg-white border border-slate-300 px-3 py-1 rounded min-w-[120px] text-right">
+              {(costos.equipos * (item.performance || item.rendimiento || 1)).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+            </span>
+          </div>
+        </div>
+
+        {/* 3. MANO DE OBRA */}
+        <div className="bg-white border border-slate-400 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="text-teal-600" size={18} />
+              <h3 className="font-bold text-teal-800 text-sm tracking-wide">3. MANO DE OBRA ( {item.labors?.length || 0} )</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => safeFn(onAddSearchRow)('labors')}
+                className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm"
+              >
+                <Search size={14} /> Buscar
+              </button>
+              <button
+                onClick={() => safeFn(onAddBlankRow)('labors')}
+                className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 hover:text-teal-600 transition-colors shadow-sm"
+              >
+                <Plus size={14} /> Fila
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-white border-b border-slate-200 text-xs font-bold text-slate-600">
+                  <th className="p-2 w-24 border-r border-slate-200">Ref.</th>
+                  <th className="p-2 border-r border-slate-200">Descripción</th>
+                  <th className="p-2 w-24 text-right border-r border-slate-200">Cant.</th>
+                  <th className="p-2 w-28 text-right border-r border-slate-200">Jornal</th>
+                  <th className="p-2 w-28 text-right border-r border-slate-200">Bono</th>
+                  <th className="p-2 w-32 text-right border-r border-slate-200">Total Jornal</th>
+                  <th className="p-2 w-32 text-right border-r border-slate-200">Total Bono</th>
+                  <th className="p-2 w-10 text-center"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {item.labors?.map(lab => (
+                  <tr key={lab.id} className="border-b border-slate-100 hover:bg-slate-50 group">
+                    <td className="p-2 border-r border-slate-200 font-mono text-xs">
+                      <input 
+                        type="text" 
+                        className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1"
+                        value={lab.codigo || ''}
+                        onChange={e => safeFn(onComponentChange)('labors', lab.id, 'codigo', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('labors', lab.id, 'codigo', e.target.value)}
+                        placeholder="Ref."
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 text-xs">
+                      <input 
+                        type="text" 
+                        className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1 font-medium text-slate-700"
+                        value={lab.descripcion || ''}
+                        onChange={e => safeFn(onComponentChange)('labors', lab.id, 'descripcion', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('labors', lab.id, 'descripcion', e.target.value)}
+                        placeholder="Descripción (ej. Maestro de Obra)"
+                      />
+                      {(lab.origen || lab.nota_calculo) && (
+                        <div className="flex items-center gap-2 mt-1 px-1">
+                          {lab.origen && renderOrigenTag(lab.origen)}
+                          {lab.nota_calculo && <span className="text-[10px] text-slate-500 italic truncate" title={lab.nota_calculo}>{lab.nota_calculo}</span>}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
+                        value={lab.cantidad}
+                        onChange={e => safeFn(onComponentChange)('labors', lab.id, 'cantidad', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('labors', lab.id, 'cantidad', e.target.value)}
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
+                        value={lab.jornal}
+                        onChange={e => safeFn(onComponentChange)('labors', lab.id, 'jornal', e.target.value)}
+                        onBlur={e => safeFn(onComponentBlur)('labors', lab.id, 'jornal', e.target.value)}
+                      />
+                    </td>
+                    <td className="p-2 border-r border-slate-200 bg-amber-50/40">
+                      <input 
+                        type="number" 
+                        className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
+                        value={labor_bonus}
+                        disabled
+                      />
+                    </td>
+                    <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 border-r border-slate-200 text-xs">
+                      {((lab.cantidad * lab.jornal) * (1 + (labor_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                    <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs border-r border-slate-200">
+                      {((lab.cantidad * labor_bonus) * (1 + (labor_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                    <td className="p-2 text-center">
+                      <button
+                        onClick={() => safeFn(onRemoveRow)('labors', lab.id)}
+                        disabled={deletingId === lab.id}
+                        className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50 opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                        title="Eliminar mano de obra"
+                      >
+                        {deletingId === lab.id ? <Loader size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 p-4 border-t border-slate-300">
+            <div className="flex flex-col gap-2 items-end">
+              <div className="flex items-center gap-4 w-full md:w-1/2 justify-between border-b border-slate-200 pb-2">
+                <span className="text-xs font-bold text-slate-600 flex items-center gap-2">
+                  <span className="bg-teal-100 text-teal-800 px-1 border border-teal-300 rounded text-[10px]">{fcas_percent}%</span>
+                  F.C.A.S / Prestaciones:
+                </span>
+                <span className="text-sm font-semibold text-slate-700">{(calculateLaborTotalJornalDay() * (fcas_percent/100)).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+              </div>
+              <div className="flex items-center gap-4 w-full md:w-1/2 justify-between mt-2 pt-2 border-t-2 border-slate-300">
+                <span className="text-sm font-bold text-slate-800 uppercase">Total Mano de Obra (Día):</span>
+                <span className="text-base font-black text-slate-800 bg-white border border-slate-400 px-3 py-1 rounded min-w-[120px] text-right shadow-sm">
+                  {(costos.manoObra * (item.performance || item.rendimiento || 1)).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM SUMMARY BLOCK */}
+        <div className="flex justify-end mt-8">
+          <div className="w-full md:w-[450px] bg-slate-50 border border-slate-300 shadow-md p-1">
+            <table className="w-full text-xs font-bold text-slate-700 border-collapse">
+              <tbody>
+                <tr>
+                  <td className="p-2 border-b border-slate-200">A. TOTAL MATERIALES</td>
+                  <td className="p-2 border-b border-slate-200 text-right w-32">{costos.materiales.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-slate-200">B. TOTAL EQUIPOS</td>
+                  <td className="p-2 border-b border-slate-200 text-right">{costos.equipos.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-slate-200">C. TOTAL MANO DE OBRA</td>
+                  <td className="p-2 border-b border-slate-200 text-right">{costos.manoObra.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+                <tr className="bg-slate-200">
+                  <td className="p-2 border-b border-slate-300 text-blue-900 font-black">SUBTOTAL A (COSTO DIRECTO)</td>
+                  <td className="p-2 border-b border-slate-300 text-right text-blue-900 font-black">{costos.subtotalA.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-slate-200 flex items-center justify-between">
+                    <span>D. ADMINISTRACIÓN</span>
+                    <div className="flex items-center gap-1">
+                      {onSettingsChange ? (
+                        <input 
+                          type="number"
+                          className="w-12 text-center bg-amber-100 text-amber-800 border border-amber-300 rounded [appearance:textfield] text-xs font-bold"
+                          value={admin_percent}
+                          onChange={(e) => onSettingsChange('admin_percent', parseFloat(e.target.value) || 0)}
+                        />
+                      ) : (
+                        <span className="bg-amber-100 text-amber-800 px-1 border border-amber-300 rounded text-xs font-bold">{admin_percent}</span>
+                      )}
+                      <span className="text-amber-800 font-bold">%</span>
+                    </div>
+                  </td>
+                  <td className="p-2 border-b border-slate-200 text-right">{costos.adminCost.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+                <tr className="bg-slate-200">
+                  <td className="p-2 border-b border-slate-300 text-blue-900 font-black">SUBTOTAL B (SUBTOTAL A + D)</td>
+                  <td className="p-2 border-b border-slate-300 text-right text-blue-900 font-black">{costos.subtotalB.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-slate-200 flex items-center justify-between">
+                    <span>E. UTILIDAD</span>
+                    <div className="flex items-center gap-1">
+                      {onSettingsChange ? (
+                        <input 
+                          type="number"
+                          className="w-12 text-center bg-amber-100 text-amber-800 border border-amber-300 rounded [appearance:textfield] text-xs font-bold"
+                          value={profit_percent}
+                          onChange={(e) => onSettingsChange('profit_percent', parseFloat(e.target.value) || 0)}
+                        />
+                      ) : (
+                        <span className="bg-amber-100 text-amber-800 px-1 border border-amber-300 rounded text-xs font-bold">{profit_percent}</span>
+                      )}
+                      <span className="text-amber-800 font-bold">%</span>
+                    </div>
+                  </td>
+                  <td className="p-2 border-b border-slate-200 text-right">{costos.profitCost.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+                <tr className="bg-blue-100 text-blue-900 text-sm">
+                  <td className="p-3 border-t-2 border-blue-300">PRECIO UNITARIO ({currency}):</td>
+                  <td className="p-3 border-t-2 border-blue-300 text-right font-black">{costos.unitPrice.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
