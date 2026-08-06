@@ -83,11 +83,6 @@ export default function AIApuGeneratorPage() {
   }, [modeParam]);
 
   const triggerSearch = async (query = searchQuery, chapter = searchChapter, db = selectedDatabase) => {
-    if (!query.trim() && !chapter) {
-      setSearchResults([]);
-      return;
-    }
-    
     setIsSearching(true);
     try {
       const data = await fetchItems(0, 50, query, chapter, db);
