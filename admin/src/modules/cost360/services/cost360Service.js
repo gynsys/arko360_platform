@@ -18,16 +18,22 @@ const cost360ApiClient = axios.create({
  * @param {string} chapter - Chapter prefix filter (e.g., 'E', 'I')
  * @returns {Promise<Array>} List of items
  */
-export const fetchItems = async (skip = 0, limit = 50, search = '', chapter = '', database_id = 'master') => {
-  const params = { skip, limit, database_id };
-  if (search) {
-    params.search = search;
+export const fetchItems = async (skip = 0, limit = 50, search = '', chapter = '', database_id = 'master', search_desc = true, search_insumos = false) => {
+  try {
+    const params = { skip, limit };
+    if (search) params.search = search;
+    if (chapter) params.chapter = chapter;
+    if (database_id) params.database_id = database_id;
+    
+    params.search_desc = search_desc;
+    params.search_insumos = search_insumos;
+    
+    const response = await cost360ApiClient.get('/items', { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching cost items:", error);
+    throw error;
   }
-  if (chapter) {
-    params.chapter = chapter;
-  }
-  const response = await cost360ApiClient.get('/items', { params });
-  return response.data;
 };
 
 /**

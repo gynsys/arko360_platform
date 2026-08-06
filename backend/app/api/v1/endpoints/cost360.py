@@ -28,8 +28,8 @@ from app.services.ai_apu_service import generate_apu_with_ai
 router = APIRouter()
 
 @router.get("/items", response_model=CostItemListResponse)
-def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, database_id: str = "master", db: Session = Depends(get_db)):
-    total, items = get_items_paginated(db, skip, limit, search, chapter, categoria, tipo_actividad, database_id)
+def get_items(skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, search_desc: bool = True, search_insumos: bool = False, database_id: str = "master", db: Session = Depends(get_db)):
+    total, items = get_items_paginated(db, skip, limit, search, chapter, categoria, tipo_actividad, search_desc, search_insumos, database_id)
     return {"total": total, "items": items}
 
 

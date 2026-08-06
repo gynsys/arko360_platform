@@ -26,5 +26,22 @@ El componente UI interactúa transparentemente con el backend:
 - En `BudgetAPUEditorPage`, se comunican los cambios a las tablas de presupuestos mediante `crud_budgets.py`.
 - En `AIApuGeneratorPage`, al pulsar "Guardar APU", se envía un payload JSON que persiste en `CustomCostItem` mediante `crud_cost360.py`. El uso de `ApuEditorUI` no interfiere con esta estructura, ya que respeta los esquemas `materials`, `equipments`, `labors` del modelo Pydantic del backend.
 
-## Correcciones Secundarias
-Durante la migración, se solucionaron errores de etiquetas HTML no balanceadas (`Unexpected end of file before a closing "div" tag`) derivadas de la eliminación manual de bloques de código en los *returns* de React. Todo validado exitosamente en el proceso de build.
+## Correcciones Secundarias y Estabilización (Fase Reciente)
+Durante la estabilización e iteración del uso del componente unificado, se realizaron los siguientes ajustes clave:
+
+1. **Cálculo Dinámico del IVA (Estilo Lulo)**
+   - El componente `ApuEditorUI` ahora consume `iva_percent` global proveniente de `settings`.
+   - Se añadió la fila del IVA (Subtotal C * `iva_percent` / 100) y su respectiva sumatoria en el Precio Unitario (PU = Subtotal C + IVA), replicando el diseño exhaustivo de los resúmenes financieros requeridos.
+
+2. **Unificación del Buscador (Importación / Clonación vs Dashboard)**
+   - **Diseño 1:1:** Se refactorizó la interfaz de "Explorar Bases de Datos" en `AIApuGeneratorPage` para ser idéntica al buscador del Visor Maestro (`Cost360Dashboard`).
+   - **Lógica de Búsqueda Asíncrona:** Se replicó el comportamiento asíncrono para que reaccione automáticamente a cambios de Categoría (Capítulo) y Base de Datos sin necesidad de enviar el formulario manualmente.
+   - **Corrección de Endpoints:** Ambas vistas ahora consumen de manera consistente `cost360Service.fetchItems`, con soporte para el filtro `database_id` (el cual se encontraba ausente en el Dashboard y fue corregido).
+   - **Paginación y Metadatos:** Se ajustó la cuenta de "Coincidencias" leyendo el parámetro `data.total` del backend en lugar de la longitud del array truncado por paginación (50).
+   - **Nomenclatura Normada:** Se aseguró que los resultados de búsqueda prioricen la visualización del código de Norma Covenin (`CovPar`) sobre el ID interno heredado (`CodPar`).
+
+3. **Correcciones en el Mapeo de Insumos durante Clonación**
+   - **Etiqueta HISTORICO:** Se ajustó `renderOrigenTag` para ignorar la distinción de mayúsculas y ocultar limpiamente el tag "historico" introducido por la vista de clonación.
+   - **Columna de Referencias:** Se inyectó explícitamente el campo `codigo` al mapear los arrays `materiales`, `equipos` y `labors`, garantizando que la columna "Ref." de la plantilla del APU se llene adecuadamente.
+   - **Tabla de Mano de Obra:** Se solucionó una discrepancia de nomenclatura JSON (`manoObra` vs `mano_obra`) que impedía listar el personal al importar partidas base.
+   - **Códigos Nativos:** Se eliminó la inyección forzada del prefijo `CUST-` al clonar partidas para permitir una gestión de códigos limpia por parte de los usuarios.

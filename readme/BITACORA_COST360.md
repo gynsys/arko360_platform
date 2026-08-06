@@ -102,8 +102,8 @@ Estos parámetros se configuran desde la pestaña de Configuración (engranaje) 
 - [ ] **Caché en Redis:** Cachear las respuestas de la tabla de Partidas para acelerar la carga del dashboard cuando hay múltiples usuarios concurrentes.
 
 ### Mediano Plazo (1 Mes)
-- [ ] **Armado de Presupuestos:** Funcionalidad para que el usuario pueda "Añadir partida al carrito/presupuesto", indicando metrajes (cantidades de obra), generando un Presupuesto Total.
-- [ ] **Modificación "On-The-Fly" (Modo Simulador):** Permitir al usuario duplicar una partida y alterar el rendimiento o los costos de los materiales temporalmente para analizar escenarios.
+- [x] **Armado de Presupuestos:** Funcionalidad para que el usuario pueda "Añadir partida al carrito/presupuesto", indicando metrajes (cantidades de obra), generando un Presupuesto Total. (Implementado a través del sistema global de Presupuestos y la unificación de Plantillas).
+- [x] **Modificación "On-The-Fly" (Modo Simulador):** Permitir al usuario duplicar una partida y alterar el rendimiento o los costos de los materiales temporalmente para analizar escenarios. (Completado: Posibilidad de clonar y guardar como base personalizada desde `AIApuGeneratorPage` y editar con `ApuEditorUI`).
 - [ ] **Integración con ARKO3D:** Conectar los cómputos métricos obtenidos del modelo 3D (ej. volumen de concreto de la losa) y enviarlos directamente al módulo Cost360 para obtener el presupuesto estructural automático.
 
 ### Largo Plazo (3+ Meses)

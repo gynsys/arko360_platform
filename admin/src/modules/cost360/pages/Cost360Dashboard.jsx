@@ -29,6 +29,8 @@ const Cost360Dashboard = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchDesc, setSearchDesc] = useState(true);
+  const [searchInsumos, setSearchInsumos] = useState(false);
   const [chapter, setChapter] = useState('');
   const [skip, setSkip] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
@@ -38,11 +40,12 @@ const Cost360Dashboard = () => {
   const LIMIT = 1000;
   const navigate = useNavigate();
   const { config } = useContext(SiteConfigContext);
+  const searchTimeoutRef = useRef(null);
 
-  const fetchPartidas = async (searchQuery = '', chapterQuery = '', currentSkip = 0, append = false) => {
-    setLoading(true);
+  const fetchPartidas = async (searchQuery = '', chapterQuery = '', currentSkip = 0, append = false, sDesc = searchDesc, sInsumos = searchInsumos) => {
     try {
-      const response = await cost360Service.fetchItems(currentSkip, LIMIT, searchQuery, chapterQuery, selectedDatabase);
+      setLoading(true);
+      const response = await cost360Service.fetchItems(currentSkip, LIMIT, searchQuery, chapterQuery, selectedDatabase, sDesc, sInsumos);
       if (append) {
         setItems(prev => [...prev, ...response.items]);
       } else {
@@ -74,20 +77,24 @@ const Cost360Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    setSkip(0);
-    fetchPartidas(search, chapter, 0, false);
-  }, [chapter, selectedDatabase]);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    
+    // Si cambia el database, reset de chapter pero search se mantiene (o se actualiza)
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchPartidas(search, chapter, 0, false, searchDesc, searchInsumos);
+    }, 400);
+  }, [chapter, selectedDatabase, searchDesc, searchInsumos]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     setSkip(0);
-    fetchPartidas(search, chapter, 0, false);
+    fetchPartidas(search, chapter, 0, false, searchDesc, searchInsumos);
   };
 
   const handleLoadMore = () => {
     const newSkip = skip + LIMIT;
     setSkip(newSkip);
-    fetchPartidas(search, chapter, newSkip, true);
+    fetchPartidas(search, chapter, newSkip, true, searchDesc, searchInsumos);
   };
 
   const TABS = [
@@ -169,7 +176,7 @@ const Cost360Dashboard = () => {
       {activeTab === 'partidas' && (
         <>
           {/* ── ZONE 4: Search bar ─────────────────────────── */}
-          <div className="rounded-2xl p-4" style={glass}>
+          <div className="rounded-2xl p-4 flex flex-col gap-3" style={glass}>
             <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -222,6 +229,29 @@ const Cost360Dashboard = () => {
                 Filtrar
               </button>
             </form>
+
+            {/* Búsqueda Inversa Toggles */}
+            <div className="flex flex-wrap items-center gap-4 px-1 mt-1 text-sm">
+              <span className="text-slate-600 font-medium">Buscar en:</span>
+              
+              <label className="flex items-center cursor-pointer gap-2">
+                <div className="relative">
+                  <input type="checkbox" className="sr-only" checked={searchDesc} onChange={(e) => setSearchDesc(e.target.checked)} />
+                  <div className={`block w-10 h-6 rounded-full transition-colors ${searchDesc ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${searchDesc ? 'transform translate-x-4' : ''}`}></div>
+                </div>
+                <span className="text-slate-700 select-none">Título y Código</span>
+              </label>
+
+              <label className="flex items-center cursor-pointer gap-2" title="Busca dentro de los Materiales, Equipos y Mano de Obra de las partidas">
+                <div className="relative">
+                  <input type="checkbox" className="sr-only" checked={searchInsumos} onChange={(e) => setSearchInsumos(e.target.checked)} />
+                  <div className={`block w-10 h-6 rounded-full transition-colors ${searchInsumos ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${searchInsumos ? 'transform translate-x-4' : ''}`}></div>
+                </div>
+                <span className="text-slate-700 select-none">Ingredientes (Insumos)</span>
+              </label>
+            </div>
 
             {totalItems > 0 && (
               <p className="mt-3 text-xs text-slate-500 font-medium">

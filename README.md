@@ -85,6 +85,10 @@ Al ejecutar comandos remotos desde el entorno local de Windows usando `ssh_runne
 2. **Ejecución de Scripts de Python vía Piped stdin:** Evitar usar tuberías (`cat script.py | docker compose exec -T backend python -`) desde Windows. El comando `cat` en PowerShell (`Get-Content`) envía saltos de línea con codificaciones incompatibles o se pierden variables de entorno como `PYTHONPATH`, arrojando errores de `ModuleNotFoundError`.
    - *Solución:* Modificar directamente la base de datos con SQL si es rápido, o en su defecto subir el archivo `.py` correctamente al servidor y ejecutarlo localmente dentro del contenedor indicando la ruta.
 
+3. **Consultas a Base de Datos en Producción (`run_prod_query.py`):** Para facilitar las consultas seguras sin sufrir los problemas de las comillas anidadas, se construyó el wrapper `run_prod_query.py`.
+   - Ejecuta `python run_prod_query.py` para pegar tu SQL directamente.
+   - Lee la documentación completa en [readme/consultas_bd_produccion/README.md](readme/consultas_bd_produccion/README.md).
+
 ## Migración del Social Generator (GynSys a Arko360)
 
 Durante la mañana se abordó la portabilidad de la interfaz y la lógica del Generador de Carruseles (heredado de GynSys) hacia Arko360. A continuación, las iteraciones y problemas resueltos:

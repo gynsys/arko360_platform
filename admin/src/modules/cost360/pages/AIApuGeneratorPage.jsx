@@ -22,6 +22,8 @@ export default function AIApuGeneratorPage() {
   const [selectedActivity, setSelectedActivity] = useState('');
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchDesc, setSearchDesc] = useState(true);
+  const [searchInsumos, setSearchInsumos] = useState(false);
   const [searchChapter, setSearchChapter] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [totalMatches, setTotalMatches] = useState(0);
@@ -85,7 +87,7 @@ export default function AIApuGeneratorPage() {
   const triggerSearch = async (query = searchQuery, chapter = searchChapter, db = selectedDatabase) => {
     setIsSearching(true);
     try {
-      const data = await fetchItems(0, 50, query, chapter, db);
+      const data = await fetchItems(0, 50, query, chapter, db, searchDesc, searchInsumos);
       setSearchResults(data.items || []);
       setTotalMatches(data.total || (data.items || []).length);
     } catch (error) {
@@ -96,11 +98,15 @@ export default function AIApuGeneratorPage() {
     }
   };
 
+  // Al cambiar la base de datos o el tipo de búsqueda, disparamos la búsqueda automáticamente
   useEffect(() => {
     if (creationMode === 'import') {
-      triggerSearch(searchQuery, searchChapter, selectedDatabase);
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = setTimeout(() => {
+        triggerSearch(searchQuery, searchChapter, selectedDatabase);
+      }, 400);
     }
-  }, [searchChapter, selectedDatabase]);
+  }, [selectedDatabase, searchDesc, searchInsumos, creationMode]);
 
   const handleSearchToImport = async (e) => {
     e.preventDefault();
@@ -324,7 +330,9 @@ export default function AIApuGeneratorPage() {
                 </select>
              </div>
              
-             <form onSubmit={handleSearchToImport} className="flex-1 flex flex-col sm:flex-row gap-3">
+             {/* ── Búsqueda ─────────────────────────── */}
+             <div className="bg-slate-50 rounded-xl p-4 flex flex-col gap-3">
+             <form onSubmit={(e) => { e.preventDefault(); triggerSearch(); }} className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Search className="text-slate-400 text-base" size={16} />
@@ -377,6 +385,29 @@ export default function AIApuGeneratorPage() {
                   Filtrar
                 </button>
              </form>
+
+             {/* Búsqueda Inversa Toggles */}
+             <div className="flex flex-wrap items-center gap-4 px-1 mt-1 text-sm">
+              <span className="text-slate-600 font-medium">Buscar en:</span>
+              
+              <label className="flex items-center cursor-pointer gap-2">
+                <div className="relative">
+                  <input type="checkbox" className="sr-only" checked={searchDesc} onChange={(e) => setSearchDesc(e.target.checked)} />
+                  <div className={`block w-10 h-6 rounded-full transition-colors ${searchDesc ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${searchDesc ? 'transform translate-x-4' : ''}`}></div>
+                </div>
+                <span className="text-slate-700 select-none">Título y Código</span>
+              </label>
+
+              <label className="flex items-center cursor-pointer gap-2" title="Busca dentro de los Materiales, Equipos y Mano de Obra de las partidas">
+                <div className="relative">
+                  <input type="checkbox" className="sr-only" checked={searchInsumos} onChange={(e) => setSearchInsumos(e.target.checked)} />
+                  <div className={`block w-10 h-6 rounded-full transition-colors ${searchInsumos ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${searchInsumos ? 'transform translate-x-4' : ''}`}></div>
+                </div>
+                <span className="text-slate-700 select-none">Ingredientes (Insumos)</span>
+              </label>
+            </div>
           </div>
 
           <div className="mt-2 text-xs text-slate-500 font-medium">

@@ -33,5 +33,20 @@ Para resolver el problema de las partidas huérfanas:
 - **Compatibilidad de Modelos:** `CostItem` y `CustomCostItem` difieren drásticamente. Mientras `CostItem` está normalizada (tablas `materials`, `labors`, `equipments`), `CustomCostItem` usa JSON en el campo `apu_data`. La solución fue extraer el P.U. sumando los arrays de `apu_data` en memoria usando python dentro del `crud_cost360.py`, asegurando compatibilidad con los schemas Pydantic de respuesta.
 - **Router `/items/{item_code}/apu`**: Para que el usuario, al hacer clic en un APU personalizado desde el Visor, pudiera ver el detalle y editarlo, se creó una trampa (hook) en el router: Si `item_code` empieza por `CUST-`, lee de `CustomCostItem` e intercepta el flujo.
 
+## 4. Estandarización y Correcciones Visuales (Iteración Actual)
+
+Tras la implementación del flujo base, se detectaron discrepancias entre el buscador general (Visor) y el buscador interno de la vista "Importar Base" (Clonación). Se resolvieron aplicando las siguientes unificaciones:
+
+### A. Unificación del Motor de Búsqueda
+- **Diseño Idéntico:** El buscador de Clonación ahora clona exactamente el layout UI del Visor, incluyendo el filtro desplegable de "Categoría" (Capítulo).
+- **Asincronía:** Al cambiar de categoría o base de datos en la clonación, la tabla se actualiza de forma reactiva (asíncrona) al instante, igualando la experiencia rápida del Visor.
+- **Métricas Reales:** Se ajustó la lectura de las coincidencias de búsqueda. Anteriormente el clonador mostraba solo los registros de la página en curso (ej. "50 coincidencias"), ahora lee la propiedad global `data.total` para mostrar el conteo absoluto (ej. "13.608 coincidencias") incluso cuando los campos están vacíos.
+- **Nomenclatura (Norma Covenin):** Se ajustó el mapeo visual de la tabla de clonación para priorizar el código oficial `CovPar` (ej. C.138) sobre el código ID del sistema (`CodPar`), homogeneizándose con el Visor.
+
+### B. Mapeo de Plantillas e Insumos
+- **Prefijos Transparentes:** Se removió la inyección forzada del prefijo `CUST-` al clonar partidas; el APU ahora se importa reteniendo su código original para mayor libertad de edición.
+- **Correcciones de Referencias:** Al importar un APU a la plantilla `ApuEditorUI`, se solventó un bug donde las columnas "Ref." quedaban vacías. Se forzó el mapeo bidireccional del campo `codigo` (ej. `id: m.codigo, codigo: m.codigo`) en todos los arrays de insumos.
+- **Mano de Obra y Tags:** Se rectificó un error de sintaxis en el JSON de respuesta de la API (`manoObra` -> `mano_obra`) que impedía listar al personal. Adicionalmente, se configuró el badge "HISTÓRICO" para ser invisible (case-insensitive) y no causar ruido visual en la plantilla.
+
 ---
-*Cambios commiteados el 05-08-2026. Proyecto: Arko360_Platform.*
+*Documentación actualizada. Proyecto: Arko360_Platform.*

@@ -13,13 +13,23 @@ from app.schemas.cost360 import (
 import uuid
 import json
 
-def get_items_paginated(db: Session, skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, database_id: str = "master"):
+def get_items_paginated(db: Session, skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, search_desc: bool = True, search_insumos: bool = False, database_id: str = "master"):
+    
+    # Failsafe: Si ambos están apagados, forzar búsqueda por descripción por defecto
+    if not search_desc and not search_insumos:
+        search_desc = True
+        
     if database_id == "personalizada":
         query = db.query(CustomCostItem)
         if search:
             words = search.split()
             for word in words:
-                query = query.filter(CustomCostItem.description.ilike(f"%{word}%"))
+                filters = []
+                if search_desc:
+                    filters.append(CustomCostItem.description.ilike(f"%{word}%"))
+                if search_insumos:
+                    filters.append(CustomCostItem.apu_data.ilike(f"%{word}%"))
+                query = query.filter(or_(*filters))
         
         total = query.count()
         custom_items = query.order_by(CustomCostItem.created_at.desc()).offset(skip).limit(limit).all()
@@ -59,11 +69,20 @@ def get_items_paginated(db: Session, skip: int = 0, limit: int = 50, search: Opt
     if search:
         words = search.split()
         for word in words:
-            query = query.filter(
-                (CostItem.Descri.ilike(f"%{word}%")) | 
-                (CostItem.CodPar.ilike(f"%{word}%")) |
-                (CostItem.CovPar.ilike(f"%{word}%"))
-            )
+            filters = []
+            if search_desc:
+                filters.extend([
+                    CostItem.Descri.ilike(f"%{word}%"),
+                    CostItem.CodPar.ilike(f"%{word}%"),
+                    CostItem.CovPar.ilike(f"%{word}%")
+                ])
+            if search_insumos:
+                filters.extend([
+                    CostItem.apu_materials.any(CostAPUMaterial.material.has(CostMaterial.Descri.ilike(f"%{word}%"))),
+                    CostItem.apu_equipments.any(CostAPUEquipment.equipment.has(CostEquipment.Descri.ilike(f"%{word}%"))),
+                    CostItem.apu_labors.any(CostAPULabor.labor.has(CostLabor.Descri.ilike(f"%{word}%")))
+                ])
+            query = query.filter(or_(*filters))
     if chapter:
         query = query.filter(CostItem.CodPar.startswith(chapter))
     if categoria:
