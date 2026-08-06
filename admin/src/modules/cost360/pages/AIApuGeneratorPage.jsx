@@ -49,6 +49,7 @@ export default function AIApuGeneratorPage() {
     fcas_percent: 417,
     admin_percent: 15.0,
     profit_percent: 10.0,
+    iva_percent: 16.0,
     labor_bonus: 0,
     currency: 'USD'
   });

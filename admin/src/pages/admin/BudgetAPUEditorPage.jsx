@@ -304,7 +304,8 @@ export default function BudgetAPUEditorPage() {
             labor_bonus: budget.labor_bonus || 0,
             fcas_percent: budget.fcas_percent || 417,
             admin_percent: budget.admin_percent || 15,
-            profit_percent: budget.profit_percent || 10
+            profit_percent: budget.profit_percent || 10,
+            iva_percent: budget.iva_percent || 0
           }}
           onHeaderChange={handleApuEditorComponentChange}
           onHeaderBlur={handleApuEditorComponentBlur}

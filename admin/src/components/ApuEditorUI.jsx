@@ -24,7 +24,8 @@ export default function ApuEditorUI({
     labor_bonus = 0,
     fcas_percent = 417,
     admin_percent = 15,
-    profit_percent = 10
+    profit_percent = 10,
+    iva_percent = 0
   } = settings || {};
 
   // ── Calculations ─────────────────────────────────────────────────────────
@@ -74,6 +75,9 @@ export default function ApuEditorUI({
     const subtotalB = subtotalA + adminCost;
     const profitCost = subtotalB * (profit_percent / 100);
     
+    const subtotalC = subtotalB + profitCost;
+    const ivaCost = subtotalC * (iva_percent / 100);
+    
     return {
       materiales: matTotal,
       equipos: eqTotal,
@@ -82,7 +86,9 @@ export default function ApuEditorUI({
       adminCost,
       subtotalB,
       profitCost,
-      unitPrice: subtotalB + profitCost
+      subtotalC,
+      ivaCost,
+      unitPrice: subtotalC + ivaCost
     };
   };
 
@@ -689,7 +695,7 @@ export default function ApuEditorUI({
                 <tr className="bg-slate-100">
                   <td className="p-2 text-right border-b border-slate-300 text-red-700 uppercase font-black">Subtotal C:</td>
                   <td className="p-2 w-36 text-right border-b border-slate-300 bg-blue-50/50 border-l border-slate-200 font-bold">
-                    {costos.unitPrice.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {costos.subtotalC.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                 </tr>
                 <tr>
@@ -705,17 +711,26 @@ export default function ApuEditorUI({
                 <tr className="bg-slate-100">
                   <td className="p-2 text-right border-b border-slate-300 text-red-700 uppercase font-black">Precio Unitario Sin Impuesto:</td>
                   <td className="p-2 w-36 text-right border-b border-slate-300 bg-blue-50/50 border-l border-slate-200 font-bold text-blue-900">
-                    {costos.unitPrice.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {costos.subtotalC.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                 </tr>
                 <tr>
                   <td className="p-2 text-right border-b border-slate-200 flex items-center justify-end gap-2 uppercase">
                     <span>%</span>
-                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 border border-slate-200 rounded">0.00</span>
+                    {onSettingsChange ? (
+                      <input 
+                        type="number"
+                        className="w-16 text-center bg-amber-50 text-amber-900 border border-amber-200 rounded px-1 [appearance:textfield]"
+                        value={iva_percent}
+                        onChange={(e) => onSettingsChange('iva_percent', parseFloat(e.target.value) || 0)}
+                      />
+                    ) : (
+                      <span className="bg-amber-50 text-amber-900 px-2 py-0.5 border border-amber-200 rounded">{iva_percent}</span>
+                    )}
                     <span>Impuesto IVA:</span>
                   </td>
                   <td className="p-2 w-36 text-right border-b border-slate-200 bg-white border-l border-slate-200 text-slate-500">
-                    {0.00.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {costos.ivaCost.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                 </tr>
                 <tr>
