@@ -87,7 +87,7 @@ export default function ApuEditorUI({
   };
 
   const renderOrigenTag = (origen) => {
-    if (!origen) return null;
+    if (!origen || origen === 'HISTORICO') return null;
     if (origen === 'master') return <span className="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-blue-200">Maestra</span>;
     if (origen === 'custom') return <span className="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-purple-200">Personalizada</span>;
     if (origen === 'ai') return <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-emerald-200 flex items-center gap-1 w-fit"><Sparkles size={10}/> Generado IA</span>;
@@ -96,6 +96,19 @@ export default function ApuEditorUI({
 
   const costos = calculateCostosDirectos();
   const safeFn = (fn) => typeof fn === 'function' ? fn : () => {};
+
+  const totJornal = calculateLaborTotalJornalDay();
+  const totBono = calculateLaborTotalBonoDay();
+  const fcasMonto = totJornal * (fcas_percent / 100);
+  const totGeneralManoObra = totJornal + totBono + fcasMonto;
+  const rendimiento = item.performance || item.rendimiento || 1;
+  const costoUnitarioManoObra = totGeneralManoObra / rendimiento;
+  const incidenciaManoObra = costos.unitPrice ? (costoUnitarioManoObra / costos.unitPrice) * 100 : 0;
+
+  const horasLaborables = 8;
+  const horasHombres = (item.labors || []).reduce((acc, lab) => acc + (parseFloat(lab.cantidad) || 0), 0) * horasLaborables;
+  const horasHombresRend = horasHombres / rendimiento;
+  const puHoras = horasHombresRend ? costos.unitPrice / horasHombresRend : 0;
 
   return (
     <div className="space-y-6">
@@ -518,90 +531,208 @@ export default function ApuEditorUI({
             </table>
           </div>
           <div className="bg-slate-50 p-4 border-t border-slate-300">
-            <div className="flex flex-col gap-2 items-end">
-              <div className="flex items-center gap-4 w-full md:w-1/2 justify-between border-b border-slate-200 pb-2">
-                <span className="text-xs font-bold text-slate-600 flex items-center gap-2">
-                  <span className="bg-teal-100 text-teal-800 px-1 border border-teal-300 rounded text-[10px]">{fcas_percent}%</span>
-                  F.C.A.S / Prestaciones:
-                </span>
-                <span className="text-sm font-semibold text-slate-700">{(calculateLaborTotalJornalDay() * (fcas_percent/100)).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
-              </div>
-              <div className="flex items-center gap-4 w-full md:w-1/2 justify-between mt-2 pt-2 border-t-2 border-slate-300">
-                <span className="text-sm font-bold text-slate-800 uppercase">Total Mano de Obra (Día):</span>
-                <span className="text-base font-black text-slate-800 bg-white border border-slate-400 px-3 py-1 rounded min-w-[120px] text-right shadow-sm">
-                  {(costos.manoObra * (item.performance || item.rendimiento || 1)).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
-                </span>
-              </div>
+            <div className="flex justify-end">
+              <table className="w-full md:w-[600px] text-xs font-bold text-slate-700 border-collapse">
+                <tbody>
+                  <tr>
+                    <td className="p-2 text-right border-b border-slate-200 uppercase">Subtotal Mano de Obra:</td>
+                    <td className="p-2 w-32 text-right border-b border-slate-200 bg-white border-l border-slate-200">
+                      {totBono.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                    <td className="p-2 w-32 text-right border-b border-slate-200 bg-white border-l border-slate-200">
+                      {totJornal.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 text-right border-b border-slate-200 uppercase flex items-center justify-end gap-2">
+                      <span>F.C.A.S. %</span>
+                      {onSettingsChange ? (
+                        <input 
+                          type="number"
+                          className="w-16 text-center bg-amber-50 text-amber-900 border border-amber-200 rounded px-1 [appearance:textfield]"
+                          value={fcas_percent}
+                          onChange={(e) => onSettingsChange('fcas_percent', parseFloat(e.target.value) || 0)}
+                        />
+                      ) : (
+                        <span className="bg-amber-50 text-amber-900 px-2 py-0.5 border border-amber-200 rounded">{fcas_percent}</span>
+                      )}
+                      <span>Prestaciones Sociales:</span>
+                    </td>
+                    <td className="p-2 w-32 text-right border-b border-slate-200 bg-white border-l border-slate-200 text-slate-500">
+                      {0.00.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                    <td className="p-2 w-32 text-right border-b border-slate-200 bg-white border-l border-slate-200 text-slate-900">
+                      {fcasMonto.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 text-right border-b border-slate-200 uppercase">Subtotal + Prestaciones:</td>
+                    <td className="p-2 w-32 text-right border-b border-slate-200 bg-white border-l border-slate-200">
+                      {totBono.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                    <td className="p-2 w-32 text-right border-b border-slate-200 bg-white border-l border-slate-200">
+                      {(totJornal + fcasMonto).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                  </tr>
+                  <tr className="bg-slate-100">
+                    <td className="p-2 text-right border-b border-slate-300 uppercase font-black">Total General Mano de Obra:</td>
+                    <td className="p-2 border-b border-slate-300"></td>
+                    <td className="p-2 w-32 text-right border-b border-slate-300 bg-white font-black text-slate-900 border-l border-slate-200 shadow-inner">
+                      {totGeneralManoObra.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                  </tr>
+                  <tr className="bg-red-50/50">
+                    <td className="p-2 text-right border-b border-slate-300 uppercase flex items-center justify-end gap-2">
+                      <span className="text-[10px] text-slate-500">% de Incidencia: {incidenciaManoObra.toLocaleString('es-VE', {minimumFractionDigits:4, maximumFractionDigits:4})}</span>
+                      <span className="font-bold text-red-900">Costo Unitario Mano de Obra:</span>
+                    </td>
+                    <td className="p-2 border-b border-slate-300"></td>
+                    <td className="p-2 w-32 text-right border-b border-slate-300 bg-red-100/50 font-black text-red-900 border-l border-slate-200 shadow-inner">
+                      {costoUnitarioManoObra.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
 
         {/* BOTTOM SUMMARY BLOCK */}
-        <div className="flex justify-end mt-8">
-          <div className="w-full md:w-[450px] bg-slate-50 border border-slate-300 shadow-md p-1">
-            <table className="w-full text-xs font-bold text-slate-700 border-collapse">
+        {/* BOTTOM SUMMARY BLOCK (CLASSIC LULO STYLE) */}
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6 mt-8">
+          {/* Left Stats Block */}
+          <div className="w-full md:w-auto bg-slate-50 border border-slate-300 shadow-sm p-1">
+            <table className="text-xs font-bold text-slate-700 border-collapse">
               <tbody>
                 <tr>
-                  <td className="p-2 border-b border-slate-200">A. TOTAL MATERIALES</td>
-                  <td className="p-2 border-b border-slate-200 text-right w-32">{costos.materiales.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                </tr>
-                <tr>
-                  <td className="p-2 border-b border-slate-200">B. TOTAL EQUIPOS</td>
-                  <td className="p-2 border-b border-slate-200 text-right">{costos.equipos.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                </tr>
-                <tr>
-                  <td className="p-2 border-b border-slate-200">C. TOTAL MANO DE OBRA</td>
-                  <td className="p-2 border-b border-slate-200 text-right">{costos.manoObra.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                </tr>
-                <tr className="bg-slate-200">
-                  <td className="p-2 border-b border-slate-300 text-blue-900 font-black">SUBTOTAL A (COSTO DIRECTO)</td>
-                  <td className="p-2 border-b border-slate-300 text-right text-blue-900 font-black">{costos.subtotalA.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                </tr>
-                <tr>
-                  <td className="p-2 border-b border-slate-200 flex items-center justify-between">
-                    <span>D. ADMINISTRACIÓN</span>
-                    <div className="flex items-center gap-1">
-                      {onSettingsChange ? (
-                        <input 
-                          type="number"
-                          className="w-12 text-center bg-amber-100 text-amber-800 border border-amber-300 rounded [appearance:textfield] text-xs font-bold"
-                          value={admin_percent}
-                          onChange={(e) => onSettingsChange('admin_percent', parseFloat(e.target.value) || 0)}
-                        />
-                      ) : (
-                        <span className="bg-amber-100 text-amber-800 px-1 border border-amber-300 rounded text-xs font-bold">{admin_percent}</span>
-                      )}
-                      <span className="text-amber-800 font-bold">%</span>
-                    </div>
+                  <td className="p-2 text-right border-b border-slate-200 uppercase">Horas Laborables al Día:</td>
+                  <td className="p-2 w-32 text-center border-b border-slate-200 bg-white border-l border-slate-200 shadow-inner">
+                    {horasLaborables.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                   </td>
-                  <td className="p-2 border-b border-slate-200 text-right">{costos.adminCost.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                </tr>
-                <tr className="bg-slate-200">
-                  <td className="p-2 border-b border-slate-300 text-blue-900 font-black">SUBTOTAL B (SUBTOTAL A + D)</td>
-                  <td className="p-2 border-b border-slate-300 text-right text-blue-900 font-black">{costos.subtotalB.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 </tr>
                 <tr>
-                  <td className="p-2 border-b border-slate-200 flex items-center justify-between">
-                    <span>E. UTILIDAD</span>
-                    <div className="flex items-center gap-1">
-                      {onSettingsChange ? (
-                        <input 
-                          type="number"
-                          className="w-12 text-center bg-amber-100 text-amber-800 border border-amber-300 rounded [appearance:textfield] text-xs font-bold"
-                          value={profit_percent}
-                          onChange={(e) => onSettingsChange('profit_percent', parseFloat(e.target.value) || 0)}
-                        />
-                      ) : (
-                        <span className="bg-amber-100 text-amber-800 px-1 border border-amber-300 rounded text-xs font-bold">{profit_percent}</span>
-                      )}
-                      <span className="text-amber-800 font-bold">%</span>
-                    </div>
+                  <td className="p-2 text-right border-b border-slate-200 uppercase">Horas Hombres x Día:</td>
+                  <td className="p-2 w-32 text-center border-b border-slate-200 bg-white border-l border-slate-200 shadow-inner">
+                    {horasHombres.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                   </td>
-                  <td className="p-2 border-b border-slate-200 text-right">{costos.profitCost.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 </tr>
-                <tr className="bg-blue-100 text-blue-900 text-sm">
-                  <td className="p-3 border-t-2 border-blue-300">PRECIO UNITARIO ({currency}):</td>
-                  <td className="p-3 border-t-2 border-blue-300 text-right font-black">{costos.unitPrice.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <tr>
+                  <td className="p-2 text-right border-b border-slate-200 uppercase">Horas Hombres x Día / Rend.:</td>
+                  <td className="p-2 w-32 text-center border-b border-slate-200 bg-white border-l border-slate-200 shadow-inner">
+                    {horasHombresRend.toLocaleString('es-VE', {minimumFractionDigits:3, maximumFractionDigits:3})}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-2 text-right uppercase">PU / (Horas Hombres x Día / Rend.):</td>
+                  <td className="p-2 w-32 text-center bg-white border-l border-slate-200 shadow-inner">
+                    {puHoras.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Right Summary Block */}
+          <div className="w-full md:w-[600px] bg-slate-50 border border-slate-300 shadow-md p-1">
+            <table className="w-full text-xs font-bold text-slate-700 border-collapse">
+              <tbody>
+                <tr className="bg-blue-50/50">
+                  <td className="p-2 text-right border-b border-slate-200 text-blue-900 uppercase font-black">Costo Directo Subtotal A:</td>
+                  <td className="p-2 w-36 text-right border-b border-slate-200 bg-blue-100/50 text-blue-900 font-black border-l border-slate-200 shadow-inner">
+                    {costos.subtotalA.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-2 text-right border-b border-slate-200 flex items-center justify-end gap-2 uppercase">
+                    <span>%</span>
+                    {onSettingsChange ? (
+                      <input 
+                        type="number"
+                        className="w-16 text-center bg-amber-50 text-amber-900 border border-amber-200 rounded px-1 [appearance:textfield]"
+                        value={admin_percent}
+                        onChange={(e) => onSettingsChange('admin_percent', parseFloat(e.target.value) || 0)}
+                      />
+                    ) : (
+                      <span className="bg-amber-50 text-amber-900 px-2 py-0.5 border border-amber-200 rounded">{admin_percent}</span>
+                    )}
+                    <span>Administración y Gastos Generales:</span>
+                  </td>
+                  <td className="p-2 w-36 text-right border-b border-slate-200 bg-white border-l border-slate-200">
+                    {costos.adminCost.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+                <tr className="bg-slate-100">
+                  <td className="p-2 text-right border-b border-slate-300 text-red-700 uppercase font-black">Subtotal B:</td>
+                  <td className="p-2 w-36 text-right border-b border-slate-300 bg-white border-l border-slate-200 font-bold">
+                    {costos.subtotalB.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-2 text-right border-b border-slate-200 flex items-center justify-end gap-2 uppercase">
+                    <span>%</span>
+                    {onSettingsChange ? (
+                      <input 
+                        type="number"
+                        className="w-16 text-center bg-amber-50 text-amber-900 border border-amber-200 rounded px-1 [appearance:textfield]"
+                        value={profit_percent}
+                        onChange={(e) => onSettingsChange('profit_percent', parseFloat(e.target.value) || 0)}
+                      />
+                    ) : (
+                      <span className="bg-amber-50 text-amber-900 px-2 py-0.5 border border-amber-200 rounded">{profit_percent}</span>
+                    )}
+                    <span>Utilidad e Imprevistos:</span>
+                  </td>
+                  <td className="p-2 w-36 text-right border-b border-slate-200 bg-white border-l border-slate-200">
+                    {costos.profitCost.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+                <tr className="bg-slate-100">
+                  <td className="p-2 text-right border-b border-slate-300 text-red-700 uppercase font-black">Subtotal C:</td>
+                  <td className="p-2 w-36 text-right border-b border-slate-300 bg-blue-50/50 border-l border-slate-200 font-bold">
+                    {costos.unitPrice.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-2 text-right border-b border-slate-200 flex items-center justify-end gap-2 uppercase">
+                    <span>%</span>
+                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 border border-slate-200 rounded">0.00</span>
+                    <span>Financiamiento:</span>
+                  </td>
+                  <td className="p-2 w-36 text-right border-b border-slate-200 bg-white border-l border-slate-200 text-slate-500">
+                    {0.00.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+                <tr className="bg-slate-100">
+                  <td className="p-2 text-right border-b border-slate-300 text-red-700 uppercase font-black">Precio Unitario Sin Impuesto:</td>
+                  <td className="p-2 w-36 text-right border-b border-slate-300 bg-blue-50/50 border-l border-slate-200 font-bold text-blue-900">
+                    {costos.unitPrice.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-2 text-right border-b border-slate-200 flex items-center justify-end gap-2 uppercase">
+                    <span>%</span>
+                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 border border-slate-200 rounded">0.00</span>
+                    <span>Impuesto IVA:</span>
+                  </td>
+                  <td className="p-2 w-36 text-right border-b border-slate-200 bg-white border-l border-slate-200 text-slate-500">
+                    {0.00.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-2 text-right border-b border-slate-200 flex items-center justify-end gap-2 uppercase">
+                    <span>%</span>
+                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 border border-slate-200 rounded">0.00</span>
+                    <span>Otros Impuestos:</span>
+                  </td>
+                  <td className="p-2 w-36 text-right border-b border-slate-200 bg-white border-l border-slate-200 text-slate-500">
+                    {0.00.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+                <tr className="bg-blue-50">
+                  <td className="p-3 text-right uppercase font-black text-blue-900 text-sm">Precio Unitario ({currency}):</td>
+                  <td className="p-3 w-36 text-right font-black text-sm border-l border-slate-300 bg-white shadow-inner text-blue-800">
+                    {costos.unitPrice.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
                 </tr>
               </tbody>
             </table>
