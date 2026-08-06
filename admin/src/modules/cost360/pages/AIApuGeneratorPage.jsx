@@ -224,33 +224,12 @@ export default function AIApuGeneratorPage() {
             <ArrowLeft size={20} />
           </button>
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Sparkles size={20} className="text-red-500" /> 
-            Generador de APU con IA
+            {creationMode === 'manual' ? <Plus size={20} className="text-blue-600" /> : creationMode === 'import' ? <FileText size={20} className="text-indigo-600" /> : <Sparkles size={20} className="text-red-500" />}
+            {creationMode === 'manual' ? 'Nuevo APU (Desde Cero)' : creationMode === 'import' ? 'Importar / Clonar APU' : 'Generador de APU con IA'}
           </h2>
         </div>
       </div>
 
-      {/* CREATION MODE TABS */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <button
-          onClick={() => { setCreationMode('manual'); handleCreateManual(); }}
-          className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${creationMode === 'manual' ? 'bg-blue-600 text-white shadow-blue-500/30' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
-        >
-          <Plus size={16} /> Desde Cero (Cascarón)
-        </button>
-        <button
-          onClick={() => setCreationMode('import')}
-          className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${creationMode === 'import' ? 'bg-indigo-600 text-white shadow-indigo-500/30' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
-        >
-          <FileText size={16} /> Importar Base
-        </button>
-        <button
-          onClick={() => setCreationMode('ia')}
-          className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${creationMode === 'ia' ? 'bg-red-500 text-white shadow-red-500/30' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
-        >
-          <Sparkles size={16} /> Inteligencia Artificial
-        </button>
-      </div>
 
       {creationMode === 'import' && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 animate-in fade-in slide-in-from-top-2 duration-300">
