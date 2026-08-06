@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Save, Sparkles, Check, Filter, Plus, Search, FileText } from 'lucide-react';
+import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Save, Sparkles, Check, Filter, Plus, Search, FileText, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { generateAIApu, saveCustomApu, fetchCategoriesTree, fetchItems, fetchApuDetails } from '../services/cost360Service';
 import { cost360DatabaseService } from '../../../services/cost360DatabaseService';
@@ -166,12 +166,49 @@ export default function AIApuGeneratorPage() {
   };
 
   const handleComponentChange = (type, compId, field, value) => {
-    const val = parseFloat(value) || 0;
     setItem(prev => {
       const updated = { ...prev };
-      updated[type] = updated[type].map(c => 
-        c.id === compId ? { ...c, [field]: val } : c
-      );
+      updated[type] = updated[type].map(c => {
+        if (c.id === compId) {
+          // If it's a numeric field, parse it
+          const isNumeric = ['cantidad', 'precio_unitario', 'desperdicio', 'depreciacion', 'jornal'].includes(field);
+          return { ...c, [field]: isNumeric ? (parseFloat(value) || 0) : value };
+        }
+        return c;
+      });
+      return updated;
+    });
+  };
+
+  const handleAddRow = (type) => {
+    setItem(prev => {
+      const updated = { ...prev };
+      const newRow = {
+        id: "NEW-" + Math.floor(Math.random() * 100000),
+        codigo: "",
+        descripcion: "",
+        cantidad: 1,
+        precio_unitario: 0,
+      };
+      
+      if (type === 'materials') {
+        newRow.unidad = "und";
+        newRow.desperdicio = 0;
+      } else if (type === 'equipments') {
+        newRow.depreciacion = 1.0;
+      } else if (type === 'labors') {
+        newRow.jornal = 0;
+      }
+      
+      updated[type] = [...(updated[type] || []), newRow];
+      return updated;
+    });
+  };
+
+  const handleRemoveRow = (type, rowId) => {
+    setItem(prev => {
+      const updated = { ...prev };
+      updated[type] = updated[type].filter(c => c.id !== rowId);
       return updated;
     });
   };
@@ -426,9 +463,17 @@ export default function AIApuGeneratorPage() {
           <div className="space-y-6">
             {/* 1. MATERIALES */}
             <div className="bg-white border border-slate-400 rounded-lg shadow-sm overflow-hidden">
-              <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex items-center gap-2">
-                <Package className="text-orange-600" size={18} />
-                <h3 className="font-bold text-orange-800 text-sm tracking-wide">1. MATERIALES ( {item.materials?.length || 0} )</h3>
+              <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="text-orange-600" size={18} />
+                  <h3 className="font-bold text-orange-800 text-sm tracking-wide">1. MATERIALES ( {item.materials?.length || 0} )</h3>
+                </div>
+                <button
+                  onClick={() => handleAddRow('materials')}
+                  className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 hover:text-orange-600 transition-colors shadow-sm"
+                >
+                  <Plus size={14} /> Agregar
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm border-collapse">
@@ -440,19 +485,46 @@ export default function AIApuGeneratorPage() {
                       <th className="p-2 w-24 text-right border-r border-slate-200">Cant.</th>
                       <th className="p-2 w-20 text-right border-r border-slate-200">Desp. %</th>
                       <th className="p-2 w-32 text-right border-r border-slate-200">Precio</th>
-                      <th className="p-2 w-32 text-right">Total</th>
+                      <th className="p-2 w-32 text-right border-r border-slate-200">Total</th>
+                      <th className="p-2 w-10 text-center"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {item.materials?.map(mat => (
-                      <tr key={mat.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="p-2 border-r border-slate-200 font-mono text-xs">{mat.codigo}</td>
-                        <td className="p-2 border-r border-slate-200 text-xs">
-                          {mat.descripcion}
-                          <div className="mt-1">{renderOrigenTag(mat.origen)}</div>
-                          <div className="mt-1 text-[10px] text-slate-500 italic">{mat.nota_calculo || "Sin nota de cálculo proporcionada."}</div>
+                      <tr key={mat.id} className="border-b border-slate-100 hover:bg-slate-50 group">
+                        <td className="p-2 border-r border-slate-200 font-mono text-xs">
+                          <input 
+                            type="text" 
+                            className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1"
+                            value={mat.codigo || ''}
+                            onChange={e => handleComponentChange('materials', mat.id, 'codigo', e.target.value)}
+                            placeholder="Ref."
+                          />
                         </td>
-                        <td className="p-2 text-center border-r border-slate-200 text-xs">{mat.unidad}</td>
+                        <td className="p-2 border-r border-slate-200 text-xs">
+                          <input 
+                            type="text" 
+                            className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1 font-medium text-slate-700"
+                            value={mat.descripcion || ''}
+                            onChange={e => handleComponentChange('materials', mat.id, 'descripcion', e.target.value)}
+                            placeholder="Descripción del material"
+                          />
+                          {(mat.origen || mat.nota_calculo) && (
+                            <div className="flex items-center gap-2 mt-1 px-1">
+                              {mat.origen && renderOrigenTag(mat.origen)}
+                              {mat.nota_calculo && <span className="text-[10px] text-slate-500 italic truncate" title={mat.nota_calculo}>{mat.nota_calculo}</span>}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-2 text-center border-r border-slate-200 text-xs">
+                          <input 
+                            type="text" 
+                            className="w-full text-center bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1"
+                            value={mat.unidad || ''}
+                            onChange={e => handleComponentChange('materials', mat.id, 'unidad', e.target.value)}
+                            placeholder="Und"
+                          />
+                        </td>
                         <td className="p-2 border-r border-slate-200 bg-amber-50/40">
                           <input 
                             type="number" 
@@ -477,8 +549,17 @@ export default function AIApuGeneratorPage() {
                             onChange={e => handleComponentChange('materials', mat.id, 'precio_unitario', e.target.value)}
                           />
                         </td>
-                        <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
+                        <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs border-r border-slate-200">
                           {(mat.cantidad * mat.precio_unitario * (1 + (mat.desperdicio || 0) / 100)).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                        </td>
+                        <td className="p-2 text-center">
+                          <button
+                            onClick={() => handleRemoveRow('materials', mat.id)}
+                            className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50 opacity-0 group-hover:opacity-100"
+                            title="Eliminar insumo"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -495,9 +576,17 @@ export default function AIApuGeneratorPage() {
 
             {/* 2. EQUIPOS */}
             <div className="bg-white border border-slate-400 rounded-lg shadow-sm overflow-hidden">
-              <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex items-center gap-2">
-                <Wrench className="text-indigo-600" size={18} />
-                <h3 className="font-bold text-indigo-800 text-sm tracking-wide">2. EQUIPOS ( {item.equipments?.length || 0} )</h3>
+              <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Wrench className="text-indigo-600" size={18} />
+                  <h3 className="font-bold text-indigo-800 text-sm tracking-wide">2. EQUIPOS ( {item.equipments?.length || 0} )</h3>
+                </div>
+                <button
+                  onClick={() => handleAddRow('equipments')}
+                  className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 hover:text-indigo-600 transition-colors shadow-sm"
+                >
+                  <Plus size={14} /> Agregar
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm border-collapse">
@@ -508,17 +597,36 @@ export default function AIApuGeneratorPage() {
                       <th className="p-2 w-24 text-right border-r border-slate-200">Cant.</th>
                       <th className="p-2 w-24 text-right border-r border-slate-200">Deprec.</th>
                       <th className="p-2 w-32 text-right border-r border-slate-200">Precio</th>
-                      <th className="p-2 w-32 text-right">Total Día</th>
+                      <th className="p-2 w-32 text-right border-r border-slate-200">Total Día</th>
+                      <th className="p-2 w-10 text-center"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {item.equipments?.map(eq => (
-                      <tr key={eq.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="p-2 border-r border-slate-200 font-mono text-xs">{eq.codigo}</td>
+                      <tr key={eq.id} className="border-b border-slate-100 hover:bg-slate-50 group">
+                        <td className="p-2 border-r border-slate-200 font-mono text-xs">
+                          <input 
+                            type="text" 
+                            className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1"
+                            value={eq.codigo || ''}
+                            onChange={e => handleComponentChange('equipments', eq.id, 'codigo', e.target.value)}
+                            placeholder="Ref."
+                          />
+                        </td>
                         <td className="p-2 border-r border-slate-200 text-xs">
-                          {eq.descripcion}
-                          <div className="mt-1">{renderOrigenTag(eq.origen)}</div>
-                          <div className="mt-1 text-[10px] text-slate-500 italic">{eq.nota_calculo || "Sin nota de cálculo proporcionada."}</div>
+                          <input 
+                            type="text" 
+                            className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1 font-medium text-slate-700"
+                            value={eq.descripcion || ''}
+                            onChange={e => handleComponentChange('equipments', eq.id, 'descripcion', e.target.value)}
+                            placeholder="Descripción del equipo"
+                          />
+                          {(eq.origen || eq.nota_calculo) && (
+                            <div className="flex items-center gap-2 mt-1 px-1">
+                              {eq.origen && renderOrigenTag(eq.origen)}
+                              {eq.nota_calculo && <span className="text-[10px] text-slate-500 italic truncate" title={eq.nota_calculo}>{eq.nota_calculo}</span>}
+                            </div>
+                          )}
                         </td>
                         <td className="p-2 border-r border-slate-200 bg-amber-50/40">
                           <input 
@@ -544,8 +652,17 @@ export default function AIApuGeneratorPage() {
                             onChange={e => handleComponentChange('equipments', eq.id, 'precio_unitario', e.target.value)}
                           />
                         </td>
-                        <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
+                        <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs border-r border-slate-200">
                           {(eq.cantidad * (eq.depreciacion ?? 1.0) * eq.precio_unitario).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                        </td>
+                        <td className="p-2 text-center">
+                          <button
+                            onClick={() => handleRemoveRow('equipments', eq.id)}
+                            className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50 opacity-0 group-hover:opacity-100"
+                            title="Eliminar equipo"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -562,9 +679,17 @@ export default function AIApuGeneratorPage() {
 
             {/* 3. MANO DE OBRA */}
             <div className="bg-white border border-slate-400 rounded-lg shadow-sm overflow-hidden">
-              <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex items-center gap-2">
-                <Users className="text-teal-600" size={18} />
-                <h3 className="font-bold text-teal-800 text-sm tracking-wide">3. MANO DE OBRA ( {item.labors?.length || 0} )</h3>
+              <div className="bg-slate-100 px-4 py-2 border-b border-slate-400 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="text-teal-600" size={18} />
+                  <h3 className="font-bold text-teal-800 text-sm tracking-wide">3. MANO DE OBRA ( {item.labors?.length || 0} )</h3>
+                </div>
+                <button
+                  onClick={() => handleAddRow('labors')}
+                  className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 hover:text-teal-600 transition-colors shadow-sm"
+                >
+                  <Plus size={14} /> Agregar
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm border-collapse">
@@ -576,17 +701,36 @@ export default function AIApuGeneratorPage() {
                       <th className="p-2 w-28 text-right border-r border-slate-200">Jornal</th>
                       <th className="p-2 w-28 text-right border-r border-slate-200">Bono</th>
                       <th className="p-2 w-32 text-right border-r border-slate-200">Total Jornal</th>
-                      <th className="p-2 w-32 text-right">Total Bono</th>
+                      <th className="p-2 w-32 text-right border-r border-slate-200">Total Bono</th>
+                      <th className="p-2 w-10 text-center"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {item.labors?.map(lab => (
-                      <tr key={lab.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="p-2 border-r border-slate-200 font-mono text-xs">{lab.codigo}</td>
+                      <tr key={lab.id} className="border-b border-slate-100 hover:bg-slate-50 group">
+                        <td className="p-2 border-r border-slate-200 font-mono text-xs">
+                          <input 
+                            type="text" 
+                            className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1"
+                            value={lab.codigo || ''}
+                            onChange={e => handleComponentChange('labors', lab.id, 'codigo', e.target.value)}
+                            placeholder="Ref."
+                          />
+                        </td>
                         <td className="p-2 border-r border-slate-200 text-xs">
-                          {lab.descripcion}
-                          <div className="mt-1">{renderOrigenTag(lab.origen)}</div>
-                          <div className="mt-1 text-[10px] text-slate-500 italic">{lab.nota_calculo || "Sin nota de cálculo proporcionada."}</div>
+                          <input 
+                            type="text" 
+                            className="w-full bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-1 font-medium text-slate-700"
+                            value={lab.descripcion || ''}
+                            onChange={e => handleComponentChange('labors', lab.id, 'descripcion', e.target.value)}
+                            placeholder="Descripción (ej. Maestro de Obra)"
+                          />
+                          {(lab.origen || lab.nota_calculo) && (
+                            <div className="flex items-center gap-2 mt-1 px-1">
+                              {lab.origen && renderOrigenTag(lab.origen)}
+                              {lab.nota_calculo && <span className="text-[10px] text-slate-500 italic truncate" title={lab.nota_calculo}>{lab.nota_calculo}</span>}
+                            </div>
+                          )}
                         </td>
                         <td className="p-2 border-r border-slate-200 bg-amber-50/40">
                           <input 
@@ -615,8 +759,17 @@ export default function AIApuGeneratorPage() {
                         <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 border-r border-slate-200 text-xs">
                           {(lab.cantidad * lab.jornal).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                         </td>
-                        <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs">
+                        <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs border-r border-slate-200">
                           {(lab.cantidad * settings.labor_bonus).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                        </td>
+                        <td className="p-2 text-center">
+                          <button
+                            onClick={() => handleRemoveRow('labors', lab.id)}
+                            className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50 opacity-0 group-hover:opacity-100"
+                            title="Eliminar mano de obra"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </td>
                       </tr>
                     ))}
