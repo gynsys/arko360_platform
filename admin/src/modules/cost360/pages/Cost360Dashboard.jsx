@@ -42,7 +42,7 @@ const Cost360Dashboard = () => {
   const fetchPartidas = async (searchQuery = '', chapterQuery = '', currentSkip = 0, append = false) => {
     setLoading(true);
     try {
-      const response = await cost360Service.fetchItems(currentSkip, LIMIT, searchQuery, chapterQuery);
+      const response = await cost360Service.fetchItems(currentSkip, LIMIT, searchQuery, chapterQuery, selectedDatabase);
       if (append) {
         setItems(prev => [...prev, ...response.items]);
       } else {

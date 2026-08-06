@@ -81,13 +81,15 @@ export default function AIApuGeneratorPage() {
     }
   }, [modeParam]);
 
-  const handleSearchToImport = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim() && !searchChapter) return;
+  const triggerSearch = async (query = searchQuery, chapter = searchChapter, db = selectedDatabase) => {
+    if (!query.trim() && !chapter) {
+      setSearchResults([]);
+      return;
+    }
     
     setIsSearching(true);
     try {
-      const data = await fetchItems(0, 50, searchQuery, searchChapter, selectedDatabase);
+      const data = await fetchItems(0, 50, query, chapter, db);
       setSearchResults(data.items || []);
     } catch (error) {
       toast.error('Error al buscar partidas');
@@ -97,13 +99,24 @@ export default function AIApuGeneratorPage() {
     }
   };
 
+  useEffect(() => {
+    if (creationMode === 'import') {
+      triggerSearch(searchQuery, searchChapter, selectedDatabase);
+    }
+  }, [searchChapter, selectedDatabase]);
+
+  const handleSearchToImport = async (e) => {
+    e.preventDefault();
+    triggerSearch();
+  };
+
   const handleImportApu = async (itemCode) => {
     try {
       setLoading(true);
       const data = await fetchApuDetails(itemCode, selectedDatabase);
       
       setItem({
-        cod_par: `CUST-${data.partida.CodPar}`,
+        cod_par: data.partida.CodPar,
         description: data.partida.Descri,
         unit: data.partida.UniPar,
         performance: data.partida.RenPar || 1,
