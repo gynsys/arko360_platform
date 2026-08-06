@@ -88,7 +88,7 @@ class CustomCostItemResponse(BaseModel):
     unit: str
     performance: float
     apu_data: str
-    created_at: Optional[str] = None
+    created_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True

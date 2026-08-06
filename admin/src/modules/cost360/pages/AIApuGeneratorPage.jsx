@@ -330,9 +330,7 @@ export default function AIApuGeneratorPage() {
                 </select>
              </div>
              
-             {/* ── Búsqueda ─────────────────────────── */}
-             <div className="bg-slate-50 rounded-xl p-4 flex flex-col gap-3">
-             <form onSubmit={(e) => { e.preventDefault(); triggerSearch(); }} className="flex flex-col sm:flex-row gap-3">
+             <form onSubmit={(e) => { e.preventDefault(); triggerSearch(); }} className="flex-1 flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Search className="text-slate-400 text-base" size={16} />
