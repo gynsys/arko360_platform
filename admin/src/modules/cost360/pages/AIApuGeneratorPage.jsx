@@ -83,12 +83,14 @@ export default function AIApuGeneratorPage() {
   const handleSearchToImport = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
+    
     setIsSearching(true);
     try {
-      const data = await fetchItems(0, 10, searchQuery, '', selectedDatabase);
+      const data = await fetchItems(0, 20, searchQuery, '', selectedDatabase);
       setSearchResults(data.items || []);
     } catch (error) {
       toast.error('Error al buscar partidas');
+      console.error(error);
     } finally {
       setIsSearching(false);
     }
@@ -288,47 +290,75 @@ export default function AIApuGeneratorPage() {
 
       {creationMode === 'import' && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 animate-in fade-in slide-in-from-top-2 duration-300">
-          <label className="block text-sm font-bold text-slate-700 mb-2">Buscar partida existente en la Base de Datos</label>
-          <form onSubmit={handleSearchToImport} className="flex gap-2 mb-4">
-            <select
-              value={selectedDatabase}
-              onChange={(e) => setSelectedDatabase(e.target.value)}
-              className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 font-medium w-48"
-            >
-              <option value="master">Base Maestra (Global)</option>
-              {databases.filter(db => db.id !== 'master' && db.is_master !== true).map(db => (
-                <option key={db.id} value={db.id}>{db.name}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Ej: E01, Reforestacion..."
-              className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner"
-            />
-            <button
-              type="submit"
-              disabled={isSearching}
-              className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2 shadow-sm transition-all"
-            >
-              {isSearching ? <Loader className="animate-spin" size={16} /> : <Search size={16} />}
-              Buscar
-            </button>
-          </form>
+          <label className="block text-sm font-bold text-slate-700 mb-2">Explora las Bases de Datos, Insumos, Materiales o Personal</label>
+          <div className="flex flex-col sm:flex-row gap-3">
+             <div className="sm:w-64">
+                <select
+                  value={selectedDatabase}
+                  onChange={(e) => setSelectedDatabase(e.target.value)}
+                  className="block w-full px-4 py-3 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all appearance-none"
+                  style={{
+                    background: 'rgba(255,255,255,0.8)',
+                    border: '1px solid rgba(148,163,255,0.35)',
+                    backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
+                    backgroundPosition: 'right 1rem center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '1.25em 1.25em'
+                  }}
+                >
+                  <option value="master">Base Maestra (Defecto)</option>
+                  {databases.filter(db => db.id !== 'master' && db.is_master !== true).map(db => (
+                    <option key={db.id} value={db.id}>{db.name}</option>
+                  ))}
+                </select>
+             </div>
+             
+             <form onSubmit={handleSearchToImport} className="flex-1 flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Search className="text-slate-400 text-base" size={16} />
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-11 pr-4 py-3 rounded-xl text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium"
+                    style={{
+                      background: 'rgba(255,255,255,0.8)',
+                      border: '1px solid rgba(148,163,255,0.35)',
+                      boxShadow: 'inset 0 1px 4px rgba(80,100,200,0.06)',
+                    }}
+                    placeholder="Buscar partida por código (ej. E01) o descripción..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={isSearching}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSearching ? <Loader className="animate-spin" size={16} /> : null}
+                  Filtrar
+                </button>
+             </form>
+          </div>
+
+          <div className="mt-2 text-xs text-slate-500 font-medium">
+            {searchResults.length} coincidencias
+          </div>
 
           {searchResults.length > 0 && (
             <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
               <ul className="divide-y divide-slate-100">
                 {searchResults.map((res) => (
-                  <li key={res.CodPar} className="p-3 hover:bg-slate-50 flex items-center justify-between gap-4 transition-colors">
+                  <li key={res.cov_par} className="p-3 hover:bg-slate-50 flex items-center justify-between gap-4 transition-colors">
                     <div>
-                      <p className="text-sm font-bold text-slate-800">{res.CodPar}</p>
-                      <p className="text-xs text-slate-600 line-clamp-1">{res.Descri}</p>
+                      <p className="text-sm font-bold text-slate-800">{res.cov_par}</p>
+                      <p className="text-xs text-slate-600 line-clamp-1">{res.description}</p>
                     </div>
                     <button
-                      onClick={() => handleImportApu(res.CodPar)}
-                      className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg hover:bg-indigo-100 shrink-0 transition-colors"
+                      onClick={() => handleImportApu(res.cov_par)}
+                      className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg hover:bg-blue-100 shrink-0 transition-colors"
                     >
                       Usar como base
                     </button>
