@@ -292,11 +292,6 @@ const Cost360Dashboard = () => {
                         >
                           {item.UniPar}
                         </span>
-                        <div className="text-right min-w-[100px]">
-                          <p className="text-[15px] font-bold text-slate-800">
-                            {item.PreUni ? new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(item.PreUni) : '0,00'}
-                          </p>
-                        </div>
                         <FiArrowRight
                           size={18}
                           className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all duration-200"
