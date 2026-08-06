@@ -6,6 +6,7 @@ import cost360Service from '../services/cost360Service';
 import { cost360DatabaseService } from '../../../services/cost360DatabaseService';
 import { SiteConfigContext } from '../../../App';
 import CatalogResourceTab from '../components/CatalogResourceTab';
+import Cost360SearchBar from '../components/Cost360SearchBar';
 
 /* ── Shared glass style ─────────────────────────────────── */
 const glass = {
@@ -31,6 +32,7 @@ const Cost360Dashboard = () => {
   const [search, setSearch] = useState('');
   const [searchDesc, setSearchDesc] = useState(true);
   const [searchInsumos, setSearchInsumos] = useState(false);
+  const [searchCovenin, setSearchCovenin] = useState('');
   const [chapter, setChapter] = useState('');
   const [skip, setSkip] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
@@ -171,99 +173,20 @@ const Cost360Dashboard = () => {
       {activeTab === 'partidas' && (
         <>
           <div className="rounded-2xl p-4 flex flex-col gap-3" style={glass}>
-            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
-              <div className="relative w-full sm:w-48 shrink-0">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FiSearch className="text-slate-400 text-base" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full pl-11 pr-4 py-3 rounded-xl text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium"
-                  style={{
-                    background: 'rgba(255,255,255,0.8)',
-                    border: '1px solid rgba(148,163,255,0.35)',
-                    boxShadow: 'inset 0 1px 4px rgba(80,100,200,0.06)',
-                  }}
-                  placeholder="Cód. COVENIN"
-                  value={searchCovenin}
-                  onChange={(e) => setSearchCovenin(e.target.value)}
-                />
-              </div>
-
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FiSearch className="text-slate-400 text-base" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full pl-11 pr-4 py-3 rounded-xl text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium"
-                  style={{
-                    background: 'rgba(255,255,255,0.8)',
-                    border: '1px solid rgba(148,163,255,0.35)',
-                    boxShadow: 'inset 0 1px 4px rgba(80,100,200,0.06)',
-                  }}
-                  placeholder="Buscar partida por código (ej. E01) o descripción..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="px-8 py-3 rounded-xl text-sm font-bold text-white transition-all duration-300 hover:opacity-100 hover:shadow-[0_8px_25px_rgba(37,99,235,0.5)] hover:-translate-y-0.5 active:scale-95"
-                style={{ background: 'linear-gradient(135deg,#2563eb,#4f46e5)', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}
-              >
-                Filtrar
-              </button>
-            </form>
-
-            {/* Búsqueda Inversa Toggles */}
-            <div className="flex flex-wrap items-center gap-4 px-1 mt-1 text-sm">
-              <span className="text-slate-600 font-medium">Buscar por:</span>
-              
-              <label className="flex items-center cursor-pointer gap-2">
-                <div className="relative">
-                  <input type="checkbox" className="sr-only" checked={searchDesc} onChange={(e) => setSearchDesc(e.target.checked)} />
-                  <div className={`block w-10 h-6 rounded-full transition-colors ${searchDesc ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
-                  <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${searchDesc ? 'transform translate-x-4' : ''}`}></div>
-                </div>
-                <span className="text-slate-700 select-none">Título y Código</span>
-              </label>
-
-              <label className="flex items-center cursor-pointer gap-2" title="Busca dentro de los Materiales, Equipos y Mano de Obra de las partidas">
-                <div className="relative">
-                  <input type="checkbox" className="sr-only" checked={searchInsumos} onChange={(e) => setSearchInsumos(e.target.checked)} />
-                  <div className={`block w-10 h-6 rounded-full transition-colors ${searchInsumos ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
-                  <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${searchInsumos ? 'transform translate-x-4' : ''}`}></div>
-                </div>
-                <span className="text-slate-700 select-none">Materiales</span>
-              </label>
-
-              <div className="sm:w-56 ml-auto">
-                <select
-                  value={chapter}
-                  onChange={(e) => setChapter(e.target.value)}
-                  className="block w-full px-4 py-2 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all appearance-none"
-                  style={{
-                    background: 'rgba(255,255,255,0.5)',
-                    border: '1px solid rgba(148,163,255,0.25)',
-                    backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
-                    backgroundPosition: 'right 0.5rem center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '1.5em 1.5em',
-                    paddingRight: '2.5rem',
-                  }}
-                >
-                  <option value="">Todas las Categorías</option>
-                  <option value="E">Edificaciones (E)</option>
-                  <option value="I">Instalaciones (I)</option>
-                  <option value="C">Vialidad (C)</option>
-                  <option value="V">Vivienda (V)</option>
-                  <option value="U">Urbanismo (U)</option>
-                  <option value="M">Mantenimiento (M)</option>
-                </select>
-              </div>
-            </div>
+            <Cost360SearchBar
+              searchQuery={search}
+              setSearchQuery={setSearch}
+              searchCovenin={searchCovenin}
+              setSearchCovenin={setSearchCovenin}
+              searchChapter={chapter}
+              setSearchChapter={setChapter}
+              searchDesc={searchDesc}
+              setSearchDesc={setSearchDesc}
+              searchInsumos={searchInsumos}
+              setSearchInsumos={setSearchInsumos}
+              isSearching={loading}
+              onSearch={handleSearch}
+            />
 
             {totalItems > 0 && (
               <p className="mt-3 text-xs text-slate-500 font-medium">

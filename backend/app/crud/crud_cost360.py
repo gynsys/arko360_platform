@@ -13,7 +13,7 @@ from app.schemas.cost360 import (
 import uuid
 import json
 
-def get_items_paginated(db: Session, skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, search_desc: bool = True, search_insumos: bool = False, database_id: str = "master"):
+def get_items_paginated(db: Session, skip: int = 0, limit: int = 50, search: Optional[str] = None, chapter: Optional[str] = None, categoria: Optional[str] = None, tipo_actividad: Optional[str] = None, search_desc: bool = True, search_insumos: bool = False, covenin: Optional[str] = None, database_id: str = "master"):
     
     # Failsafe: Si ambos están apagados, forzar búsqueda por descripción por defecto
     if not search_desc and not search_insumos:
@@ -83,6 +83,9 @@ def get_items_paginated(db: Session, skip: int = 0, limit: int = 50, search: Opt
                     CostItem.apu_labors.any(CostAPULabor.labor.has(CostLabor.Descri.ilike(f"%{word}%")))
                 ])
             query = query.filter(or_(*filters))
+            
+    if covenin:
+        query = query.filter(CostItem.CovPar.ilike(f"%{covenin}%"))
     if chapter:
         query = query.filter(CostItem.CodPar.startswith(chapter))
     if categoria:
