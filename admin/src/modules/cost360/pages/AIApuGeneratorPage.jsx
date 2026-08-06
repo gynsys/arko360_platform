@@ -24,6 +24,7 @@ export default function AIApuGeneratorPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchChapter, setSearchChapter] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [totalMatches, setTotalMatches] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [databases, setDatabases] = useState([]);
   const [selectedDatabase, setSelectedDatabase] = useState('master');
@@ -91,6 +92,7 @@ export default function AIApuGeneratorPage() {
     try {
       const data = await fetchItems(0, 50, query, chapter, db);
       setSearchResults(data.items || []);
+      setTotalMatches(data.total || (data.items || []).length);
     } catch (error) {
       toast.error('Error al buscar partidas');
       console.error(error);
@@ -383,7 +385,7 @@ export default function AIApuGeneratorPage() {
           </div>
 
           <div className="mt-2 text-xs text-slate-500 font-medium">
-            {searchResults.length} coincidencias
+            {totalMatches > 0 ? new Intl.NumberFormat('es-VE').format(totalMatches) : 0} coincidencias
           </div>
 
           {searchResults.length > 0 && (
