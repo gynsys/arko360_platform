@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Save, Sparkles, Check, Filter, Plus, Search, FileText } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { generateAIApu, saveCustomApu, fetchCategoriesTree, fetchItems, fetchApuDetails } from '../services/cost360Service';
 
 export default function AIApuGeneratorPage() {
   const navigate = useNavigate();
-  const [creationMode, setCreationMode] = useState('ia'); // 'ia', 'manual', 'import'
+  const [searchParams] = useSearchParams();
+  const modeParam = searchParams.get('mode');
+  
+  const [creationMode, setCreationMode] = useState(modeParam || 'ia'); // 'ia', 'manual', 'import'
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [item, setItem] = useState(null);
-  
+
   const [categoriesTree, setCategoriesTree] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedActivity, setSelectedActivity] = useState('');
@@ -45,6 +48,19 @@ export default function AIApuGeneratorPage() {
       advertencias: []
     });
   };
+
+  useEffect(() => {
+    if (modeParam === 'manual') {
+      setCreationMode('manual');
+      handleCreateManual();
+    } else if (modeParam === 'import') {
+      setCreationMode('import');
+      setItem(null);
+    } else if (modeParam === 'ia') {
+      setCreationMode('ia');
+      setItem(null);
+    }
+  }, [modeParam]);
 
   const handleSearchToImport = async (e) => {
     e.preventDefault();

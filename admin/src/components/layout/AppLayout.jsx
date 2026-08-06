@@ -10,7 +10,16 @@ const NAV_ITEMS = [
   { name: 'Mis Presupuestos', href: '/budgets',              Icon: FileText },
   { name: 'Visor Bases de Datos', href: '/cost360',              Icon: Database, exact: true  },
   { name: 'Gestion Bases de Datos', href: '/cost360/databases',    Icon: Server   },
-  { name: 'Crear APU', href: '/cost360/ai-generator', Icon: Cpu      },
+  { 
+    name: 'Crear APU', 
+    href: '/cost360/ai-generator', 
+    Icon: Cpu,
+    subItems: [
+      { name: 'Nuevo (Desde Cero)', href: '/cost360/ai-generator?mode=manual' },
+      { name: 'Importar / Clonar', href: '/cost360/ai-generator?mode=import' },
+      { name: 'Crear con IA', href: '/cost360/ai-generator?mode=ia' }
+    ]
+  },
 ];
 
 export default function AppLayout() {
@@ -41,27 +50,50 @@ export default function AppLayout() {
         Navegación
       </p>
 
-      <div className="space-y-0.5 px-3 flex-1">
-        {NAV_ITEMS.map(({ name, href, Icon, exact }) => {
+      <div className="space-y-0.5 px-3 flex-1 pb-4 overflow-y-auto">
+        {NAV_ITEMS.map(({ name, href, Icon, exact, subItems }) => {
           const active = exact ? location.pathname === href : location.pathname.startsWith(href);
           return (
-            <Link
-              key={href}
-              to={href}
-              onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 btn-borde-azul-redondeado ${
-                active
-                  ? 'bg-blue-600/10 text-blue-700 shadow-sm border border-blue-200/60'
-                  : 'text-slate-500'
-              }`}
-            >
-              <Icon
-                size={17}
-                className={active ? 'text-blue-600' : 'text-slate-400'}
-              />
-              <span className="flex-1">{name}</span>
-              {active && <ChevronRight size={14} className="text-blue-400" />}
-            </Link>
+            <div key={href} className="group relative">
+              <Link
+                to={href}
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 btn-borde-azul-redondeado ${
+                  active
+                    ? 'bg-blue-600/10 text-blue-700 shadow-sm border border-blue-200/60'
+                    : 'text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                <Icon
+                  size={17}
+                  className={active ? 'text-blue-600' : 'text-slate-400'}
+                />
+                <span className="flex-1 text-left">{name}</span>
+                {subItems && (
+                  <ChevronRight size={14} className={`transition-transform duration-200 ${active ? 'text-blue-600' : 'text-slate-400'} group-hover:rotate-90`} />
+                )}
+              </Link>
+              
+              {subItems && (
+                <div className="overflow-hidden transition-all duration-300 max-h-0 group-hover:max-h-40 ml-4 mt-1 border-l-2 border-slate-100 flex flex-col gap-1 pl-2">
+                  {subItems.map(sub => {
+                    const isSubActive = location.search === sub.href.split('?')[1] || (!location.search && sub.href.includes('mode=ia') && location.pathname === href);
+                    return (
+                      <Link
+                        key={sub.name}
+                        to={sub.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`text-xs py-1.5 px-2 rounded-lg transition-colors font-semibold ${
+                          isSubActive ? 'text-blue-600 bg-blue-50/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                        }`}
+                      >
+                        {sub.name}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
