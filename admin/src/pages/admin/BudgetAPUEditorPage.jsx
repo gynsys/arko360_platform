@@ -239,7 +239,12 @@ export default function BudgetAPUEditorPage() {
   };
 
   if (loading || !item || !budget) {
-
+    return (
+      <div className="flex items-center justify-center min-h-screen text-slate-400">
+        <Loader className="animate-spin" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto pb-24 print:p-0 print:m-0 print:max-w-none print:bg-white print:w-full">
@@ -287,8 +292,30 @@ export default function BudgetAPUEditorPage() {
               <Printer size={20} />
             </button>
           </div>
-      </div>
+        </div>
 
+        <ApuEditorUI
+          item={item}
+          settings={{
+            currency: budget.currency,
+            material_inflation: budget.material_inflation || 0,
+            equipment_inflation: budget.equipment_inflation || 0,
+            labor_inflation: budget.labor_inflation || 0,
+            labor_bonus: budget.labor_bonus || 0,
+            fcas_percent: budget.fcas_percent || 417,
+            admin_percent: budget.admin_percent || 15,
+            profit_percent: budget.profit_percent || 10
+          }}
+          onHeaderChange={handleApuEditorComponentChange}
+          onHeaderBlur={handleApuEditorComponentBlur}
+          onComponentChange={handleApuEditorComponentChange}
+          onComponentBlur={handleApuEditorComponentBlur}
+          onRemoveRow={handleRemoveRow}
+          onAddBlankRow={handleAddBlankRow}
+          onAddSearchRow={(type) => setSearchModal({ isOpen: true, type, title: `Buscar ${type}` })}
+          deletingId={deletingId}
+        />
+      </div>
       <ComponentSearchModal
         isOpen={searchModal.isOpen}
         type={searchModal.type}
