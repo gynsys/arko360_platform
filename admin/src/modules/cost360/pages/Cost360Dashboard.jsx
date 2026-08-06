@@ -61,7 +61,11 @@ const Cost360Dashboard = () => {
     const loadDatabases = async () => {
       try {
         const dbs = await cost360DatabaseService.getAll();
-        setDatabases(dbs.databases || []);
+        const loadedDbs = dbs.databases || [];
+        if (!loadedDbs.find(db => db.id === 'personalizada')) {
+          loadedDbs.push({ id: 'personalizada', name: 'Base Personalizada', is_master: false });
+        }
+        setDatabases(loadedDbs);
       } catch (error) {
         console.error('Error al cargar bases de datos:', error);
       }

@@ -31,7 +31,11 @@ export default function AIApuGeneratorPage() {
     const loadDatabases = async () => {
       try {
         const dbs = await cost360DatabaseService.getAll();
-        setDatabases(dbs.databases || []);
+        const loadedDbs = dbs.databases || [];
+        if (!loadedDbs.find(db => db.id === 'personalizada')) {
+          loadedDbs.push({ id: 'personalizada', name: 'Base Personalizada', is_master: false });
+        }
+        setDatabases(loadedDbs);
       } catch (err) {
         console.error("Error loading databases", err);
       }
