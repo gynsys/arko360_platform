@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader, Package, Wrench, Users, Calculator, Save, Sparkles, Check, Filter, Plus, Search, FileText } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { generateAIApu, saveCustomApu, fetchCategoriesTree, fetchItems, fetchApuDetails } from '../services/cost360Service';
+import { cost360DatabaseService } from '../../../services/cost360DatabaseService';
 
 export default function AIApuGeneratorPage() {
   const navigate = useNavigate();
@@ -22,9 +23,20 @@ export default function AIApuGeneratorPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [databases, setDatabases] = useState([]);
+  const [selectedDatabase, setSelectedDatabase] = useState('master');
 
   useEffect(() => {
     fetchCategoriesTree().then(setCategoriesTree).catch(console.error);
+    const loadDatabases = async () => {
+      try {
+        const dbs = await cost360DatabaseService.getAll();
+        setDatabases(dbs.databases || []);
+      } catch (err) {
+        console.error("Error loading databases", err);
+      }
+    };
+    loadDatabases();
   }, []);
 
   // Defaults for calculations
@@ -67,7 +79,7 @@ export default function AIApuGeneratorPage() {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
     try {
-      const data = await fetchItems(0, 10, searchQuery);
+      const data = await fetchItems(0, 10, searchQuery, '', selectedDatabase);
       setSearchResults(data.items || []);
     } catch (error) {
       toast.error('Error al buscar partidas');
@@ -79,7 +91,7 @@ export default function AIApuGeneratorPage() {
   const handleImportApu = async (itemCode) => {
     try {
       setLoading(true);
-      const data = await fetchApuDetails(itemCode);
+      const data = await fetchApuDetails(itemCode, selectedDatabase);
       
       setItem({
         cod_par: `CUST-${data.partida.CodPar}`,
@@ -235,6 +247,16 @@ export default function AIApuGeneratorPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 animate-in fade-in slide-in-from-top-2 duration-300">
           <label className="block text-sm font-bold text-slate-700 mb-2">Buscar partida existente en la Base de Datos</label>
           <form onSubmit={handleSearchToImport} className="flex gap-2 mb-4">
+            <select
+              value={selectedDatabase}
+              onChange={(e) => setSelectedDatabase(e.target.value)}
+              className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 font-medium w-48"
+            >
+              <option value="master">Base Maestra (Global)</option>
+              {databases.filter(db => db.id !== 'master' && db.is_master !== true).map(db => (
+                <option key={db.id} value={db.id}>{db.name}</option>
+              ))}
+            </select>
             <input
               type="text"
               value={searchQuery}

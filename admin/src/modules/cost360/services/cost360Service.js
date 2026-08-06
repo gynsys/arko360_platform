@@ -35,8 +35,10 @@ export const fetchItems = async (skip = 0, limit = 50, search = '', chapter = ''
  * @param {string} itemCode - The unique code of the item (CodPar)
  * @returns {Promise<Object>} APU details including materials, labor, and equipment
  */
-export const fetchApuDetails = async (itemCode) => {
-  const response = await cost360ApiClient.get(`/items/${itemCode}/apu`);
+export const fetchApuDetails = async (itemCode, database_id = 'master') => {
+  const response = await cost360ApiClient.get(`/items/${itemCode}/apu`, {
+    params: { database_id }
+  });
   return response.data;
 };
 
