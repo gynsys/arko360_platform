@@ -16,6 +16,7 @@ export default function AIApuGeneratorPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [item, setItem] = useState(null);
+  const searchTimeoutRef = useRef(null);
 
   const [categoriesTree, setCategoriesTree] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -386,7 +387,7 @@ export default function AIApuGeneratorPage() {
 
              {/* Búsqueda Inversa Toggles */}
              <div className="flex flex-wrap items-center gap-4 px-1 mt-1 text-sm">
-              <span className="text-slate-600 font-medium">Buscar en:</span>
+              <span className="text-slate-600 font-medium">Buscar por:</span>
               
               <label className="flex items-center cursor-pointer gap-2">
                 <div className="relative">
@@ -403,7 +404,7 @@ export default function AIApuGeneratorPage() {
                   <div className={`block w-10 h-6 rounded-full transition-colors ${searchInsumos ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
                   <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${searchInsumos ? 'transform translate-x-4' : ''}`}></div>
                 </div>
-                <span className="text-slate-700 select-none">Ingredientes (Insumos)</span>
+                <span className="text-slate-700 select-none">Materiales</span>
               </label>
             </div>
           </div>
