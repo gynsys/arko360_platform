@@ -25,6 +25,7 @@ export default function AIApuGeneratorPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchDesc, setSearchDesc] = useState(true);
   const [searchInsumos, setSearchInsumos] = useState(false);
+  const [searchCovenin, setSearchCovenin] = useState('');
   const [searchChapter, setSearchChapter] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [totalMatches, setTotalMatches] = useState(0);
@@ -85,10 +86,10 @@ export default function AIApuGeneratorPage() {
     }
   }, [modeParam]);
 
-  const triggerSearch = async (query = searchQuery, chapter = searchChapter, db = selectedDatabase) => {
+  const triggerSearch = async (query = searchQuery, chapter = searchChapter, db = selectedDatabase, cov = searchCovenin) => {
     setIsSearching(true);
     try {
-      const data = await fetchItems(0, 50, query, chapter, db, searchDesc, searchInsumos);
+      const data = await fetchItems(0, 50, query, chapter, db, searchDesc, searchInsumos, cov);
       setSearchResults(data.items || []);
       setTotalMatches(data.total || (data.items || []).length);
     } catch (error) {
@@ -104,10 +105,10 @@ export default function AIApuGeneratorPage() {
     if (creationMode === 'import') {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
       searchTimeoutRef.current = setTimeout(() => {
-        triggerSearch(searchQuery, searchChapter, selectedDatabase);
+        triggerSearch(searchQuery, searchChapter, selectedDatabase, searchCovenin);
       }, 400);
     }
-  }, [selectedDatabase, searchDesc, searchInsumos, creationMode]);
+  }, [selectedDatabase, searchDesc, searchInsumos, searchCovenin, creationMode]);
 
   const handleSearchToImport = async (e) => {
     e.preventDefault();
@@ -332,6 +333,24 @@ export default function AIApuGeneratorPage() {
              </div>
              
              <form onSubmit={(e) => { e.preventDefault(); triggerSearch(); }} className="flex-1 flex flex-col sm:flex-row gap-3">
+                <div className="relative w-full sm:w-48 shrink-0">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Search className="text-slate-400 text-base" size={16} />
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-11 pr-4 py-3 rounded-xl text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium"
+                    style={{
+                      background: 'rgba(255,255,255,0.8)',
+                      border: '1px solid rgba(148,163,255,0.35)',
+                      boxShadow: 'inset 0 1px 4px rgba(80,100,200,0.06)',
+                    }}
+                    placeholder="Cód. COVENIN"
+                    value={searchCovenin}
+                    onChange={(e) => setSearchCovenin(e.target.value)}
+                  />
+                </div>
+
                 <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Search className="text-slate-400 text-base" size={16} />
@@ -350,30 +369,6 @@ export default function AIApuGeneratorPage() {
                   />
                 </div>
                 
-                <div className="sm:w-56">
-                  <select
-                    value={searchChapter}
-                    onChange={(e) => setSearchChapter(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all appearance-none"
-                    style={{
-                      background: 'rgba(255,255,255,0.8)',
-                      border: '1px solid rgba(148,163,255,0.35)',
-                      backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
-                      backgroundPosition: 'right 0.5rem center',
-                      backgroundRepeat: 'no-repeat',
-                      backgroundSize: '1.5em 1.5em',
-                      paddingRight: '2.5rem',
-                    }}
-                  >
-                    <option value="">Todas las Categorías</option>
-                    <option value="E">Edificaciones (E)</option>
-                    <option value="I">Instalaciones (I)</option>
-                    <option value="C">Vialidad (C)</option>
-                    <option value="V">Vivienda (V)</option>
-                    <option value="U">Urbanismo (U)</option>
-                    <option value="M">Mantenimiento (M)</option>
-                  </select>
-                </div>
                 
                 <button
                   type="submit"
@@ -406,6 +401,37 @@ export default function AIApuGeneratorPage() {
                 </div>
                 <span className="text-slate-700 select-none">Materiales</span>
               </label>
+
+              <div className="sm:w-56 ml-auto">
+                  <select
+                    value={searchChapter}
+                    onChange={(e) => {
+                      setSearchChapter(e.target.value);
+                      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+                      searchTimeoutRef.current = setTimeout(() => {
+                        triggerSearch(searchQuery, e.target.value, selectedDatabase, searchCovenin);
+                      }, 400);
+                    }}
+                    className="block w-full px-4 py-2 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all appearance-none"
+                    style={{
+                      background: 'rgba(255,255,255,0.5)',
+                      border: '1px solid rgba(148,163,255,0.25)',
+                      backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
+                      backgroundPosition: 'right 0.5rem center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '1.5em 1.5em',
+                      paddingRight: '2.5rem',
+                    }}
+                  >
+                    <option value="">Todas las Categorías</option>
+                    <option value="E">Edificaciones (E)</option>
+                    <option value="I">Instalaciones (I)</option>
+                    <option value="C">Vialidad (C)</option>
+                    <option value="V">Vivienda (V)</option>
+                    <option value="U">Urbanismo (U)</option>
+                    <option value="M">Mantenimiento (M)</option>
+                  </select>
+                </div>
             </div>
           </div>
 

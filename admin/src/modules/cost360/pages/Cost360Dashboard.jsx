@@ -42,10 +42,10 @@ const Cost360Dashboard = () => {
   const { config } = useContext(SiteConfigContext);
   const searchTimeoutRef = useRef(null);
 
-  const fetchPartidas = async (searchQuery = '', chapterQuery = '', currentSkip = 0, append = false, sDesc = searchDesc, sInsumos = searchInsumos) => {
+  const fetchPartidas = async (searchQuery = '', chapterQuery = '', currentSkip = 0, append = false, sDesc = searchDesc, sInsumos = searchInsumos, sCovenin = searchCovenin) => {
     try {
       setLoading(true);
-      const response = await cost360Service.fetchItems(currentSkip, LIMIT, searchQuery, chapterQuery, selectedDatabase, sDesc, sInsumos);
+      const response = await cost360Service.fetchItems(currentSkip, LIMIT, searchQuery, chapterQuery, selectedDatabase, sDesc, sInsumos, sCovenin);
       if (append) {
         setItems(prev => [...prev, ...response.items]);
       } else {
@@ -79,22 +79,21 @@ const Cost360Dashboard = () => {
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     
-    // Si cambia el database, reset de chapter pero search se mantiene (o se actualiza)
     searchTimeoutRef.current = setTimeout(() => {
-      fetchPartidas(search, chapter, 0, false, searchDesc, searchInsumos);
+      fetchPartidas(search, chapter, 0, false, searchDesc, searchInsumos, searchCovenin);
     }, 400);
-  }, [chapter, selectedDatabase, searchDesc, searchInsumos]);
+  }, [chapter, selectedDatabase, searchDesc, searchInsumos, searchCovenin]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     setSkip(0);
-    fetchPartidas(search, chapter, 0, false, searchDesc, searchInsumos);
+    fetchPartidas(search, chapter, 0, false, searchDesc, searchInsumos, searchCovenin);
   };
 
   const handleLoadMore = () => {
     const newSkip = skip + LIMIT;
     setSkip(newSkip);
-    fetchPartidas(search, chapter, newSkip, true, searchDesc, searchInsumos);
+    fetchPartidas(search, chapter, newSkip, true, searchDesc, searchInsumos, searchCovenin);
   };
 
   const TABS = [
@@ -107,9 +106,7 @@ const Cost360Dashboard = () => {
   return (
     <div className="absolute inset-0 p-4 md:p-6 flex flex-col overflow-hidden gap-4">
 
-      {/* ── ZONE 3: Title + Tabs ─────────────────────────────── */}
       <div className="rounded-2xl overflow-hidden" style={glassStrong}>
-        {/* Title strip */}
         <div
           className="px-6 py-5 flex items-center gap-4"
           style={{
@@ -128,7 +125,6 @@ const Cost360Dashboard = () => {
           </div>
         </div>
 
-        {/* Tabs row */}
         <div className="px-4 flex justify-between items-end pt-2 pb-0">
           <div className="flex gap-1">
             {TABS.map(({ key, label, Icon }) => {
@@ -172,12 +168,28 @@ const Cost360Dashboard = () => {
         <div className="h-px" style={{ background: 'linear-gradient(90deg,rgba(148,163,255,0.4),transparent)' }} />
       </div>
 
-      {/* ── Partidas tab content ─────────────────────────────── */}
       {activeTab === 'partidas' && (
         <>
-          {/* ── ZONE 4: Search bar ─────────────────────────── */}
           <div className="rounded-2xl p-4 flex flex-col gap-3" style={glass}>
             <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+              <div className="relative w-full sm:w-48 shrink-0">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <FiSearch className="text-slate-400 text-base" />
+                </div>
+                <input
+                  type="text"
+                  className="block w-full pl-11 pr-4 py-3 rounded-xl text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium"
+                  style={{
+                    background: 'rgba(255,255,255,0.8)',
+                    border: '1px solid rgba(148,163,255,0.35)',
+                    boxShadow: 'inset 0 1px 4px rgba(80,100,200,0.06)',
+                  }}
+                  placeholder="Cód. COVENIN"
+                  value={searchCovenin}
+                  onChange={(e) => setSearchCovenin(e.target.value)}
+                />
+              </div>
+
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <FiSearch className="text-slate-400 text-base" />
@@ -194,31 +206,6 @@ const Cost360Dashboard = () => {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-              </div>
-
-              <div className="sm:w-56">
-                <select
-                  value={chapter}
-                  onChange={(e) => setChapter(e.target.value)}
-                  className="block w-full px-4 py-3 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all appearance-none"
-                  style={{
-                    background: 'rgba(255,255,255,0.8)',
-                    border: '1px solid rgba(148,163,255,0.35)',
-                    backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
-                    backgroundPosition: 'right 0.5rem center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '1.5em 1.5em',
-                    paddingRight: '2.5rem',
-                  }}
-                >
-                  <option value="">Todas las Categorías</option>
-                  <option value="E">Edificaciones (E)</option>
-                  <option value="I">Instalaciones (I)</option>
-                  <option value="C">Vialidad (C)</option>
-                  <option value="V">Vivienda (V)</option>
-                  <option value="U">Urbanismo (U)</option>
-                  <option value="M">Mantenimiento (M)</option>
-                </select>
               </div>
 
               <button
@@ -251,6 +238,31 @@ const Cost360Dashboard = () => {
                 </div>
                 <span className="text-slate-700 select-none">Materiales</span>
               </label>
+
+              <div className="sm:w-56 ml-auto">
+                <select
+                  value={chapter}
+                  onChange={(e) => setChapter(e.target.value)}
+                  className="block w-full px-4 py-2 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all appearance-none"
+                  style={{
+                    background: 'rgba(255,255,255,0.5)',
+                    border: '1px solid rgba(148,163,255,0.25)',
+                    backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
+                    backgroundPosition: 'right 0.5rem center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '1.5em 1.5em',
+                    paddingRight: '2.5rem',
+                  }}
+                >
+                  <option value="">Todas las Categorías</option>
+                  <option value="E">Edificaciones (E)</option>
+                  <option value="I">Instalaciones (I)</option>
+                  <option value="C">Vialidad (C)</option>
+                  <option value="V">Vivienda (V)</option>
+                  <option value="U">Urbanismo (U)</option>
+                  <option value="M">Mantenimiento (M)</option>
+                </select>
+              </div>
             </div>
 
             {totalItems > 0 && (
