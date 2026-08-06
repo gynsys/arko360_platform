@@ -22,6 +22,7 @@ export default function AIApuGeneratorPage() {
   const [selectedActivity, setSelectedActivity] = useState('');
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchChapter, setSearchChapter] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [databases, setDatabases] = useState([]);
@@ -82,11 +83,11 @@ export default function AIApuGeneratorPage() {
 
   const handleSearchToImport = async (e) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim() && !searchChapter) return;
     
     setIsSearching(true);
     try {
-      const data = await fetchItems(0, 20, searchQuery, '', selectedDatabase);
+      const data = await fetchItems(0, 50, searchQuery, searchChapter, selectedDatabase);
       setSearchResults(data.items || []);
     } catch (error) {
       toast.error('Error al buscar partidas');
@@ -332,6 +333,31 @@ export default function AIApuGeneratorPage() {
                   />
                 </div>
                 
+                <div className="sm:w-56">
+                  <select
+                    value={searchChapter}
+                    onChange={(e) => setSearchChapter(e.target.value)}
+                    className="block w-full px-4 py-3 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all appearance-none"
+                    style={{
+                      background: 'rgba(255,255,255,0.8)',
+                      border: '1px solid rgba(148,163,255,0.35)',
+                      backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
+                      backgroundPosition: 'right 0.5rem center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '1.5em 1.5em',
+                      paddingRight: '2.5rem',
+                    }}
+                  >
+                    <option value="">Todas las Categorías</option>
+                    <option value="E">Edificaciones (E)</option>
+                    <option value="I">Instalaciones (I)</option>
+                    <option value="C">Vialidad (C)</option>
+                    <option value="V">Vivienda (V)</option>
+                    <option value="U">Urbanismo (U)</option>
+                    <option value="M">Mantenimiento (M)</option>
+                  </select>
+                </div>
+                
                 <button
                   type="submit"
                   disabled={isSearching}
@@ -351,13 +377,13 @@ export default function AIApuGeneratorPage() {
             <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
               <ul className="divide-y divide-slate-100">
                 {searchResults.map((res) => (
-                  <li key={res.cov_par} className="p-3 hover:bg-slate-50 flex items-center justify-between gap-4 transition-colors">
+                  <li key={res.CodPar} className="p-3 hover:bg-slate-50 flex items-center justify-between gap-4 transition-colors">
                     <div>
-                      <p className="text-sm font-bold text-slate-800">{res.cov_par}</p>
-                      <p className="text-xs text-slate-600 line-clamp-1">{res.description}</p>
+                      <p className="text-sm font-bold text-slate-800">{res.CodPar}</p>
+                      <p className="text-xs text-slate-600 line-clamp-1">{res.Descri}</p>
                     </div>
                     <button
-                      onClick={() => handleImportApu(res.cov_par)}
+                      onClick={() => handleImportApu(res.CodPar)}
                       className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg hover:bg-blue-100 shrink-0 transition-colors"
                     >
                       Usar como base
