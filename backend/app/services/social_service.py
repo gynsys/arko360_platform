@@ -181,6 +181,7 @@ def pregenerate_social_content_async(post_id: int) -> None:
             db.commit()
             logger.info(f"[Arko360-Pregeneration] Reel saved for post {post_id}")
         except Exception as e:
+            db.rollback()
             logger.error(f"[Arko360-Pregeneration] Error pregenerating Reel for post {post_id}: {e}", exc_info=True)
 
         # 2. Pregenerate Carousel
@@ -197,6 +198,7 @@ def pregenerate_social_content_async(post_id: int) -> None:
             db.commit()
             logger.info(f"[Arko360-Pregeneration] Carousel saved for post {post_id}")
         except Exception as e:
+            db.rollback()
             logger.error(f"[Arko360-Pregeneration] Error pregenerating Carousel for post {post_id}: {e}", exc_info=True)
 
     except Exception as e:

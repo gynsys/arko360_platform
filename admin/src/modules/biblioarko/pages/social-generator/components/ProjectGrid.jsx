@@ -68,7 +68,12 @@ const checkIsVideoProject = (p) => {
   // 2. Check content object
   let contentObj = p.content;
   if (typeof contentObj === 'string') {
-    try { contentObj = JSON.parse(contentObj); } catch (e) {}
+    try {
+      contentObj = JSON.parse(contentObj);
+    } catch (e) {
+      console.warn('[Arko360] Contenido del proyecto no es JSON válido:', e);
+      contentObj = null;
+    }
   }
 
   if (contentObj) {

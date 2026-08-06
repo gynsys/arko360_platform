@@ -1,6 +1,10 @@
+import logging
+
 from sqlalchemy.types import TypeDecorator, String, Text
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 class EncryptedType(TypeDecorator):
     """
@@ -12,7 +16,12 @@ class EncryptedType(TypeDecorator):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.key = settings.ENCRYPTION_KEY.encode() if settings.ENCRYPTION_KEY else Fernet.generate_key()
+        if not settings.ENCRYPTION_KEY:
+            raise RuntimeError(
+                "ENCRYPTION_KEY is not configured; encrypted columns cannot be used. "
+                "Generating an ephemeral key would make stored data unreadable after a restart."
+            )
+        self.key = settings.ENCRYPTION_KEY.encode()
         self.fernet = Fernet(self.key)
 
     def process_bind_param(self, value, dialect):
@@ -27,9 +36,10 @@ class EncryptedType(TypeDecorator):
             return value
         try:
             return self.fernet.decrypt(value.encode()).decode('utf-8')
-        except Exception:
-            # If decryption fails (e.g. data was not encrypted), return raw value
-            # This helps during migration phase
+        except InvalidToken:
+            # Data predates encryption (migration phase): return it as-is, but make
+            # the situation visible instead of failing silently.
+            logger.warning("Encrypted column holds a non-encrypted value; returning it verbatim.")
             return value
 
 class EncryptedString(EncryptedType):

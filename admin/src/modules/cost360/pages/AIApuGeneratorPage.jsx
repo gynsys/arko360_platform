@@ -160,7 +160,7 @@ export default function AIApuGeneratorPage() {
       toast.success("APU generado con IA");
     } catch (error) {
       console.error(error);
-      toast.error("Error al generar APU con IA");
+      toast.error(error?.response?.data?.detail || "Error al generar APU con IA");
     } finally {
       setLoading(false);
     }

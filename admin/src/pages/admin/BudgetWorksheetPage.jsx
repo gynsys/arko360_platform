@@ -120,10 +120,13 @@ export default function BudgetWorksheetPage() {
         : `${API_URL}/cost360/items?limit=30&database_id=${activeDatabase.id}`;
       
       const res = await fetch(url);
+      if (!res.ok) throw new Error(`La búsqueda falló con estado ${res.status}`);
       const data = await res.json();
       setSearchResults(data.items || []);
     } catch (error) {
       console.error(error);
+      setSearchResults([]);
+      toast.error('Error al buscar en la Base Maestra');
     } finally {
       setSearching(false);
     }

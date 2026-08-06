@@ -56,7 +56,7 @@ def _send_email_sync(
         logger.info(f"Email sent successfully to {email_to}")
         return True
     except Exception as e:
-        logger.error(f"Failed to send email to {email_to} via SMTP: {e}")
+        logger.error(f"Failed to send email to {email_to} via SMTP: {e}", exc_info=True)
         return False
 
 def _send_email_resend_sync(
@@ -98,7 +98,7 @@ def _send_email_resend_sync(
         logger.info(f"Email sent successfully to {email_to} via Resend")
         return True
     except Exception as e:
-        logger.error(f"Failed to send email to {email_to} via Resend: {e}")
+        logger.error(f"Failed to send email to {email_to} via Resend: {e}", exc_info=True)
         return False
 
 async def send_email(
@@ -132,5 +132,6 @@ async def send_welcome_email(email_to: EmailStr, name: str, doctor_name: str = "
         return await send_email(email_to, subject, html_content)
     except FileNotFoundError:
         # Fallback template if file missing
+        logger.warning("Plantilla app/templates/welcome_email.html no encontrada; usando fallback inline.")
         html_content = f"<h1>Hola {name}!</h1><p>Bienvenida a A Mi Ciclo. Atentamente, Dra. {doctor_name}.</p>"
         return await send_email(email_to, subject, html_content)
