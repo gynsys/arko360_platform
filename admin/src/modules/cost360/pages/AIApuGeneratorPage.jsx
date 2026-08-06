@@ -392,7 +392,7 @@ export default function AIApuGeneratorPage() {
                 {searchResults.map((res) => (
                   <li key={res.CodPar} className="p-3 hover:bg-slate-50 flex items-center justify-between gap-4 transition-colors">
                     <div>
-                      <p className="text-sm font-bold text-slate-800">{res.CodPar}</p>
+                      <p className="text-sm font-bold text-slate-800 font-mono mb-1">{res.CovPar || res.CodPar}</p>
                       <p className="text-xs text-slate-600 line-clamp-1">{res.Descri}</p>
                     </div>
                     <button
