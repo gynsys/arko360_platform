@@ -56,6 +56,21 @@ El desarrollo del motor ARKO3D se rige por un marco de planificación estructura
   - Matemáticas de subdivisión de parches y funciones de forma bilineales interpoladas.
   - *Estado: Implementado.*
 
+## Pruebas Unitarias (Backend)
+
+La suite de pruebas del backend vive en `backend/tests/` y no requiere base de datos ni red
+(las dependencias externas se sustituyen por dobles de prueba).
+
+```bash
+cd backend
+pip install -r requirements_test.txt
+pytest                                    # ejecuta backend/tests
+pytest --cov=app --cov-report=term-missing  # con reporte de cobertura
+```
+
+Los scripts `backend/test_*.py` de la raíz son utilidades manuales heredadas (requieren base de
+datos o servidor en ejecución) y quedan fuera de la suite automática por configuración de `pytest.ini`.
+
 ## Base de Datos (PostgreSQL)
 
 La plataforma utiliza una base de datos PostgreSQL alojada y gestionada dentro de contenedores de Docker.
