@@ -174,8 +174,7 @@ export default function AIApuGeneratorPage() {
         apu_data: JSON.stringify(item)
       });
       toast.success("APU guardado exitosamente");
-      // Optional: navigate back to list or reset
-      setTimeout(() => navigate('/cost360'), 1500);
+      // Se mantiene en la pantalla de clonación para seguir editando o crear otra
     } catch (error) {
       console.error(error);
       toast.error("Error al guardar APU");
