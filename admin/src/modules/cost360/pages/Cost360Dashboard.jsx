@@ -273,6 +273,7 @@ const Cost360Dashboard = () => {
         <CatalogResourceTab
           title="Materiales"
           resourceType="materials"
+          selectedDatabase={selectedDatabase}
           config={{
             idKey: 'CodMat', descKey: 'Descri',
             editableFields: [{ key: 'CosMat', label: 'Precio Unitario ($)' }]
@@ -284,6 +285,7 @@ const Cost360Dashboard = () => {
         <CatalogResourceTab
           title="Equipos"
           resourceType="equipments"
+          selectedDatabase={selectedDatabase}
           config={{
             idKey: 'CodEqu', descKey: 'Descri',
             editableFields: [{ key: 'CosDia', label: 'Costo Diario ($)' }]
@@ -295,6 +297,7 @@ const Cost360Dashboard = () => {
         <CatalogResourceTab
           title="Mano de Obra"
           resourceType="labors"
+          selectedDatabase={selectedDatabase}
           config={{
             idKey: 'CodMan', descKey: 'Descri',
             editableFields: [

@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { FiSearch, FiEdit2, FiTrash2, FiCheck, FiX } from 'react-icons/fi';
 import { API_URL } from '../../../services/api';
 
-const CatalogResourceTab = ({ resourceType, title, config }) => {
+const CatalogResourceTab = ({ resourceType, title, config, selectedDatabase }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -179,7 +179,9 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
                 {config.editableFields.map(f => (
                   <th key={f.key} className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{f.label}</th>
                 ))}
-                <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                {selectedDatabase !== 'master' && (
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -221,19 +223,21 @@ const CatalogResourceTab = ({ resourceType, title, config }) => {
                       </td>
                     ))}
 
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      {editingId === item[config.idKey] ? (
-                        <div className="flex justify-end gap-2">
-                          <button onClick={handleUpdate} className="text-green-600 hover:text-green-900 bg-green-50 p-2 rounded-full transition-colors" title="Guardar"><FiCheck size={16} /></button>
-                          <button onClick={cancelEdit} className="text-gray-600 hover:text-gray-900 bg-gray-100 p-2 rounded-full transition-colors" title="Cancelar"><FiX size={16} /></button>
-                        </div>
-                      ) : (
-                        <div className="flex justify-end gap-2">
-                          <button onClick={() => startEdit(item)} className="text-blue-600 hover:text-blue-900 bg-blue-50 p-2 rounded-full transition-colors" title="Editar Precio"><FiEdit2 size={16} /></button>
-                          <button onClick={() => handleDelete(item[config.idKey])} className="text-red-600 hover:text-red-900 bg-red-50 p-2 rounded-full transition-colors" title="Eliminar"><FiTrash2 size={16} /></button>
-                        </div>
-                      )}
-                    </td>
+                    {selectedDatabase !== 'master' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {editingId === item[config.idKey] ? (
+                          <div className="flex justify-end gap-2">
+                            <button onClick={handleUpdate} className="text-green-600 hover:text-green-900 bg-green-50 p-2 rounded-full transition-colors" title="Guardar"><FiCheck size={16} /></button>
+                            <button onClick={cancelEdit} className="text-gray-600 hover:text-gray-900 bg-gray-100 p-2 rounded-full transition-colors" title="Cancelar"><FiX size={16} /></button>
+                          </div>
+                        ) : (
+                          <div className="flex justify-end gap-2">
+                            <button onClick={() => startEdit(item)} className="text-blue-600 hover:text-blue-900 bg-blue-50 p-2 rounded-full transition-colors" title="Editar Precio"><FiEdit2 size={16} /></button>
+                            <button onClick={() => handleDelete(item[config.idKey])} className="text-red-600 hover:text-red-900 bg-red-50 p-2 rounded-full transition-colors" title="Eliminar"><FiTrash2 size={16} /></button>
+                          </div>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
