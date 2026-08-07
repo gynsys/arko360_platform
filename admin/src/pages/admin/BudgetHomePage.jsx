@@ -26,15 +26,57 @@ export default function BudgetHomePage() {
   
   const navigate = useNavigate();
 
+  const [budgetTotals, setBudgetTotals] = useState({});
+
   useEffect(() => {
     loadBudgets();
   }, []);
+
+  const calculatePU = (item, budget) => {
+    if (item.is_chapter) return 0;
+    const matCost = (item.materials || []).reduce((acc, curr) => {
+      const q = parseFloat(curr.cantidad || 0);
+      const w = parseFloat(curr.desperdicio || 0);
+      const p = parseFloat(curr.precio_unitario || 0);
+      return acc + (q * (1 + w / 100) * p);
+    }, 0);
+    const eqCost = (item.equipments || []).reduce((acc, curr) => {
+      const q = parseFloat(curr.cantidad || 0);
+      const d = parseFloat(curr.depreciacion ?? 1.0);
+      const p = parseFloat(curr.precio_unitario || 0);
+      return acc + (q * d * p);
+    }, 0) / (item.performance || 1);
+    const totJornal = (item.labors || []).reduce((acc, curr) => acc + (parseFloat(curr.cantidad || 0) * parseFloat(curr.jornal || 0)), 0);
+    const totBono = (item.labors || []).reduce((acc, curr) => acc + (parseFloat(curr.cantidad || 0) * parseFloat(curr.bono || 0)), 0);
+    const labCost = (totJornal + totBono + (totJornal * ((budget.fcas_percent ?? 417) / 100))) / (item.performance || 1);
+    const subtotal = matCost + eqCost + labCost;
+    const subtotalB = subtotal + (subtotal * ((budget.admin_percent ?? 15.0) / 100));
+    return subtotalB + (subtotalB * ((budget.profit_percent ?? 10.0) / 100));
+  };
 
   const loadBudgets = async () => {
     try {
       setLoading(true);
       const data = await budgetService.getAll();
       setBudgets(data);
+      
+      // Fetch full details to compute totals
+      data.forEach(async (b) => {
+        try {
+          const fullBudget = await budgetService.getById(b.id);
+          const totalItems = fullBudget.items?.filter(i => !i.is_chapter).length || 0;
+          const subtotalPresupuesto = fullBudget.items?.reduce((sum, item) => sum + (calculatePU(item, fullBudget) * item.quantity), 0) || 0;
+          const ivaAmount = subtotalPresupuesto * ((fullBudget.iva_percent ?? 16.0) / 100);
+          const totalGeneral = subtotalPresupuesto + ivaAmount;
+          
+          setBudgetTotals(prev => ({
+            ...prev,
+            [b.id]: { items: totalItems, amount: totalGeneral }
+          }));
+        } catch (e) {
+          console.error("Error loading details for budget", b.id, e);
+        }
+      });
     } catch (error) {
       console.error(error);
     } finally {
@@ -199,16 +241,28 @@ export default function BudgetHomePage() {
                 <h3 className="tarjeta-titulo-ambar truncate" title={budget.name}>
                   {budget.name}
                 </h3>
+                <p className="text-xs text-amber-700 font-semibold mb-3">
+                  Total Partidas: {budgetTotals[budget.id] ? budgetTotals[budget.id].items : '...'}
+                </p>
                 
-                <div className="tarjeta-detalles">
-                  <span className="detalle-fecha">
-                    <Clock size={13} className="mini-icono"/>
-                    {new Date(budget.created_at).toLocaleDateString()}
-                  </span>
-                  <span className="detalle-moneda">
-                    <DollarSign size={13} className="mini-icono"/>
-                    {budget.currency}
-                  </span>
+                <div className="tarjeta-detalles flex justify-between items-center w-full mt-auto">
+                  <div className="flex items-center gap-2">
+                    <span className="detalle-fecha">
+                      <Clock size={13} className="mini-icono"/>
+                      {new Date(budget.created_at).toLocaleDateString()}
+                    </span>
+                    <span className="detalle-moneda">
+                      <DollarSign size={13} className="mini-icono"/>
+                      {budget.currency}
+                    </span>
+                  </div>
+                  {budgetTotals[budget.id] ? (
+                    <span className="text-[13px] font-bold text-amber-900 bg-white/50 px-2.5 py-0.5 rounded-md border border-amber-900/10 shadow-sm">
+                      {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(budgetTotals[budget.id].amount)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-amber-700/50">Calculando...</span>
+                  )}
                 </div>
               </div>
             </div>
