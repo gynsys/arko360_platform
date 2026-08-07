@@ -395,7 +395,7 @@ export default function BudgetHomePage() {
           onClose={() => setSettingsBudget(null)}
           onSave={() => {
             setSettingsBudget(null);
-            fetchBudgets();
+            loadBudgets();
           }}
         />
       )}

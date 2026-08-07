@@ -17,7 +17,8 @@ const CatalogResourceTab = ({ resourceType, title, config, selectedDatabase }) =
   const fetchItems = async (searchQuery = '', currentSkip = 0, append = false) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/cost360/${resourceType}?search=${encodeURIComponent(searchQuery)}&skip=${currentSkip}&limit=${limit}`, {
+      const dbParam = selectedDatabase && selectedDatabase !== 'master' ? `&database_id=${selectedDatabase}` : '';
+      const res = await fetch(`${API_URL}/cost360/${resourceType}?search=${encodeURIComponent(searchQuery)}&skip=${currentSkip}&limit=${limit}${dbParam}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) {

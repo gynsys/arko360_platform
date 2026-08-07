@@ -271,6 +271,7 @@ const Cost360Dashboard = () => {
 
       {activeTab === 'materiales' && (
         <CatalogResourceTab
+          key={`mat-${selectedDatabase}`}
           title="Materiales"
           resourceType="materials"
           selectedDatabase={selectedDatabase}
@@ -283,6 +284,7 @@ const Cost360Dashboard = () => {
 
       {activeTab === 'equipos' && (
         <CatalogResourceTab
+          key={`eq-${selectedDatabase}`}
           title="Equipos"
           resourceType="equipments"
           selectedDatabase={selectedDatabase}
@@ -295,6 +297,7 @@ const Cost360Dashboard = () => {
 
       {activeTab === 'mano_obra' && (
         <CatalogResourceTab
+          key={`mo-${selectedDatabase}`}
           title="Mano de Obra"
           resourceType="labors"
           selectedDatabase={selectedDatabase}
