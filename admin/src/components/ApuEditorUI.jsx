@@ -280,9 +280,9 @@ export default function ApuEditorUI({
                       <input 
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
-                        value={mat.precio_unitario}
-                        onChange={e => safeFn(onComponentChange)('materials', mat.id, 'precio_unitario', e.target.value)}
-                        onBlur={e => safeFn(onComponentBlur)('materials', mat.id, 'precio_unitario', e.target.value)}
+                        value={Number((mat.precio_unitario * exRate).toFixed(2))}
+                        onChange={e => safeFn(onComponentChange)('materials', mat.id, 'precio_unitario', parseFloat(e.target.value) / exRate)}
+                        onBlur={e => safeFn(onComponentBlur)('materials', mat.id, 'precio_unitario', parseFloat(e.target.value) / exRate)}
                       />
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs border-r border-slate-200">
@@ -397,9 +397,9 @@ export default function ApuEditorUI({
                       <input 
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
-                        value={eq.precio_unitario}
-                        onChange={e => safeFn(onComponentChange)('equipments', eq.id, 'precio_unitario', e.target.value)}
-                        onBlur={e => safeFn(onComponentBlur)('equipments', eq.id, 'precio_unitario', e.target.value)}
+                        value={Number((eq.precio_unitario * exRate).toFixed(2))}
+                        onChange={e => safeFn(onComponentChange)('equipments', eq.id, 'precio_unitario', parseFloat(e.target.value) / exRate)}
+                        onBlur={e => safeFn(onComponentBlur)('equipments', eq.id, 'precio_unitario', parseFloat(e.target.value) / exRate)}
                       />
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs border-r border-slate-200">
@@ -506,16 +506,16 @@ export default function ApuEditorUI({
                       <input 
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
-                        value={lab.jornal}
-                        onChange={e => safeFn(onComponentChange)('labors', lab.id, 'jornal', e.target.value)}
-                        onBlur={e => safeFn(onComponentBlur)('labors', lab.id, 'jornal', e.target.value)}
+                        value={Number((lab.jornal * exRate).toFixed(2))}
+                        onChange={e => safeFn(onComponentChange)('labors', lab.id, 'jornal', parseFloat(e.target.value) / exRate)}
+                        onBlur={e => safeFn(onComponentBlur)('labors', lab.id, 'jornal', parseFloat(e.target.value) / exRate)}
                       />
                     </td>
                     <td className="p-2 border-r border-slate-200 bg-amber-50/40">
                       <input 
                         type="number" 
                         className="w-full text-right bg-transparent border-b border-amber-200 focus:border-amber-500 focus:outline-none focus:bg-amber-100 text-xs font-medium [appearance:textfield]"
-                        value={labor_bonus}
+                        value={Number(((lab.bono || labor_bonus || 0) * exRate).toFixed(2))}
                         disabled
                       />
                     </td>
