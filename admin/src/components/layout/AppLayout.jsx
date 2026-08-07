@@ -7,7 +7,7 @@ import {
 import { AuthContext } from '../../context/AuthContext';
 
 const NAV_ITEMS = [
-  { name: 'Mis Presupuestos', href: '/budgets',              Icon: FileText },
+  { name: 'Presupuestos', href: '/budgets',              Icon: FileText },
   { name: 'Visor Bases de Datos', href: '/cost360',              Icon: Database, exact: true  },
   { name: 'Gestion Bases de Datos', href: '/cost360/databases',    Icon: Server   },
   { 
@@ -46,9 +46,6 @@ export default function AppLayout() {
         </span>
       </div>
 
-      <p className="px-5 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-        Navegación
-      </p>
 
       <div className="space-y-0.5 px-3 flex-1 pb-4 overflow-y-auto">
         {NAV_ITEMS.map(({ name, href, Icon, exact, subItems }) => {
@@ -83,7 +80,7 @@ export default function AppLayout() {
                         key={sub.name}
                         to={sub.href}
                         onClick={() => setSidebarOpen(false)}
-                        className={`text-xs py-1.5 px-2 rounded-lg transition-colors font-semibold ${
+                        className={`text-xs py-1.5 px-2 rounded-lg transition-colors font-semibold btn-borde-azul-redondeado block ${
                           isSubActive ? 'text-blue-600 bg-blue-50/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
                         }`}
                       >
