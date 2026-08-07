@@ -87,7 +87,7 @@ const Cost360Dashboard = () => {
   }, [chapter, selectedDatabase, searchDesc, searchInsumos, searchCovenin]);
 
   const handleSearch = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setSkip(0);
     fetchPartidas(search, chapter, 0, false, searchDesc, searchInsumos, searchCovenin);
   };
