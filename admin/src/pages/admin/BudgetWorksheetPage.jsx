@@ -302,11 +302,13 @@ export default function BudgetWorksheetPage() {
   };
 
   const calculatePU = (item) => {
+    const exRate = budget?.currency === 'BS' ? (budget?.exchange_rate || 1.0) : 1.0;
+
     // 1. Materiales
     const matCost = (item.materials || []).reduce((acc, curr) => {
       const q = parseFloat(curr.cantidad || 0);
       const w = parseFloat(curr.desperdicio || 0);
-      const p = parseFloat(curr.precio_unitario || 0);
+      const p = parseFloat(curr.precio_unitario || 0) * exRate;
       const quantityWithWaste = q * (1 + w / 100);
       return acc + (quantityWithWaste * p);
     }, 0);
@@ -315,7 +317,7 @@ export default function BudgetWorksheetPage() {
     const eqTotalDay = (item.equipments || []).reduce((acc, curr) => {
       const q = parseFloat(curr.cantidad || 0);
       const d = parseFloat(curr.depreciacion ?? 1.0);
-      const p = parseFloat(curr.precio_unitario || 0);
+      const p = parseFloat(curr.precio_unitario || 0) * exRate;
       return acc + (q * d * p);
     }, 0);
     const eqCost = eqTotalDay / (item.performance || 1);
@@ -323,12 +325,12 @@ export default function BudgetWorksheetPage() {
     // 3. Mano de Obra
     const totJornal = (item.labors || []).reduce((acc, curr) => {
       const q = parseFloat(curr.cantidad || 0);
-      const j = parseFloat(curr.jornal || 0);
+      const j = parseFloat(curr.jornal || 0) * exRate;
       return acc + (q * j);
     }, 0);
     const totBono = (item.labors || []).reduce((acc, curr) => {
       const q = parseFloat(curr.cantidad || 0);
-      const b = parseFloat(curr.bono || 0);
+      const b = parseFloat(curr.bono || 0) * exRate;
       return acc + (q * b);
     }, 0);
     

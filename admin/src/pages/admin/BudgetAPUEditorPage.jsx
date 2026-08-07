@@ -298,6 +298,7 @@ export default function BudgetAPUEditorPage() {
           item={item}
           settings={{
             currency: budget.currency,
+            exchange_rate: budget.exchange_rate || 1.0,
             material_inflation: budget.material_inflation || 0,
             equipment_inflation: budget.equipment_inflation || 0,
             labor_inflation: budget.labor_inflation || 0,

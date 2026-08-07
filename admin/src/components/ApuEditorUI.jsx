@@ -18,6 +18,7 @@ export default function ApuEditorUI({
 
   const {
     currency = 'USD',
+    exchange_rate = 1.0,
     material_inflation = 0,
     equipment_inflation = 0,
     labor_inflation = 0,
@@ -28,31 +29,34 @@ export default function ApuEditorUI({
     iva_percent = 0
   } = settings || {};
 
+  const exRate = currency === 'BS' ? (exchange_rate || 1.0) : 1.0;
+
   // ── Calculations ─────────────────────────────────────────────────────────
   const calculateMaterialTotal = () => {
     return item.materials?.reduce((sum, mat) => {
-      const baseCost = mat.cantidad * mat.precio_unitario * (1 + (mat.desperdicio || 0) / 100);
+      const baseCost = mat.cantidad * (mat.precio_unitario * exRate) * (1 + (mat.desperdicio || 0) / 100);
       return sum + (baseCost * (1 + (material_inflation / 100)));
     }, 0) || 0;
   };
 
   const calculateEquipmentTotalDay = () => {
     return item.equipments?.reduce((sum, eq) => {
-      const baseCost = eq.cantidad * (eq.depreciacion ?? 1.0) * eq.precio_unitario;
+      const baseCost = eq.cantidad * (eq.depreciacion ?? 1.0) * (eq.precio_unitario * exRate);
       return sum + (baseCost * (1 + (equipment_inflation / 100)));
     }, 0) || 0;
   };
 
   const calculateLaborTotalJornalDay = () => {
     return item.labors?.reduce((sum, lab) => {
-      const baseCost = lab.cantidad * lab.jornal;
+      const baseCost = lab.cantidad * (lab.jornal * exRate);
       return sum + (baseCost * (1 + (labor_inflation / 100)));
     }, 0) || 0;
   };
 
   const calculateLaborTotalBonoDay = () => {
     return item.labors?.reduce((sum, lab) => {
-      const baseCost = lab.cantidad * labor_bonus;
+      const bBonus = lab.bono || labor_bonus || 0;
+      const baseCost = lab.cantidad * (bBonus * exRate);
       return sum + (baseCost * (1 + (labor_inflation / 100)));
     }, 0) || 0;
   };
@@ -282,7 +286,7 @@ export default function ApuEditorUI({
                       />
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs border-r border-slate-200">
-                      {((mat.cantidad * mat.precio_unitario * (1 + (mat.desperdicio || 0) / 100)) * (1 + (material_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                      {((mat.cantidad * (mat.precio_unitario * exRate) * (1 + (mat.desperdicio || 0) / 100)) * (1 + (material_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                     </td>
                     <td className="p-2 text-center">
                       <button
@@ -399,7 +403,7 @@ export default function ApuEditorUI({
                       />
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs border-r border-slate-200">
-                      {((eq.cantidad * (eq.depreciacion ?? 1.0) * eq.precio_unitario) * (1 + (equipment_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                      {((eq.cantidad * (eq.depreciacion ?? 1.0) * (eq.precio_unitario * exRate)) * (1 + (equipment_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                     </td>
                     <td className="p-2 text-center">
                       <button
@@ -516,10 +520,10 @@ export default function ApuEditorUI({
                       />
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 border-r border-slate-200 text-xs">
-                      {((lab.cantidad * lab.jornal) * (1 + (labor_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                      {((lab.cantidad * (lab.jornal * exRate)) * (1 + (labor_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                     </td>
                     <td className="p-2 text-right font-semibold text-slate-700 bg-slate-50 text-xs border-r border-slate-200">
-                      {((lab.cantidad * labor_bonus) * (1 + (labor_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                      {((lab.cantidad * ((lab.bono || labor_bonus || 0) * exRate)) * (1 + (labor_inflation/100))).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}
                     </td>
                     <td className="p-2 text-center">
                       <button

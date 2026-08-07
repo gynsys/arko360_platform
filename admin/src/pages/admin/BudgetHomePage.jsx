@@ -34,20 +34,22 @@ export default function BudgetHomePage() {
 
   const calculatePU = (item, budget) => {
     if (item.is_chapter) return 0;
+    const exRate = budget?.currency === 'BS' ? (budget?.exchange_rate || 1.0) : 1.0;
+    
     const matCost = (item.materials || []).reduce((acc, curr) => {
       const q = parseFloat(curr.cantidad || 0);
       const w = parseFloat(curr.desperdicio || 0);
-      const p = parseFloat(curr.precio_unitario || 0);
+      const p = parseFloat(curr.precio_unitario || 0) * exRate;
       return acc + (q * (1 + w / 100) * p);
     }, 0);
     const eqCost = (item.equipments || []).reduce((acc, curr) => {
       const q = parseFloat(curr.cantidad || 0);
       const d = parseFloat(curr.depreciacion ?? 1.0);
-      const p = parseFloat(curr.precio_unitario || 0);
+      const p = parseFloat(curr.precio_unitario || 0) * exRate;
       return acc + (q * d * p);
     }, 0) / (item.performance || 1);
-    const totJornal = (item.labors || []).reduce((acc, curr) => acc + (parseFloat(curr.cantidad || 0) * parseFloat(curr.jornal || 0)), 0);
-    const totBono = (item.labors || []).reduce((acc, curr) => acc + (parseFloat(curr.cantidad || 0) * parseFloat(curr.bono || 0)), 0);
+    const totJornal = (item.labors || []).reduce((acc, curr) => acc + (parseFloat(curr.cantidad || 0) * parseFloat(curr.jornal || 0) * exRate), 0);
+    const totBono = (item.labors || []).reduce((acc, curr) => acc + (parseFloat(curr.cantidad || 0) * parseFloat(curr.bono || 0) * exRate), 0);
     const labCost = (totJornal + totBono + (totJornal * ((budget.fcas_percent ?? 417) / 100))) / (item.performance || 1);
     const subtotal = matCost + eqCost + labCost;
     const subtotalB = subtotal + (subtotal * ((budget.admin_percent ?? 15.0) / 100));
@@ -60,7 +62,6 @@ export default function BudgetHomePage() {
       const data = await budgetService.getAll();
       setBudgets(data);
       
-      // Fetch full details to compute totals
       data.forEach(async (b) => {
         try {
           const fullBudget = await budgetService.getById(b.id);
@@ -84,16 +85,54 @@ export default function BudgetHomePage() {
     }
   };
 
+  const filteredBudgets = budgets.filter(b => b.name.toLowerCase().includes(search.toLowerCase()));
+
+  const confirmDelete = (id) => {
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="font-medium text-slate-800">¿Estás seguro de eliminar este presupuesto?</p>
+        <div className="flex gap-2 justify-end">
+          <button 
+            onClick={() => toast.dismiss(t.id)} 
+            className="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await budgetService.delete(id);
+                toast.success('Presupuesto eliminado');
+                loadBudgets();
+              } catch (error) {
+                toast.error('Error al eliminar');
+              }
+            }} 
+            className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-sm"
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
+  };
+
   const handleDuplicate = async (e) => {
     e.preventDefault();
     if (!duplicateName.trim()) return;
+    
     try {
-      await budgetService.duplicateBudget(duplicatingBudget.id, duplicateName.trim());
+      setDuplicatingStatus('Duplicando...');
+      const newBudget = await budgetService.duplicateBudget(duplicatingBudget.id, duplicateName);
       toast.success('Presupuesto duplicado exitosamente');
       setDuplicatingBudget(null);
+      setDuplicateName('');
       loadBudgets();
-    } catch (err) {
-      toast.error('Error al duplicar el presupuesto');
+    } catch (error) {
+      toast.error('Error al duplicar presupuesto');
+    } finally {
+      setDuplicatingStatus('');
     }
   };
 
@@ -101,92 +140,76 @@ export default function BudgetHomePage() {
     e.preventDefault();
     if (!renameName.trim()) return;
     try {
-      await budgetService.update(renamingBudget.id, { name: renameName.trim() });
+      await budgetService.update(renamingBudget.id, { name: renameName });
       toast.success('Nombre actualizado');
       setRenamingBudget(null);
+      setRenameName('');
       loadBudgets();
-    } catch (err) {
-      toast.error('Error al actualizar el nombre');
-    }
-  };
-
-  const confirmDelete = (id) => {
-    setDeletingId(id);
-  };
-
-  const handleDelete = async () => {
-    if (!deletingId) return;
-    try {
-      await budgetService.delete(deletingId);
-      setBudgets(budgets.filter(b => b.id !== deletingId));
-      toast.success('Presupuesto eliminado');
-      setDeletingId(null);
     } catch (error) {
-      console.error(error);
-      toast.error('Error al eliminar');
-      setDeletingId(null);
+      toast.error('Error al actualizar nombre');
     }
   };
-
-  const filteredBudgets = budgets.filter(b => 
-    b.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
-    <div className="absolute inset-0 p-6 md:p-8 flex flex-col overflow-hidden gap-4 max-w-7xl mx-auto w-full">
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center shrink-0">
-        <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-            Gestor de Presupuestos
-          </h1>
-          <p className="text-slate-500 mt-1">Administra, crea y organiza todos tus proyectos</p>
-        </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="relative overflow-hidden group bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95"
-        >
-          <div className="absolute inset-0 bg-[#e0f2fe] transform scale-x-0 origin-left transition-transform duration-400 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-x-100"></div>
-          <div className="relative z-10 flex items-center gap-2 font-medium text-white group-hover:text-[#1e3a8a] transition-colors">
-            <Plus size={18} />
-            <span>Nuevo Presupuesto</span>
+    <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
+      <div className="max-w-6xl w-full mx-auto flex-1">
+      {/* HEADER SECTION */}
+      <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600">
+              Gestor de Presupuestos
+            </h1>
+            <p className="text-slate-500 mt-1">Administra, crea y organiza todos tus proyectos</p>
           </div>
-        </button>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="group flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-sm hover:shadow shadow-blue-500/20 transition-all duration-200"
+          >
+            <Plus size={20} className="group-hover:scale-110 transition-transform" />
+            Nuevo Presupuesto
+          </button>
+        </div>
       </div>
 
-      {/* SEARCH AND FILTERS */}
-      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-2xl p-4 shadow-sm flex gap-4 shrink-0">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input 
-            type="text" 
+      {/* SEARCH AND FILTER BAR */}
+      <div className="bg-white rounded-2xl p-2 shadow-sm border border-slate-200/60 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <input
+            type="text"
             placeholder="Buscar presupuestos por nombre..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50/50 border border-slate-400 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full bg-transparent outline-none py-3 pl-12 pr-4 text-slate-700 placeholder:text-slate-400"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      {/* BUDGET LIST */}
-      <div className="flex-1 overflow-y-auto min-h-0 pr-1 pb-16 pt-2">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-          <Loader className="animate-spin mb-4" size={32} />
+      {/* BUDGETS GRID */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400 animate-pulse">
+          <Loader size={40} className="animate-spin mb-4" />
           <p>Cargando presupuestos...</p>
         </div>
       ) : filteredBudgets.length === 0 ? (
-        <div className="bg-white border border-slate-200 border-dashed rounded-3xl p-12 text-center">
-          <div className="bg-blue-50 text-blue-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Folder size={28} />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-800">No se encontraron presupuestos</h3>
-          <p className="text-slate-500 mt-1 max-w-md mx-auto">
-            {searchTerm ? 'Intenta usar otros términos de búsqueda.' : 'Crea tu primer presupuesto para empezar a organizar tus costos.'}
+        <div className="text-center py-20 bg-white/50 rounded-3xl border border-slate-200/50">
+          <FolderOpen size={48} className="mx-auto text-slate-300 mb-4" />
+          <h3 className="text-lg font-semibold text-slate-700 mb-1">No hay presupuestos</h3>
+          <p className="text-slate-500 max-w-sm mx-auto">
+            {search ? 'No se encontraron resultados para tu búsqueda.' : 'Comienza creando tu primer presupuesto para gestionar tus proyectos.'}
           </p>
+          {!search && (
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="mt-6 text-blue-600 font-medium hover:underline"
+            >
+              Crear mi primer presupuesto
+            </button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {filteredBudgets.map(budget => (
             <div 
               key={budget.id}
@@ -250,10 +273,6 @@ export default function BudgetHomePage() {
                     <span className="detalle-fecha">
                       <Clock size={13} className="mini-icono"/>
                       {new Date(budget.created_at).toLocaleDateString()}
-                    </span>
-                    <span className="detalle-moneda">
-                      <DollarSign size={13} className="mini-icono"/>
-                      {budget.currency}
                     </span>
                   </div>
                   {budgetTotals[budget.id] ? (
