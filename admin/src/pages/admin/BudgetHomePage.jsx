@@ -85,7 +85,7 @@ export default function BudgetHomePage() {
     }
   };
 
-  const filteredBudgets = budgets.filter(b => b.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredBudgets = budgets.filter(b => b.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const confirmDelete = (id) => {
     toast((t) => (
@@ -180,8 +180,8 @@ export default function BudgetHomePage() {
             type="text"
             placeholder="Buscar presupuestos por nombre..."
             className="w-full bg-transparent outline-none py-3 pl-12 pr-4 text-slate-700 placeholder:text-slate-400"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
@@ -197,9 +197,9 @@ export default function BudgetHomePage() {
           <FolderOpen size={48} className="mx-auto text-slate-300 mb-4" />
           <h3 className="text-lg font-semibold text-slate-700 mb-1">No hay presupuestos</h3>
           <p className="text-slate-500 max-w-sm mx-auto">
-            {search ? 'No se encontraron resultados para tu búsqueda.' : 'Comienza creando tu primer presupuesto para gestionar tus proyectos.'}
+            {searchTerm ? 'No se encontraron resultados para tu búsqueda.' : 'Comienza creando tu primer presupuesto para gestionar tus proyectos.'}
           </p>
-          {!search && (
+          {!searchTerm && (
             <button 
               onClick={() => setIsModalOpen(true)}
               className="mt-6 text-blue-600 font-medium hover:underline"
