@@ -257,8 +257,8 @@ export default function BudgetHomePage() {
                     </span>
                   </div>
                   {budgetTotals[budget.id] ? (
-                    <span className="text-[13px] font-bold text-amber-900 bg-white/50 px-2.5 py-0.5 rounded-md border border-amber-900/10 shadow-sm">
-                      {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(budgetTotals[budget.id].amount)}
+                    <span className="text-[13px] font-bold text-amber-900">
+                      {budget.currency === 'USD' ? '$' : 'Bs.'} {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(budgetTotals[budget.id].amount)}
                     </span>
                   ) : (
                     <span className="text-xs text-amber-700/50">Calculando...</span>
