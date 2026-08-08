@@ -23,10 +23,6 @@ Base = declarative_base()
 # Import all models so Alembic can detect them
 from app.db.models.landing_site import LandingSite
 from app.db.models.arko import ArkoPost, ArkoProject, ArkoAdmin
-from app.db.models.cost360 import CostItem, CostMaterial, CostEquipment, CostLabor, CostAPUMaterial, CostAPUEquipment, CostAPULabor
-from app.db.models.cost360_database import Cost360Database
-from app.db.models.budget import Budget, BudgetItem, BudgetAPUMaterial, BudgetAPUEquipment, BudgetAPULabor
-
 
 def get_db():
     """
